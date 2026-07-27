@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Personal projects</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb; --plane: #f9f9f7;
+    --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --border: rgba(11,11,11,.10); --wash: rgba(11,11,11,.04);
+    --accent: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface: #1a1a19; --plane: #0d0d0d;
+      --ink: #fff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --border: rgba(255,255,255,.12); --wash: rgba(255,255,255,.06);
+      --accent: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; min-width: 0; }
+  body {
+    margin: 0; background: var(--plane); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 20px 72px; }
+  h1 { font-size: 1.75rem; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .lede { color: var(--ink-2); margin: 0 0 36px; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  a.card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+  }
+  a.card:hover { border-color: var(--accent); background: var(--wash); }
+  a.card h2 { margin: 0 0 6px; font-size: 1.1rem; letter-spacing: -0.01em; }
+  a.card p { margin: 0; color: var(--ink-2); font-size: .92rem; }
+  a.card .go { color: var(--accent); font-size: .85rem; font-weight: 600; margin-top: 10px; display: block; }
+  footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line);
+           color: var(--muted); font-size: .82rem; }
+  footer a { color: var(--ink-2); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Personal projects</h1>
+    <p class="lede">Self-contained pages — no build step, no backend.</p>
+
+    <ul>
+      <li>
+        <a class="card" href="mexico-elections.html">
+          <h2>Mexican presidential elections, 2000–2024</h2>
+          <p>An interactive map of every presidential election since 2000. Pick a year to
+             see who won nationally, or select a state for its own breakdown by candidate
+             and party coalition. Built on the official IFE/INE state counts.</p>
+          <span class="go">Open →</span>
+        </a>
+      </li>
+      <li>
+        <a class="card" href="map-trivia.html">
+          <h2>Map trivia</h2>
+          <p>Name all 32 Mexican states. Easy mode gives four choices, hard mode makes you
+             type it. Five wrong answers and you start over. Progress saves locally, and it
+             is built for touch — pinch to zoom, drag to pan.</p>
+          <span class="go">Play →</span>
+        </a>
+      </li>
+    </ul>
+
+    <footer>
+      Source on <a href="https://github.com/ZachMo/personal_projects">GitHub</a>.
+    </footer>
+  </div>
+</body>
+</html>

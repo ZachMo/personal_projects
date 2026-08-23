@@ -3,904 +3,985 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0d0f13">
+<meta name="theme-color" content="#f4f5f7">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>METRO CITY</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' rx='3' fill='%231d2b53'/%3E%3Crect x='2' y='2' width='12' height='12' fill='%23fff1e8'/%3E%3Crect x='5' y='5' width='6' height='6' fill='%231d2b53'/%3E%3Crect x='0' y='6' width='16' height='4' fill='%231d2b53'/%3E%3Crect x='0' y='7' width='16' height='2' fill='%23fff1e8'/%3E%3C/svg%3E">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Metro City</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f4f5f7'/%3E%3Cpath d='M6 22 L14 22 L20 10 L26 10' stroke='%23e8384f' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='14' cy='22' r='3.4' fill='%23fff' stroke='%231d2330' stroke-width='2'/%3E%3Ccircle cx='20' cy='10' r='3.4' fill='%23fff' stroke='%231d2330' stroke-width='2'/%3E%3C/svg%3E">
 <style>
-  /* The map is 8-bit. The chrome around it is not — it stays quiet so the
-     map gets the pixels. */
   :root{
-    --bg:#0d0f13; --surface:#151920; --surface2:#1b202a; --raise:#222836;
-    --line:#252b37; --text:#e9edf5; --dim:#8792a6; --faint:#5b6478;
-    --accent:#4c9dff; --good:#3ddc97; --warn:#ffb347; --bad:#ff5f6d;
-    --dock:54px; --safeb:env(safe-area-inset-bottom,0px);
+    --paper:#f4f5f7; --sheet:#ffffff; --edge:#e3e6ea; --edge2:#eef0f3;
+    --ink:#1d2330; --ink2:#5b6472; --ink3:#98a1b0;
+    --accent:#2f6df0; --warn:#e08a1e; --bad:#e8384f; --good:#1f9d63;
+    --dock:50px; --safeb:env(safe-area-inset-bottom,0px);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
-  body{
-    background:var(--bg);color:var(--text);
-    font:400 13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  body{background:var(--paper);color:var(--ink);
+    font:400 12px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
     user-select:none;-webkit-user-select:none;touch-action:none;
-  }
-  /* height falls back 100vh -> 100dvh -> live visual-viewport px.
-     Order matters: the LAST supported declaration wins. */
+    font-variant-numeric:tabular-nums}
   #app{position:relative;display:flex;flex-direction:column;
        height:100vh;height:100dvh;height:var(--vph,100dvh);overflow:hidden}
 
-  /* ---------- top bar ---------- */
-  #hud{flex:none;display:flex;align-items:center;gap:2px;background:var(--surface);
-       border-bottom:1px solid var(--line);padding:0 4px;
-       padding-top:env(safe-area-inset-top,0px);position:relative}
-  .stat{flex:1;padding:7px 6px 8px;min-width:0;display:flex;align-items:baseline;gap:5px}
-  .stat b{font-size:15px;font-weight:650;letter-spacing:-.2px;white-space:nowrap}
-  .stat span{font-size:10px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .stat b.good{color:var(--good)} .stat b.warn{color:var(--warn)} .stat b.bad{color:var(--bad)}
-  #menu{flex:none;width:32px;height:30px;margin-right:2px;border-radius:8px;border:1px solid var(--line);
-    background:transparent;color:var(--dim);cursor:pointer;display:grid;place-items:center;padding:0}
-  #menu:active{background:var(--raise)}
-  #bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--line)}
-  #barfill{height:100%;width:100%;background:var(--good);transform-origin:left;transition:transform .35s ease}
+  /* ---------- top strip: quiet, one line ---------- */
+  #hud{flex:none;display:flex;align-items:center;gap:0;background:var(--paper);
+       padding:0 10px;padding-top:env(safe-area-inset-top,0px);height:auto}
+  #hudIn{display:flex;align-items:center;gap:14px;width:100%;height:38px}
+  .m{display:flex;align-items:baseline;gap:4px;min-width:0}
+  .m b{font-size:13px;font-weight:600;letter-spacing:-.1px}
+  .m span{font-size:10px;color:var(--ink3)}
+  .m b.warn{color:var(--warn)} .m b.bad{color:var(--bad)} .m b.good{color:var(--good)}
+  #clock{margin-left:auto;display:flex;align-items:center;gap:7px}
+  #dayName{font-size:10px;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
+  #hhmm{font-size:13px;font-weight:600}
+  #rushDot{width:6px;height:6px;border-radius:50%;background:var(--edge);transition:background .4s}
+  #rushDot.on{background:var(--warn)}
 
   /* ---------- map ---------- */
-  #mapwrap{flex:1;position:relative;min-height:0;background:var(--bg);overflow:hidden}
+  #mapwrap{flex:1;position:relative;min-height:0;overflow:hidden}
   #map{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-  #map *{shape-rendering:crispEdges}
-  #map .ln{shape-rendering:auto}
-  #recenter{position:absolute;right:10px;top:10px;z-index:3;width:34px;height:34px;
-    display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);
-    background:rgba(21,25,32,.82);backdrop-filter:blur(6px);color:var(--dim);cursor:pointer;padding:0}
-  #recenter:active{background:var(--raise)}
-  #toast{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:6;
-    background:rgba(21,25,32,.94);border:1px solid var(--line);border-radius:8px;
-    color:var(--text);padding:7px 12px;font-size:12px;pointer-events:none;
-    opacity:0;transition:opacity .18s ease;white-space:nowrap;max-width:90%;
+  #hintbar{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:4;
+    font-size:11.5px;color:var(--ink2);background:rgba(255,255,255,.92);
+    border:1px solid var(--edge);border-radius:999px;padding:6px 13px;
+    pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;max-width:92%;
     overflow:hidden;text-overflow:ellipsis}
-  #toast.on{opacity:1}
-  #toast.bad{border-color:rgba(255,95,109,.5);color:var(--bad)}
+  #hintbar.on{opacity:1}
+  #fitBtn{position:absolute;right:9px;top:9px;z-index:3;width:30px;height:30px;
+    display:grid;place-items:center;border-radius:8px;border:1px solid var(--edge);
+    background:rgba(255,255,255,.9);color:var(--ink3);padding:0}
 
   /* ---------- buttons ---------- */
-  .btn{font:inherit;font-size:12px;background:var(--raise);color:var(--text);
-    border:1px solid var(--line);border-radius:8px;padding:8px 11px;cursor:pointer}
-  .btn:active{background:var(--surface2)}
+  button{font:inherit;color:inherit;cursor:pointer}
+  .btn{background:#fff;border:1px solid var(--edge);border-radius:8px;padding:8px 11px;font-size:12px}
+  .btn:active{background:var(--edge2)}
   .btn[disabled]{opacity:.4}
-  .btn.p{background:var(--accent);border-color:transparent;color:#04121f;font-weight:600}
-  .btn.g{background:var(--good);border-color:transparent;color:#04140d;font-weight:600}
-  .btn.r{background:transparent;border-color:rgba(255,95,109,.45);color:var(--bad)}
+  .btn.p{background:var(--accent);border-color:transparent;color:#fff;font-weight:600}
+  .btn.r{border-color:rgba(232,56,79,.4);color:var(--bad)}
   .btn.sm{padding:6px 9px;font-size:11px;border-radius:7px}
-
-  /* ---------- sheet: an overlay, closed by default, so the map keeps the screen ---------- */
-  #sheet{position:absolute;left:0;right:0;bottom:0;z-index:5;
-    padding-bottom:calc(var(--dock) + var(--safeb));
-    transform:translateY(101%);transition:transform .22s cubic-bezier(.32,.72,0,1);
-    pointer-events:none}
-  #sheet.open{transform:none;pointer-events:auto}
-  #sheetIn{background:var(--surface);border-top:1px solid var(--line);
-    border-radius:14px 14px 0 0;max-height:min(46dvh,340px);display:flex;flex-direction:column;
-    box-shadow:0 -12px 30px rgba(0,0,0,.4)}
-  #sheetHead{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px 8px}
-  #sheetHead h3{margin:0;font-size:13px;font-weight:600;flex:1}
-  #sheetHead .x{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);
-    background:transparent;color:var(--dim);cursor:pointer;display:grid;place-items:center;padding:0}
-  #panel{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 12px 14px}
-
-  .hint{color:var(--dim);font-size:11.5px;line-height:1.55;margin:0 0 10px}
-  .hint b{color:var(--text);font-weight:600}
-  .row{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--line);
-    border-radius:10px;background:var(--surface2);margin-bottom:7px}
-  .chip{width:10px;height:10px;border-radius:3px;flex:none}
-  .grow{flex:1;min-width:0}
-  .lbl{font-size:12.5px;font-weight:550}
-  .sub{font-size:10.5px;color:var(--dim);margin-top:2px}
-  .sub.warm{color:var(--warn)} .sub.hot{color:var(--bad)}
-  .meter{height:3px;border-radius:2px;background:var(--line);margin-top:6px;overflow:hidden}
-  .meter i{display:block;height:100%;background:var(--good)}
-  .meter i.warm{background:var(--warn)} .meter i.hot{background:var(--bad)}
-  .price{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
-  .stack{display:flex;flex-direction:column;gap:5px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .btn.wide{width:100%;text-align:center}
 
   /* ---------- dock ---------- */
-  #dock{flex:none;position:relative;z-index:6;display:flex;align-items:center;gap:6px;
-    background:var(--surface);border-top:1px solid var(--line);
-    height:calc(var(--dock) + var(--safeb));padding:0 8px var(--safeb);}
-  .tool{flex:none;width:42px;height:38px;border-radius:9px;border:1px solid transparent;
-    background:transparent;color:var(--dim);cursor:pointer;display:grid;place-items:center;padding:0}
-  .tool.on{background:var(--raise);border-color:var(--line);color:var(--accent)}
-  #run{flex:1;height:38px;border:0;border-radius:9px;background:var(--good);color:#04140d;
-    font:inherit;font-size:13.5px;font-weight:650;cursor:pointer;letter-spacing:.1px}
-  #run:active{filter:brightness(.9)}
-  #run[disabled]{background:var(--raise);color:var(--faint)}
+  #dock{flex:none;position:relative;z-index:6;display:flex;align-items:center;gap:8px;
+    background:var(--sheet);border-top:1px solid var(--edge);
+    height:calc(var(--dock) + var(--safeb));padding:0 9px var(--safeb)}
+  #speed{flex:none;display:flex;align-items:center;height:32px;border:1px solid var(--edge);
+    border-radius:8px;overflow:hidden}
+  #speed button{border:0;background:#fff;width:30px;height:30px;display:grid;place-items:center;
+    color:var(--ink3);border-right:1px solid var(--edge2);padding:0}
+  #speed button:last-child{border-right:0}
+  #speed button.on{background:var(--ink);color:#fff}
+  #lineStrip{flex:1;display:flex;align-items:center;gap:6px;overflow-x:auto;
+    scrollbar-width:none;height:36px}
+  #lineStrip::-webkit-scrollbar{display:none}
+  .lchip{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid transparent;
+    display:grid;place-items:center;position:relative}
+  .lchip i{width:16px;height:16px;border-radius:50%;display:block}
+  .lchip.on{border-color:var(--ink)}
+  .lchip.add{border:1.5px dashed var(--ink3);color:var(--ink3);font-size:15px;line-height:1;
+    width:26px;height:26px;background:transparent}
+  .lchip.add.pulse{animation:pulse 2.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{border-color:var(--ink3)}50%{border-color:var(--accent)}}
+  #buildBtn{flex:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--edge);
+    background:#fff;display:grid;place-items:center;color:var(--ink2);padding:0}
+  #buildBtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 
-  /* ---------- modal ---------- */
-  #modal{position:fixed;inset:0;z-index:20;background:rgba(6,8,11,.72);backdrop-filter:blur(3px);
-    display:none;align-items:flex-end;justify-content:center;padding:0}
-  #modal.on{display:flex}
-  @media (min-height:560px){ #modal{align-items:center;padding:16px} }
-  .win{background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 0 0;
-    width:100%;max-width:400px;max-height:88dvh;display:flex;flex-direction:column;
-    padding-bottom:var(--safeb)}
-  @media (min-height:560px){ .win{border-radius:16px;padding-bottom:0} }
-  .win h2{margin:0;padding:15px 16px 4px;font-size:16px;font-weight:650;letter-spacing:-.2px}
-  .win .body{padding:6px 16px 14px;overflow-y:auto;-webkit-overflow-scrolling:touch}
-  .win .foot{padding:10px 16px calc(14px + var(--safeb));display:flex;gap:8px;
-    border-top:1px solid var(--line)}
-  @media (min-height:560px){ .win .foot{padding-bottom:14px} }
-  .win .foot .btn{flex:1;text-align:center;padding:11px}
-  .kv{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:7px 0;
-      border-bottom:1px solid var(--line);color:var(--dim)}
+  /* ---------- sheet ---------- */
+  #sheet{position:absolute;left:0;right:0;bottom:0;z-index:5;
+    padding-bottom:calc(var(--dock) + var(--safeb));
+    transform:translateY(101%);transition:transform .2s cubic-bezier(.32,.72,0,1);
+    pointer-events:none}
+  #sheet.open{transform:none;pointer-events:auto}
+  #sheetIn{background:var(--sheet);border-top:1px solid var(--edge);
+    border-radius:13px 13px 0 0;max-height:min(44dvh,320px);display:flex;flex-direction:column;
+    box-shadow:0 -8px 26px rgba(20,26,38,.10)}
+  #sheetHead{flex:none;display:flex;align-items:center;gap:8px;padding:11px 13px 7px}
+  #sheetHead h3{margin:0;font-size:13px;font-weight:600;flex:1;display:flex;align-items:center;gap:7px}
+  #sheetHead .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  #sheetHead .x{width:26px;height:26px;border-radius:7px;border:1px solid var(--edge);
+    background:#fff;color:var(--ink3);display:grid;place-items:center;padding:0}
+  #panel{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 13px 14px}
+
+  .note{color:var(--ink2);font-size:11.5px;line-height:1.5;margin:0 0 10px}
+  .note b{color:var(--ink);font-weight:600}
+  .row{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--edge);
+    border-radius:9px;margin-bottom:6px;background:#fff}
+  .grow{flex:1;min-width:0}
+  .lbl{font-size:12px;font-weight:550}
+  .sub{font-size:10.5px;color:var(--ink3);margin-top:2px}
+  .sub.warm{color:var(--warn)} .sub.hot{color:var(--bad)}
+  .bar{height:3px;border-radius:2px;background:var(--edge2);margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--good);transition:width .3s}
+  .bar i.warm{background:var(--warn)} .bar i.hot{background:var(--bad)}
+  .stack{display:flex;flex-direction:column;gap:4px}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .kv{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;padding:5px 0;
+    border-bottom:1px solid var(--edge2);color:var(--ink2)}
   .kv:last-child{border-bottom:0}
-  .kv b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
-  .kv b.up{color:var(--good)} .kv b.dn{color:var(--bad)}
-  .big{font-size:30px;font-weight:700;letter-spacing:-.6px;padding:10px 0 4px}
-  .bigsub{color:var(--dim);font-size:12px;margin-bottom:10px}
-  ul.tips{margin:0;padding-left:16px;font-size:12px;line-height:1.7;color:var(--dim)}
-  ul.tips li{margin-bottom:7px}
-  ul.tips b{color:var(--text);font-weight:600}
+  .kv b{color:var(--ink);font-weight:600}
+  .swatches{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+  .sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent}
+  .sw.on{border-color:var(--ink)}
 </style>
 </head>
 <body>
 <div id="app">
-  <header id="hud">
-    <div class="stat"><b id="hWeek">1</b><span>week</span></div>
-    <div class="stat"><b id="hCash">0</b><span>funds</span></div>
-    <div class="stat"><b id="hRide">—</b><span>carried</span></div>
-    <div class="stat"><b id="hAppr">100</b><span>approval</span></div>
-    <button id="menu" title="Menu">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-        <circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/></svg>
-    </button>
-    <div id="bar"><div id="barfill"></div></div>
-  </header>
+  <header id="hud"><div id="hudIn">
+    <div class="m"><b id="mPop">0</b><span>people</span></div>
+    <div class="m"><b id="mCash">0</b><span></span></div>
+    <div class="m"><b id="mRide">—</b><span>on time</span></div>
+    <div id="clock"><span id="rushDot"></span><span id="dayName">Mon</span><span id="hhmm">06:00</span></div>
+  </div></header>
 
   <div id="mapwrap">
     <svg id="map" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-      <g id="gGround"></g><g id="gCity"></g><g id="gCover"></g>
-      <g id="gLines"></g><g id="gDraft"></g><g id="gTrains"></g>
-      <g id="gStations"></g><g id="gFx"></g>
+      <g id="gLand"></g><g id="gCity"></g><g id="gLines"></g>
+      <g id="gDraft"></g><g id="gTrains"></g><g id="gStations"></g><g id="gCue"></g>
     </svg>
-    <button id="recenter" title="Fit">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
-        <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>
-    </button>
-    <div id="toast"></div>
+    <button id="fitBtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg></button>
+    <div id="hintbar"></div>
   </div>
 
   <div id="sheet"><div id="sheetIn">
     <div id="sheetHead"><h3 id="sheetTitle"></h3>
-      <button class="x" id="sheetClose">
-        <svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.7"><path d="M2 2l8 8M10 2l-8 8"/></svg>
-      </button></div>
+      <button class="x" id="sheetClose"><svg width="11" height="11" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.7"><path d="M2 2l8 8M10 2l-8 8"/></svg></button>
+    </div>
     <div id="panel"></div>
   </div></div>
 
-  <nav id="dock"><div id="tools" style="display:flex;gap:4px"></div><button id="run">Run week</button></nav>
+  <nav id="dock">
+    <div id="speed"></div>
+    <div id="lineStrip"></div>
+    <button id="buildBtn"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="5.2"/><path d="M2.6 10h14.8"/></svg></button>
+  </nav>
 </div>
-
-<div id="modal"><div class="win">
-  <h2 id="mTitle">Metro City</h2>
-  <div class="body" id="mBody"></div>
-  <div class="foot" id="mFoot"></div>
-</div></div>
 <script>
 "use strict";
 /* ============================================================================
-   METRO CITY — a week-by-week transit builder.
-   The map is SVG pixel art on a 16-unit tile grid, never anti-aliased.
+   METRO CITY — a real-time transit sim.
+   The city is a quiet background you are reading; the network is the subject.
    ========================================================================== */
-const PAL = { ink:"#0b0c14", navy:"#1d2b53", wine:"#7e2553", moss:"#008751",
-  brown:"#ab5236", slate:"#5f574f", ash:"#c2c3c7", bone:"#fff1e8",
-  red:"#ff004d", orange:"#ffa300", yellow:"#ffec27", lime:"#00e436",
-  blue:"#29adff", lilac:"#83769c", pink:"#ff77a8", peach:"#ffccaa" };
+
+/* muted, low-chroma city; saturated colour is reserved for the metro */
+const C = {
+  paper:"#f4f5f7", water:"#dee7ef", land:"#eceef1",
+  res:"#9aa0a8", com:"#7f8b9c", ind:"#8e8880", park:"#93a891",
+  ink:"#1d2330", ink2:"#5b6472", ink3:"#98a1b0",
+  warn:"#e08a1e", bad:"#e8384f", good:"#1f9d63"
+};
+const LINE_PALETTE = [
+  { id:"red",    hex:"#e8384f", name:"Red" },
+  { id:"blue",   hex:"#2f6df0", name:"Blue" },
+  { id:"green",  hex:"#1f9d63", name:"Green" },
+  { id:"amber",  hex:"#e8a020", name:"Amber" },
+  { id:"purple", hex:"#8a4fd0", name:"Purple" },
+  { id:"teal",   hex:"#0f9bb0", name:"Teal" },
+  { id:"pink",   hex:"#e2559b", name:"Pink" },
+  { id:"brown",  hex:"#96694a", name:"Brown" },
+  { id:"lime",   hex:"#7aa81e", name:"Lime" },
+  { id:"navy",   hex:"#26407a", name:"Navy" },
+  { id:"coral",  hex:"#f0714a", name:"Coral" },
+  { id:"slate",  hex:"#5f6b7a", name:"Slate" }
+];
 
 const T = 16;
-const MAPW = 34, MAPH = 34;
-const LINE_COLORS = ["red","yellow","lime","blue","pink","orange","peach","ash"];
-const LINE_NAMES  = ["Red","Gold","Green","Blue","Rose","Amber","Sand","Steel"];
+const MAPW = 60, MAPH = 60;
 
-/* ---------------------------------------------------------------------------
-   SPRITES — [paletteKey, x, y, w, h] inside a 16x16 tile, drawn back to front.
-   Every building type climbs: the silhouette gets taller with each level, so
-   densification is legible at a glance without reading a single number.
---------------------------------------------------------------------------- */
-const SPRITES = {
-  HOUSE: [
-    /* 1 cottage — roof peak at y=6 */
-    [["peach",4,9,8,5],["wine",3,6,10,3],["ink",7,11,3,3],["blue",5,10,2,2]],
-    /* 2 duplex — y=4 */
-    [["peach",3,7,10,7],["wine",2,4,12,3],["ink",7,11,2,3],
-     ["blue",4,8,2,2],["blue",10,8,2,2]],
-    /* 3 mid-rise — y=2 */
-    [["peach",2,2,12,12],["ash",2,2,12,1],["ink",6,11,4,3],
-     ["blue",4,4,2,2],["blue",8,4,2,2],["blue",11,4,2,2],
-     ["blue",4,7,2,2],["blue",8,7,2,2],["blue",11,7,2,2]],
-    /* 4 high-rise — y=0, full tile */
-    [["peach",2,0,12,14],["ash",2,0,12,1],["ink",6,11,4,3],
-     ["blue",3,2,2,2],["blue",7,2,2,2],["blue",11,2,2,2],
-     ["blue",3,5,2,2],["blue",7,5,2,2],["blue",11,5,2,2],
-     ["blue",3,8,2,2],["blue",7,8,2,2],["blue",11,8,2,2]]
-  ],
-  WORK: [
-    [["ash",4,7,8,7],["slate",4,7,8,1],["yellow",5,9,2,2],["yellow",9,9,2,2],["ink",7,12,3,2]],
-    [["ash",3,4,10,10],["slate",3,4,10,1],
-     ["yellow",4,6,2,2],["yellow",7,6,2,2],["yellow",10,6,2,2],
-     ["yellow",4,9,2,2],["yellow",10,9,2,2],["ink",7,11,3,3]],
-    [["ash",2,1,12,13],["slate",2,1,12,1],
-     ["yellow",3,3,2,2],["yellow",7,3,2,2],["yellow",11,3,2,2],
-     ["yellow",3,6,2,2],["yellow",7,6,2,2],["yellow",11,6,2,2],
-     ["yellow",3,9,2,2],["yellow",11,9,2,2],["ink",6,11,4,3]],
-    [["ash",2,2,12,12],["slate",2,2,12,1],["slate",7,0,2,2],["red",7,0,2,1],
-     ["yellow",3,4,2,2],["yellow",7,4,2,2],["yellow",11,4,2,2],
-     ["yellow",3,7,2,2],["yellow",7,7,2,2],["yellow",11,7,2,2],
-     ["yellow",3,10,2,1],["yellow",11,10,2,1],["ink",6,11,4,3]]
-  ],
-  SHOP: [
-    [["lilac",3,7,10,7],["pink",2,5,12,2],["lime",5,9,6,3],["ink",11,10,2,4]],
-    [["lilac",2,5,12,9],["pink",1,3,14,2],["bone",1,3,3,2],["bone",7,3,3,2],["bone",13,3,2,2],
-     ["lime",3,7,4,3],["lime",9,7,4,3],["ink",7,10,2,4]],
-    [["lilac",1,3,14,11],["pink",0,1,16,2],["bone",0,1,3,2],["bone",6,1,3,2],["bone",12,1,3,2],
-     ["lime",2,5,4,3],["lime",7,5,3,3],["lime",11,5,3,3],["yellow",2,9,3,2],["ink",7,10,3,4]]
-  ],
-  IND: [
-    [["slate",1,8,14,6],["slate",11,3,3,5],["ash",11,1,3,2],["yellow",4,10,3,2],["ink",8,10,3,4]],
-    [["slate",1,6,14,8],["slate",10,1,4,5],["ash",10,0,4,2],["ash",2,4,5,2],
-     ["yellow",3,9,3,2],["yellow",7,9,2,2],["ink",11,9,3,5]],
-    [["slate",0,5,16,9],["slate",3,1,3,4],["slate",10,0,4,5],["ash",3,0,3,2],["ash",10,0,4,1],
-     ["yellow",2,8,3,2],["yellow",6,8,3,2],["yellow",10,8,3,2],["ink",6,11,4,3]]
-  ],
-  PARK: [
-    [["moss",1,1,14,14],["brown",7,9,2,4],["lime",4,4,8,5],["lime",6,2,4,2]],
-    [["moss",1,1,14,14],["brown",4,9,2,4],["lime",2,5,6,4],["brown",11,10,2,3],["lime",9,7,5,4],["lime",4,3,4,2]],
-    [["moss",1,1,14,14],["brown",3,9,2,4],["lime",1,5,6,4],["brown",8,9,2,4],["lime",6,4,6,4],
-     ["brown",12,10,2,3],["lime",10,7,5,4],["blue",1,12,6,2]]
-  ]
-};
-const MAXLVL = { HOUSE:4, WORK:4, SHOP:3, IND:3, PARK:3 };
+/* One block of houses is 150 people. A mid-rise is ten of those, a tower
+   twenty. That ratio is what makes densification, not sprawl, the thing that
+   floods your platforms. */
+const RES  = { R:[150, 450, 1500, 3000], C:[0,0,0,0], I:[0,0,0,0], P:[0,0,0,0] };
+const JOBS = { R:[0,0,0,0], C:[120, 400, 1300, 2600], I:[110, 320, 820, 820], P:[0,0,0,0] };
+const MAXL = { R:4, C:4, I:3, P:1 };
 
-/* ---------------------------------------------------------------------------
-   CITY MODEL
---------------------------------------------------------------------------- */
 let rngSeed = 1;
 function srand(s){ rngSeed = (s >>> 0) || 1; }
 function rnd(){ rngSeed = (rngSeed * 1664525 + 1013904223) >>> 0; return rngSeed / 4294967296; }
 const ri = n => Math.floor(rnd() * n);
-const pickOne = a => a[ri(a.length)];
+const pick = a => a[ri(a.length)];
 
 const key = (x,y) => y * MAPW + x;
-const inBounds = (x,y) => x >= 0 && y >= 0 && x < MAPW && y < MAPH;
+const kx = k => k % MAPW, ky = k => Math.floor(k / MAPW);
+const inB = (x,y) => x >= 0 && y >= 0 && x < MAPW && y < MAPH;
 
 const G = {
-  week:1, cash:0, approval:100, carCap:40, coverR:1,
-  tiles:new Map(), water:new Set(), stations:[], lines:[], nextSid:1, nextLid:0,
-  over:false, best:0, lastReport:null, unserved:new Map(), history:[]
+  t:0, day:0, hour:6, speed:1, money:0,
+  tiles:new Map(), water:new Set(),
+  stations:[], lines:[], nextSid:1, nextLid:1,
+  pop:0, jobs:0,
+  stats:{ arrived:0, balked:0, boarded:0, dayArrived:0, dayBalked:0, onTime:1, ridersToday:0 },
+  ledger:{ fares:0, opex:0 },
+  hist:[]
 };
-
-/* residents and jobs climb steeply with height: a high-rise is not a slightly
-   bigger house, it is six times the ridership */
-const POP  = { HOUSE:[16,34,62,100], WORK:[0,0,0,0], SHOP:[0,0,0], IND:[0,0,0], PARK:[0,0,0] };
-const JOBS = { HOUSE:[0,0,0,0], WORK:[26,54,95,150], SHOP:[12,25,42], IND:[18,38,62], PARK:[0,0,0] };
 
 const tileAt = (x,y) => G.tiles.get(key(x,y));
 const isWater = (x,y) => G.water.has(key(x,y));
-const homePop = t => (POP[t.type] || [])[t.lvl-1] || 0;
-const jobCount = t => (JOBS[t.type] || [])[t.lvl-1] || 0;
-const tileDemand = t => homePop(t) + jobCount(t);
+const tPop  = t => RES[t.use][t.lvl-1] || 0;
+const tJobs = t => JOBS[t.use][t.lvl-1] || 0;
 
-function carveRiver(){
-  let x = 8 + ri(4);
-  for (let y = 0; y < MAPH; y++){
-    const w = 2 + (y % 5 === 0 ? 1 : 0);
-    for (let i = 0; i < w; i++) if (inBounds(x+i,y)) G.water.add(key(x+i,y));
-    x = Math.max(2, Math.min(MAPW - 4, x + ri(3) - 1));
-  }
-  const lx = 23 + ri(3), ly = 20 + ri(4);
-  for (let y = ly; y < ly + 4; y++)
-    for (let x2 = lx; x2 < lx + 5; x2++) if (inBounds(x2,y)) G.water.add(key(x2,y));
+function recount(){
+  let p = 0, j = 0;
+  for (const t of G.tiles.values()){ p += tPop(t); j += tJobs(t); }
+  G.pop = p; G.jobs = j;
 }
 
-function addTile(x,y,type,lvl){
-  if (!inBounds(x,y) || isWater(x,y) || G.tiles.has(key(x,y))) return null;
-  const t = { x, y, type, lvl: lvl || 1 };
+/* ---- terrain ---- */
+function carveWater(){
+  let x = 20 + ri(6);
+  for (let y = 0; y < MAPH; y++){
+    const w = 3 + (y % 7 === 0 ? 1 : 0);
+    for (let i = 0; i < w; i++) if (inB(x+i,y)) G.water.add(key(x+i,y));
+    x = Math.max(3, Math.min(MAPW-6, x + ri(3) - 1));
+  }
+  const lx = 40 + ri(5), ly = 38 + ri(6);
+  for (let y = ly; y < ly+7; y++) for (let x2 = lx; x2 < lx+9; x2++)
+    if (inB(x2,y)) G.water.add(key(x2,y));
+}
+
+function addTile(x,y,use,lvl){
+  if (!inB(x,y) || isWater(x,y) || G.tiles.has(key(x,y))) return null;
+  const t = { x, y, use, lvl:lvl||1, want:0 };
   G.tiles.set(key(x,y), t);
   return t;
 }
 
 function seedCity(){
-  const cx = 16, cy = 16;
-  const plan = [
-    [0,0,"WORK",2],[1,0,"WORK",1],[-1,0,"SHOP",1],[0,-1,"SHOP",1],
-    [0,1,"HOUSE",1],[1,1,"HOUSE",1],[-1,1,"HOUSE",1],[-1,-1,"HOUSE",1],
-    [1,-1,"HOUSE",1],[2,0,"HOUSE",1],[0,2,"HOUSE",1],[-2,0,"PARK",1],
-    [2,1,"HOUSE",1],[-2,1,"IND",1],[2,-1,"SHOP",1],[-1,2,"HOUSE",1]
-  ];
-  for (const [dx,dy,type,lvl] of plan) addTile(cx+dx, cy+dy, type, lvl);
-  let guard = 0;
-  while (G.tiles.size < 12 && guard++ < 400){
-    const t = pickOne([...G.tiles.values()]);
-    const [dx,dy] = pickOne([[1,0],[-1,0],[0,1],[0,-1]]);
-    addTile(t.x+dx, t.y+dy, pickOne(["HOUSE","HOUSE","SHOP","WORK"]), 1);
+  const cx = 30, cy = 30;
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++){
+    const d = Math.abs(dx) + Math.abs(dy);
+    if (d > 5) continue;
+    const use = d <= 1 ? "C" : d <= 2 ? (rnd() < .5 ? "C" : "R") : (rnd() < .12 ? "P" : "R");
+    addTile(cx+dx, cy+dy, use, d <= 1 ? 2 : 1);
   }
+  for (let i = 0; i < 6; i++) addTile(cx - 6 - ri(3), cy + ri(5) - 2, "I", 1);
+  recount();
 }
 
-function growCity(week){
-  /* The city grows two ways at once. Outward adds blocks you have to reach;
-     upward multiplies the demand on blocks you already serve. Upward is the
-     one that forces you to keep buying trains. */
-  const added = [], upgraded = [];
-  const cells = [...G.tiles.values()];
-  const room = G.tiles.size < 300;
-
-  const n = room ? Math.min(2 + Math.floor(week / 3), 7) : 0;
-  const wts = week < 5  ? ["HOUSE","HOUSE","HOUSE","SHOP","WORK","PARK"]
-            : week < 12 ? ["HOUSE","HOUSE","SHOP","WORK","WORK","IND","PARK"]
-                        : ["HOUSE","HOUSE","WORK","WORK","SHOP","IND","IND","PARK"];
-  for (let i = 0; i < n * 8 && added.length < n; i++){
-    const type = pickOne(wts);
-    const pool = type === "WORK" ? cells.filter(c => c.type === "WORK") : cells;
-    const t = pickOne(pool.length ? pool : cells);
-    const [dx,dy] = pickOne([[1,0],[-1,0],[0,1],[0,-1],[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1]]);
-    const nt = addTile(t.x+dx, t.y+dy, type, 1);
-    if (nt) added.push(nt);
-  }
-
-  /* densify, favouring blocks that already have a station: growth follows
-     transit, the way it does in a real city */
-  const ups = Math.min(2 + Math.floor(week / 2), 10);
-  const near = new Set();
-  for (const s of G.stations)
-    for (let dy = -G.coverR; dy <= G.coverR; dy++)
-      for (let dx = -G.coverR; dx <= G.coverR; dx++) near.add(key(s.x+dx, s.y+dy));
-  const canGrow = cells.filter(t => t.lvl < (MAXLVL[t.type] || 1) && t.type !== "PARK");
-  const served = canGrow.filter(t => near.has(key(t.x,t.y)));
-  for (let i = 0; i < ups * 6 && upgraded.length < ups; i++){
-    const pool = (served.length && rnd() < 0.7) ? served : canGrow;
-    if (!pool.length) break;
-    const t = pickOne(pool);
-    if (t.lvl < (MAXLVL[t.type] || 1)){ t.lvl++; upgraded.push(t); }
-  }
-  return { added, upgraded };
-}
-</script>
-<script>
-"use strict";
-/* ============================================================================
-   RENDER — the city collapses into ~40 <path> nodes, one per (depth, colour),
-   instead of ~2000 rects. Depth is the rect's index inside its sprite, so
-   every sprite's base paints before any sprite's detail.
-   ========================================================================== */
-const $ = id => document.getElementById(id);
-const svgEl = $("map");
-const LAY = { ground:$("gGround"), city:$("gCity"), cover:$("gCover"),
-              lines:$("gLines"), draft:$("gDraft"), trains:$("gTrains"),
-              stations:$("gStations"), fx:$("gFx") };
-
-const R = (x,y,w,h) => "M" + x + " " + y + "h" + w + "v" + h + "h" + (-w) + "z";
-function push(b,c,x,y,w,h,depth){
-  const d = depth || 0;
-  (b[d] = b[d] || {});
-  (b[d][c] = b[d][c] || []).push(R(x,y,w,h));
-}
-function bucketPaths(b){
-  let out = "";
-  for (const d of Object.keys(b).map(Number).sort((p,q) => p-q))
-    for (const c in b[d]) out += '<path fill="' + PAL[c] + '" d="' + b[d][c].join("") + '"/>';
+/* ---- growth: pressure accumulates where service is good ---- */
+function fringeCells(){
+  const out = [];
+  for (const t of G.tiles.values())
+    for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const x = t.x+dx, y = t.y+dy;
+      if (inB(x,y) && !isWater(x,y) && !G.tiles.has(key(x,y))) out.push([x,y]);
+    }
   return out;
 }
-const rects = (list, ox, oy) => {
-  let byCol = {};
-  for (const s of list) (byCol[s[0]] = byCol[s[0]] || []).push(R(ox+s[1], oy+s[2], s[3], s[4]));
-  let out = "";
-  for (const c in byCol) out += '<path fill="' + PAL[c] + '" d="' + byCol[c].join("") + '"/>';
-  return out;
-};
-
-function renderWorld(){
-  const gb = {}, cb = {};
-  for (const k of G.water){
-    const x = (k % MAPW) * T, y = Math.floor(k / MAPW) * T;
-    push(gb,"blue",x,y,T,T,0);
-    push(gb,"navy",x+2,y+4,5,1,1); push(gb,"navy",x+9,y+9,4,1,1); push(gb,"navy",x+5,y+13,4,1,1);
-  }
-  for (const t of G.tiles.values()) push(gb,"slate", t.x*T+1, t.y*T+1, T-2, T-2, 0);
-  LAY.ground.innerHTML = bucketPaths(gb);
-
-  for (const t of G.tiles.values()){
-    const set = SPRITES[t.type];
-    const spr = set[Math.min(t.lvl, set.length) - 1];
-    const x = t.x*T, y = t.y*T;
-    for (let i = 0; i < spr.length; i++)
-      push(cb, spr[i][0], x + spr[i][1], y + spr[i][2], spr[i][3], spr[i][4], i + 1);
-  }
-  LAY.city.innerHTML = bucketPaths(cb);
-}
-
-function coveredSet(){
-  const cov = new Set();
-  for (const s of G.stations)
-    for (let dy = -G.coverR; dy <= G.coverR; dy++)
-      for (let dx = -G.coverR; dx <= G.coverR; dx++){
-        const x = s.x + dx, y = s.y + dy;
-        if (inBounds(x,y)) cov.add(key(x,y));
-      }
-  return cov;
-}
-function renderCoverage(){
-  const cov = coveredSet(), b = {};
-  const dash = (hx,hy,horiz) => {
-    for (let o = 0; o < T; o += 4)
-      horiz ? push(b,"lime",hx+o,hy,2,1,0) : push(b,"lime",hx,hy+o,1,2,0);
-  };
-  for (const k of cov){
-    const x = (k % MAPW), y = Math.floor(k / MAPW), px = x*T, py = y*T;
-    if (!cov.has(key(x,y-1))) dash(px,py,true);
-    if (!cov.has(key(x,y+1))) dash(px,py+T-1,true);
-    if (!cov.has(key(x-1,y))) dash(px,py,false);
-    if (!cov.has(key(x+1,y))) dash(px+T-1,py,false);
-  }
-  LAY.cover.innerHTML = bucketPaths(b);
-}
-
-/* ---- lines ---- */
-function linePoints(sts){
-  const pts = [];
-  for (let i = 0; i < sts.length; i++){
-    const ax = sts[i].x*T + T/2, ay = sts[i].y*T + T/2;
-    if (!i){ pts.push([ax,ay]); continue; }
-    const p = pts[pts.length-1];
-    const dx = ax - p[0], dy = ay - p[1];
-    const d = Math.min(Math.abs(dx), Math.abs(dy));
-    if (d > 0) pts.push([p[0] + Math.sign(dx)*d, p[1] + Math.sign(dy)*d]);
-    pts.push([ax,ay]);
-  }
-  return pts;
-}
-function lineOffset(i){ return [ (i % 3 - 1) * 1.6, (Math.floor(i/3) % 3 - 1) * 1.6 ]; }
-const ptsAttr = p => p.map(q => q[0] + "," + q[1]).join(" ");
-const poly = (pts, col, w, dash) =>
-  '<polyline class="ln" fill="none" stroke-linejoin="round" stroke-linecap="round" points="'
-  + ptsAttr(pts) + '" stroke="' + col + '" stroke-width="' + w + '"'
-  + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
-
-function renderLines(){
-  let out = "";
-  G.lines.forEach((L,i) => {
-    const sts = L.stops.map(id => stationById(id)).filter(Boolean);
-    if (sts.length < 2){ L._pts = null; return; }
-    const [ox,oy] = lineOffset(i);
-    const pts = linePoints(sts).map(p => [p[0]+ox, p[1]+oy]);
-    L._pts = pts;
-    out += poly(pts, PAL.ink, 3.6) + poly(pts, PAL[L.color], 2.2);
-  });
-  LAY.lines.innerHTML = out;
-}
-function renderDraft(){
-  if (!UI.draft){ LAY.draft.innerHTML = ""; return; }
-  const sts = UI.draft.stops.map(id => stationById(id)).filter(Boolean);
-  let out = "";
-  if (sts.length > 1){
-    const pts = linePoints(sts);
-    out += poly(pts, PAL.ink, 3.6) + poly(pts, PAL[UI.draft.color], 2.2, "4 3");
-  }
-  sts.forEach((s,i) => {
-    const cx = s.x*T + T/2, cy = s.y*T + T/2;
-    out += '<path fill="' + PAL.ink + '" d="' + R(cx-7,cy-7,14,14) + '"/>'
-         + '<path fill="' + PAL[UI.draft.color] + '" d="' + R(cx-6,cy-6,12,12) + '"/>'
-         + '<text x="' + cx + '" y="' + (cy+3.5) + '" text-anchor="middle" fill="' + PAL.ink
-         + '" font-size="9" font-family="monospace" font-weight="700">' + (i+1) + '</text>';
-  });
-  LAY.draft.innerHTML = out;
-}
-
-/* ---- stations: a transit roundel. It is the thing you look at most, so it
-       gets a real icon rather than a white box. The bar across the middle
-       carries the crowding state. ---- */
-function stationSprite(ring, interchange){
-  /* The transit-map convention: a small white dot, ringed. It has to stay
-     small — at 14px wide it covered the whole block and the city vanished
-     underneath. Interchanges get a filled core so hubs are findable. */
-  const a = [
-    [ring,3,4,10,8],[ring,4,3,8,10],
-    ["bone",4,5,8,6],["bone",5,4,6,8]
-  ];
-  if (interchange) a.push([ring,6,6,4,4]);
-  return a;
-}
-function renderStations(){
-  let out = "";
-  for (const s of G.stations){
-    const load = s.load || 0;
-    const ring = load > 1.05 ? "red" : load > 0.85 ? "orange" : "ink";
-    const x = s.x*T, y = s.y*T;
-    if (UI.selStation === s.id){
-      out += '<path fill="' + PAL.yellow + '" d="'
-           + R(x+1,y+1,T-2,1) + R(x+1,y+T-2,T-2,1)
-           + R(x+1,y+1,1,T-2) + R(x+T-2,y+1,1,T-2) + '"/>';
+/* Development follows the rails. Sampling the fringe uniformly filled the map
+   with an even wallpaper of one-storey blocks; weighting toward stations makes
+   the city grow along the lines you actually built. */
+function pickFringe(fr){
+  let best = null, bs = -1;
+  for (let k = 0; k < 6; k++){
+    const c = fr[ri(fr.length)];
+    let d = 99;
+    for (const s of G.stations){
+      if (!s.served) continue;
+      d = Math.min(d, Math.abs(s.x-c[0]) + Math.abs(s.y-c[1]));
     }
-    out += rects(stationSprite(ring, linesAt(s.id).length > 1), x, y);
-  }
-  LAY.stations.innerHTML = out;
-}
-
-function renderFx(){
-  const b = {};
-  const worst = [...G.unserved.entries()].filter(e => e[1] >= 15)
-                  .sort((p,q) => q[1] - p[1]).slice(0,8);
-  for (const [k] of worst){
-    const tx = k % MAPW, ty = Math.floor(k / MAPW);
-    if (G.stations.some(s => s.x === tx && s.y === ty)) continue;
-    const x = tx*T, y = ty*T;
-    push(b,"ink",x+9,y+1,6,9,0);
-    push(b,"red",x+10,y+2,4,4,1);
-    push(b,"red",x+10,y+7,4,2,1);
-  }
-  LAY.fx.innerHTML = bucketPaths(b);
-}
-
-/* ---- trains: a real carriage, and it turns to face the way it is going ---- */
-function lineLengths(pts){
-  const seg = []; let total = 0;
-  for (let i = 1; i < pts.length; i++){
-    const d = Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
-    seg.push(d); total += d;
-  }
-  return { seg, total };
-}
-function pointAt(pts, len, dist){
-  let d = dist;
-  for (let i = 0; i < len.seg.length; i++){
-    if (d <= len.seg[i]){
-      const f = len.seg[i] ? d / len.seg[i] : 0;
-      return [pts[i][0] + (pts[i+1][0]-pts[i][0])*f, pts[i][1] + (pts[i+1][1]-pts[i][1])*f,
-              pts[i+1][0]-pts[i][0], pts[i+1][1]-pts[i][1]];
-    }
-    d -= len.seg[i];
-  }
-  const n = pts.length - 1;
-  return [pts[n][0], pts[n][1], pts[n][0]-pts[n-1][0], pts[n][1]-pts[n-1][1]];
-}
-const TRAINS = [];
-function rebuildTrains(){
-  TRAINS.length = 0;
-  G.lines.forEach(L => {
-    if (!L._pts || L._pts.length < 2 || L.trains < 1) return;
-    const len = lineLengths(L._pts);
-    if (!len.total) return;
-    for (let i = 0; i < L.trains; i++)
-      TRAINS.push({ L, len, d: (len.total * i) / L.trains, dir: 1,
-                    sp: 24 + L.cars * 1.4, col: PAL[L.color] });
-  });
-  LAY.trains.innerHTML = TRAINS.map(() => '<g><path/><path/><path/></g>').join("");
-}
-/* one source of truth for the carriage shape, so it can be drawn and tested
-   without a live DOM */
-function trainPaths(x, y, horiz){
-  return horiz
-    ? [ R(x-8,y-5,16,10), R(x-7,y-4,14,8),
-        R(x-5,y-2,3,3) + R(x-1,y-2,3,3) + R(x+3,y-2,2,3) ]
-    : [ R(x-5,y-8,10,16), R(x-4,y-7,8,14),
-        R(x-2,y-5,3,3) + R(x-2,y-1,3,3) + R(x-2,y+3,3,2) ];
-}
-function animTrains(dt){
-  const nodes = LAY.trains.children;
-  for (let i = 0; i < TRAINS.length; i++){
-    const t = TRAINS[i], n = nodes[i];
-    if (!n) continue;
-    t.d += t.sp * dt * t.dir;
-    if (t.d > t.len.total){ t.d = t.len.total; t.dir = -1; }
-    else if (t.d < 0){ t.d = 0; t.dir = 1; }
-    const p = pointAt(t.L._pts, t.len, t.d);
-    const x = Math.round(p[0]), y = Math.round(p[1]);
-    const d = trainPaths(x, y, Math.abs(p[2]) >= Math.abs(p[3]));
-    n.children[0].setAttribute("d", d[0]); n.children[0].setAttribute("fill", PAL.ink);
-    n.children[1].setAttribute("d", d[1]); n.children[1].setAttribute("fill", t.col);
-    n.children[2].setAttribute("d", d[2]); n.children[2].setAttribute("fill", PAL.ink);
-  }
-}
-
-function renderAll(){
-  renderWorld(); renderCoverage(); renderLines(); renderDraft();
-  renderStations(); renderFx(); rebuildTrains();
-}
-</script>
-<script>
-"use strict";
-/* ============================================================================
-   SIMULATION
-   Each week people try to get from home to work. A trip rides only if a station
-   covers BOTH ends and a route connects them, and riders abandon a route that
-   wanders. Load lands on individual segments, so one overloaded hop is enough
-   to strand people — which is what makes buying trains matter.
-   ========================================================================== */
-const HOP_MIN = 4;
-const WEEK_MIN = 85;
-const TURNAROUND = 16;
-const PATIENCE = 5.0;
-const PATIENCE_K = 1.2;
-const TRANSFER = 2.5;
-
-const stIndex = new Map();
-function reindex(){ stIndex.clear(); for (const s of G.stations) stIndex.set(s.id, s); }
-function stationById(id){ return stIndex.get(id); }
-function totalTrains(){ return G.lines.reduce((n,L) => n + L.trains, 0); }
-function linesAt(id){ return G.lines.filter(L => L.stops.indexOf(id) >= 0); }
-
-function lineCapacity(L){
-  const hops = L.stops.length - 1;
-  if (hops < 1 || L.trains < 1 || L.cars < 1) return 0;
-  const cycles = WEEK_MIN / (TURNAROUND + 2 * hops * HOP_MIN);
-  return Math.round(L.trains * L.cars * G.carCap * cycles);
-}
-
-function serveStation(t){
-  let best = null, bd = 99;
-  for (const s of G.stations){
-    const d = Math.max(Math.abs(s.x - t.x), Math.abs(s.y - t.y));
-    if (d <= G.coverR && d < bd){ bd = d; best = s; }
+    const score = 1 / (1 + d * 0.35) + rnd() * 0.15;
+    if (score > bs){ bs = score; best = c; }
   }
   return best;
 }
 
-function generateTrips(){
-  const homes = [], jobs = [];
-  for (const t of G.tiles.values()){
-    if (homePop(t) > 0) homes.push(t);
-    if (jobCount(t) > 0) jobs.push(t);
+/* Service for one block, 0..1. A station only counts if trains actually call
+   at it — otherwise you could sprinkle stations, run nothing, and still boom.
+   Everything is then scaled by how well the network as a whole is coping. */
+const ROAD_BASE = 0.28;          /* you can always drive; it just does not scale */
+function blockService(t){
+  let best = ROAD_BASE;
+  for (const s of G.stations){
+    if (!s.served) continue;
+    const d = Math.max(Math.abs(s.x-t.x), Math.abs(s.y-t.y));
+    if (d > s.reach) continue;
+    const near = 1 - (d / (s.reach + 1)) * 0.35;
+    const strain = s.cap > 0 ? Math.min(1, s.total / s.cap) : 1;
+    const q = near * (1 - 0.75 * strain * strain);
+    if (q > best) best = q;
   }
-  const trips = [];
-  let total = 0;
-  for (const h of homes){
-    const pop = homePop(h);
-    if (!jobs.length) break;
-    /* gravity weighted hard toward big employment centres, so commuters
-       converge on downtown and corridors actually crowd */
-    const cand = jobs.map(j => ({ j, d: Math.abs(j.x-h.x) + Math.abs(j.y-h.y) }))
-                     .sort((a,b) => a.d - b.d).slice(0,14);
-    let wsum = 0;
-    for (const c of cand){ c.w = Math.pow(jobCount(c.j), 1.6) / (1 + c.d * 0.22); wsum += c.w; }
-    if (wsum <= 0) continue;
-    for (const c of cand){
-      const n = Math.round(pop * c.w / wsum);
-      if (n > 0){ trips.push({ from:h, to:c.j, n }); total += n; }
+  const health = 0.15 + 0.85 * G.stats.onTime;
+  return best * health;
+}
+
+function growthTick(){
+  /* runs once per game day */
+  const sat = G.stats.onTime;
+  let up = 0, down = 0, born = 0, died = 0;
+  const cells = [...G.tiles.values()];
+
+  for (const t of cells){
+    if (t.use === "P") continue;
+    const s = blockService(t);
+    t.want += (s - 0.30) * 0.45;
+    const max = MAXL[t.use];
+    if (t.want >= 1 && t.lvl < max){ t.lvl++; t.want = 0; up++; }
+    else if (t.want >= 1){ t.want = 1; }
+    else if (t.want <= -1){
+      if (t.lvl > 1){ t.lvl--; t.want = 0; down++; }
+      /* a neglected city loses its towers, but it does not evaporate — there
+         has to be something left to rebuild around */
+      else if (G.tiles.size > 45 && t.want <= -2.4){ G.tiles.delete(key(t.x,t.y)); died++; }
+      else t.want = Math.max(t.want, -3);   /* keep decaying toward removal */
     }
   }
-  return { trips, total };
-}
 
-const nk = (s,l) => s + "@" + l;
-function buildGraph(){
-  const adj = new Map(), at = new Map();
-  const link = (a,b,cost,seg) => { if (!adj.has(a)) adj.set(a,[]); adj.get(a).push({to:b,cost,seg}); };
-  for (const L of G.lines){
-    if (L.stops.length < 2 || L.trains < 1 || L.cars < 1) continue;
-    for (const s of L.stops){
-      if (!at.has(s)) at.set(s,[]);
-      if (at.get(s).indexOf(L.id) < 0) at.get(s).push(L.id);
-      if (!adj.has(nk(s,L.id))) adj.set(nk(s,L.id), []);
-    }
-    for (let i = 0; i < L.stops.length - 1; i++){
-      const a = nk(L.stops[i],L.id), b = nk(L.stops[i+1],L.id), seg = { line:L.id, i };
-      link(a,b,1,seg); link(b,a,1,seg);
-    }
-  }
-  for (const [s,ls] of at)
-    for (const a of ls) for (const b of ls) if (a !== b) link(nk(s,a), nk(s,b), TRANSFER, null);
-  return { adj, at };
-}
-function dijkstra(graph, origin){
-  const start = graph.at.get(origin);
-  if (!start) return null;
-  const dist = new Map(), prev = new Map(), q = [];
-  for (const l of start){ const n = nk(origin,l); dist.set(n,0); q.push([0,n]); }
-  while (q.length){
-    let bi = 0;
-    for (let i = 1; i < q.length; i++) if (q[i][0] < q[bi][0]) bi = i;
-    const [d,n] = q.splice(bi,1)[0];
-    if (d > (dist.get(n) ?? Infinity)) continue;
-    const edges = graph.adj.get(n);
-    if (!edges) continue;
-    for (const e of edges){
-      const nd = d + e.cost;
-      if (nd < (dist.get(e.to) ?? Infinity)){
-        dist.set(e.to, nd); prev.set(e.to, { from:n, seg:e.seg }); q.push([nd, e.to]);
-      }
+  /* new blocks appear only while the city is thriving */
+  /* a bigger city adds more blocks per day, the way real ones do */
+  const budget = G.tiles.size < 2400
+    ? Math.round(Math.sqrt(G.tiles.size) * (sat - 0.35) * 0.6) : 0;
+  if (budget > 0){
+    const fr = fringeCells();
+    for (let i = 0; i < budget && fr.length; i++){
+      const [x,y] = pickFringe(fr);
+      let use = "R";
+      const r = rnd();
+      const nearC = [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy]) => {
+        const n = tileAt(x+dx,y+dy); return n && n.use === "C";
+      });
+      if (r < 0.16) use = "P";
+      else if (nearC && r < 0.55) use = "C";
+      else if (r > 0.93) use = "I";
+      if (addTile(x,y,use,1)) born++;
     }
   }
-  return { dist, prev };
-}
-
-function routeAll(trips){
-  const graph = buildGraph(), cache = new Map(), loads = new Map();
-  for (const L of G.lines) loads.set(L.id, new Array(Math.max(0,L.stops.length-1)).fill(0));
-  const unservedTile = new Map();
-  let served = 0, unserved = 0, walked = 0, transfers = 0, slow = 0, nocov = 0, noroute = 0;
-  const miss = (tr,n) => {
-    unserved += tr.n;
-    const k = key(tr.from.x, tr.from.y);
-    unservedTile.set(k, (unservedTile.get(k) || 0) + tr.n);
-  };
-  for (const tr of trips){
-    const o = serveStation(tr.from), d = serveStation(tr.to);
-    if (!o || !d){ nocov += tr.n; miss(tr); continue; }
-    if (o.id === d.id){ served += tr.n; walked += tr.n; continue; }
-    if (!cache.has(o.id)) cache.set(o.id, dijkstra(graph, o.id));
-    const res = cache.get(o.id);
-    let bestNode = null, bestD = Infinity;
-    if (res) for (const l of (graph.at.get(d.id) || [])){
-      const dd = res.dist.get(nk(d.id,l));
-      if (dd !== undefined && dd < bestD){ bestD = dd; bestNode = nk(d.id,l); }
-    }
-    const limit = PATIENCE + (Math.abs(o.x-d.x) + Math.abs(o.y-d.y)) * PATIENCE_K;
-    if (!bestNode || bestD > limit){
-      if (bestNode) slow += tr.n; else noroute += tr.n;
-      miss(tr); continue;
-    }
-    served += tr.n;
-    let cur = bestNode;
-    while (res.prev.has(cur)){
-      const p = res.prev.get(cur);
-      if (p.seg){
-        const arr = loads.get(p.seg.line);
-        if (arr && p.seg.i < arr.length) arr[p.seg.i] += tr.n;
-      } else transfers += tr.n;
-      cur = p.from;
-    }
-  }
-  let overload = 0, worst = null;
-  for (const L of G.lines){
-    const cap = lineCapacity(L), arr = loads.get(L.id) || [];
-    L._cap = cap; L._peak = 0;
-    let bottleneck = 0;
-    for (let i = 0; i < arr.length; i++){
-      if (arr[i] > L._peak) L._peak = arr[i];
-      const ex = arr[i] - cap;
-      if (ex > bottleneck) bottleneck = ex;
-      if (ex > 0 && (!worst || ex > worst.ex)) worst = { line:L, ex, i };
-    }
-    overload += bottleneck;
-    L._ratio = cap > 0 ? L._peak / cap : (L._peak > 0 ? 9 : 0);
-  }
-  const spill = Math.min(overload, served);
-  served -= spill; unserved += spill;
-  for (const s of G.stations) s.load = 0;
-  for (const L of G.lines) for (const id of L.stops){
-    const s = stationById(id);
-    if (s) s.load = Math.max(s.load, L._ratio || 0);
-  }
-  return { served, unserved, walked, transfers, slow, nocov, noroute,
-           overload, spill, worst, loads, unservedTile };
-}
-
-/* ---- economy ---- */
-const COST = {
-  station: () => 45 + 9 * G.stations.length,
-  line:    () => 90 + 45 * G.lines.length,
-  stop:    () => 30,
-  train:   () => 80 + 14 * totalTrains(),
-  car:     () => 50,
-  cap:     () => [280, 650, 1400][capLevel()] || 0,
-  cover:   () => 1100,
-  move:    () => Math.round((45 + 9 * G.stations.length) * 0.35),
-  refund:  () => Math.round((45 + 9 * Math.max(0, G.stations.length - 1)) * 0.5)
-};
-function capLevel(){ return G.carCap >= 80 ? 3 : G.carCap >= 60 ? 2 : G.carCap >= 50 ? 1 : 0; }
-const CAP_STEPS = [40,50,60,80];
-
-/* ---- station edits: placing one is not a life sentence ---- */
-function removeStation(id){
-  const i = G.stations.findIndex(s => s.id === id);
-  if (i < 0) return { ok:false };
-  G.stations.splice(i,1);
-  reindex();
-  const closed = [];
-  for (let j = G.lines.length - 1; j >= 0; j--){
-    const L = G.lines[j];
-    const before = L.stops.length;
-    L.stops = L.stops.filter(s => s !== id);
-    if (L.stops.length < 2 && before >= 2){ closed.push(L.name); G.lines.splice(j,1); }
-  }
-  return { ok:true, closed };
-}
-function moveStation(id, x, y){
-  const s = stationById(id);
-  if (!s) return false;
-  s.x = x; s.y = y;
-  return true;
-}
-
-function runWeek(){
-  const { trips, total } = generateTrips();
-  const res = routeAll(trips);
-  const serveRate = total > 0 ? res.served / total : 1;
-  const crowd = total > 0 ? res.spill / total : 0;
-
-  let delta = Math.round((serveRate - 0.72) * 46 - crowd * 30);
-  delta = Math.max(-25, Math.min(10, delta));
-  const before = G.approval;
-  G.approval = Math.max(0, Math.min(100, G.approval + delta));
-
-  const fare  = Math.round(res.served * 0.13);
-  const grant = Math.round(34 + G.week * 3.0 + G.approval * 0.55);
-  const income = fare + grant;
-  G.cash += income;
-
-  G.unserved = res.unservedTile;
-  const growth = G.approval > 0 ? growCity(G.week) : { added:[], upgraded:[] };
-
-  const report = {
-    week:G.week, total, served:res.served, unserved:res.unserved,
-    overload:res.overload, spill:res.spill, slow:res.slow,
-    nocov:res.nocov, noroute:res.noroute,
-    serveRate, crowd, delta, before, after:G.approval,
-    fare, grant, income, worst:res.worst,
-    grew:growth.added.length, upped:growth.upgraded.length
-  };
-  G.history.push({ w:G.week, rate:serveRate, appr:G.approval });
-  if (G.history.length > 80) G.history.shift();
-  G.lastReport = report;
-  G.week++;
-  if (G.week - 1 > G.best) G.best = G.week - 1;
-  if (G.approval <= 0) G.over = true;
-  return report;
-}
-
-/* ---- persistence ---- */
-const SAVE_KEY = "metrocity.v2";
-function saveGame(){
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
-      week:G.week, cash:G.cash, approval:G.approval, carCap:G.carCap, coverR:G.coverR,
-      seed:rngSeed, best:G.best, over:G.over,
-      tiles:[...G.tiles.values()].map(t => [t.x,t.y,t.type,t.lvl]),
-      water:[...G.water], nextSid:G.nextSid, nextLid:G.nextLid,
-      stations:G.stations.map(s => [s.id,s.x,s.y]),
-      lines:G.lines.map(L => [L.id,L.color,L.name,L.trains,L.cars,L.stops])
-    }));
-  } catch (e) {}
-}
-function loadGame(){
-  let raw = null;
-  try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
-  if (!raw) return false;
-  try {
-    const d = JSON.parse(raw);
-    G.week=d.week; G.cash=d.cash; G.approval=d.approval; G.carCap=d.carCap;
-    G.coverR=d.coverR; G.best=d.best||0; G.over=!!d.over;
-    srand(d.seed || 1);
-    G.tiles = new Map(); G.water = new Set(d.water);
-    for (const [x,y,type,lvl] of d.tiles) G.tiles.set(key(x,y), {x,y,type,lvl});
-    G.nextSid=d.nextSid; G.nextLid=d.nextLid;
-    G.stations = d.stations.map(([id,x,y]) => ({id,x,y,load:0}));
-    G.lines = d.lines.map(([id,color,name,trains,cars,stops]) => ({id,color,name,trains,cars,stops}));
-    G.unserved = new Map();
-    reindex();
-    return true;
-  } catch (e) { return false; }
-}
-function newGame(seed){
-  srand(seed || (Date.now() >>> 0));
-  G.week=1; G.cash=620; G.approval=100; G.carCap=40; G.coverR=1;
-  G.tiles=new Map(); G.water=new Set(); G.stations=[]; G.lines=[];
-  G.nextSid=1; G.nextLid=0; G.over=false; G.lastReport=null;
-  G.unserved=new Map(); G.history=[];
-  carveRiver(); seedCity(); reindex();
+  recount();
+  return { up, down, born, died };
 }
 </script>
 <script>
 "use strict";
 /* ============================================================================
-   UI + TOUCH.  One finger pans, two pinch, a short tap acts.
-   The sheet is an overlay that stays shut until you need it, so the map keeps
-   the screen.
+   THE SIM — continuous, not turn based.
+   Demand rises and falls on a daily curve and reverses direction between the
+   morning and evening peaks, so the network you need at 08:00 is not the one
+   you need at 17:00. Watching a platform fill is the whole game.
    ========================================================================== */
-const UI = { tool:null, draft:null, selStation:null, moving:false };
-const fmt = n => Math.round(n).toLocaleString("en-US");
-const money = n => "$" + fmt(n);
 
-/* the real fix for "the bottom is cut off": track the visual viewport */
+/* share of residents starting a transit trip in an hour, at full peak */
+const TRIP = 0.10;
+const CAR_CAP = 180;
+const FARE = 2.40;
+const STATION_CAP = [700, 1500, 2800];
+const STATION_REACH = [1, 1, 2];
+const TRAIN_SPEED = 620;          /* world units per game hour */
+const DWELL = 0.022;              /* game hours standing at a platform */
+const XFER_PENALTY = 0.10;        /* game hours of perceived cost per change */
+const DAY_NAMES = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+/* hour-of-day multipliers: two peaks, a dead night */
+const CURVE = [.04,.03,.03,.04,.09,.22,.58,1.00,.95,.60,.42,.40,
+               .48,.45,.42,.56,.86,1.00,.80,.52,.36,.26,.16,.08];
+/* share of those trips that run home -> work (the rest run work -> home) */
+const BIAS  = [.50,.50,.50,.50,.62,.78,.90,.93,.88,.76,.60,.50,
+               .45,.42,.40,.34,.22,.12,.15,.26,.36,.43,.47,.50];
+const weekendFactor = day => (day % 7 >= 5 ? 0.55 : 1);
+
+const COST = {
+  station:      () => 8000 + 900 * G.stations.length,
+  stationUp:    lvl => [0, 12000, 26000][lvl] || 0,
+  line:         () => 16000 + 4000 * G.lines.length,
+  train:        () => 14000,
+  car:          () => 3400,
+  trainRefund:  () => 7000,
+  carRefund:    () => 1500,
+  opexTrain:    900,      /* per game day */
+  opexStation:  350,
+  opexLineKm:   26
+};
+
+const stIx = new Map();
+function reindex(){ stIx.clear(); for (const s of G.stations) stIx.set(s.id, s); }
+const stationById = id => stIx.get(id);
+const lineById = id => G.lines.find(L => L.id === id);
+const totalTrains = () => G.lines.reduce((n,L) => n + L.trains.length, 0);
+
+function makeStation(x,y){
+  return { id:G.nextSid++, x, y, lvl:1, cap:STATION_CAP[0], reach:STATION_REACH[0],
+           waiting:new Map(), total:0, res:0, jobs:0, strain:0, flash:0 };
+}
+function makeTrain(L){
+  return { at:0, to:Math.min(1, L.stops.length-1), u:0, dir:1, dwell:0,
+           load:new Map(), n:0 };
+}
+function trainCap(L){ return L.cars * CAR_CAP; }
+
+/* Trains added to a line all started at stop 0, so they ran nose to tail and
+   arrived as one lump — the headway the panel quoted was fiction. Space them
+   evenly around the out-and-back cycle instead. */
+function placeTrainAtPhase(L, tr, phase){
+  const n = L.stops.length;
+  if (n < 2) return;
+  const hops = [];
+  let total = 0;
+  for (let i = 0; i < n-1; i++){ const h = hopTime(L,i,i+1); hops.push(h); total += h; }
+  if (total <= 0) return;
+  let d = phase * total * 2, dir = 1, i = 0;
+  if (d > total){ d -= total; dir = -1; i = n-1; }
+  for (let guard = 0; guard < n*2 + 4; guard++){
+    const idx = dir > 0 ? i : i-1;
+    const h = hops[idx];
+    if (h === undefined) break;
+    if (d <= h){ tr.at = i; tr.to = i + dir; tr.u = h ? d/h : 0; tr.dir = dir; return; }
+    d -= h; i += dir;
+  }
+  tr.at = dir > 0 ? n-1 : 0;
+  tr.to = Math.max(0, Math.min(n-1, tr.at - dir));
+  tr.u = 0; tr.dir = -dir;
+}
+function respaceTrains(L){
+  for (let k = 0; k < L.trains.length; k++)
+    placeTrainAtPhase(L, L.trains[k], k / L.trains.length);
+}
+
+/* ---- catchment: how many people and jobs each station can actually reach ---- */
+function recomputeCatchment(){
+  for (const s of G.stations){ s.res = 0; s.jobs = 0; }
+  for (const t of G.tiles.values()){
+    const p = tPop(t), j = tJobs(t);
+    if (!p && !j) continue;
+    let best = null, bd = 99;
+    for (const s of G.stations){
+      const d = Math.max(Math.abs(s.x-t.x), Math.abs(s.y-t.y));
+      if (d <= s.reach && d < bd){ bd = d; best = s; }
+    }
+    if (best){ best.res += p; best.jobs += j; }
+  }
+}
+
+/* ---- routing over (station,line) so a change of train costs something ---- */
+const nkey = (s,l) => s + "|" + l;
+function hopTime(L, i, j){
+  const a = stationById(L.stops[i]), b = stationById(L.stops[j]);
+  if (!a || !b) return 1;
+  return Math.hypot(a.x-b.x, a.y-b.y) * T / TRAIN_SPEED + DWELL;
+}
+function rebuildRouting(){
+  const adj = new Map(), at = new Map();
+  const link = (a,b,w,meta) => { if (!adj.has(a)) adj.set(a,[]); adj.get(a).push({to:b,w,meta}); };
+  for (const L of G.lines){
+    if (L.stops.length < 2 || !L.trains.length) continue;
+    for (const sid of L.stops){
+      if (!at.has(sid)) at.set(sid, []);
+      if (at.get(sid).indexOf(L.id) < 0) at.get(sid).push(L.id);
+      if (!adj.has(nkey(sid,L.id))) adj.set(nkey(sid,L.id), []);
+    }
+    for (let i = 0; i < L.stops.length-1; i++){
+      const a = L.stops[i], b = L.stops[i+1], w = hopTime(L,i,i+1);
+      link(nkey(a,L.id), nkey(b,L.id), w, {line:L.id, to:b});
+      link(nkey(b,L.id), nkey(a,L.id), w, {line:L.id, to:a});
+    }
+  }
+  for (const [sid,ls] of at)
+    for (const a of ls) for (const b of ls)
+      if (a !== b) link(nkey(sid,a), nkey(sid,b), XFER_PENALTY, null);
+
+  for (const s of G.stations)
+    s.served = G.lines.some(L => L.trains.length > 0 && L.stops.indexOf(s.id) >= 0);
+  G.nextHop = new Map();
+  G.reach = new Map();
+  for (const origin of G.stations){
+    const ls = at.get(origin.id);
+    if (!ls) continue;
+    const dist = new Map(), first = new Map(), q = [];
+    for (const l of ls){
+      const n = nkey(origin.id,l);
+      dist.set(n,0); first.set(n,null); q.push([0,n]);
+    }
+    while (q.length){
+      let bi = 0;
+      for (let i = 1; i < q.length; i++) if (q[i][0] < q[bi][0]) bi = i;
+      const [d,n] = q.splice(bi,1)[0];
+      if (d > (dist.get(n) ?? Infinity)) continue;
+      for (const e of (adj.get(n) || [])){
+        const nd = d + e.w;
+        if (nd < (dist.get(e.to) ?? Infinity)){
+          dist.set(e.to, nd);
+          first.set(e.to, first.get(n) || e.meta || null);
+          q.push([nd, e.to]);
+        }
+      }
+    }
+    for (const target of G.stations){
+      if (target.id === origin.id) continue;
+      let bd = Infinity, bf = null;
+      for (const l of (at.get(target.id) || [])){
+        const n = nkey(target.id,l), d = dist.get(n);
+        if (d !== undefined && d < bd){ bd = d; bf = first.get(n); }
+      }
+      if (bf){
+        G.nextHop.set(origin.id + ">" + target.id, bf);
+        G.reach.set(origin.id + ">" + target.id, bd);
+      }
+    }
+  }
+}
+const nextHop = (from,to) => G.nextHop && G.nextHop.get(from + ">" + to);
+
+/* ---- demand ---- */
+let spawnAcc = 0;
+function spawnPassengers(dh){
+  const hour = Math.floor(G.hour) % 24;
+  const curve = CURVE[hour] * weekendFactor(G.day);
+  const bias = BIAS[hour];
+  if (curve <= 0) return;
+  const outW = [], list = G.stations;
+  let totalW = 0;
+  for (const s of list){
+    const w = bias * s.jobs + (1-bias) * s.res;
+    outW.push(w); totalW += w;
+  }
+  if (totalW <= 0) return;
+  for (let i = 0; i < list.length; i++){
+    const s = list[i];
+    const origin = bias * s.res + (1-bias) * s.jobs;
+    if (origin <= 0) continue;
+    let n = origin * TRIP * curve * dh;
+    if (n <= 0) continue;
+    /* spread across destinations by how much work (or home) each one holds */
+    let acc = 0, denom = totalW - outW[i];
+    if (denom <= 0) continue;
+    for (let j = 0; j < list.length; j++){
+      if (j === i || outW[j] <= 0) continue;
+      const d = list[j];
+      const share = n * (outW[j] / denom);
+      if (share <= 0) continue;
+      if (!nextHop(s.id, d.id)){
+        /* Demand with nowhere to ride used to vanish silently, so a city with
+           no trains at all reported perfect service and grew happily. It is a
+           failed trip and it counts against you. */
+        G.stats.spawned += share;
+        G.stats.balked += share; G.stats.dayBalked += share;
+        continue;
+      }
+      s.waiting.set(d.id, (s.waiting.get(d.id) || 0) + share);
+      acc += share;
+      G.stats.spawned += share;
+    }
+    s.total += acc;
+  }
+}
+
+/* platforms are finite: past capacity people stop waiting and go by road */
+function balkOverflow(){
+  for (const s of G.stations){
+    s.strain = s.cap > 0 ? s.total / s.cap : 0;
+    if (s.total <= s.cap) continue;
+    const over = s.total - s.cap;
+    const f = over / s.total;
+    for (const [d,v] of s.waiting) s.waiting.set(d, v * (1-f));
+    s.total -= over;
+    G.stats.balked += over; G.stats.dayBalked += over;
+    s.flash = Math.min(1, s.flash + over / Math.max(s.cap,1));
+  }
+}
+
+/* ---- trains ---- */
+function advanceTrains(dh){
+  for (const L of G.lines){
+    const n = L.stops.length;
+    if (n < 2) continue;
+    for (const tr of L.trains){
+      if (tr.dwell > 0){ tr.dwell -= dh; continue; }
+      const ht = hopTime(L, tr.at, tr.to) || 0.01;
+      tr.u += dh / ht;
+      while (tr.u >= 1){
+        tr.u -= 1;
+        tr.at = tr.to;
+        /* Turn the train round BEFORE working the platform. Deciding the
+           onward stop after boarding meant that at a terminus the "next stop"
+           clamped to the terminus itself, so nobody could ever board at the
+           end of a line — and on a two-stop line, nobody boarded anywhere. */
+        let nx = tr.at + tr.dir;
+        if (nx < 0 || nx >= n){ tr.dir *= -1; nx = tr.at + tr.dir; }
+        tr.to = Math.max(0, Math.min(n-1, nx));
+        serviceStop(L, tr);
+        tr.dwell = DWELL;
+        break;
+      }
+    }
+  }
+}
+function serviceStop(L, tr){
+  const here = L.stops[tr.at], s = stationById(here);
+  if (!s) return;
+  const nextId = L.stops[tr.to];        /* where this train goes next */
+
+  /* alight: arrived, or this is where they change */
+  for (const [dest, v] of [...tr.load]){
+    if (v <= 0){ tr.load.delete(dest); continue; }
+    if (dest === here){
+      tr.load.delete(dest); tr.n -= v;
+      G.stats.arrived += v; G.stats.dayArrived += v; G.stats.ridersToday += v;
+      G.money += v * FARE; G.ledger.fares += v * FARE;
+      continue;
+    }
+    const hop = nextHop(here, dest);
+    if (!hop || hop.line !== L.id || hop.to !== nextId){
+      tr.load.delete(dest); tr.n -= v;
+      s.waiting.set(dest, (s.waiting.get(dest) || 0) + v);
+      s.total += v;
+    }
+  }
+  /* board whoever this train is actually going to help */
+  let room = trainCap(L) - tr.n;
+  if (room <= 0) return;
+  const eligible = [];
+  let want = 0;
+  for (const [dest, v] of s.waiting){
+    if (v <= 0) continue;
+    const hop = nextHop(here, dest);
+    if (hop && hop.line === L.id && hop.to === nextId){ eligible.push([dest,v]); want += v; }
+  }
+  if (want <= 0) return;
+  const take = Math.min(room, want);
+  const f = take / want;
+  for (const [dest,v] of eligible){
+    const move = v * f;
+    s.waiting.set(dest, v - move);
+    if (v - move < 0.001) s.waiting.delete(dest);
+    tr.load.set(dest, (tr.load.get(dest) || 0) + move);
+  }
+  s.total -= take; tr.n += take;
+  G.stats.boarded += take;
+}
+
+/* ---- money ---- */
+function chargeOpex(dh){
+  const perDay = totalTrains() * COST.opexTrain
+    + G.stations.length * COST.opexStation
+    + G.lines.reduce((a,L) => a + lineLengthKm(L), 0) * COST.opexLineKm;
+  const c = perDay * (dh/24);
+  G.money -= c; G.ledger.opex += c;
+}
+function lineLengthKm(L){
+  let d = 0;
+  for (let i = 0; i < L.stops.length-1; i++){
+    const a = stationById(L.stops[i]), b = stationById(L.stops[i+1]);
+    if (a && b) d += Math.hypot(a.x-b.x, a.y-b.y);
+  }
+  return d;
+}
+
+/* ---- the clock ---- */
+function stepSim(dtReal){
+  if (G.speed === 0) return;
+  const dh = dtReal * G.speed;               /* one real second = one game hour */
+  const prevHour = G.hour;
+  G.hour += dh; G.t += dh;
+  spawnAcc += dh;
+  if (spawnAcc >= 0.06){ spawnPassengers(spawnAcc); spawnAcc = 0; }
+  advanceTrains(dh);
+  balkOverflow();
+  chargeOpex(dh);
+  for (const s of G.stations) if (s.flash > 0) s.flash = Math.max(0, s.flash - dtReal * 0.8);
+
+  if (G.hour >= 24){
+    G.hour -= 24; G.day++;
+    endOfDay();
+  }
+  return prevHour;
+}
+function endOfDay(){
+  const a = G.stats.dayArrived, b = G.stats.dayBalked;
+  const rate = (a + b) > 0 ? a / (a + b) : 1;
+  G.stats.onTime = G.stats.onTime * 0.5 + rate * 0.5;
+  G.hist.push({ d:G.day, rate, riders:G.stats.ridersToday, pop:G.pop, money:G.money });
+  if (G.hist.length > 120) G.hist.shift();
+  G.stats.dayArrived = 0; G.stats.dayBalked = 0; G.stats.ridersToday = 0;
+  growthTick();
+  recomputeCatchment();
+  G.dirtyRoute = true;
+  G.dirtyStatic = true;
+}
+
+/* ---- edits ---- */
+function addStation(x,y){
+  const s = makeStation(x,y);
+  G.stations.push(s); reindex();
+  recomputeCatchment(); G.dirtyRoute = true;
+  return s;
+}
+function removeStation(id){
+  const i = G.stations.findIndex(s => s.id === id);
+  if (i < 0) return { ok:false };
+  G.stations.splice(i,1); reindex();
+  const closed = [];
+  for (let j = G.lines.length-1; j >= 0; j--){
+    const L = G.lines[j];
+    const before = L.stops.length;
+    L.stops = L.stops.filter(s => s !== id);
+    for (const tr of L.trains){
+      tr.at = Math.min(tr.at, Math.max(0,L.stops.length-1));
+      tr.to = Math.min(tr.to, Math.max(0,L.stops.length-1));
+      tr.load.clear(); tr.n = 0;
+    }
+    if (L.stops.length < 2 && before >= 2){ closed.push(L.name); G.lines.splice(j,1); }
+  }
+  recomputeCatchment(); G.dirtyRoute = true;
+  return { ok:true, closed };
+}
+function addLine(palIx, stops){
+  const p = LINE_PALETTE[palIx % LINE_PALETTE.length];
+  const L = { id:G.nextLid++, pal:palIx % LINE_PALETTE.length, color:p.hex, name:p.name,
+              stops:stops.slice(), cars:3, trains:[] };
+  L.trains.push(makeTrain(L));
+  respaceTrains(L);
+  G.lines.push(L); G.dirtyRoute = true;
+  return L;
+}
+function closeLine(id){
+  const i = G.lines.findIndex(L => L.id === id);
+  if (i < 0) return 0;
+  const L = G.lines[i];
+  const refund = L.trains.length * COST.trainRefund() + Math.round(COST.line() * 0.2);
+  G.money += refund;
+  G.lines.splice(i,1); G.dirtyRoute = true;
+  return refund;
+}
+function addTrain(L){ L.trains.push(makeTrain(L)); respaceTrains(L); G.dirtyRoute = true; }
+function sellTrain(L){
+  if (!L.trains.length) return 0;
+  L.trains.pop(); respaceTrains(L); G.money += COST.trainRefund(); G.dirtyRoute = true;
+  return COST.trainRefund();
+}
+
+function newGame(seed){
+  srand(seed || (Date.now() >>> 0));
+  Object.assign(G, { t:0, day:0, hour:6, speed:1, money:120000,
+    tiles:new Map(), water:new Set(), stations:[], lines:[], nextSid:1, nextLid:1,
+    pop:0, jobs:0, hist:[] });
+  G.stats = { arrived:0, balked:0, boarded:0, spawned:0, dayArrived:0, dayBalked:0, onTime:1, ridersToday:0 };
+  G.ledger = { fares:0, opex:0 };
+  carveWater(); seedCity();
+  /* three stations already stand, so the first thing to do is obviously to
+     join them up — no tutorial needed */
+  addStation(30,30); addStation(26,28); addStation(33,33);
+  reindex(); recomputeCatchment(); rebuildRouting();
+}
+</script>
+<script>
+"use strict";
+/* ============================================================================
+   RENDER — the city is a wash you read past; the network sits on top of it.
+   Density shows as a block growing larger and darker, never as a cartoon.
+   Every warning is a change of weight or temperature, never an icon.
+   ========================================================================== */
+const $ = id => document.getElementById(id);
+const svgEl = $("map");
+const L_ = { land:$("gLand"), city:$("gCity"), lines:$("gLines"), draft:$("gDraft"),
+             trains:$("gTrains"), stations:$("gStations"), cue:$("gCue") };
+
+const R = (x,y,w,h) => "M"+x+" "+y+"h"+w+"v"+h+"h"+(-w)+"z";
+const n1 = v => Math.round(v*10)/10;
+
+/* block glyph: side length and ink weight both climb with density */
+const BLK = [ {s:10,o:.13}, {s:12,o:.26}, {s:13.5,o:.44}, {s:15,o:.64} ];
+const USE_COLOR = { R:C.res, C:C.com, I:C.ind, P:C.park };
+const UNSERVED = "#c2a184";      /* a warm drift, not a flag */
+
+function coveredKeys(){
+  const cov = new Set();
+  for (const s of G.stations)
+    for (let dy=-s.reach; dy<=s.reach; dy++)
+      for (let dx=-s.reach; dx<=s.reach; dx++){
+        const x=s.x+dx, y=s.y+dy;
+        if (inB(x,y)) cov.add(key(x,y));
+      }
+  return cov;
+}
+
+function renderLand(){
+  const w = [];
+  for (const k of G.water) w.push(R(kx(k)*T, ky(k)*T, T, T));
+  L_.land.innerHTML = w.length
+    ? '<path fill="'+C.water+'" d="'+w.join("")+'"/>' : "";
+}
+
+function renderCity(){
+  const cov = coveredKeys();
+  const groups = {};
+  for (const t of G.tiles.values()){
+    const g = BLK[Math.min(t.lvl,4)-1];
+    const dense = t.lvl >= 2 && (tPop(t) || tJobs(t));
+    const unserved = dense && !cov.has(key(t.x,t.y));
+    const col = unserved ? UNSERVED : USE_COLOR[t.use];
+    const gk = col + "|" + g.o.toFixed(2);
+    const off = (T - g.s)/2;
+    (groups[gk] = groups[gk] || []).push(R(n1(t.x*T+off), n1(t.y*T+off), g.s, g.s));
+  }
+  let out = "";
+  for (const gk in groups){
+    const [col,op] = gk.split("|");
+    out += '<path fill="'+col+'" fill-opacity="'+op+'" d="'+groups[gk].join("")+'"/>';
+  }
+  L_.city.innerHTML = out;
+}
+
+/* ---- line geometry: octilinear, the way a transit diagram is drawn ---- */
+function buildGeometry(L){
+  const sts = L.stops.map(stationById).filter(Boolean);
+  const pts = [], stopAt = [];
+  for (let i = 0; i < sts.length; i++){
+    const ax = sts[i].x*T + T/2, ay = sts[i].y*T + T/2;
+    if (!i){ pts.push([ax,ay]); stopAt.push(0); continue; }
+    const p = pts[pts.length-1];
+    const dx = ax-p[0], dy = ay-p[1];
+    const d = Math.min(Math.abs(dx), Math.abs(dy));
+    if (d > 0) pts.push([p[0]+Math.sign(dx)*d, p[1]+Math.sign(dy)*d]);
+    pts.push([ax,ay]); stopAt.push(pts.length-1);
+  }
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++)
+    cum.push(cum[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
+  L._pts = pts; L._stopAt = stopAt; L._cum = cum;
+}
+function pointAtDist(L, dist){
+  const pts = L._pts, cum = L._cum;
+  if (!pts || pts.length < 2) return [0,0,1,0];
+  const d = Math.max(0, Math.min(cum[cum.length-1], dist));
+  let i = 1;
+  while (i < cum.length-1 && cum[i] < d) i++;
+  const seg = cum[i]-cum[i-1] || 1;
+  const f = (d - cum[i-1]) / seg;
+  const a = pts[i-1], b = pts[i];
+  return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, b[0]-a[0], b[1]-a[1]];
+}
+function trainPoint(L, tr){
+  const sa = L._stopAt[tr.at], sb = L._stopAt[tr.to];
+  if (sa === undefined || sb === undefined) return [0,0,1,0];
+  const ca = L._cum[sa], cb = L._cum[sb];
+  const p = pointAtDist(L, ca + (cb-ca)*tr.u);
+  const off = laneOf(L), len = Math.hypot(p[2],p[3]) || 1;
+  return [p[0] - (p[3]/len)*off, p[1] + (p[2]/len)*off, p[2], p[3]];
+}
+
+const polyD = pts => pts.map((p,i) => (i?"L":"M")+n1(p[0])+" "+n1(p[1])).join(" ");
+/* lines sharing a corridor get nudged sideways, or they simply erase each other */
+function offsetPoly(pts, d){
+  if (!d) return pts;
+  const out = [];
+  for (let i = 0; i < pts.length; i++){
+    const a = pts[Math.max(0,i-1)], b = pts[Math.min(pts.length-1,i+1)];
+    let dx = b[0]-a[0], dy = b[1]-a[1];
+    const len = Math.hypot(dx,dy) || 1;
+    dx /= len; dy /= len;
+    out.push([pts[i][0] - dy*d, pts[i][1] + dx*d]);
+  }
+  return out;
+}
+const laneOf = L => ((L.pal % 5) - 2) * 1.5;
+function renderLines(){
+  let out = "";
+  for (const L of G.lines){
+    buildGeometry(L);
+    if (!L._pts || L._pts.length < 2) continue;
+    L._draw = offsetPoly(L._pts, laneOf(L));
+    const d = polyD(L._draw);
+    out += '<path d="'+d+'" fill="none" stroke="#ffffff" stroke-width="4.6" stroke-opacity=".9" stroke-linecap="round" stroke-linejoin="round"/>'
+         + '<path d="'+d+'" fill="none" stroke="'+L.color+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  L_.lines.innerHTML = out;
+}
+function renderDraft(){
+  const dr = UI.draft;
+  if (!dr){ L_.draft.innerHTML = ""; return; }
+  const sts = dr.stops.map(stationById).filter(Boolean);
+  let out = "";
+  if (sts.length > 1){
+    const tmp = { stops:dr.stops.slice() };
+    buildGeometry(tmp);
+    out += '<path d="'+polyD(tmp._pts)+'" fill="none" stroke="'+dr.color
+        +'" stroke-width="2.4" stroke-dasharray="5 4" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>';
+  }
+  for (const s of sts)
+    out += '<circle cx="'+(s.x*T+T/2)+'" cy="'+(s.y*T+T/2)+'" r="7.5" fill="none" stroke="'
+        + dr.color + '" stroke-width="1.6" opacity=".8"/>';
+  L_.draft.innerHTML = out;
+}
+
+/* ---- stations: small dots. Crowding shows as an arc closing around the ring,
+       so a platform under strain reads before you can name why. ---- */
+function renderStations(){
+  let out = "", cue = "";
+  for (const s of G.stations){
+    const cx = s.x*T + T/2, cy = s.y*T + T/2;
+    const hub = G.lines.filter(L => L.stops.indexOf(s.id) >= 0).length > 1;
+    const r = hub ? 4.6 : 3.4;
+    const strain = Math.min(1.15, s.strain || 0);
+
+    if (strain > 0.5){
+      const rr = r + 2.4, circ = 2*Math.PI*rr;
+      const f = Math.min(1, (strain - 0.5) / 0.5);
+      const col = strain > 0.95 ? C.bad : C.warn;
+      cue += '<circle cx="'+cx+'" cy="'+cy+'" r="'+n1(rr)+'" fill="none" stroke="'+col
+          +'" stroke-width="1.15" stroke-linecap="round" stroke-opacity="'+n1(0.22+0.48*f)
+          +'" stroke-dasharray="'+n1(circ*f)+' '+n1(circ)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+    }
+    if (s.flash > 0.02)
+      cue += '<circle cx="'+cx+'" cy="'+cy+'" r="'+n1(r+3+s.flash*5)+'" fill="none" stroke="'
+          + C.bad + '" stroke-width="1.2" stroke-opacity="'+n1(s.flash*0.5)+'"/>';
+
+    if (UI.selStation === s.id)
+      out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(r+5)+'" fill="none" stroke="'+C.ink+'" stroke-width="1.2" stroke-dasharray="2.5 2.5"/>';
+    out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#ffffff" stroke="'+C.ink
+        +'" stroke-width="'+(hub?1.8:1.4)+'"/>';
+    if (hub) out += '<circle cx="'+cx+'" cy="'+cy+'" r="1.7" fill="'+C.ink+'"/>';
+  }
+  L_.stations.innerHTML = out;
+  L_.cue.innerHTML = cue;
+}
+
+/* ---- trains: a small capsule that fills up as it loads ---- */
+function renderTrains(){
+  let out = "";
+  for (const L of G.lines){
+    if (!L._pts || L._pts.length < 2) continue;
+    const cap = trainCap(L);
+    for (const tr of L.trains){
+      const p = trainPoint(L, tr);
+      const ang = Math.atan2(p[3], p[2]) * 180/Math.PI;
+      const w = 4.5 + L.cars * 1.2, h = 5.2;
+      const full = cap > 0 ? Math.min(1, tr.n / cap) : 0;
+      const innerW = Math.max(0, (w-2.2) * (1-full));
+      out += '<g transform="translate('+n1(p[0])+' '+n1(p[1])+') rotate('+n1(ang)+')">'
+          + '<rect x="'+n1(-w/2-0.7)+'" y="'+(-h/2-0.7)+'" width="'+n1(w+1.4)+'" height="'+(h+1.4)
+          + '" rx="2.6" fill="#ffffff" fill-opacity=".92"/>'
+          + '<rect x="'+n1(-w/2)+'" y="'+(-h/2)+'" width="'+n1(w)+'" height="'+h
+          + '" rx="2.1" fill="'+L.color+'"/>'
+          + (innerW > 0.6
+             ? '<rect x="'+n1(w/2-1.1-innerW)+'" y="'+(-h/2+1.1)+'" width="'+n1(innerW)
+               +'" height="'+(h-2.2)+'" rx="1" fill="#ffffff" fill-opacity=".82"/>' : "")
+          + '</g>';
+    }
+  }
+  L_.trains.innerHTML = out;
+}
+
+function renderStatic(){ renderLand(); renderCity(); renderLines(); renderDraft(); }
+function renderLive(){ renderTrains(); renderStations(); }
+function renderAll(){ renderStatic(); renderLive(); }
+</script>
+<script>
+"use strict";
+/* ============================================================================
+   UI — nothing explains itself in a modal. Three stations are already on the
+   map, the only lit control is "add a line", and the rest is discovered.
+   ========================================================================== */
+const UI = { draft:null, selStation:null, selLine:null, placing:false, moving:false };
+
+const nf = new Intl.NumberFormat("en-US");
+const fmtPop = n => n >= 1e6 ? (n/1e6).toFixed(2)+"M" : n >= 1e4 ? Math.round(n/1e3)+"k" : nf.format(Math.round(n));
+const fmtMoney = n => {
+  const a = Math.abs(n), s = n < 0 ? "-$" : "$";
+  return a >= 1e6 ? s+(a/1e6).toFixed(2)+"M" : a >= 1e4 ? s+Math.round(a/1e3)+"k" : s+nf.format(Math.round(a));
+};
+const fmtN = n => nf.format(Math.round(n));
+
 function syncVH(){
-  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-  document.documentElement.style.setProperty("--vph", h + "px");
+  const h = (window.visualViewport && visualViewport.height) || innerHeight;
+  document.documentElement.style.setProperty("--vph", h+"px");
 }
 syncVH();
 addEventListener("resize", () => { syncVH(); applyView(); });
@@ -909,512 +990,429 @@ if (window.visualViewport){
   visualViewport.addEventListener("scroll", syncVH);
 }
 
+/* ---- camera ---- */
 let view = { x:0, y:0, w:MAPW*T, h:MAPH*T };
 function applyView(){ svgEl.setAttribute("viewBox", view.x+" "+view.y+" "+view.w+" "+view.h); }
 function cityBox(){
-  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-  const eat=(x,y)=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);};
+  let a=1e9,b=1e9,c=-1e9,d=-1e9;
+  const eat=(x,y)=>{a=Math.min(a,x);b=Math.min(b,y);c=Math.max(c,x);d=Math.max(d,y);};
   for (const t of G.tiles.values()) eat(t.x,t.y);
   for (const s of G.stations) eat(s.x,s.y);
-  if (x0 > x1){ x0=y0=14; x1=y1=20; }
-  return {x0,y0,x1,y1};
+  if (a>c){ a=b=26; c=d=34; }
+  return {a,b,c,d};
 }
 function fitView(){
-  const b = cityBox(), pad = 1.2;
-  const w = (b.x1-b.x0+1+pad*2)*T, h = (b.y1-b.y0+1+pad*2)*T;
+  const bx = cityBox(), pad = 2.5;
+  const w = (bx.c-bx.a+1+pad*2)*T, h = (bx.d-bx.b+1+pad*2)*T;
   const r = svgEl.getBoundingClientRect();
-  const aspect = (r.width||360)/(r.height||520);
-  let vw = w, vh = h;
-  if (vw/vh < aspect) vw = vh*aspect; else vh = vw/aspect;
-  view = { x:(b.x0-pad)*T - (vw-w)/2, y:(b.y0-pad)*T - (vh-h)/2, w:vw, h:vh };
+  const asp = (r.width||390)/(r.height||600);
+  let vw=w, vh=h;
+  if (vw/vh < asp) vw = vh*asp; else vh = vw/asp;
+  view = { x:(bx.a-pad)*T-(vw-w)/2, y:(bx.b-pad)*T-(vh-h)/2, w:vw, h:vh };
   applyView();
 }
-function viewScale(){
-  const r = svgEl.getBoundingClientRect();
-  return Math.min(r.width/view.w, r.height/view.h) || 1;
-}
+function viewScale(){ const r=svgEl.getBoundingClientRect(); return Math.min(r.width/view.w, r.height/view.h)||1; }
 function toWorld(cx,cy){
-  const r = svgEl.getBoundingClientRect(), s = viewScale();
-  const ox = (r.width - view.w*s)/2, oy = (r.height - view.h*s)/2;
-  return { x: view.x + (cx - r.left - ox)/s, y: view.y + (cy - r.top - oy)/s };
+  const r=svgEl.getBoundingClientRect(), s=viewScale();
+  const ox=(r.width-view.w*s)/2, oy=(r.height-view.h*s)/2;
+  return { x:view.x+(cx-r.left-ox)/s, y:view.y+(cy-r.top-oy)/s };
 }
-
-/* ---- pointers ---- */
 const ptrs = new Map();
-let dragged = 0, downAt = 0, pinch = null;
+let dragged=0, downAt=0, pinch=null;
 svgEl.addEventListener("pointerdown", e => {
   svgEl.setPointerCapture(e.pointerId);
-  ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
-  if (ptrs.size === 1){ dragged = 0; downAt = performance.now(); }
-  if (ptrs.size === 2){
-    const [a,b] = [...ptrs.values()];
-    pinch = { d:Math.hypot(a.x-b.x,a.y-b.y), w:view.w, h:view.h,
-              mx:(a.x+b.x)/2, my:(a.y+b.y)/2, world:toWorld((a.x+b.x)/2,(a.y+b.y)/2) };
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if (ptrs.size===1){ dragged=0; downAt=performance.now(); }
+  if (ptrs.size===2){
+    const [a,b]=[...ptrs.values()];
+    pinch={d:Math.hypot(a.x-b.x,a.y-b.y),w:view.w,h:view.h,
+           mx:(a.x+b.x)/2,my:(a.y+b.y)/2,world:toWorld((a.x+b.x)/2,(a.y+b.y)/2)};
   }
 });
 svgEl.addEventListener("pointermove", e => {
-  const p = ptrs.get(e.pointerId);
-  if (!p) return;
-  const dx = e.clientX - p.x, dy = e.clientY - p.y;
-  p.x = e.clientX; p.y = e.clientY;
-  if (ptrs.size === 1){
-    dragged += Math.abs(dx) + Math.abs(dy);
-    const s = viewScale();
-    view.x -= dx/s; view.y -= dy/s;
-    applyView();
-  } else if (ptrs.size === 2 && pinch){
-    const [a,b] = [...ptrs.values()];
-    const d = Math.hypot(a.x-b.x, a.y-b.y);
-    if (d > 8){
-      const f = pinch.d/d;
-      const nw = Math.max(T*5, Math.min(MAPW*T*1.6, pinch.w*f));
-      const nh = nw * (pinch.h/pinch.w);
-      const r = svgEl.getBoundingClientRect();
-      const s2 = Math.min(r.width/nw, r.height/nh);
-      const ox = (r.width - nw*s2)/2, oy = (r.height - nh*s2)/2;
-      view.w = nw; view.h = nh;
-      view.x = pinch.world.x - (pinch.mx - r.left - ox)/s2;
-      view.y = pinch.world.y - (pinch.my - r.top - oy)/s2;
+  const p = ptrs.get(e.pointerId); if (!p) return;
+  const dx=e.clientX-p.x, dy=e.clientY-p.y; p.x=e.clientX; p.y=e.clientY;
+  if (ptrs.size===1){
+    dragged+=Math.abs(dx)+Math.abs(dy);
+    const s=viewScale(); view.x-=dx/s; view.y-=dy/s; applyView();
+  } else if (ptrs.size===2 && pinch){
+    const [a,b]=[...ptrs.values()];
+    const d=Math.hypot(a.x-b.x,a.y-b.y);
+    if (d>8){
+      const f=pinch.d/d;
+      const nw=Math.max(T*8, Math.min(MAPW*T*1.4, pinch.w*f));
+      const nh=nw*(pinch.h/pinch.w);
+      const r=svgEl.getBoundingClientRect();
+      const s2=Math.min(r.width/nw, r.height/nh);
+      const ox=(r.width-nw*s2)/2, oy=(r.height-nh*s2)/2;
+      view.w=nw; view.h=nh;
+      view.x=pinch.world.x-(pinch.mx-r.left-ox)/s2;
+      view.y=pinch.world.y-(pinch.my-r.top-oy)/s2;
       applyView();
     }
-    dragged += 99;
+    dragged+=99;
   }
 });
 function endPtr(e){
   if (!ptrs.has(e.pointerId)) return;
-  const last = ptrs.size === 1;
+  const last = ptrs.size===1;
   ptrs.delete(e.pointerId);
-  if (ptrs.size < 2) pinch = null;
-  if (last && dragged < 12 && performance.now() - downAt < 500) tapWorld(e.clientX, e.clientY);
+  if (ptrs.size<2) pinch=null;
+  if (last && dragged<12 && performance.now()-downAt<500) tapAt(e.clientX,e.clientY);
 }
 svgEl.addEventListener("pointerup", endPtr);
 svgEl.addEventListener("pointercancel", endPtr);
 svgEl.addEventListener("wheel", e => {
   e.preventDefault();
-  const f = e.deltaY > 0 ? 1.12 : 0.89;
-  const w0 = toWorld(e.clientX, e.clientY);
-  view.w = Math.max(T*5, Math.min(MAPW*T*1.6, view.w*f));
-  view.h = Math.max(T*5, view.h*f);
-  const w1 = toWorld(e.clientX, e.clientY);
-  view.x += w0.x - w1.x; view.y += w0.y - w1.y;
-  applyView();
-}, { passive:false });
+  const f = e.deltaY>0?1.12:0.89;
+  const w0=toWorld(e.clientX,e.clientY);
+  view.w=Math.max(T*8,Math.min(MAPW*T*1.4,view.w*f)); view.h=Math.max(T*8,view.h*f);
+  const w1=toWorld(e.clientX,e.clientY);
+  view.x+=w0.x-w1.x; view.y+=w0.y-w1.y; applyView();
+},{passive:false});
 
-let toastT = 0;
-function toast(msg, bad){
-  const el = $("toast");
-  el.textContent = msg;
-  el.className = "on" + (bad ? " bad" : "");
-  clearTimeout(toastT);
-  toastT = setTimeout(() => { el.className = ""; }, 1900);
+/* ---- hint: one quiet line, only when there is something to learn ---- */
+let hintT=0;
+function hint(msg, sticky){
+  const el=$("hintbar");
+  if (!msg){ el.classList.remove("on"); return; }
+  el.textContent=msg; el.classList.add("on");
+  clearTimeout(hintT);
+  if (!sticky) hintT=setTimeout(()=>el.classList.remove("on"), 2400);
+}
+function ambientHint(){
+  if (UI.draft) return hint("Tap stations in order · then Done", true);
+  if (!G.lines.length) return hint("Tap ⊕ to connect stations into a line", true);
+  hint(null);
+}
+
+/* ---- taps ---- */
+const stationAt = (x,y) => G.stations.find(s => s.x===x && s.y===y);
+function tapAt(cx,cy){
+  const w = toWorld(cx,cy);
+  const tx = Math.floor(w.x/T), ty = Math.floor(w.y/T);
+  if (!inB(tx,ty)) return;
+  const st = stationAt(tx,ty);
+
+  if (UI.draft){
+    if (!st) return hint("Tap a station");
+    const i = UI.draft.stops.indexOf(st.id);
+    if (i>=0) UI.draft.stops.splice(i,1); else UI.draft.stops.push(st.id);
+    renderDraft(); paintPanel();
+    return;
+  }
+  if (UI.moving && UI.selStation != null){
+    if (st) return hint("A station already stands there");
+    if (isWater(tx,ty)) return hint("Not on water");
+    const s = stationById(UI.selStation);
+    s.x=tx; s.y=ty; UI.moving=false;
+    recomputeCatchment(); G.dirtyRoute=true; G.dirtyStatic=true;
+    renderLines(); paintPanel();
+    hint("Station moved");
+    return;
+  }
+  if (st){ selectStation(st.id); return; }
+  if (UI.placing){
+    if (isWater(tx,ty)) return hint("Not on water");
+    const c = COST.station();
+    if (G.money < c) return hint("Need "+fmtMoney(c));
+    G.money -= c;
+    addStation(tx,ty);
+    G.dirtyStatic = true;
+    hint("Station opened · "+fmtMoney(c));
+    paintDock();
+  }
 }
 
 /* ---- sheet ---- */
-function openSheet(title){
-  $("sheetTitle").textContent = title;
+function openSheet(title, colorDot){
+  $("sheetTitle").innerHTML = (colorDot?'<span class="dot" style="background:'+colorDot+'"></span>':"") + title;
   $("sheet").classList.add("open");
 }
 function closeSheet(){
   $("sheet").classList.remove("open");
-  UI.tool = null; UI.selStation = null; UI.moving = false;
-  paintTools(); renderStations();
+  UI.selStation=null; UI.selLine=null; UI.moving=false;
+  if (UI.draft){ UI.draft=null; renderDraft(); }
+  paintDock(); renderStations(); ambientHint();
 }
 $("sheetClose").onclick = closeSheet;
 
-/* ---- taps ---- */
-const stationAt = (x,y) => G.stations.find(s => s.x===x && s.y===y);
-function tapWorld(cx,cy){
-  if (G.over) return;
-  const w = toWorld(cx,cy);
-  const tx = Math.floor(w.x/T), ty = Math.floor(w.y/T);
-  if (!inBounds(tx,ty)) return;
-  const st = stationAt(tx,ty);
+function selectStation(id){
+  UI.selStation=id; UI.selLine=null; UI.placing=false; UI.moving=false;
+  paintDock(); renderStations();
+  openSheet("Station "+id); paintPanel();
+}
+function selectLine(id){
+  UI.selLine=id; UI.selStation=null; UI.placing=false;
+  const L = lineById(id);
+  paintDock();
+  openSheet(L?L.name+" line":"Line", L&&L.color); paintPanel();
+}
+
+/* ---- dock ---- */
+function paintDock(){
+  const sp = [["0","❚❚"],["1","1×"],["2","2×"],["4","4×"]];
+  $("speed").innerHTML = sp.map(([v,l]) =>
+    '<button data-sp="'+v+'" class="'+(String(G.speed)===v?"on":"")+'">'+l+'</button>').join("");
+  let strip = G.lines.map(L =>
+    '<button class="lchip'+(UI.selLine===L.id?" on":"")+'" data-line="'+L.id+'">'
+    + '<i style="background:'+L.color+'"></i></button>').join("");
+  if (G.lines.length < LINE_PALETTE.length)
+    strip += '<button class="lchip add'+(G.lines.length?"":" pulse")+'" id="addLine">+</button>';
+  $("lineStrip").innerHTML = strip;
+  $("buildBtn").className = UI.placing ? "on" : "";
+  $("speed").querySelectorAll("[data-sp]").forEach(b => b.onclick = () => {
+    G.speed = +b.dataset.sp; paintDock();
+  });
+  $("lineStrip").querySelectorAll("[data-line]").forEach(b => b.onclick = () => selectLine(+b.dataset.line));
+  const al = $("addLine");
+  if (al) al.onclick = startNewLine;
+}
+$("buildBtn").onclick = () => {
+  UI.placing = !UI.placing;
+  if (UI.placing){ UI.selStation=null; UI.selLine=null; closeSheetSoft(); hint("Tap the map to place a station · "+fmtMoney(COST.station()), true); }
+  else ambientHint();
+  paintDock();
+};
+function closeSheetSoft(){ $("sheet").classList.remove("open"); }
+$("fitBtn").onclick = fitView;
+
+/* ---- panels ---- */
+function bar(f, cls){ return '<div class="bar"><i class="'+(cls||"")+'" style="width:'+Math.min(100,Math.round(f*100))+'%"></i></div>'; }
+function paintPanel(){
+  const p = $("panel");
 
   if (UI.draft){
-    if (!st) return toast("Tap a station", true);
-    const i = UI.draft.stops.indexOf(st.id);
-    if (i >= 0) UI.draft.stops.splice(i,1); else UI.draft.stops.push(st.id);
-    renderDraft(); paintPanel();
+    const d = UI.draft;
+    const cost = d.newLine ? COST.line() : 0;
+    p.innerHTML = '<p class="note">Tap stations in the order trains should call at them. Tap one again to drop it.</p>'
+      + '<div class="row"><span class="grow"><span class="lbl">'+d.stops.length+' stops</span>'
+      + '<div class="sub">'+(d.newLine?"New line · "+fmtMoney(cost):"Editing route")+'</div></span></div>'
+      + '<div class="g2"><button class="btn p" id="dOk">Done</button>'
+      + '<button class="btn" id="dNo">Cancel</button></div>';
+    $("dOk").onclick = commitDraft;
+    $("dNo").onclick = () => { UI.draft=null; renderDraft(); closeSheet(); };
     return;
   }
-  if (UI.moving){
-    if (st) return toast("A station is already there", true);
-    if (!G.tiles.has(key(tx,ty))) return toast("Move it onto a city block", true);
-    const c = COST.move();
-    if (G.cash < c) return toast("Need " + money(c), true);
-    G.cash -= c; moveStation(UI.selStation, tx, ty);
-    UI.moving = false;
-    renderCoverage(); renderStations(); renderLines(); rebuildTrains();
-    paintHud(); paintPanel(); saveGame();
-    toast("Station moved  −" + money(c));
+
+  if (UI.selStation != null){
+    const s = stationById(UI.selStation);
+    if (!s) return closeSheet();
+    const strain = s.cap ? s.total/s.cap : 0;
+    const cls = strain>0.92?"hot":strain>0.6?"warm":"";
+    const up = COST.stationUp(s.lvl);
+    p.innerHTML =
+        '<div class="row"><span class="grow"><span class="lbl">Platform</span>'
+      + '<div class="sub '+cls+'">'+fmtN(s.total)+' waiting of '+fmtN(s.cap)+'</div>'
+      + bar(strain, cls) + '</span></div>'
+      + '<div class="kv"><span>Residents in reach</span><b>'+fmtPop(s.res)+'</b></div>'
+      + '<div class="kv"><span>Jobs in reach</span><b>'+fmtPop(s.jobs)+'</b></div>'
+      + '<div class="kv"><span>Lines calling</span><b>'+G.lines.filter(L=>L.stops.indexOf(s.id)>=0).length+'</b></div>'
+      + '<div style="height:9px"></div>'
+      + (up ? '<button class="btn wide p" id="stUp" style="margin-bottom:6px">Enlarge platform · '
+              + fmtMoney(up) + ' → ' + fmtN(STATION_CAP[s.lvl]) + ' waiting'
+              + (STATION_REACH[s.lvl] > s.reach ? ", wider catchment" : "") + '</button>'
+            : '<p class="note">Platform is at its largest.</p>')
+      + '<div class="g2"><button class="btn" id="stMove">'+(UI.moving?"Cancel move":"Move")+'</button>'
+      + '<button class="btn r" id="stDel">Remove</button></div>';
+    if ($("stUp")) $("stUp").onclick = () => {
+      const c = COST.stationUp(s.lvl);
+      if (G.money < c) return hint("Need "+fmtMoney(c));
+      G.money -= c; s.lvl++; s.cap = STATION_CAP[s.lvl-1]; s.reach = STATION_REACH[s.lvl-1];
+      recomputeCatchment(); G.dirtyStatic=true; paintPanel();
+      hint("Platform enlarged");
+    };
+    $("stMove").onclick = () => { UI.moving=!UI.moving; paintPanel(); if (UI.moving) hint("Tap where it should go",true); };
+    $("stDel").onclick = () => {
+      const r = removeStation(s.id);
+      G.money += Math.round(COST.station()*0.35);
+      G.dirtyStatic = true;
+      renderLines(); closeSheet();
+      hint(r.closed && r.closed.length ? "Station removed · "+r.closed.join(", ")+" closed" : "Station removed");
+    };
     return;
   }
-  if (st){ selectStation(st.id); return; }
-  if (UI.tool === "station"){
-    if (!G.tiles.has(key(tx,ty))) return toast("Build on a city block", true);
-    const c = COST.station();
-    if (G.cash < c) return toast("Need " + money(c), true);
-    G.cash -= c;
-    G.stations.push({ id:G.nextSid++, x:tx, y:ty, load:0 });
-    reindex();
-    renderCoverage(); renderStations(); paintHud(); paintPanel(); saveGame();
-    toast("Station built  −" + money(c));
+
+  if (UI.selLine != null){
+    const L = lineById(UI.selLine);
+    if (!L) return closeSheet();
+    const cap = trainCap(L);
+    const load = L.trains.length ? L.trains.reduce((a,t)=>a+t.n,0)/(L.trains.length*cap) : 0;
+    const cls = load>0.92?"hot":load>0.7?"warm":"";
+    const headway = L.trains.length ? (2*lineLengthKm(L)*T/TRAIN_SPEED + L.stops.length*DWELL)/L.trains.length : 0;
+    p.innerHTML =
+        '<div class="row"><span class="grow"><span class="lbl">Trains carrying</span>'
+      + '<div class="sub '+cls+'">'+Math.round(load*100)+'% full · '+fmtN(cap)+' per train</div>'
+      + bar(load, cls)+'</span></div>'
+      + '<div class="kv"><span>Stops</span><b>'+L.stops.length+'</b></div>'
+      + '<div class="kv"><span>Trains</span><b>'+L.trains.length+'</b></div>'
+      + '<div class="kv"><span>Cars each</span><b>'+L.cars+'</b></div>'
+      + '<div class="kv"><span>A train every</span><b>'+(headway?Math.round(headway*60)+" min":"—")+'</b></div>'
+      + '<div class="kv"><span>Running cost</span><b>'+fmtMoney(L.trains.length*COST.opexTrain+lineLengthKm(L)*COST.opexLineKm)+'/day</b></div>'
+      + '<div style="height:9px"></div>'
+      + '<div class="g2" style="margin-bottom:6px">'
+      + '<button class="btn p" id="lAddT">Add train · '+fmtMoney(COST.train())+'</button>'
+      + '<button class="btn" id="lSellT">Sell train · +'+fmtMoney(COST.trainRefund())+'</button></div>'
+      + '<div class="g2" style="margin-bottom:6px">'
+      + '<button class="btn p" id="lAddC">Add car · '+fmtMoney(COST.car())+'</button>'
+      + '<button class="btn" id="lSellC">Drop car · +'+fmtMoney(COST.carRefund())+'</button></div>'
+      + '<div class="g2"><button class="btn" id="lEdit">Change route</button>'
+      + '<button class="btn r" id="lClose">Close line</button></div>';
+    $("lAddT").onclick = () => {
+      if (G.money < COST.train()) return hint("Need "+fmtMoney(COST.train()));
+      G.money -= COST.train(); addTrain(L); paintPanel();
+    };
+    $("lSellT").onclick = () => {
+      if (L.trains.length <= 1) return hint("A line needs at least one train");
+      sellTrain(L); paintPanel();
+    };
+    $("lAddC").onclick = () => {
+      if (L.cars >= 10) return hint("Ten cars is the platform limit");
+      if (G.money < COST.car()) return hint("Need "+fmtMoney(COST.car()));
+      G.money -= COST.car(); L.cars++; paintPanel();
+    };
+    $("lSellC").onclick = () => {
+      if (L.cars <= 2) return hint("Two cars is the minimum");
+      L.cars--; G.money += COST.carRefund(); paintPanel();
+    };
+    $("lEdit").onclick = () => {
+      UI.draft = { newLine:false, id:L.id, color:L.color, stops:L.stops.slice() };
+      renderDraft(); openSheet("Change route", L.color); paintPanel(); ambientHint();
+    };
+    $("lClose").onclick = () => {
+      const r = closeLine(L.id);
+      renderLines(); renderTrains(); closeSheet();
+      hint("Line closed · +"+fmtMoney(r));
+    };
+    return;
   }
+
+  /* nothing selected: the city ledger */
+  const netDay = G.lines.reduce((a,L)=>a+L.trains.length,0)*COST.opexTrain
+    + G.stations.length*COST.opexStation
+    + G.lines.reduce((a,L)=>a+lineLengthKm(L),0)*COST.opexLineKm;
+  const yest = G.hist.length ? G.hist[G.hist.length-1] : null;
+  p.innerHTML =
+      '<div class="kv"><span>Residents</span><b>'+fmtPop(G.pop)+'</b></div>'
+    + '<div class="kv"><span>Jobs</span><b>'+fmtPop(G.jobs)+'</b></div>'
+    + '<div class="kv"><span>City blocks</span><b>'+fmtN(G.tiles.size)+'</b></div>'
+    + '<div class="kv"><span>Rode yesterday</span><b>'+(yest?fmtPop(yest.riders):"—")+'</b></div>'
+    + '<div class="kv"><span>Got a seat</span><b>'+Math.round(G.stats.onTime*100)+'%</b></div>'
+    + '<div class="kv"><span>Running cost</span><b>'+fmtMoney(netDay)+'/day</b></div>'
+    + '<div class="kv"><span>Network</span><b>'+G.stations.length+' stations · '+G.lines.length+' lines · '+totalTrains()+' trains</b></div>';
 }
-function selectStation(id){
-  UI.selStation = id; UI.tool = null; UI.moving = false;
-  paintTools(); renderStations();
-  openSheet("Station " + id); paintPanel();
+
+/* ---- line building ---- */
+function startNewLine(){
+  if (G.stations.length < 2) return hint("Build two stations first");
+  const used = new Set(G.lines.map(L=>L.pal));
+  let ix = 0; while (used.has(ix) && ix < LINE_PALETTE.length) ix++;
+  UI.draft = { newLine:true, pal:ix, color:LINE_PALETTE[ix].hex, stops:[] };
+  UI.placing=false; UI.selLine=null; UI.selStation=null;
+  renderDraft(); paintDock(); openSheet("New line", UI.draft.color); paintPanel(); ambientHint();
+}
+function commitDraft(){
+  const d = UI.draft;
+  if (d.stops.length < 2) return hint("A line needs at least two stops");
+  if (d.newLine){
+    const c = COST.line();
+    if (G.money < c) return hint("Need "+fmtMoney(c));
+    G.money -= c;
+    addLine(d.pal, d.stops);
+  } else {
+    const L = lineById(d.id);
+    if (L){
+      L.stops = d.stops.slice();
+      for (const tr of L.trains){
+        tr.at = Math.min(tr.at, L.stops.length-1);
+        tr.to = Math.min(tr.to, L.stops.length-1);
+        tr.u = 0; tr.load.clear(); tr.n = 0;
+      }
+    }
+  }
+  UI.draft = null;
+  G.dirtyRoute = true;
+  renderLines(); renderDraft(); closeSheet();
 }
 
 /* ---- HUD ---- */
 function paintHud(){
-  $("hWeek").textContent = G.week;
-  $("hCash").textContent = fmt(G.cash);
-  const r = G.lastReport;
-  const rv = $("hRide");
-  rv.textContent = r ? Math.round(r.serveRate*100) + "%" : "—";
-  rv.className = r ? (r.serveRate > .8 ? "good" : r.serveRate > .6 ? "warn" : "bad") : "";
-  const av = $("hAppr");
-  av.textContent = G.approval;
-  av.className = G.approval > 60 ? "good" : G.approval > 30 ? "warn" : "bad";
-  const f = $("barfill");
-  f.style.transform = "scaleX(" + (G.approval/100) + ")";
-  f.style.background = G.approval > 60 ? "var(--good)" : G.approval > 30 ? "var(--warn)" : "var(--bad)";
+  $("mPop").textContent = fmtPop(G.pop);
+  const c = $("mCash");
+  c.textContent = fmtMoney(G.money);
+  c.className = G.money < 0 ? "bad" : "";
+  const r = $("mRide"), ot = G.stats.onTime;
+  r.textContent = Math.round(ot*100)+"%";
+  r.className = ot>0.9?"good":ot>0.72?"":ot>0.5?"warn":"bad";
+  $("dayName").textContent = DAY_NAMES[G.day % 7];
+  const h = Math.floor(G.hour), m = Math.floor((G.hour-h)*60);
+  $("hhmm").textContent = String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+  $("rushDot").className = CURVE[h%24] > 0.75 ? "on" : "";
 }
 
-/* ---- dock ---- */
-const ICON = {
-  station:'<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="6"/><path d="M2.5 10h15"/></svg>',
-  lines:'<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="4.5" cy="5" r="2"/><circle cx="15.5" cy="15" r="2"/><path d="M6 6.5L14 13.5"/><circle cx="15.5" cy="5" r="2"/><path d="M14 6.5L6 13.5" opacity=".45"/></svg>',
-  trains:'<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="12" height="11" rx="3"/><path d="M4 9h12M7 17l-2 1M13 17l2 1"/><circle cx="7.5" cy="11.5" r=".9" fill="currentColor" stroke="none"/><circle cx="12.5" cy="11.5" r=".9" fill="currentColor" stroke="none"/></svg>',
-  upgrade:'<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 16V9M10 16V4M16 16v-5"/></svg>'
-};
-const TOOL_TITLE = { station:"Build stations", lines:"Lines", trains:"Trains & capacity", upgrade:"Upgrades" };
-function paintTools(){
-  $("tools").innerHTML = ["station","lines","trains","upgrade"].map(k =>
-    '<button class="tool' + (UI.tool===k?" on":"") + '" data-tool="' + k + '" title="' + TOOL_TITLE[k] + '">' + ICON[k] + '</button>'
-  ).join("");
+/* ---- persistence ---- */
+const SAVE = "metrocity.v3";
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE, JSON.stringify({
+      t:G.t, day:G.day, hour:G.hour, money:G.money, seed:rngSeed,
+      tiles:[...G.tiles.values()].map(t=>[t.x,t.y,t.use,t.lvl,+t.want.toFixed(2)]),
+      water:[...G.water], nextSid:G.nextSid, nextLid:G.nextLid,
+      stations:G.stations.map(s=>[s.id,s.x,s.y,s.lvl]),
+      lines:G.lines.map(L=>[L.id,L.pal,L.stops,L.cars,L.trains.length]),
+      stats:G.stats, hist:G.hist.slice(-40)
+    }));
+  }catch(e){}
 }
-$("tools").addEventListener("click", e => {
-  const b = e.target.closest("[data-tool]");
-  if (!b) return;
-  if (UI.draft) return toast("Finish the line first", true);
-  const k = b.dataset.tool;
-  if (UI.tool === k){ closeSheet(); return; }
-  UI.tool = k; UI.selStation = null; UI.moving = false;
-  paintTools(); renderStations(); openSheet(TOOL_TITLE[k]); paintPanel();
-});
-
-/* ---- panels ---- */
-function meter(ratio){
-  const pct = Math.min(100, Math.round(ratio*100));
-  const cls = ratio > 1.05 ? "hot" : ratio > .85 ? "warm" : "";
-  return '<div class="meter"><i class="' + cls + '" style="width:' + pct + '%"></i></div>';
-}
-function lineRow(L, extra){
-  const cap = lineCapacity(L), peak = L._peak || 0, ratio = L._ratio || 0;
-  const cls = ratio > 1.05 ? "hot" : ratio > .85 ? "warm" : "";
-  return '<div class="row"><span class="chip" style="background:' + PAL[L.color] + '"></span>'
-    + '<span class="grow"><span class="lbl">' + L.name + '</span>'
-    + '<div class="sub ' + cls + '">' + L.stops.length + ' stops · ' + L.trains + ' train'
-    + (L.trains===1?'':'s') + ' · ' + L.cars + ' cars · ' + fmt(cap) + '/wk'
-    + (peak ? ' · peak ' + fmt(peak) : '') + '</div>' + meter(ratio) + '</span>'
-    + (extra || '') + '</div>';
-}
-function paintPanel(){
-  const p = $("panel");
-  if (G.over){ p.innerHTML = '<p class="hint">The city voted you out. Open the menu to start a new city.</p>'; return; }
-
-  if (UI.draft){
-    const d = UI.draft, isNew = d.newLine;
-    const stopCost = COST.stop() * (isNew ? d.stops.length : Math.max(0, d.stops.length - d.baseCount));
-    const total = (isNew ? COST.line() : 0) + stopCost;
-    p.innerHTML = '<p class="hint">Tap stations on the map in the order trains should visit them. Tap one again to drop it.<br>'
-      + '<b>' + d.stops.length + ' stops</b> · ' + money(total) + ' · you have ' + money(G.cash) + '</p>'
-      + '<div class="grid2"><button class="btn g" id="dDone">Confirm</button>'
-      + '<button class="btn" id="dCancel">Cancel</button></div>';
-    $("dDone").onclick = () => commitDraft(total);
-    $("dCancel").onclick = () => { UI.draft = null; renderDraft(); closeSheet(); };
-    return;
-  }
-
-  if (UI.selStation !== null){
-    const s = stationById(UI.selStation);
-    if (!s){ closeSheet(); return; }
-    const on = linesAt(s.id);
-    const cov = (G.coverR*2+1)*(G.coverR*2+1);
-    p.innerHTML = '<p class="hint">'
-      + (on.length ? 'Served by ' + on.map(L => L.name).join(", ") + '.' : 'Not on any line yet.')
-      + ' Covers up to ' + cov + ' blocks.'
-      + (UI.moving ? '<br><b>Tap a city block to move it there.</b>' : '') + '</p>'
-      + '<div class="grid2">'
-      + '<button class="btn" id="sMove">' + (UI.moving ? "Cancel move" : "Move · " + money(COST.move())) + '</button>'
-      + '<button class="btn r" id="sDel">Demolish · +' + money(COST.refund()) + '</button></div>';
-    $("sMove").onclick = () => {
-      UI.moving = !UI.moving;
-      paintPanel();
-      if (UI.moving) toast("Tap a block to move it there");
-    };
-    $("sDel").onclick = () => confirmDemolish(s.id);
-    return;
-  }
-
-  if (UI.tool === "station"){
-    const c = COST.station();
-    p.innerHTML = '<p class="hint">Tap any city block to build. A station serves everything inside the dotted outline, and a trip only rides if <b>both</b> ends are covered.<br>Tap a station you already own to move or remove it.</p>'
-      + '<div class="row"><span class="grow"><span class="lbl">Next station</span>'
-      + '<div class="sub">' + G.stations.length + ' built · each one costs more</div></span>'
-      + '<span class="price">' + money(c) + '</span></div>';
-    return;
-  }
-
-  if (UI.tool === "lines"){
-    let h = '<p class="hint">A line is an ordered chain of stations. Longer lines carry <b>fewer</b> riders per train, because the round trip eats the timetable.</p>'
-      + '<button class="btn p" id="newLine" style="width:100%;margin-bottom:8px">New line · ' + money(COST.line()) + '</button>';
-    if (!G.lines.length) h += '<p class="hint">No lines yet. Build two stations, then connect them.</p>';
-    G.lines.forEach(L => { h += lineRow(L,
-      '<span class="stack"><button class="btn sm" data-edit="' + L.id + '">Edit</button>'
-      + '<button class="btn sm r" data-del="' + L.id + '">Close</button></span>'); });
-    p.innerHTML = h;
-    $("newLine").onclick = startNewLine;
-    p.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => editLine(+b.dataset.edit));
-    p.querySelectorAll("[data-del]").forEach(b => b.onclick = () => deleteLine(+b.dataset.del));
-    return;
-  }
-
-  if (UI.tool === "trains"){
-    let h = '<p class="hint">Trains and cars both raise a line’s weekly capacity. A red bar means riders are being left on the platform.</p>';
-    if (!G.lines.length) h += '<p class="hint">Build a line first.</p>';
-    G.lines.forEach(L => { h += lineRow(L,
-      '<span class="stack"><button class="btn sm g" data-trn="' + L.id + '">+train ' + money(COST.train()) + '</button>'
-      + '<button class="btn sm p" data-car="' + L.id + '">+car ' + money(COST.car()) + '</button></span>'); });
-    p.innerHTML = h;
-    p.querySelectorAll("[data-trn]").forEach(b => b.onclick = () => buyTrain(+b.dataset.trn));
-    p.querySelectorAll("[data-car]").forEach(b => b.onclick = () => buyCar(+b.dataset.car));
-    return;
-  }
-
-  const lvl = capLevel(), nextCap = CAP_STEPS[lvl+1];
-  let h = '<p class="hint">City-wide upgrades. These apply to every train and station at once.</p>';
-  h += '<div class="row"><span class="grow"><span class="lbl">Car capacity</span>'
-    + '<div class="sub">' + G.carCap + ' riders per car' + (nextCap ? ' → ' + nextCap : ' · maxed') + '</div></span>'
-    + (nextCap ? '<button class="btn sm g" id="upCap">' + money(COST.cap()) + '</button>' : '') + '</div>';
-  h += '<div class="row"><span class="grow"><span class="lbl">Station reach</span>'
-    + '<div class="sub">' + G.coverR + ' block' + (G.coverR>1?'s':'')
-    + (G.coverR < 2 ? ' → 2 blocks' : ' · maxed') + '</div></span>'
-    + (G.coverR < 2 ? '<button class="btn sm g" id="upCov">' + money(COST.cover()) + '</button>' : '') + '</div>';
-  h += '<div class="row"><span class="grow"><span class="lbl">Network</span>'
-    + '<div class="sub">' + G.stations.length + ' stations · ' + G.lines.length + ' lines · '
-    + totalTrains() + ' trains</div></span></div>';
-  p.innerHTML = h;
-  if ($("upCap")) $("upCap").onclick = () => {
-    const c = COST.cap();
-    if (G.cash < c) return toast("Need " + money(c), true);
-    G.cash -= c; G.carCap = CAP_STEPS[capLevel()+1];
-    paintHud(); paintPanel(); saveGame(); toast("Car capacity → " + G.carCap);
-  };
-  if ($("upCov")) $("upCov").onclick = () => {
-    const c = COST.cover();
-    if (G.cash < c) return toast("Need " + money(c), true);
-    G.cash -= c; G.coverR = 2;
-    renderCoverage(); paintHud(); paintPanel(); saveGame(); toast("Station reach → 2 blocks");
-  };
+function loadGame(){
+  let raw=null;
+  try{ raw = localStorage.getItem(SAVE); }catch(e){ return false; }
+  if (!raw) return false;
+  try{
+    const d = JSON.parse(raw);
+    srand(d.seed||1);
+    Object.assign(G,{ t:d.t, day:d.day, hour:d.hour, money:d.money, speed:1,
+      tiles:new Map(), water:new Set(d.water), stations:[], lines:[],
+      nextSid:d.nextSid, nextLid:d.nextLid, hist:d.hist||[] });
+    G.stats = d.stats || { arrived:0,balked:0,boarded:0,dayArrived:0,dayBalked:0,onTime:1,ridersToday:0 };
+    for (const [x,y,use,lvl,want] of d.tiles) G.tiles.set(key(x,y),{x,y,use,lvl,want:want||0});
+    for (const [id,x,y,lvl] of d.stations){
+      const s = makeStation(x,y);
+      s.id=id; s.lvl=lvl; s.cap=STATION_CAP[lvl-1]; s.reach=STATION_REACH[lvl-1];
+      G.stations.push(s);
+    }
+    G.nextSid = d.nextSid;
+    for (const [id,pal,stops,cars,nTrains] of d.lines){
+      const p = LINE_PALETTE[pal % LINE_PALETTE.length];
+      const L = { id, pal, color:p.hex, name:p.name, stops:stops.slice(), cars, trains:[] };
+      for (let i=0;i<nTrains;i++) L.trains.push(makeTrain(L));
+      G.lines.push(L);
+    }
+    reindex(); recount(); recomputeCatchment(); rebuildRouting();
+    return true;
+  }catch(e){ return false; }
 }
 
-/* ---- station edits ---- */
-function confirmDemolish(id){
-  const doomed = G.lines.filter(L => L.stops.indexOf(id) >= 0 && L.stops.length <= 2);
-  const act = () => {
-    const refund = COST.refund();
-    const res = removeStation(id);
-    if (!res.ok) return;
-    G.cash += refund;
-    UI.selStation = null; UI.moving = false;
-    renderAll(); paintHud(); closeSheet(); saveGame();
-    toast(res.closed.length ? "Station removed · " + res.closed.join(", ") + " closed"
-                            : "Station removed  +" + money(refund));
-  };
-  if (!doomed.length) return act();
-  modal("Remove this station?",
-    '<p class="hint">' + doomed.map(L => L.name).join(" and ")
-    + (doomed.length>1?' lines drop':' line drops') + ' below two stops, so '
-    + (doomed.length>1?'they':'it') + ' will close too.</p>',
-    '<button class="btn" id="mNo">Keep it</button><button class="btn r" id="mYes">Remove</button>');
-  $("mNo").onclick = closeModal;
-  $("mYes").onclick = () => { closeModal(); act(); };
-}
-
-/* ---- lines ---- */
-function startNewLine(){
-  if (G.stations.length < 2) return toast("Build two stations first", true);
-  if (G.lines.length >= LINE_COLORS.length) return toast("Line limit reached", true);
-  const idx = G.nextLid % LINE_COLORS.length;
-  UI.draft = { newLine:true, id:G.nextLid, color:LINE_COLORS[idx], name:LINE_NAMES[idx], stops:[], baseCount:0 };
-  renderDraft(); openSheet("New line"); paintPanel();
-  toast("Tap stations in order");
-}
-function editLine(id){
-  const L = G.lines.find(l => l.id === id);
-  if (!L) return;
-  UI.draft = { newLine:false, id:L.id, color:L.color, name:L.name, stops:L.stops.slice(), baseCount:L.stops.length };
-  renderDraft(); openSheet("Edit " + L.name); paintPanel();
-}
-function commitDraft(cost){
-  const d = UI.draft;
-  if (d.stops.length < 2) return toast("A line needs at least two stops", true);
-  if (G.cash < cost) return toast("Need " + money(cost), true);
-  G.cash -= cost;
-  if (d.newLine){
-    G.lines.push({ id:G.nextLid++, color:d.color, name:d.name, trains:1, cars:2, stops:d.stops.slice() });
-    toast(d.name + " line opened");
-  } else {
-    const L = G.lines.find(l => l.id === d.id);
-    L.stops = d.stops.slice();
-    toast(d.name + " line updated");
-  }
-  UI.draft = null;
-  renderLines(); renderDraft(); rebuildTrains(); paintHud(); closeSheet(); saveGame();
-}
-function deleteLine(id){
-  const i = G.lines.findIndex(l => l.id === id);
-  if (i < 0) return;
-  const L = G.lines[i];
-  G.cash += Math.round(COST.line()*0.25);
-  G.lines.splice(i,1);
-  renderLines(); rebuildTrains(); paintHud(); paintPanel(); saveGame();
-  toast(L.name + " line closed");
-}
-function buyTrain(id){
-  const L = G.lines.find(l => l.id === id), c = COST.train();
-  if (!L) return;
-  if (G.cash < c) return toast("Need " + money(c), true);
-  G.cash -= c; L.trains++;
-  rebuildTrains(); paintHud(); paintPanel(); saveGame();
-  toast("+1 train on " + L.name);
-}
-function buyCar(id){
-  const L = G.lines.find(l => l.id === id), c = COST.car();
-  if (!L) return;
-  if (L.cars >= 8) return toast("Eight cars is the maximum", true);
-  if (G.cash < c) return toast("Need " + money(c), true);
-  G.cash -= c; L.cars++;
-  paintHud(); paintPanel(); saveGame();
-  toast("+1 car on " + L.name);
-}
-
-/* ---- modal ---- */
-function modal(title, body, foot){
-  $("mTitle").textContent = title;
-  $("mBody").innerHTML = body;
-  $("mFoot").innerHTML = foot;
-  $("modal").classList.add("on");
-}
-function closeModal(){ $("modal").classList.remove("on"); }
-
-function showReport(r){
-  const kv = (k,v,c) => '<div class="kv"><span>' + k + '</span><b class="' + (c||"") + '">' + v + '</b></div>';
-  const sign = r.delta > 0 ? "+" : "";
-  const pct = Math.round(r.serveRate*100);
-  const col = r.serveRate > .8 ? "var(--good)" : r.serveRate > .6 ? "var(--warn)" : "var(--bad)";
-  let tip = "";
-  if (r.worst) tip = '<p class="hint" style="margin-top:10px">Worst crowding: <b>' + r.worst.line.name
-    + '</b>, stop ' + (r.worst.i+1) + '→' + (r.worst.i+2) + ', ' + fmt(r.worst.ex)
-    + ' riders over capacity. Add a train, or split the line.</p>';
-  else if (r.nocov > r.total*0.2) tip = '<p class="hint" style="margin-top:10px">Most losses are <b>blocks with no station in reach</b> — look for the red flags on the map.</p>';
-  else if (r.slow > r.total*0.2) tip = '<p class="hint" style="margin-top:10px">Most losses are <b>journeys that take too long</b>. Riders give up on winding routes — add a direct link or an interchange.</p>';
-  modal("Week " + r.week,
-      '<div class="big" style="color:' + col + '">' + pct + '% carried</div>'
-    + '<div class="bigsub">' + fmt(r.served) + ' of ' + fmt(r.total) + ' trips</div>'
-    + kv("No station in reach", fmt(r.nocov), r.nocov?"dn":"")
-    + kv("No route", fmt(r.noroute), r.noroute?"dn":"")
-    + kv("Too slow", fmt(r.slow), r.slow?"dn":"")
-    + kv("Crowded out", fmt(r.spill), r.spill?"dn":"")
-    + kv("Approval", r.before + " → " + r.after + " (" + sign + r.delta + ")", r.delta>=0?"up":"dn")
-    + kv("Fares + grant", "+" + money(r.income), "up")
-    + kv("Funds", money(G.cash))
-    + kv("City grew", "+" + r.grew + " blocks, " + r.upped + " built taller")
-    + tip,
-    '<button class="btn g" id="mOk">Continue</button>');
-  $("mOk").onclick = () => { closeModal(); if (G.over) showGameOver(); };
-}
-function showGameOver(){
-  modal("Voted out",
-      '<div class="big" style="color:var(--bad)">Week ' + (G.week-1) + '</div>'
-    + '<div class="bigsub">Approval hit zero.</div>'
-    + '<div class="kv"><span>Weeks survived</span><b>' + (G.week-1) + '</b></div>'
-    + '<div class="kv"><span>Best ever</span><b>' + G.best + '</b></div>'
-    + '<div class="kv"><span>Final network</span><b>' + G.stations.length + ' stations · ' + G.lines.length + ' lines</b></div>',
-    '<button class="btn g" id="mNew">New city</button>');
-  $("mNew").onclick = () => { closeModal(); startFresh(); };
-}
-function showHelp(){
-  modal("How to play",
-      '<ul class="tips">'
-    + '<li>Tap a block to place a <b>station</b>. It serves everything inside the dotted outline. Tap a station again to move or remove it.</li>'
-    + '<li>Chain stations into a <b>line</b>. A trip rides only if a route connects both ends.</li>'
-    + '<li>Add <b>trains and cars</b> to raise capacity. Red means people are being left behind.</li>'
-    + '<li><b>Run the week</b>: the city commutes, then grows — outward, and upward into mid-rises and towers that ride far more than houses.</li>'
-    + '<li>Long lines carry fewer riders per train. Short lines that interchange beat one giant loop.</li>'
-    + '<li>Approval falls when people are stranded or crushed. At zero you are out.</li>'
-    + '</ul>',
-    '<button class="btn g" id="mOk2">Got it</button>');
-  $("mOk2").onclick = closeModal;
-}
-function showMenu(){
-  const pop = [...G.tiles.values()].reduce((n,t) => n + homePop(t), 0);
-  const job = [...G.tiles.values()].reduce((n,t) => n + jobCount(t), 0);
-  const tall = [...G.tiles.values()].filter(t => t.lvl >= 3).length;
-  modal("Metro City",
-      '<div class="kv"><span>Week</span><b>' + G.week + '</b></div>'
-    + '<div class="kv"><span>Best run</span><b>' + G.best + ' weeks</b></div>'
-    + '<div class="kv"><span>Residents</span><b>' + fmt(pop) + '</b></div>'
-    + '<div class="kv"><span>Jobs</span><b>' + fmt(job) + '</b></div>'
-    + '<div class="kv"><span>City blocks</span><b>' + G.tiles.size + ' (' + tall + ' tall)</b></div>'
-    + '<div style="height:12px"></div>'
-    + '<button class="btn" id="mHelp" style="width:100%;margin-bottom:8px">How to play</button>'
-    + '<button class="btn r" id="mReset" style="width:100%">Abandon and start over</button>',
-    '<button class="btn g" id="mClose">Close</button>');
-  $("mClose").onclick = closeModal;
-  $("mHelp").onclick = showHelp;
-  $("mReset").onclick = () => { closeModal(); startFresh(); };
-}
-
-/* ---- week ---- */
-$("run").onclick = () => {
-  if (G.over) return;
-  if (UI.draft) return toast("Finish the line first", true);
-  const r = runWeek();
-  reindex(); renderAll(); paintHud(); paintPanel(); saveGame();
-  showReport(r);
-};
-$("menu").onclick = showMenu;
-$("recenter").onclick = fitView;
-
-function startFresh(){
-  newGame();
-  UI.tool = null; UI.draft = null; UI.selStation = null; UI.moving = false;
-  closeSheet();
-  renderAll(); fitView(); paintHud(); paintTools(); paintPanel(); saveGame();
-  showHelp();
+/* ---- loop ---- */
+let lastT = performance.now(), acc = 0, hudAcc = 0, stAcc = 0, saveAcc = 0;
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt = (now - lastT)/1000; lastT = now;
+  if (dt > 0.12) dt = 0.12;
+  if (G.dirtyRoute){ rebuildRouting(); G.dirtyRoute = false; }
+  stepSim(dt);
+  if (G.dirtyStatic){ renderStatic(); G.dirtyStatic = false; }
+  renderTrains();
+  stAcc += dt; if (stAcc > 0.08){ renderStations(); stAcc = 0; }
+  hudAcc += dt; if (hudAcc > 0.2){ paintHud(); hudAcc = 0;
+    if (UI.selStation != null || UI.selLine != null) paintPanel(); }
+  saveAcc += dt; if (saveAcc > 20){ saveGame(); saveAcc = 0; }
 }
 
 function boot(){
-  const had = loadGame();
-  if (!had) newGame();
-  renderAll(); paintHud(); paintTools(); paintPanel();
-  fitView();
-  if (!had) showHelp();
-  else if (G.over) showGameOver();
-  let last = performance.now(), acc = 0;
-  function frame(now){
-    requestAnimationFrame(frame);
-    const dt = Math.min((now - last)/1000, 0.1); last = now;
-    acc += dt;
-    if (acc < 1/30) return;
-    if (!$("modal").classList.contains("on")) animTrains(acc);
-    acc = 0;
-  }
+  if (!loadGame()) newGame();
+  G.dirtyStatic = true; G.dirtyRoute = true;
+  renderAll(); fitView(); paintHud(); paintDock(); paintPanel(); ambientHint();
   requestAnimationFrame(frame);
 }
 boot();

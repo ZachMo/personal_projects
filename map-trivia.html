@@ -554,8 +554,8 @@ function over(won) {
   const got = run().solved.length;
   $("ovtitle").textContent = won ? `All ${N()} ${MAP.unitPlural}!` : "Out of lives";
   $("ovbody").textContent = won
-    ? `You named every ${MAP.unit} in ${MAP.title} on ${mode} mode without running out of lives.`
-    : `You got ${got} of ${N()} before missing ${MAX_WRONG} times. `
+    ? `You named every ${MAP.unit} in ${MAP.title} on ${mode} mode.`
+    : `You named ${got} of ${N()} before your ${MAX_WRONG} misses ran out. `
       + `Best so far: ${save[mapId].best[mode]}.`;
   $("ovbtn").textContent = won ? "Play again" : "Start over";
   $("overlay").hidden = false;

@@ -205,9 +205,9 @@
 <div class="wrap">
   <header>
     <h1>Mexican presidential elections by state, 2000–2024</h1>
-    <p>Pick an election to see who won it nationally. Select a state on the map for its
-       own breakdown by candidate and party coalition — click the sea, or choose
-       <i>All of Mexico</i>, to return to the national total.</p>
+    <p>Pick an election to see who won the country. Then pick a state on the map to see
+       how it voted, candidate by candidate. Click the sea, or choose <i>All of
+       Mexico</i>, to go back to the national total.</p>
   </header>
 
   <div class="filters">
@@ -251,25 +251,24 @@
   </div>
 
   <footer>
-    <p><b>Election results</b> — state-level presidential vote counts published by the
-      Instituto Federal Electoral (2000, 2006) and Instituto Nacional Electoral (2012,
-      2018, 2024), as tabulated on Spanish Wikipedia's <i>Elecciones federales de
-      México</i> articles. Totals reconcile with the official national counts; 2018 and
-      2024 match them exactly, while earlier years differ only by the out-of-country
-      vote, which is reported separately and is not included in any state's row.</p>
-    <p><b>National totals</b> are the sum of the 32 state rows, so they exclude the
-      out-of-country vote, which is counted separately and never large enough to change
-      a result.</p>
-    <p><b>Percentages</b> are each candidate's share of the votes cast for the candidates
-      listed for that election. Null ballots and votes for unregistered candidates are
-      excluded from the base, so shares are comparable across all five elections. This
-      runs slightly above the figures usually quoted in the press, which divide by all
-      ballots cast: Sheinbaum's 2024 result reads 61.3% here and 59.8% on that wider
-      base. Coalition names are given as registered for that election — the same party
-      can appear in different coalitions across years.</p>
-    <p><b>Map</b> — state boundaries from a public-domain Mexico GeoJSON, simplified and
-      drawn on an equirectangular projection standardised at 23°N. Fill shows the
-      winning coalition; deeper fill means a larger winning share.</p>
+    <p><b>Election results.</b> The vote counts are the state-level presidential results
+      published by the Instituto Federal Electoral (2000, 2006) and the Instituto
+      Nacional Electoral (2012, 2018, 2024), as tabulated in Spanish Wikipedia's
+      <i>Elecciones federales de México</i> articles. They reconcile with the official
+      national counts. 2018 and 2024 match exactly. The earlier years differ only by the
+      out-of-country vote, which is reported on its own and belongs to no state.</p>
+    <p><b>National totals</b> add up the 32 state rows. They leave out the out-of-country
+      vote, which has never been large enough to change a result.</p>
+    <p><b>Percentages</b> give each candidate a share of the votes cast for the
+      candidates listed in that election. Null ballots and votes for unregistered
+      candidates stay out of the base, so the five elections compare cleanly. That base
+      also runs a little high next to the figures the press quotes, which divide by every
+      ballot cast. Sheinbaum's 2024 result reads 61.3% here and 59.8% on the wider base.
+      Coalition names are the ones registered for that election, so the same party can
+      turn up in different coalitions from year to year.</p>
+    <p><b>Map.</b> State boundaries come from a public-domain Mexico GeoJSON, simplified
+      and drawn on an equirectangular projection standardised at 23°N. The fill shows the
+      winning coalition. A deeper fill means a larger winning share.</p>
   </footer>
 </div>
 
@@ -474,10 +473,10 @@ function renderBars() {
   const nat = state === null;
   $("stname").textContent = (nat ? "All of Mexico" : DATA.display[state]) + " · " + year;
   $("stsub").innerHTML = nat
-    ? `${fmt(total)} votes nationwide — <b>${rows[0].name}</b> won the election by ` +
+    ? `${fmt(total)} votes nationwide. <b>${rows[0].name}</b> won by ` +
       `${(rows[0].share - rows[1].share).toFixed(1)} points. ` +
-      `Select a state on the map for its own breakdown.`
-    : `${fmt(total)} votes for the candidates below — ` +
+      `Pick a state on the map to see how it voted.`
+    : `${fmt(total)} votes for the candidates below. ` +
       `<b>${rows[0].name}</b> won the state by ` +
       `${(rows[0].share - rows[1].share).toFixed(1)} points.`;
 
@@ -528,7 +527,7 @@ function renderMapHead() {
   const e = DATA.elections[year];
   const parts = Object.entries(statesWon(year)).sort((a, b) => b[1] - a[1])
     .map(([n, c]) => `${surname(n)} ${c}`).join(" · ");
-  $("maptitle").textContent = `${year} presidential election — states won`;
+  $("maptitle").textContent = `States won in the ${year} election`;
   $("mapsub").textContent = parts;
 
   const keys = [...new Set(e.candidates.map(c => c.key))];

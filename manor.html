@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Manor</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb; --plane: #f9f9f7;
+    --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --border: rgba(11,11,11,.10); --wash: rgba(11,11,11,.04);
+    --accent: #2a78d6; --warn: #b3541e; --gem: #1f7a6b;
+    --gray: #e4e3d8; --green: #cbe3bd; --red: #f0cdc5; --blue: #c7dbf0;
+    --any: #ded0ef; --gold: #f2dfa0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface: #1a1a19; --plane: #0d0d0d;
+      --ink: #fff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --border: rgba(255,255,255,.12); --wash: rgba(255,255,255,.06);
+      --accent: #3987e5; --warn: #e08b4c; --gem: #4fbfa8;
+      --gray: #3b3b36; --green: #33482d; --red: #4c2f2a; --blue: #283d55;
+      --any: #3d3352; --gold: #57481d;
+    }
+  }
+  * { box-sizing: border-box; min-width: 0; }
+  body {
+    margin: 0; background: var(--plane); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  }
+  .wrap { max-width: 440px; margin: 0 auto; padding: 26px 16px 60px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  h1 { font-size: 1.45rem; letter-spacing: -0.02em; margin: 0; }
+  .day { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .lede { color: var(--muted); font-size: .84rem; margin: 3px 0 18px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+          padding: 7px 6px; text-align: center; }
+  .stat b { display: block; font-size: 1.1rem; font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em; }
+  .stat span { font-size: .65rem; text-transform: uppercase; letter-spacing: .07em;
+               color: var(--muted); }
+  .stat.low b { color: var(--warn); }
+  .stat.gem b { color: var(--gem); }
+
+  .board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .cell {
+    position: relative; aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 4px; font-size: 10px; line-height: 1.15;
+  }
+  .cell.empty { background: transparent; border-style: dashed; border-color: var(--line);
+                box-shadow: 0 0 0 1px var(--wash) inset; }
+  .cell .nm { font-weight: 600; letter-spacing: -0.01em; }
+  .cell.gray { background: var(--gray); } .cell.green { background: var(--green); }
+  .cell.red { background: var(--red); }   .cell.blue { background: var(--blue); }
+  .cell.any { background: var(--any); }   .cell.gold { background: var(--gold); }
+  .cell.target { border: 2px dashed var(--accent); cursor: pointer; }
+  .cell.walk { cursor: pointer; box-shadow: 0 0 0 2px var(--accent) inset; }
+  .cell.here::after { content: ""; position: absolute; inset: 3px; border-radius: 5px;
+                      box-shadow: 0 0 0 2px var(--ink) inset; }
+  .cell.picked { border: 2px solid var(--accent); }
+  .price { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gem); }
+  .price.short { color: var(--ink-2); opacity: .75; }
+  .door { position: absolute; background: var(--ink); opacity: .16; border-radius: 2px; }
+  .door.on { opacity: .55; }
+  .door.N { top: 2px; left: 50%; transform: translateX(-50%); width: 28%; height: 3px; }
+  .door.S { bottom: 2px; left: 50%; transform: translateX(-50%); width: 28%; height: 3px; }
+  .door.W { left: 2px; top: 50%; transform: translateY(-50%); height: 28%; width: 3px; }
+  .door.E { right: 2px; top: 50%; transform: translateY(-50%); height: 28%; width: 3px; }
+
+  .msg { min-height: 20px; margin: 12px 0 0; color: var(--ink-2); font-size: .84rem; }
+  .msg.warn { color: var(--warn); font-weight: 600; }
+
+  .panel { margin-top: 10px; display: grid; gap: 8px; }
+  .card {
+    display: grid; grid-template-columns: 30px 1fr; gap: 11px; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; cursor: pointer; text-align: left; color: inherit; font: inherit;
+  }
+  .card:hover { border-color: var(--accent); }
+  .mini { position: relative; width: 28px; height: 28px; border-radius: 6px;
+          border: 1px solid var(--border); }
+  .mini.gray { background: var(--gray); } .mini.green { background: var(--green); }
+  .mini.red { background: var(--red); }   .mini.blue { background: var(--blue); }
+  .mini.any { background: var(--any); }
+  .card .nm2 { font-weight: 600; font-size: .93rem; letter-spacing: -0.01em; }
+  .card .note { color: var(--ink-2); font-size: .77rem; }
+  .card .note em { font-style: normal; color: var(--gem); font-weight: 600; }
+
+  .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button.btn { font: inherit; font-size: .85rem; font-weight: 600; padding: 9px 14px;
+    border-radius: 10px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--ink); cursor: pointer; }
+  button.btn:hover { border-color: var(--accent); }
+  button.btn[disabled] { opacity: .4; cursor: not-allowed; }
+  button.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .result { margin-top: 16px; background: var(--surface); border: 1px solid var(--border);
+            border-radius: 14px; padding: 16px; }
+  .result h2 { margin: 0; font-size: 1rem; letter-spacing: -0.01em; }
+  .result .total { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.03em;
+                   font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
+  .lines { display: grid; gap: 3px; font-size: .84rem; color: var(--ink-2); }
+  .lines div { display: flex; justify-content: space-between; gap: 12px; }
+  .lines b { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+  footer { margin-top: 30px; color: var(--muted); font-size: .76rem; }
+  footer a { color: var(--ink-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Manor</h1><span class="day" id="day"></span></header>
+  <p class="lede">Fourteen steps. The Antechamber is sealed.</p>
+
+  <div class="stats" id="stats"></div>
+  <div class="board" id="board"></div>
+  <p class="msg" id="msg"></p>
+  <div class="panel" id="panel"></div>
+  <div class="row" id="controls"></div>
+  <div id="result"></div>
+
+  <footer>One HTML file. Nothing leaves your browser. <a href="index.html">Other projects</a>.</footer>
+</div>
+
+<script>
+"use strict";
+
+const W = 5, H = 4, N = W * H;
+const START = 17, ANTE = 2;
+const STEPS0 = 14, PRICE = 18;
+const DIRS = ["N", "E", "S", "W"];
+const OPP = { N: "S", S: "N", E: "W", W: "E" };
+const CORNERS = [0, 4, 15, 19];
+
+function nb(i, d) {
+  const r = Math.floor(i / W), c = i % W;
+  if (d === "N") return r > 0 ? i - W : -1;
+  if (d === "S") return r < H - 1 ? i + W : -1;
+  if (d === "E") return c < W - 1 ? i + 1 : -1;
+  return c > 0 ? i - 1 : -1;
+}
+
+/* A Rotunda answers to every colour, so it counts for anything asking about neighbours. */
+const is = (cell, col) => !!cell && (cell.color === col || cell.color === "any");
+const beside = (i, g, col) => DIRS.reduce((n, d) => {
+  const j = nb(i, d); return n + (j >= 0 && is(g[j], col) ? 1 : 0); }, 0);
+const anywhere = (g, col) => g.reduce((n, c) => n + (is(c, col) ? 1 : 0), 0);
+const openDoors = (i, g) => DIRS.filter(d => {
+  const j = nb(i, d);
+  return g[i].doors.includes(d) && j >= 0 && g[j] && g[j].doors.includes(OPP[d]); }).length;
+
+const CARDS = {
+  hallway:  { name: "Hallway",      color: "gray",  doors: "NEW",  w: 6, pts: 1 },
+  passage:  { name: "Passage",      color: "gray",  doors: "NESW", w: 4, pts: 0 },
+  landing:  { name: "Landing",      color: "gray",  doors: "NESW", w: 3,
+              note: "2 for each door that meets a room",
+              pts: (i, g) => 2 * openDoors(i, g) },
+  cloak:    { name: "Cloakroom",    color: "gray",  doors: "E",    w: 4, pts: 2,
+              note: "<em>+2 gems</em>", gems: () => 2 },
+
+  courtyard:{ name: "Courtyard",    color: "green", doors: "NEW",  w: 5,
+              note: "3 for each garden beside it",
+              pts: (i, g) => 3 * beside(i, g, "green") },
+  greenhouse:{name: "Greenhouse",   color: "green", doors: "NE",   w: 4, pts: 4 },
+  orangery: { name: "Orangery",     color: "green", doors: "EW",   w: 3,
+              note: "8 with a garden on either side",
+              pts: (i, g) => (is(g[nb(i, "E")], "green") && is(g[nb(i, "W")], "green")) ? 8 : 0 },
+  topiary:  { name: "Topiary",      color: "green", doors: "N",    w: 3,
+              note: "2 for every garden in the manor",
+              pts: (i, g) => 2 * anywhere(g, "green") },
+  well:     { name: "Well",         color: "green", doors: "NS",   w: 3,
+              note: "<em>+2 gems</em> · 2 for each garden beside it",
+              pts: (i, g) => 2 * beside(i, g, "green"), gems: () => 2 },
+
+  bedroom:  { name: "Bedroom",      color: "red",   doors: "",     w: 4,
+              note: "10 in a corner, otherwise 3",
+              pts: i => CORNERS.includes(i) ? 10 : 3 },
+  drawing:  { name: "Drawing Room", color: "red",   doors: "NW",   w: 5,
+              note: "4 for each chamber beside it",
+              pts: (i, g) => 4 * beside(i, g, "red") },
+  ballroom: { name: "Ballroom",     color: "red",   doors: "NEW",  w: 3,
+              note: "14, less 4 for each chamber beside it",
+              pts: (i, g) => 14 - 4 * beside(i, g, "red") },
+  study:    { name: "Study",        color: "red",   doors: "E",    w: 4,
+              note: "2 for each room in its row",
+              pts: (i, g) => { const r = Math.floor(i / W); let n = 0;
+                for (let c = 0; c < W; c++) if (g[r * W + c]) n++; return 2 * n; } },
+
+  cellar:   { name: "Cellar",       color: "blue",  doors: "",     w: 4, pts: 1,
+              note: "<em>+4 gems</em>", gems: () => 4 },
+  workshop: { name: "Workshop",     color: "blue",  doors: "NW",   w: 5, pts: 1,
+              note: "<em>+2 gems, and 1 more for each works beside it</em>",
+              gems: (i, g) => 2 + beside(i, g, "blue") },
+  boiler:   { name: "Boiler Room",  color: "blue",  doors: "NESW", w: 4, pts: 1,
+              note: "<em>+2 gems</em>", gems: () => 2 },
+  pump:     { name: "Pump House",   color: "blue",  doors: "EW",   w: 3, pts: 1,
+              note: "<em>+1 gem for every works in the manor</em>",
+              gems: (i, g) => anywhere(g, "blue") },
+  foundry:  { name: "Foundry",      color: "blue",  doors: "NE",   w: 3, pts: 2,
+              note: "<em>Doubles the gems you hold</em>", doubles: true },
+
+  rotunda:  { name: "Rotunda",      color: "any",   doors: "NESW", w: 2, pts: 2,
+              note: "Counts as every colour" },
+  observatory:{name: "Observatory", color: "any",   doors: "N",    w: 2,
+              note: "16 in the top row, otherwise nothing",
+              pts: i => i < W ? 16 : 0 },
+
+  entrance: { name: "Entrance Hall", color: "gray", doors: "NESW", pts: 0, w: 0 },
+  ante:     { name: "Antechamber",   color: "gold", doors: "NESW", pts: 0, w: 0 }
+};
+
+/* ---------- daily seed ---------- */
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hash(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function today() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" +
+         String(d.getDate()).padStart(2, "0");
+}
+function dayNumber(date) {
+  const [y, m, d] = date.split("-").map(Number);
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(2026, 7, 27)) / 86400000);
+}
+
+function buildDeck(rng) {
+  const lean = {};
+  for (const c of ["gray", "green", "red", "blue"]) lean[c] = 0.5 + rng() * 1.25;
+  lean.any = 1; lean.gold = 0;
+  const pool = [];
+  for (const id in CARDS) {
+    const c = CARDS[id];
+    if (!c.w) continue;
+    const n = Math.max(1, Math.round(c.w * lean[c.color]));
+    for (let k = 0; k < n; k++) pool.push(id);
+  }
+  const deck = [];
+  for (let k = 0; k < 60; k++) deck.push(pool[Math.floor(rng() * pool.length)]);
+  return deck;
+}
+
+/* ---------- state ---------- */
+
+const KEY = "manor3:", STATS_KEY = "manor3:stats";
+const RULES = "3-" + STEPS0 + "-" + PRICE;
+let S = null, target = null, entering = false, blocked = "";
+
+function newRun(date, practice) {
+  const rng = mulberry32(hash(date));
+  const grid = new Array(N).fill(null);
+  grid[START] = { id: "entrance", color: "gray", doors: "NESW" };
+  grid[ANTE]  = { id: "ante",     color: "gold", doors: "NESW" };
+  return { v: RULES, date, practice: !!practice, grid, steps: STEPS0, gems: 0,
+           deck: buildDeck(rng), ptr: 0, offers: null, over: false, won: false, placed: 0 };
+}
+function save() {
+  if (S.practice) return;
+  try { localStorage.setItem(KEY + S.date, JSON.stringify(S)); } catch (e) {}
+}
+function load(date) {
+  try {
+    const r = localStorage.getItem(KEY + date);
+    if (!r) return null;
+    const saved = JSON.parse(r);
+    return saved && saved.v === RULES ? saved : null;   /* rules changed: start over */
+  } catch (e) { return null; }
+}
+
+/* ---------- scoring ---------- */
+
+function roomPts(i) {
+  const c = S.grid[i];
+  if (!c) return 0;
+  const p = CARDS[c.id].pts;
+  return typeof p === "function" ? p(i, S.grid) : (p || 0);
+}
+function score() {
+  let rooms = 0;
+  for (let i = 0; i < N; i++) rooms += roomPts(i);
+  /* Gems buy the door. They are not worth points, so hoarding them is waste. */
+  return { rooms, manor: rooms, total: S.won ? rooms : Math.round(rooms / 2) };
+}
+
+/* ---------- turns ---------- */
+
+function draw() {
+  const out = [];
+  let guard = 0;
+  while (out.length < 3 && guard++ < 80) {
+    if (S.ptr >= S.deck.length) S.ptr = 0;
+    const id = S.deck[S.ptr++];
+    if (out.includes(id) && guard < 60) continue;
+    out.push(id);
+  }
+  return out;
+}
+
+/* Every open door in the manor is somewhere you can build. The Antechamber offers none. */
+function frontier() {
+  const out = [];
+  for (let j = 0; j < N; j++) {
+    if (S.grid[j]) continue;
+    for (const d of DIRS) {
+      const i = nb(j, d);
+      if (i < 0 || i === ANTE || !S.grid[i]) continue;
+      if (S.grid[i].doors.includes(OPP[d])) { out.push(j); break; }
+    }
+  }
+  return out;
+}
+
+/* The seal opens only if one of your own rooms has a door facing it. */
+function sealOpen() {
+  return DIRS.some(d => {
+    const i = nb(ANTE, d);
+    return i >= 0 && !!S.grid[i] && S.grid[i].doors.includes(OPP[d]);
+  });
+}
+const canEnter = () => sealOpen() && S.gems >= PRICE && S.steps >= 1;
+
+function place(id, i) {
+  const card = CARDS[id];
+  let doors = card.doors;
+  for (const d of DIRS) {                     /* a door always answers a door */
+    const j = nb(i, d);
+    if (j < 0 || j === ANTE || !S.grid[j]) continue;
+    if (S.grid[j].doors.includes(OPP[d]) && !doors.includes(d)) doors += d;
+  }
+  S.grid[i] = { id, color: card.color, doors };
+  S.steps -= 1;
+  if (card.gems) S.gems += card.gems(i, S.grid);
+  if (card.doubles) S.gems *= 2;
+  S.placed++; S.offers = null; target = null;
+  checkEnd();
+}
+
+function enter() {
+  S.steps -= 1; S.gems -= PRICE;
+  S.won = true; S.over = true; finish();
+}
+
+function checkEnd() {
+  if (S.over) return;
+  if (S.steps <= 0) { S.steps = 0; S.over = true; finish(); return; }
+  if (!frontier().length) { S.over = true; finish(); }
+}
+
+function finish() {
+  S.offers = null; target = null; entering = false;
+  if (S.practice) return;
+  const sc = score();
+  try {
+    const st = JSON.parse(localStorage.getItem(STATS_KEY) || "{}");
+    st.days = st.days || {};
+    if (!st.days[S.date]) {
+      st.days[S.date] = { total: sc.total, won: S.won };
+      st.plays = (st.plays || 0) + 1;
+      st.best = Math.max(st.best || 0, sc.total);
+      st.wins = (st.wins || 0) + (S.won ? 1 : 0);
+      localStorage.setItem(STATS_KEY, JSON.stringify(st));
+    }
+  } catch (e) {}
+}
+
+/* ---------- rendering ---------- */
+
+const $ = id => document.getElementById(id);
+const boardEl = $("board"), statsEl = $("stats"), msgEl = $("msg"),
+      panelEl = $("panel"), ctrlEl = $("controls"), resEl = $("result");
+
+function doorEls(doors, i) {
+  return DIRS.filter(d => doors.includes(d)).map(d => {
+    let on = false;
+    if (i !== undefined) {
+      const j = nb(i, d);
+      on = j >= 0 && !!S.grid[j] && S.grid[j].doors.includes(OPP[d]);
+    }
+    return '<i class="door ' + d + (on ? " on" : "") + '"></i>';
+  }).join("");
+}
+
+function render() {
+  const open = S.over ? [] : frontier();
+  const sc = score();
+
+  $("day").textContent = S.practice ? "Practice" : "No. " + dayNumber(S.date);
+
+  statsEl.innerHTML = [
+    ["Steps", S.steps, S.steps <= 3 ? "low" : ""],
+    ["Gems", S.gems, "gem"],
+    [S.over ? "Score" : "Manor", S.over ? sc.total : sc.manor, ""]
+  ].map(([l, v, cls]) =>
+    '<div class="stat ' + cls + '"><b>' + v + "</b><span>" + l + "</span></div>").join("");
+
+  boardEl.innerHTML = "";
+  for (let i = 0; i < N; i++) {
+    const c = S.grid[i], el = document.createElement("div");
+    el.className = "cell";
+    if (c) {
+      el.classList.add(c.color);
+      const body = i === ANTE
+        ? '<span class="price' + (S.gems < PRICE ? " short" : "") + '">◆ ' + PRICE + "</span>"
+        : '<span class="nm">' + CARDS[c.id].name + "</span>";
+      el.innerHTML = doorEls(c.doors, i) + body;
+      if (i === ANTE && !S.over && sealOpen()) el.classList.add("walk");
+    } else {
+      el.classList.add("empty");
+      if (open.includes(i)) el.classList.add("target");
+      if (i === target) el.classList.add("picked");
+    }
+    el.onclick = () => tap(i);
+    boardEl.appendChild(el);
+  }
+
+  panelEl.innerHTML = "";
+  if (!S.over && !entering && target !== null && S.offers) {
+    for (const id of S.offers) {
+      const card = CARDS[id];
+      const b = document.createElement("button");
+      b.className = "card";
+      b.innerHTML =
+        '<span class="mini ' + card.color + '">' + doorEls(card.doors) + "</span>" +
+        '<span><span class="nm2">' + card.name + "</span>" +
+        (card.note ? '<br><span class="note">' + card.note + "</span>" : "") + "</span>";
+      b.onclick = () => { blocked = ""; place(id, target); save(); render(); };
+      panelEl.appendChild(b);
+    }
+  }
+
+  ctrlEl.innerHTML = "";
+  if (!S.over && entering) {
+    add("Go in — ends the day", true, () => { entering = false; enter(); save(); render(); }, true);
+    add("Not yet", true, () => { entering = false; render(); });
+  } else if (!S.over && target !== null && S.offers) {
+    add("Another square", true, () => { target = null; render(); });
+  }
+  if (S.over) {
+    add("Share", true, share, true);
+    add(S.practice ? "Again" : "Practice run", true, () => {
+      S = newRun("practice-" + Date.now(), true);
+      target = null; entering = false; blocked = ""; render(); });
+  }
+
+  msgEl.className = "msg";
+  if (blocked) {
+    msgEl.textContent = blocked;
+    msgEl.className = "msg warn";
+  } else if (S.over) {
+    msgEl.textContent = S.won ? "You got in."
+      : (S.steps <= 0 ? "Out of steps." : "No doors left.");
+  } else if (entering) {
+    msgEl.textContent = "Pay " + PRICE + " and end the day on " + sc.rooms + ".";
+    msgEl.className = "msg warn";
+  } else if (canEnter()) {
+    msgEl.textContent = "The seal will open.";
+    msgEl.className = "msg warn";
+  } else {
+    msgEl.textContent = open.length ? "" : "Nowhere left to build.";
+  }
+
+  resEl.innerHTML = "";
+  if (S.over) resEl.appendChild(resultCard(sc));
+}
+
+function add(label, on, fn, primary) {
+  const b = document.createElement("button");
+  b.className = "btn" + (primary ? " primary" : "");
+  b.textContent = label; b.disabled = !on; b.onclick = fn;
+  ctrlEl.appendChild(b);
+}
+
+function resultCard(sc) {
+  const d = document.createElement("div");
+  d.className = "result";
+  let extra = "";
+  try {
+    const st = JSON.parse(localStorage.getItem(STATS_KEY) || "{}");
+    if (st.plays) extra = "<div><span>Best</span><b>" + st.best + "</b></div>" +
+      "<div><span>Got in</span><b>" + (st.wins || 0) + " of " + st.plays + "</b></div>";
+  } catch (e) {}
+  d.innerHTML =
+    "<h2>" + (S.won ? "Antechamber" : "Sealed") + "</h2>" +
+    '<div class="total">' + sc.total + "</div>" +
+    '<div class="lines">' +
+      "<div><span>Rooms placed</span><b>" + S.placed + "</b></div>" +
+      (S.won ? "<div><span>Seal</span><b>paid " + PRICE + "</b></div>"
+             : "<div><span>Gems</span><b>" + S.gems + " of " + PRICE + "</b></div>") +
+      (S.won ? "" : "<div><span>Half of " + sc.manor + "</span><b>&minus;" +
+                    (sc.manor - sc.total) + "</b></div>") +
+      (S.practice ? "" : extra) +
+    "</div>";
+  return d;
+}
+
+/* ---------- input ---------- */
+
+function tap(i) {
+  if (S.over) return;
+  blocked = "";
+  if (i === ANTE) {
+    target = null;
+    if (canEnter()) { entering = true; }
+    else blocked = !sealOpen() ? "No room opens a door onto it."
+                 : S.gems < PRICE ? "You hold " + S.gems + " of " + PRICE + "."
+                 : "No step left to walk in.";
+    render();
+    return;
+  }
+  if (frontier().includes(i)) {
+    target = i; entering = false;
+    if (!S.offers) S.offers = draw();
+    save(); render();
+  }
+}
+
+/* ---------- share ---------- */
+
+const EMOJI = { gray: "⬜", green: "🟩", red: "🟥", blue: "🟦", any: "🟪", gold: "⭐" };
+
+function shareText() {
+  const sc = score(), rows = [];
+  for (let r = 0; r < H; r++) {
+    let line = "";
+    for (let c = 0; c < W; c++) {
+      const i = r * W + c, cell = S.grid[i];
+      if (i === ANTE) line += S.won ? "⭐" : "🔒";
+      else if (i === START) line += "🟨";
+      else if (!cell) line += "⬛";
+      else line += EMOJI[cell.color];
+    }
+    rows.push(line);
+  }
+  return ["Manor No. " + dayNumber(S.date) + " · " + sc.total, "", ...rows, "",
+          S.won ? "" : "sealed"].filter(x => x !== "").join("\n");
+}
+
+function share() {
+  const text = shareText();
+  if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    navigator.share({ text }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => { msgEl.textContent = "Copied."; })
+      .catch(() => { msgEl.textContent = text; });
+  } else { msgEl.textContent = text; }
+}
+
+/* ---------- boot ---------- */
+
+(function () {
+  const date = today(), saved = load(date);
+  S = saved && saved.grid ? saved : newRun(date, false);
+  target = null; entering = false; blocked = "";
+  render();
+})();
+</script>
+</body>
+</html>

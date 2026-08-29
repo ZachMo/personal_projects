@@ -1,7 +1,52 @@
 # personal_projects
 
-Three pages. Each one is a single HTML file with no build step, no dependencies and no
+Five pages. Each one is a single HTML file with no build step, no dependencies and no
 network calls. Open any of them in a browser.
+
+## fall.html
+
+Three small games for a phone, played with one thumb. The page is a full-screen app
+shell: a home list, a settings screen and one canvas the games draw into. Nothing leaves
+the browser. Best scores and settings live in localStorage.
+
+Steering is one setting shared by every game. **Drag** moves whatever you are steering by
+the distance your thumb travels, so your thumb never has to cover the thing you are
+watching. **Buttons** puts two pads at the bottom, and they swap sides for left-handers.
+**Tilt** reads `deviceorientation`, with a sensitivity choice and a recentre button that
+makes however you are holding the phone count as straight ahead. iOS needs motion access,
+so there is a button in settings that asks for it.
+
+### Dino Fall
+
+Blocks drop out of a dusk sky and you dodge along the ground. They fall faster and closer
+together the longer you last. A clay diamond is a shield and soaks up one hit. The score
+is the number of seconds you stay on your feet.
+
+It started as an easter egg in a page margin, moved with the arrow keys. This version is
+built for a screen you hold.
+
+### Fish Fall
+
+Five casts. Tap to drop the line.
+
+Going down, the first thing you touch stops the descent and starts the reel, so a deep
+cast means threading past every fish in the shallows. Coming back up, you hook everything
+you can reach.
+
+The line reaches 150 m on the first cast and 620 m on the fifth, and it speeds up as it
+drops, so a long cast is not a long wait. The animals get rarer and worth more the deeper
+you go: sardines and perch near the top, tuna and jellyfish in the middle, squid,
+anglerfish and gulper eels in the dark.
+
+At the surface the whole catch flies into the air and hangs there. Tap each fish and the
+fisherman shoots it for its points. Anything you do not hit before the clock runs out
+falls back in the sea and is worth nothing.
+
+Everything is drawn from shapes on a canvas — no images, no sprite sheets.
+
+### Golf Fall
+
+Not built yet. The card on the home screen is there and locked.
 
 ## mexico-elections.html
 
@@ -64,3 +109,32 @@ that. Density grows along the lines you build, so a well-served city climbs towa
 million people. A neglected one thins out.
 
 There is no score and no way to lose. Pause it, speed it up, and it saves as you go.
+
+## manor.html
+
+A daily game. One run, two or three minutes.
+
+You get an empty blueprint, fourteen steps, and an Antechamber that is sealed. Placing a
+room costs a step, and so does walking through the seal at the end. Each step offers three
+rooms and you keep one. Rooms have doors, and you can only build where a door already
+points, so the shape of what you have built decides what you can build next.
+
+Every room does something, and no two do the same thing. Some pay gems. Some score off
+their neighbours, or their row, or the corner they sit in. One of them is worth a lot and
+hates company. Working out which rooms are worth taking, and when, is the game.
+
+The seal has a price in gems. Gems are not worth points — they only buy the door. So a run
+that chases points never gets in, and a run that only mines gems gets in with an empty
+manor. You have to do both, in the right proportion, before the steps run out.
+
+The page carries no instructions on purpose. It shows you the price on the door, what you
+hold, and what each room does. The rest is yours to work out, and most of it only becomes
+obvious after a few days.
+
+The deck is seeded by the date, so everyone gets the same shuffle and the same three cards
+off the top. Each day also leans towards a different kind of room.
+
+Simulated over 50 seeded days: a player who takes the highest-scoring room every time
+builds a manor worth 38 and gets in **0%** of the time. A player who works out that gems
+are the gate gets in 36% of the time but only scores 21. A player doing both scores 45 and
+gets in 68%.

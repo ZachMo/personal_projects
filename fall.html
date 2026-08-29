@@ -1,0 +1,1850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e1118">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Fall</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0e1118; --panel: #171c27; --panel-2: #1e2431;
+    --line: #29303f; --ink: #f2f4f8; --ink-2: #98a2b6; --muted: #6d7688;
+    --accent: #ffb703; --accent-2: #4cc9f0; --good: #6ee7a8; --bad: #ff6b6b;
+    --pad-t: env(safe-area-inset-top, 0px);
+    --pad-b: env(safe-area-inset-bottom, 0px);
+    --pad-l: env(safe-area-inset-left, 0px);
+    --pad-r: env(safe-area-inset-right, 0px);
+  }
+  * { box-sizing: border-box; min-width: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none;
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none; user-select: none;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+
+  #app { position: fixed; inset: 0; }
+  .screen { position: absolute; inset: 0; display: none; flex-direction: column; }
+  .screen.on { display: flex; }
+
+  /* ── Scrolling panels (home, settings) ── */
+  .sheet {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: calc(var(--pad-t) + 28px) calc(var(--pad-r) + 18px)
+             calc(var(--pad-b) + 40px) calc(var(--pad-l) + 18px);
+  }
+  .inner { max-width: 520px; margin: 0 auto; }
+
+  .brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+  h1 {
+    margin: 0; font-size: clamp(2.4rem, 13vw, 3.4rem); font-weight: 800;
+    letter-spacing: -0.045em; line-height: .95;
+  }
+  h1 span { color: var(--accent); }
+  .lede { margin: 10px 0 26px; color: var(--ink-2); font-size: .92rem; max-width: 34ch; }
+
+  .icon-btn {
+    width: 42px; height: 42px; flex: 0 0 42px; border-radius: 12px;
+    background: var(--panel); border: 1px solid var(--line);
+    display: grid; place-items: center;
+  }
+  .icon-btn:active { background: var(--panel-2); }
+  .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: var(--ink-2); stroke-width: 1.8;
+                  stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── Game cards ── */
+  .cards { display: grid; gap: 14px; }
+  .card {
+    display: grid; grid-template-columns: 66px 1fr; gap: 16px; align-items: center;
+    width: 100%; text-align: left; padding: 16px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+    transition: transform .12s ease, border-color .12s ease;
+  }
+  .card:active { transform: scale(.985); border-color: var(--accent); }
+  .card.locked { opacity: .55; }
+  .card.locked:active { transform: none; border-color: var(--line); }
+  .card .art {
+    width: 66px; height: 66px; border-radius: 14px; display: grid; place-items: center;
+    overflow: hidden;
+  }
+  .card h2 { margin: 0 0 3px; font-size: 1.12rem; font-weight: 700; letter-spacing: -0.02em; }
+  .card p { margin: 0; color: var(--ink-2); font-size: .84rem; line-height: 1.35; }
+  .card .meta {
+    margin-top: 7px; font-size: .74rem; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .card .meta b { color: var(--accent); font-weight: 700; }
+  .tag {
+    display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 999px;
+    font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    vertical-align: middle; background: rgba(255,183,3,.14); color: var(--accent);
+  }
+  .tag.soon { background: rgba(152,162,182,.14); color: var(--ink-2); }
+
+  .foot { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
+          color: var(--muted); font-size: .78rem; }
+  .foot a { color: var(--ink-2); }
+
+  /* ── Settings ── */
+  .bar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+  }
+  .bar h2 { margin: 0; font-size: 1.3rem; letter-spacing: -0.02em; }
+  .group { margin-bottom: 26px; }
+  .group > label { display: block; font-size: .74rem; font-weight: 700; letter-spacing: .1em;
+                   text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .group .hint { margin: 10px 0 0; color: var(--muted); font-size: .8rem; line-height: 1.4; }
+  .seg { display: grid; grid-auto-flow: column; gap: 6px; padding: 5px;
+         background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .seg button {
+    padding: 11px 8px; border-radius: 10px; font-size: .88rem; font-weight: 600;
+    color: var(--ink-2); text-align: center;
+  }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #17130a; }
+  .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 14px 16px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; margin-bottom: 8px;
+  }
+  .row .t { font-size: .92rem; }
+  .row .s { color: var(--muted); font-size: .78rem; margin-top: 2px; }
+  .switch {
+    width: 50px; height: 30px; flex: 0 0 50px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--line); position: relative;
+    transition: background .16s ease;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px;
+    border-radius: 50%; background: var(--muted); transition: transform .16s ease, background .16s ease;
+  }
+  .switch[aria-pressed="true"] { background: rgba(255,183,3,.25); border-color: var(--accent); }
+  .switch[aria-pressed="true"]::after { transform: translateX(20px); background: var(--accent); }
+  .btn {
+    display: block; width: 100%; padding: 14px; border-radius: 14px; font-weight: 700;
+    background: var(--panel); border: 1px solid var(--line); text-align: center;
+  }
+  .btn:active { background: var(--panel-2); }
+  .btn.primary { background: var(--accent); color: #17130a; border-color: var(--accent); }
+  .btn.ghost { background: none; color: var(--ink-2); }
+
+  /* ── Game view ── */
+  #play { background: #000; }
+  #stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .hud {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: calc(var(--pad-t) + 10px) calc(var(--pad-r) + 12px) 10px calc(var(--pad-l) + 12px);
+    display: flex; align-items: flex-start; gap: 10px; pointer-events: none;
+  }
+  .hud .icon-btn { pointer-events: auto; background: rgba(14,17,24,.55); border-color: rgba(255,255,255,.14);
+                   backdrop-filter: blur(6px); }
+  .hud .readout { margin-left: auto; text-align: right; }
+  .hud .big {
+    font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 6px rgba(0,0,0,.6);
+  }
+  .hud .sub {
+    font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: rgba(255,255,255,.7); text-shadow: 0 1px 5px rgba(0,0,0,.6);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── On-screen pads ── */
+  .pads { position: absolute; inset: auto 0 0 0; height: 40%; display: none; pointer-events: none; }
+  .pads.on { display: flex; }
+  .pad {
+    flex: 1; margin: 0 calc(var(--pad-r) + 14px) calc(var(--pad-b) + 18px) calc(var(--pad-l) + 14px);
+    max-width: 120px; height: 74px; align-self: flex-end;
+    border-radius: 20px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16);
+    backdrop-filter: blur(4px); display: grid; place-items: center; pointer-events: auto;
+  }
+  .pad.right { margin-left: auto; }
+  .pad.down { background: rgba(255,183,3,.3); }
+  .pad svg { width: 28px; height: 28px; fill: rgba(255,255,255,.85); }
+
+  /* ── Overlays ── */
+  .veil {
+    position: absolute; inset: 0; display: none; align-items: flex-start; justify-content: center;
+    padding: calc(var(--pad-t) + 16px) 22px calc(var(--pad-b) + 16px);
+    background: rgba(9,11,16,.78); backdrop-filter: blur(7px); z-index: 5;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .veil.on { display: flex; }
+  .veil .box {
+    width: 100%; max-width: 340px; margin: auto 0;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 20px; padding: 24px 22px; text-align: center;
+  }
+  .veil h3 { margin: 0 0 6px; font-size: 1.35rem; letter-spacing: -0.02em; }
+  .veil .why { margin: 0 0 18px; color: var(--ink-2); font-size: .88rem; }
+  .veil .score { font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1;
+                 color: var(--accent); font-variant-numeric: tabular-nums; margin: 4px 0 2px; }
+  .veil .best { color: var(--muted); font-size: .8rem; font-weight: 600; letter-spacing: .06em;
+                text-transform: uppercase; margin: 0 0 20px; font-variant-numeric: tabular-nums; }
+  .veil .btn + .btn { margin-top: 8px; }
+  .veil .rules { text-align: left; margin: 0 0 20px; padding: 0; list-style: none;
+                 display: grid; gap: 10px; }
+  .veil .rules li { display: grid; grid-template-columns: 26px 1fr; gap: 10px;
+                    color: var(--ink-2); font-size: .86rem; line-height: 1.35; }
+  .veil .rules b { color: var(--ink); font-weight: 700; }
+  .veil .rules .n {
+    width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center;
+    background: var(--panel-2); color: var(--accent); font-size: .74rem; font-weight: 800;
+  }
+  .catch-list { display: grid; gap: 6px; margin: 0 0 18px; padding: 0; list-style: none;
+                text-align: left; font-size: .85rem; max-height: 34vh; overflow-y: auto; }
+  .catch-list li { display: flex; justify-content: space-between; gap: 10px;
+                   padding: 7px 10px; background: var(--panel-2); border-radius: 9px; }
+  .catch-list .v { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .catch-list .miss { color: var(--muted); font-weight: 600; }
+
+  /* ── Landscape and other short screens ── */
+  @media (max-height: 540px) {
+    .veil .box { padding: 16px 18px; border-radius: 16px; }
+    .veil h3 { font-size: 1.1rem; }
+    .veil .why { margin-bottom: 12px; font-size: .82rem; }
+    .veil .score { font-size: 2.1rem; }
+    .veil .best { margin-bottom: 12px; }
+    .veil .rules { gap: 7px; margin-bottom: 12px; }
+    .veil .rules li { font-size: .8rem; }
+    .catch-list { max-height: 26vh; margin-bottom: 12px; }
+    .btn { padding: 11px; }
+    .pad { height: 58px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Home ── -->
+  <section class="screen on" id="home">
+    <div class="sheet">
+      <div class="inner">
+        <div class="brand">
+          <h1>Fall<span>.</span></h1>
+          <button class="icon-btn" id="toSettings" aria-label="Settings">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H2.9a2 2 0 1 1 0-4H3a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V2.9a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          </button>
+        </div>
+        <p class="lede">Three small games about things that go down. Built for a phone, one
+           thumb, and a few spare minutes.</p>
+
+        <div class="cards" id="cards"></div>
+
+        <div class="foot">
+          Nothing leaves your phone. Scores live in this browser.
+          <a href="index.html">All projects</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Settings ── -->
+  <section class="screen" id="settings">
+    <div class="sheet">
+      <div class="inner">
+        <div class="bar">
+          <button class="icon-btn" id="settingsBack" aria-label="Back">
+            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <h2>Settings</h2>
+        </div>
+
+        <div class="group">
+          <label>Steering</label>
+          <div class="seg" id="ctrlSeg">
+            <button data-v="drag" aria-pressed="false">Drag</button>
+            <button data-v="buttons" aria-pressed="false">Buttons</button>
+            <button data-v="tilt" aria-pressed="false">Tilt</button>
+          </div>
+          <p class="hint" id="ctrlHint"></p>
+          <button class="btn" id="tiltPerm" style="margin-top:10px; display:none">Allow motion access</button>
+        </div>
+
+        <div class="group">
+          <label>Tilt sensitivity</label>
+          <div class="seg" id="tiltSeg">
+            <button data-v="low" aria-pressed="false">Gentle</button>
+            <button data-v="mid" aria-pressed="false">Normal</button>
+            <button data-v="high" aria-pressed="false">Twitchy</button>
+          </div>
+          <p class="hint">Hold the phone the way you like, then tap Recentre. That angle
+             becomes straight ahead.</p>
+          <button class="btn" id="tiltZero" style="margin-top:10px">Recentre tilt</button>
+        </div>
+
+        <div class="group">
+          <label>Feel</label>
+          <div class="row">
+            <div><div class="t">Sound</div><div class="s">Short blips and splashes.</div></div>
+            <button class="switch" id="optSound" aria-pressed="false" aria-label="Sound"></button>
+          </div>
+          <div class="row">
+            <div><div class="t">Vibration</div><div class="s">A tap on a catch or a crash.</div></div>
+            <button class="switch" id="optHaptics" aria-pressed="false" aria-label="Vibration"></button>
+          </div>
+          <div class="row">
+            <div><div class="t">Left-handed</div><div class="s">Puts the buttons on the other side.</div></div>
+            <button class="switch" id="optLefty" aria-pressed="false" aria-label="Left-handed"></button>
+          </div>
+        </div>
+
+        <div class="group">
+          <label>Scores</label>
+          <button class="btn ghost" id="wipe">Erase every best score</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Play ── -->
+  <section class="screen" id="play">
+    <canvas id="stage"></canvas>
+    <div class="hud">
+      <button class="icon-btn" id="quit" aria-label="Back">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="readout">
+        <div class="big" id="hudBig">0</div>
+        <div class="sub" id="hudSub"></div>
+      </div>
+    </div>
+    <div class="pads" id="pads">
+      <button class="pad left" data-dir="-1" aria-label="Left">
+        <svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8z"/></svg>
+      </button>
+      <button class="pad right" data-dir="1" aria-label="Right">
+        <svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8z"/></svg>
+      </button>
+    </div>
+    <div class="veil" id="veil"><div class="box" id="veilBox"></div></div>
+  </section>
+
+</div>
+<script>
+"use strict";
+
+// ── Small helpers ────────────────────────────────────────────────────────────
+const $  = (id) => document.getElementById(id);
+const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+const rand  = (lo, hi) => lo + Math.random() * (hi - lo);
+const pick  = (a) => a[(Math.random() * a.length) | 0];
+const TAU = Math.PI * 2;
+
+// ── Saved state ──────────────────────────────────────────────────────────────
+const Store = {
+  read(key, fallback) {
+    try { const v = localStorage.getItem("fall_" + key); return v === null ? fallback : JSON.parse(v); }
+    catch (e) { return fallback; }
+  },
+  write(key, value) {
+    try { localStorage.setItem("fall_" + key, JSON.stringify(value)); } catch (e) {}
+  },
+  drop(key) { try { localStorage.removeItem("fall_" + key); } catch (e) {} },
+};
+
+const Settings = {
+  controls: Store.read("controls", "drag"),   // drag | buttons | tilt
+  tilt:     Store.read("tilt", "mid"),        // low | mid | high
+  tiltZero: Store.read("tiltZero", 0),
+  sound:    Store.read("sound", true),
+  haptics:  Store.read("haptics", true),
+  lefty:    Store.read("lefty", false),
+  save(key, value) { this[key] = value; Store.write(key, value); },
+};
+
+const Best = {
+  get(game) { return Store.read("best_" + game, 0); },
+  set(game, value) {
+    if (value > this.get(game)) { Store.write("best_" + game, value); return true; }
+    return false;
+  },
+};
+
+// ── Sound: a few synthesised blips, no files ─────────────────────────────────
+const Sound = {
+  ctx: null,
+  wake() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) this.ctx = new AC();
+    }
+    if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+  },
+  blip(freq, len, type, gain) {
+    if (!Settings.sound || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const amp = this.ctx.createGain();
+    osc.type = type || "sine";
+    osc.frequency.setValueAtTime(freq, t);
+    amp.gain.setValueAtTime(0, t);
+    amp.gain.linearRampToValueAtTime(gain === undefined ? 0.16 : gain, t + 0.012);
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    osc.connect(amp).connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + len + 0.02);
+  },
+  slide(from, to, len, type) {
+    if (!Settings.sound || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const amp = this.ctx.createGain();
+    osc.type = type || "triangle";
+    osc.frequency.setValueAtTime(from, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(30, to), t + len);
+    amp.gain.setValueAtTime(0.14, t);
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    osc.connect(amp).connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + len + 0.02);
+  },
+  noise(len, gain) {
+    if (!Settings.sound || !this.ctx) return;
+    const rate = this.ctx.sampleRate, n = (rate * len) | 0;
+    const buf = this.ctx.createBuffer(1, n, rate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = this.ctx.createBufferSource(); src.buffer = buf;
+    const amp = this.ctx.createGain(); amp.gain.value = gain === undefined ? 0.2 : gain;
+    src.connect(amp).connect(this.ctx.destination);
+    src.start();
+  },
+};
+
+function buzz(ms) {
+  if (Settings.haptics && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+}
+
+// ── Input: one steering axis, however the player supplies it ─────────────────
+// Games ask for `Input.dragDelta()` (pixels moved since the last frame) and
+// `Input.axis` (-1..1). Drag mode fills the first, buttons and tilt the second.
+const Input = {
+  axis: 0,
+  padAxis: 0,
+  tiltAxis: 0,
+  tiltSeen: false,
+  pointerX: 0, pointerY: 0,
+  down: false,
+  _accum: 0,
+  _lastX: 0,
+  _tapAt: 0, _tapStartX: 0, _tapStartY: 0,
+  onTap: null,          // set by the running game
+  onPress: null,        // set by the running game
+
+  get gain() { return { low: 34, mid: 22, high: 15 }[Settings.tilt] || 22; },
+
+  reset() {
+    this.axis = this.padAxis = this._accum = 0;
+    this.down = false;
+    this.onTap = this.onPress = null;
+  },
+
+  dragDelta() { const d = this._accum; this._accum = 0; return d; },
+
+  bind(canvas) {
+    const at = (e) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    canvas.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      const p = at(e);
+      this.down = true; this._lastX = p.x; this._accum = 0;
+      this.pointerX = p.x; this.pointerY = p.y;
+      this._tapAt = performance.now(); this._tapStartX = p.x; this._tapStartY = p.y;
+      if (this.onPress) this.onPress(p.x, p.y);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (!this.down) return;
+      const p = at(e);
+      this._accum += p.x - this._lastX;
+      this._lastX = p.x;
+      this.pointerX = p.x; this.pointerY = p.y;
+    });
+    const up = (e) => {
+      if (!this.down) return;
+      const p = at(e);
+      this.down = false; this._accum = 0;
+      const moved = Math.hypot(p.x - this._tapStartX, p.y - this._tapStartY);
+      const quick = performance.now() - this._tapAt < 400;
+      if (moved < 18 && quick && this.onTap) this.onTap(p.x, p.y);
+    };
+    canvas.addEventListener("pointerup", up);
+    canvas.addEventListener("pointercancel", up);
+  },
+
+  bindPads(root) {
+    root.querySelectorAll(".pad").forEach((pad) => {
+      const dir = Number(pad.dataset.dir);
+      const on  = (e) => { e.preventDefault(); this.padAxis = dir; pad.classList.add("down"); };
+      const off = (e) => { e.preventDefault(); if (this.padAxis === dir) this.padAxis = 0; pad.classList.remove("down"); };
+      pad.addEventListener("pointerdown", on);
+      pad.addEventListener("pointerup", off);
+      pad.addEventListener("pointercancel", off);
+      pad.addEventListener("pointerleave", off);
+    });
+  },
+
+  bindKeys() {
+    const set = (down) => (e) => {
+      const k = e.key.toLowerCase();
+      if (k === "arrowleft"  || k === "a") { this.padAxis = down ? -1 : (this.padAxis === -1 ? 0 : this.padAxis); e.preventDefault(); }
+      if (k === "arrowright" || k === "d") { this.padAxis = down ?  1 : (this.padAxis ===  1 ? 0 : this.padAxis); e.preventDefault(); }
+      if (down && (k === " " || k === "enter") && this.onTap) { this.onTap(-1, -1); e.preventDefault(); }
+    };
+    window.addEventListener("keydown", set(true));
+    window.addEventListener("keyup", set(false));
+  },
+
+  bindTilt() {
+    window.addEventListener("deviceorientation", (e) => {
+      if (e.gamma === null || e.gamma === undefined) return;
+      this.tiltSeen = true;
+      let g = e.gamma;
+      // Landscape holds put the left-right axis on beta instead.
+      const a = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+      if (a === 90)  g = -(e.beta || 0);
+      if (a === -90 || a === 270) g = (e.beta || 0);
+      this.tiltAxis = g;
+    });
+  },
+
+  // Called once a frame by the engine.
+  step() {
+    if (Settings.controls === "tilt") {
+      this.axis = clamp((this.tiltAxis - Settings.tiltZero) / this.gain, -1, 1);
+      if (Math.abs(this.axis) < 0.06) this.axis = 0;   // deadzone
+    } else {
+      this.axis = this.padAxis;
+    }
+  },
+
+  // The one call games make to steer something horizontally.
+  steer(x, dt, speed, lo, hi) {
+    if (Settings.controls === "drag") x += this.dragDelta() * 1.15;
+    else x += this.axis * speed * dt;
+    return clamp(x, lo, hi);
+  },
+};
+
+// ── Engine: canvas sizing, the loop, and screen swapping ─────────────────────
+const Engine = {
+  canvas: null, ctx: null, w: 0, h: 0, dpr: 1,
+  game: null, raf: 0, last: 0, paused: false,
+
+  boot() {
+    this.canvas = $("stage");
+    this.ctx = this.canvas.getContext("2d");
+    Input.bind(this.canvas);
+    Input.bindPads($("pads"));
+    Input.bindKeys();
+    Input.bindTilt();
+    window.addEventListener("resize", () => this.size());
+    window.addEventListener("orientationchange", () => setTimeout(() => this.size(), 250));
+    document.addEventListener("visibilitychange", () => { if (document.hidden) this.pause(); });
+  },
+
+  size() {
+    const r = this.canvas.getBoundingClientRect();
+    this.w = Math.max(1, Math.round(r.width));
+    this.h = Math.max(1, Math.round(r.height));
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.canvas.width  = Math.round(this.w * this.dpr);
+    this.canvas.height = Math.round(this.h * this.dpr);
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    if (this.game && this.game.resize) this.game.resize(this.w, this.h);
+  },
+
+  run(game) {
+    this.stop();
+    Input.reset();
+    Sound.wake();
+    this.game = game;
+    Router.show("play");
+    $("pads").classList.toggle("on", Settings.controls === "buttons");
+    const pads = $("pads");
+    pads.style.flexDirection = Settings.lefty ? "row-reverse" : "row";
+    this.size();
+    game.init(this.w, this.h);
+    this.paused = false;
+    this.last = performance.now();
+    this.raf = requestAnimationFrame((t) => this.frame(t));
+  },
+
+  frame(now) {
+    this.raf = requestAnimationFrame((t) => this.frame(t));
+    const dt = Math.min((now - this.last) / 1000, 0.05);
+    this.last = now;
+    if (this.paused || !this.game) return;
+    Input.step();
+    this.game.update(dt);
+    this.game.draw(this.ctx, this.w, this.h);
+  },
+
+  pause() {
+    if (!this.game || this.paused) return;
+    this.paused = true;
+    if (this.game.onPause) this.game.onPause();
+  },
+
+  resume() { this.paused = false; this.last = performance.now(); },
+
+  stop() {
+    cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    if (this.game && this.game.destroy) this.game.destroy();
+    this.game = null;
+    Veil.hide();
+    $("pads").classList.remove("on");
+  },
+};
+
+// ── Screens and overlay ──────────────────────────────────────────────────────
+const Router = {
+  show(id) {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
+    if (id !== "play") Engine.stop();
+    if (id === "home") Home.paint();
+  },
+};
+
+const Veil = {
+  show(html) { $("veilBox").innerHTML = html; $("veil").classList.add("on"); },
+  hide() { $("veil").classList.remove("on"); $("veilBox").innerHTML = ""; },
+  get on() { return $("veil").classList.contains("on"); },
+};
+
+// ── HUD ──────────────────────────────────────────────────────────────────────
+const Hud = {
+  set(big, sub) { $("hudBig").textContent = big; $("hudSub").textContent = sub || ""; },
+};
+
+function overlay(html, actions) {
+  Veil.show(html);
+  Object.keys(actions || {}).forEach((key) => {
+    const el = $("veilBox").querySelector('[data-act="' + key + '"]');
+    if (el) el.addEventListener("click", actions[key]);
+  });
+}
+
+const CONTROL_LINE = {
+  drag: "Slide your thumb anywhere on the screen.",
+  buttons: "Use the two pads at the bottom.",
+  tilt: "Tilt the phone left and right.",
+};
+
+// ── Dino Fall ────────────────────────────────────────────────────────────────
+// The sky drops blocks. You are a small dinosaur with nowhere to hide.
+// Clay diamonds give you one free hit. Score is time on your feet.
+const DINO_ART = [
+  [12, 0, 11, 8], [12, 8, 8, 9], [8, 9, 4, 7], [4, 8, 4, 5], [0, 6, 4, 4], [20, 10, 3, 2],
+];
+const DINO_LEGS = [[10, 16, 3, 8], [10, 23, 5, 3]];
+const DINO_LEGS_B = [[15, 16, 3, 8], [15, 23, 5, 3]];
+
+const SHAPES = [
+  { k: "sq",   w: 0.58, h: 0.58 },
+  { k: "tall", w: 0.34, h: 1.00 },
+  { k: "wide", w: 1.00, h: 0.34 },
+  { k: "dot",  w: 0.52, h: 0.52 },
+];
+const GEM = { k: "gem", w: 0.56, h: 0.56 };
+
+const DinoFall = {
+  id: "dino",
+  title: "Dino Fall",
+
+  init(w, h) {
+    this.resize(w, h);
+    this.state = "ready";
+    this.blocks = [];
+    this.dust = [];
+    this.elapsed = 0;
+    this.shield = false;
+    this.shieldFlash = 0;
+    this.shake = 0;
+    this.scroll = 0;
+    this.x = w / 2;
+    Hud.set("0.0", "seconds");
+    this.intro();
+  },
+
+  resize(w, h) {
+    this.w = w; this.h = h;
+    this.unit = clamp(Math.min(w, h) * 0.115, 30, 78);   // dino height
+    this.ground = h - Math.max(h * 0.06, 26) - this.unit;
+    this.x = clamp(this.x || w / 2, 0, w - this.unit * 0.92);
+  },
+
+  intro() {
+    overlay(
+      '<h3>Dino Fall</h3>' +
+      '<p class="why">The sky is falling. Do not be under it.</p>' +
+      '<ul class="rules">' +
+        '<li><span class="n">1</span><div>' + CONTROL_LINE[Settings.controls] + '</div></li>' +
+        '<li><span class="n">2</span><div>Black blocks end the run. They fall faster the longer you last.</div></li>' +
+        '<li><span class="n">3</span><div>A <b>clay diamond</b> is a shield. It soaks up one hit.</div></li>' +
+      '</ul>' +
+      '<button class="btn primary" data-act="play">Start</button>' +
+      '<button class="btn ghost" data-act="home">Back</button>',
+      { play: () => this.begin(), home: () => Router.show("home") }
+    );
+  },
+
+  begin() {
+    Veil.hide();
+    Engine.resume();
+    this.state = "run";
+    this.blocks = [];
+    this.dust = [];
+    this.elapsed = 0;
+    this.shield = false;
+    this.nextSpawn = 0.7;
+    this.x = this.w / 2 - this.unit * 0.46;
+    Input.dragDelta();
+  },
+
+  onPause() {
+    if (this.state !== "run") return;
+    this.state = "held";
+    overlay(
+      '<h3>Paused</h3><p class="why">The blocks are waiting.</p>' +
+      '<button class="btn primary" data-act="go">Keep going</button>' +
+      '<button class="btn ghost" data-act="home">Give up</button>',
+      { go: () => { Veil.hide(); this.state = "run"; Input.dragDelta(); Engine.resume(); },
+        home: () => Router.show("home") }
+    );
+  },
+
+  spawn() {
+    const u = this.unit;
+    const gem = Math.random() < 0.11;
+    const s = gem ? GEM : pick(SHAPES);
+    const w = s.w * u, h = s.h * u;
+    this.blocks.push({
+      k: s.k, gem, w, h,
+      x: rand(0, Math.max(1, this.w - w)),
+      y: -h - rand(0, u),
+      spin: s.k === "gem" ? rand(-1.6, 1.6) : 0,
+      rot: 0,
+      jitter: rand(0.86, 1.18),
+    });
+  },
+
+  update(dt) {
+    if (this.state !== "run") return;
+    const { w, h, unit } = this;
+    this.elapsed += dt;
+    this.scroll += dt * (140 + this.elapsed * 5);
+    this.shake = Math.max(0, this.shake - dt * 4);
+    this.shieldFlash = Math.max(0, this.shieldFlash - dt * 2);
+
+    Hud.set(this.elapsed.toFixed(1), "seconds");
+
+    // Steering.
+    this.x = Input.steer(this.x, dt, w * 1.25, 0, w - unit * 0.92);
+
+    // Difficulty ramp: quicker falls, tighter gaps.
+    const fall = Math.min(h * (0.30 + this.elapsed * 0.011), h * 0.95);
+    const gap  = Math.max(0.13, 0.60 - this.elapsed * 0.016);
+
+    this.nextSpawn -= dt;
+    if (this.nextSpawn <= 0) {
+      this.spawn();
+      if (this.elapsed > 18 && Math.random() < 0.3) this.spawn();
+      this.nextSpawn = gap * rand(0.75, 1.3);
+    }
+
+    // Dino hitbox, a little kinder than the drawing.
+    const dw = unit * 0.92, dh = unit;
+    const hx = this.x + dw * 0.18, hw = dw * 0.64;
+    const hy = this.ground + dh * 0.14, hh = dh * 0.8;
+
+    for (let i = this.blocks.length - 1; i >= 0; i--) {
+      const b = this.blocks[i];
+      b.y += fall * b.jitter * dt;
+      b.rot += b.spin * dt;
+
+      if (b.y + b.h >= this.ground + unit) {
+        this.blocks.splice(i, 1);
+        if (!b.gem) for (let k = 0; k < 5; k++) {
+          this.dust.push({ x: b.x + rand(0, b.w), y: this.ground + unit,
+                           r: rand(1.5, 3.5), life: 0.8, vx: rand(-60, 60) });
+        }
+        continue;
+      }
+
+      const hit = b.x < hx + hw && b.x + b.w > hx && b.y < hy + hh && b.y + b.h > hy;
+      if (!hit) continue;
+
+      this.blocks.splice(i, 1);
+      if (b.gem) {
+        this.shield = true; this.shieldFlash = 1;
+        Sound.blip(880, 0.14, "triangle", 0.13);
+        Sound.blip(1320, 0.18, "triangle", 0.09);
+        buzz(14);
+      } else if (this.shield) {
+        this.shield = false; this.shake = 0.6;
+        this.burst(b.x + b.w / 2, b.y + b.h / 2, "#d76b5b");
+        Sound.noise(0.18, 0.16);
+        buzz(28);
+      } else {
+        this.die();
+        return;
+      }
+    }
+
+    // Foot dust.
+    if (Math.random() < 0.5) {
+      this.dust.push({ x: this.x + unit * rand(0.15, 0.7), y: this.ground + unit,
+                       r: rand(1.5, 3.5), life: 1, vx: rand(-26, -70) });
+    }
+    for (let i = this.dust.length - 1; i >= 0; i--) {
+      const d = this.dust[i];
+      d.life -= dt * 1.9; d.x += d.vx * dt; d.y -= dt * 8;
+      if (d.life <= 0) this.dust.splice(i, 1);
+    }
+  },
+
+  burst(x, y, col) {
+    for (let i = 0; i < 12; i++) {
+      this.dust.push({ x, y, r: rand(2, 4.5), life: 1, vx: rand(-90, 90), col });
+    }
+  },
+
+  die() {
+    this.state = "over";
+    const secs = Number(this.elapsed.toFixed(1));
+    const fresh = Best.set(this.id, secs);
+    Sound.slide(300, 60, 0.45, "sawtooth");
+    buzz([30, 50, 60]);
+    overlay(
+      '<h3>' + (fresh ? "New best" : "Flattened") + '</h3>' +
+      '<div class="score">' + secs.toFixed(1) + 's</div>' +
+      '<p class="best">Best ' + Best.get(this.id).toFixed(1) + 's</p>' +
+      '<button class="btn primary" data-act="again">Again</button>' +
+      '<button class="btn ghost" data-act="home">Back</button>',
+      { again: () => this.begin(), home: () => Router.show("home") }
+    );
+  },
+
+  // ── Drawing ──
+  draw(g, w, h) {
+    const u = this.unit;
+    g.save();
+    if (this.shake > 0) {
+      g.translate(rand(-1, 1) * this.shake * 5, rand(-1, 1) * this.shake * 5);
+    }
+
+    // Dusk sky.
+    const sky = g.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, "#3b2c56");
+    sky.addColorStop(0.45, "#7a4a55");
+    sky.addColorStop(0.78, "#d98a5f");
+    sky.addColorStop(1, "#f0b57c");
+    g.fillStyle = sky; g.fillRect(-10, -10, w + 20, h + 20);
+
+    // Sun.
+    g.fillStyle = "rgba(255,226,168,.75)";
+    g.beginPath(); g.arc(w * 0.72, h * 0.52, u * 1.5, 0, TAU); g.fill();
+
+    // Dunes, two layers.
+    this.dunes(g, w, h, h * 0.66, "#8d5a54", this.scroll * 0.06);
+    this.dunes(g, w, h, h * 0.76, "#6b3f45", this.scroll * 0.13);
+
+    // Ground.
+    const gy = this.ground + u;
+    g.fillStyle = "#3a2430"; g.fillRect(0, gy, w, h - gy);
+    g.fillStyle = "rgba(255,255,255,.09)";
+    for (let i = -1; i < w / 60 + 2; i++) {
+      const x = ((i * 60 - this.scroll * 0.5) % (w + 60) + w + 60) % (w + 60) - 60;
+      g.fillRect(x, gy + 6 + (i % 2) * 9, 22, 2);
+    }
+
+    // Dust and sparks.
+    for (const d of this.dust) {
+      g.globalAlpha = Math.max(0, d.life) * 0.6;
+      g.fillStyle = d.col || "#e8c8a8";
+      g.beginPath(); g.arc(d.x, d.y, d.r, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+
+    // Falling blocks.
+    for (const b of this.blocks) {
+      if (b.gem) {
+        g.save();
+        g.translate(b.x + b.w / 2, b.y + b.h / 2); g.rotate(b.rot);
+        g.fillStyle = "#d76b5b";
+        g.beginPath();
+        g.moveTo(0, -b.h / 2); g.lineTo(b.w / 2, 0); g.lineTo(0, b.h / 2); g.lineTo(-b.w / 2, 0);
+        g.closePath(); g.fill();
+        g.fillStyle = "rgba(255,255,255,.5)";
+        g.beginPath();
+        g.moveTo(0, -b.h / 2); g.lineTo(b.w / 4, -b.h / 6); g.lineTo(0, 0); g.lineTo(-b.w / 4, -b.h / 6);
+        g.closePath(); g.fill();
+        g.restore();
+      } else {
+        g.fillStyle = "rgba(0,0,0,.18)";
+        g.fillRect(b.x + 2, b.y + 3, b.w, b.h);
+        g.fillStyle = "#15151b";
+        g.strokeStyle = "rgba(255,214,190,.32)";
+        g.lineWidth = 1;
+        if (b.k === "dot") {
+          g.beginPath(); g.arc(b.x + b.w / 2, b.y + b.h / 2, b.w / 2, 0, TAU); g.fill(); g.stroke();
+        } else {
+          g.fillRect(b.x, b.y, b.w, b.h);
+          g.strokeRect(b.x + .5, b.y + .5, b.w - 1, b.h - 1);
+        }
+      }
+    }
+
+    this.drawDino(g, this.x, this.ground, u);
+    g.restore();
+  },
+
+  dunes(g, w, h, base, col, off) {
+    g.fillStyle = col;
+    g.beginPath();
+    g.moveTo(0, h);
+    const span = w / 3;
+    for (let i = -1; i <= 4; i++) {
+      const x = i * span - (off % span);
+      g.quadraticCurveTo(x + span * 0.5, base - span * 0.28, x + span, base);
+    }
+    g.lineTo(w, h); g.closePath(); g.fill();
+  },
+
+  drawDino(g, x, y, u) {
+    const s = u / 26;                     // art is 24 x 26
+    const step = this.state === "run" ? Math.sin(this.elapsed * 15) : 0;
+
+    g.save();
+    g.translate(x, y);
+
+    // Shadow.
+    g.fillStyle = "rgba(0,0,0,.22)";
+    g.beginPath(); g.ellipse(u * 0.46, u + 3, u * 0.42, u * 0.09, 0, 0, TAU); g.fill();
+
+    if (this.shield) {
+      const pulse = 0.55 + Math.sin(this.elapsed * 6) * 0.2 + this.shieldFlash * 0.4;
+      g.strokeStyle = "rgba(215,107,91," + clamp(pulse, 0, 1) + ")";
+      g.lineWidth = Math.max(2, u * 0.07);
+      g.beginPath(); g.arc(u * 0.46, u * 0.5, u * 0.72, 0, TAU); g.stroke();
+    }
+
+    g.fillStyle = "#15151a";
+    for (const r of DINO_ART) g.fillRect(r[0] * s, r[1] * s, r[2] * s, r[3] * s);
+    for (const r of DINO_LEGS)   g.fillRect(r[0] * s, (r[1] + step * 1.4) * s, r[2] * s, r[3] * s);
+    for (const r of DINO_LEGS_B) g.fillRect(r[0] * s, (r[1] - step * 1.4) * s, r[2] * s, r[3] * s);
+    g.fillStyle = "#fff";
+    g.fillRect(14.5 * s, 2 * s, 2 * s, 2 * s);
+    g.restore();
+  },
+};
+
+// ── Fish Fall ────────────────────────────────────────────────────────────────
+// Tap to drop the line. The first thing you touch on the way down ends the
+// descent, so a deep cast means threading past everything. On the way up you
+// hook whatever you can reach. At the surface the catch goes airborne and you
+// shoot it out of the sky.
+const FISH = [
+  { id: "sardine", name: "Sardine",     kind: "fish",  len: 24, pts: 15,  col: "#a9dcea", fin: "#7ec4d8", min: 0,    max: 800,  w: 30, spd: 46 },
+  { id: "boot",    name: "Old boot",    kind: "boot",  len: 30, pts: 5,   col: "#6f5c4a", fin: "#54443a", min: 0,    max: 1100, w: 7,  spd: 6 },
+  { id: "perch",   name: "Perch",       kind: "fish",  len: 33, pts: 30,  col: "#8fc978", fin: "#6ba85a", min: 220,  max: 1500, w: 24, spd: 40 },
+  { id: "snapper", name: "Snapper",     kind: "fish",  len: 42, pts: 55,  col: "#f0776f", fin: "#cf5a55", min: 700,  max: 2400, w: 18, spd: 38 },
+  { id: "jelly",   name: "Jellyfish",   kind: "jelly", len: 30, pts: 70,  col: "#c9a6ff", fin: "#a37ce0", min: 900,  max: 3400, w: 11, spd: 12 },
+  { id: "tuna",    name: "Tuna",        kind: "fish",  len: 58, pts: 90,  col: "#6ea3e0", fin: "#4d7fbd", min: 1300, max: 3600, w: 14, spd: 66 },
+  { id: "squid",   name: "Squid",       kind: "squid", len: 46, pts: 130, col: "#f4a35c", fin: "#d4813c", min: 1900, max: 4400, w: 9,  spd: 30 },
+  { id: "angler",  name: "Anglerfish",  kind: "fish",  len: 50, pts: 220, col: "#4a5578", fin: "#333c58", min: 2800, max: 6200, w: 7,  spd: 22, lure: true },
+  { id: "gulper",  name: "Gulper eel",  kind: "gulper",len: 66, pts: 320, col: "#7d3f6d", fin: "#5c2c50", min: 3800, max: 6200, w: 5,  spd: 20 },
+];
+const BY_ID = {};
+FISH.forEach((f) => { BY_ID[f.id] = f; });
+
+const WATER = [
+  [0,    [47, 163, 216]], [600,  [28, 118, 171]], [1500, [13, 74, 117]],
+  [2600, [8, 42, 72]],    [4000, [4, 22, 42]],    [6400, [2, 10, 20]],
+];
+
+const CASTS_PER_TRIP = 5;
+
+const FishFall = {
+  id: "fish",
+  title: "Fish Fall",
+
+  init(w, h) {
+    this.resize(w, h);
+    this.state = "ready";
+    this.cast = 0;
+    this.score = 0;
+    this.fish = [];
+    this.caught = [];
+    this.flyers = [];
+    this.bits = [];
+    this.pops = [];
+    this.snow = [];
+    this.banner = null;
+    this.hook = { x: w / 2, y: 0 };
+    this.camY = -h * 0.32;
+    this.t = 0;
+    this.aim = null;
+    Hud.set("0", "trip score");
+    this.intro();
+  },
+
+  resize(w, h) { this.w = w; this.h = h; },
+
+  intro() {
+    overlay(
+      '<h3>Fish Fall</h3>' +
+      '<p class="why">Five casts. Take everything the sea will give you.</p>' +
+      '<ul class="rules">' +
+        '<li><span class="n">1</span><div><b>Tap</b> to drop the line. ' + CONTROL_LINE[Settings.controls] + '</div></li>' +
+        '<li><span class="n">2</span><div>On the way <b>down</b>, the first thing you touch stops you. Dodge the shallow fish to reach the good ones.</div></li>' +
+        '<li><span class="n">3</span><div>On the way <b>up</b>, hook everything you can.</div></li>' +
+        '<li><span class="n">4</span><div>At the surface the catch flies up. <b>Tap each fish</b> to shoot it before it drops.</div></li>' +
+      '</ul>' +
+      '<button class="btn primary" data-act="play">Start the trip</button>' +
+      '<button class="btn ghost" data-act="home">Back</button>',
+      { play: () => this.startTrip(), home: () => Router.show("home") }
+    );
+  },
+
+  onPause() {
+    if (this.state === "ready" || this.state === "done") return;
+    this.held = this.state;
+    this.state = "held";
+    overlay(
+      '<h3>Paused</h3><p class="why">The sea is patient.</p>' +
+      '<button class="btn primary" data-act="go">Back to it</button>' +
+      '<button class="btn ghost" data-act="home">End the trip</button>',
+      { go: () => { Veil.hide(); this.state = this.held; Input.dragDelta(); Engine.resume(); },
+        home: () => Router.show("home") }
+    );
+  },
+
+  startTrip() {
+    Veil.hide();
+    Engine.resume();
+    this.cast = 0;
+    this.score = 0;
+    this.trip = [];
+    this.nextCast();
+  },
+
+  nextCast() {
+    this.cast++;
+    if (this.cast > CASTS_PER_TRIP) return this.finish();
+
+    this.lineLen = Math.min(1500 + (this.cast - 1) * 1150, 6200);
+    this.hook.x = this.w / 2;
+    this.hook.y = 0;
+    this.caught = [];
+    this.flyers = [];
+    this.state = "aim";
+    this.stock();
+    Input.onTap = () => this.drop();
+  },
+
+  // Fill the column with fish, thinning out as it gets deeper.
+  stock() {
+    this.fish = [];
+    for (let d = 120; d < this.lineLen + 60; d += 100) {
+      if (Math.random() > 0.75) continue;
+      const pool = FISH.filter((f) => d >= f.min && d <= f.max);
+      if (!pool.length) continue;
+      let total = 0;
+      for (const f of pool) total += f.w;
+      let r = Math.random() * total, sp = pool[0];
+      for (const f of pool) { r -= f.w; if (r <= 0) { sp = f; break; } }
+      this.fish.push({
+        sp, x: rand(0, this.w), y: d + rand(-16, 16),
+        dir: Math.random() < 0.5 ? -1 : 1,
+        speed: sp.spd * rand(0.75, 1.3),
+        bob: rand(0, TAU),
+        scale: rand(0.85, 1.2),
+      });
+    }
+    this.snow = [];
+    for (let i = 0; i < 150; i++) {
+      this.snow.push({ x: rand(0, this.w), y: rand(0, this.lineLen + 400), r: rand(0.6, 2.1), ph: rand(0, TAU) });
+    }
+  },
+
+  drop() {
+    if (this.state !== "aim") return;
+    this.state = "down";
+    Input.onTap = null;
+    Input.dragDelta();
+    Sound.blip(520, 0.1, "sine", 0.1);
+    Sound.noise(0.12, 0.08);
+  },
+
+  // ── Update ──
+  update(dt) {
+    this.t += dt;
+    const { w, h } = this;
+    if (this.state === "ready" || this.state === "held" || this.state === "done") return;
+
+    // Swim.
+    for (const f of this.fish) {
+      f.x += f.dir * f.speed * dt;
+      const pad = f.sp.len * f.scale;
+      if (f.x < -pad) f.x = w + pad;
+      if (f.x > w + pad) f.x = -pad;
+    }
+
+    if (this.state === "aim")   this.updateAim(dt);
+    if (this.state === "down")  this.updateDown(dt);
+    if (this.state === "up")    this.updateUp(dt);
+    if (this.state === "fly")   this.updateFly(dt);
+    if (this.state === "shoot") this.updateShoot(dt);
+    if (this.state === "tally") {
+      this.banner.life -= dt;
+      // Whatever you did not shoot drops back in the sea.
+      for (const p of this.flyers) {
+        if (p.dead) continue;
+        p.vy = (p.vy || 0) + 1100 * dt;
+        p.y += p.vy * dt;
+        p.rot += dt * 2.2;
+        if (!p.splashed && p.y > -this.camY) {
+          p.splashed = true;
+          Sound.noise(0.12, 0.06);
+        }
+      }
+      Hud.set(this.score, "trip score");
+      if (this.banner.life <= 0) { this.banner = null; this.nextCast(); }
+    }
+
+    // Camera.
+    const sky = this.state === "fly" || this.state === "shoot" || this.state === "tally";
+    const want = (this.state === "down" || this.state === "up")
+      ? this.hook.y - h * 0.42 : (sky ? -h * 0.62 : -h * 0.32);
+    const lo = sky ? -h * 0.66 : -h * 0.34;
+    this.camY += (Math.max(want, lo) - this.camY) * Math.min(1, dt * 7);
+
+    // Particles.
+    for (let i = this.bits.length - 1; i >= 0; i--) {
+      const b = this.bits[i];
+      b.life -= dt * 1.7; b.x += b.vx * dt; b.y += b.vy * dt; b.vy += 340 * dt;
+      if (b.life <= 0) this.bits.splice(i, 1);
+    }
+    for (let i = this.pops.length - 1; i >= 0; i--) {
+      const p = this.pops[i];
+      p.life -= dt * 0.85; p.y -= 42 * dt;
+      if (p.life <= 0) this.pops.splice(i, 1);
+    }
+  },
+
+  updateAim(dt) {
+    this.hook.x = Input.steer(this.hook.x, dt, this.w * 1.1, 14, this.w - 14);
+    this.hook.y = 0;
+    Hud.set(this.score, "cast " + this.cast + " of " + CASTS_PER_TRIP);
+  },
+
+  updateDown(dt) {
+    this.hook.x = Input.steer(this.hook.x, dt, this.w * 1.1, 14, this.w - 14);
+    this.hook.y += (190 + this.hook.y * 0.06) * dt;
+    Hud.set(Math.round(this.hook.y / 10) + " m", "going down");
+
+    const grab = this.grab();
+    if (grab >= 0) { this.hookFish(grab); this.reel(); return; }
+    if (this.hook.y >= this.lineLen) { this.hook.y = this.lineLen; this.reel(); }
+  },
+
+  reel() {
+    this.state = "up";
+    this.deepest = Math.round(this.hook.y / 10);
+    Sound.slide(180, 320, 0.25, "triangle");
+  },
+
+  updateUp(dt) {
+    this.hook.x = Input.steer(this.hook.x, dt, this.w * 1.1, 14, this.w - 14);
+    this.hook.y -= (290 + this.hook.y * 0.03) * dt;
+    Hud.set(this.caught.length + " on the line", "reeling in");
+
+    if (this.caught.length < 26) {
+      const grab = this.grab();
+      if (grab >= 0) this.hookFish(grab);
+    }
+    if (this.hook.y <= 0) { this.hook.y = 0; this.launch(); }
+  },
+
+  grab() {
+    const hx = this.hook.x, hy = this.hook.y;
+    for (let i = 0; i < this.fish.length; i++) {
+      const f = this.fish[i];
+      const hw = f.sp.len * f.scale * 0.5, hh = f.sp.len * f.scale * 0.28;
+      if (Math.abs(f.x - hx) < hw + 7 && Math.abs(f.y - hy) < hh + 9) return i;
+    }
+    return -1;
+  },
+
+  hookFish(i) {
+    const f = this.fish.splice(i, 1)[0];
+    this.caught.push(f);
+    Sound.blip(660 + Math.min(this.caught.length, 10) * 40, 0.09, "square", 0.07);
+    buzz(10);
+  },
+
+  launch() {
+    this.state = "fly";
+    Sound.slide(300, 700, 0.3, "sine");
+    const n = this.caught.length;
+    if (!n) { this.tally(); return; }
+
+    const surf = -this.camY;                       // the waterline, in screen pixels
+    const cols = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(n))));
+    const rows = Math.ceil(n / cols);
+    const top = this.h * 0.11, bot = this.h * 0.48;
+    this.flyers = this.caught.map((f, i) => {
+      const c = i % cols, r = (i / cols) | 0;
+      const tx = this.w * (0.5 + ((c + 0.5) / cols - 0.5) * 0.82) + rand(-10, 10);
+      const ty = top + (rows === 1 ? (bot - top) * 0.4 : (r / (rows - 1)) * (bot - top)) + rand(-12, 12);
+      return {
+        f, sx: this.hook.x, sy: surf, tx, ty,
+        x: this.hook.x, y: surf, t: 0, delay: i * 0.045,
+        spin: rand(-3, 3), rot: 0, bob: rand(0, TAU), dead: false,
+      };
+    });
+    this.flyT = 0;
+  },
+
+  updateFly(dt) {
+    this.flyT += dt;
+    let settled = true;
+    for (const p of this.flyers) {
+      p.t = clamp((this.flyT - p.delay) / 0.55, 0, 1);
+      const e = 1 - Math.pow(1 - p.t, 3);
+      p.x = p.sx + (p.tx - p.sx) * e;
+      p.y = p.sy + (p.ty - p.sy) * e - Math.sin(p.t * Math.PI) * this.h * 0.14;
+      p.rot = p.spin * (1 - p.t) * 1.4;
+      if (p.t < 1) settled = false;
+    }
+    Hud.set(this.score, "here it comes");
+    if (settled) {
+      this.state = "shoot";
+      this.shotT = 0;
+      this.shotMax = Math.min(9, 3.4 + this.flyers.length * 0.42);
+      this.aim = null;
+      Input.onTap = (x, y) => this.shoot(x, y);
+    }
+  },
+
+  updateShoot(dt) {
+    this.shotT += dt;
+    for (const p of this.flyers) {
+      if (p.dead) continue;
+      p.bob += dt * 2.4;
+      p.y = p.ty + Math.sin(p.bob) * 4;
+      p.rot = Math.sin(p.bob * 0.7) * 0.12;
+    }
+    if (this.aim) this.aim.life -= dt * 5;
+    const left = this.flyers.filter((p) => !p.dead).length;
+    Hud.set(this.score, left + " in the air");
+    if (!left || this.shotT >= this.shotMax) {
+      Input.onTap = null;
+      this.tally();
+    }
+  },
+
+  shoot(x, y) {
+    if (this.state !== "shoot") return;
+    let best = null, bestD = 1e9;
+    for (const p of this.flyers) {
+      if (p.dead) continue;
+      const r = Math.max(30, p.f.sp.len * p.f.scale * 0.7);
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < r + 22 && d < bestD) { best = p; bestD = d; }
+    }
+    if (!best) {
+      Sound.blip(160, 0.05, "square", 0.05);
+      this.aim = { x, y, life: 1 };
+      return;
+    }
+    best.dead = true;
+    this.score += best.f.sp.pts;
+    this.trip.push(best.f.sp.id);
+    this.aim = { x: best.x, y: best.y, life: 1 };
+    this.pops.push({ x: best.x, y: best.y, txt: "+" + best.f.sp.pts, life: 1 });
+    for (let i = 0; i < 14; i++) {
+      this.bits.push({
+        x: best.x, y: best.y, vx: rand(-160, 160), vy: rand(-190, 60),
+        r: rand(1.6, 4), life: 1, col: best.f.sp.col,
+      });
+    }
+    Sound.blip(1200, 0.05, "square", 0.09);
+    Sound.noise(0.09, 0.12);
+    buzz(12);
+  },
+
+  tally() {
+    const got = this.caught.length;
+    const shot = this.flyers.filter((p) => p.dead).length;
+    this.banner = {
+      life: 1.7,
+      a: got ? shot + " of " + got + " landed" : "Nothing on the line",
+      b: (got ? "Trip score " + this.score : "The sea kept it all") +
+         "  ·  " + this.deepest + " m down",
+    };
+    this.state = "tally";
+  },
+
+  finish() {
+    this.state = "done";
+    Input.onTap = null;
+    const fresh = Best.set(this.id, this.score);
+    const counts = {};
+    for (const id of this.trip) counts[id] = (counts[id] || 0) + 1;
+    const ids = Object.keys(counts).sort((a, b) => BY_ID[b].pts - BY_ID[a].pts);
+    const rows = ids.length
+      ? ids.map((id) => '<li><span>' + BY_ID[id].name + ' &times;' + counts[id] + '</span>' +
+          '<span class="v">' + (BY_ID[id].pts * counts[id]) + '</span></li>').join("")
+      : '<li><span class="miss">You came home empty.</span></li>';
+    overlay(
+      '<h3>' + (fresh ? "Best trip yet" : "Back at the dock") + '</h3>' +
+      '<div class="score">' + this.score + '</div>' +
+      '<p class="best">Best ' + Best.get(this.id) + '</p>' +
+      '<ul class="catch-list">' + rows + '</ul>' +
+      '<button class="btn primary" data-act="again">Head out again</button>' +
+      '<button class="btn ghost" data-act="home">Back</button>',
+      { again: () => this.startTrip(), home: () => Router.show("home") }
+    );
+  },
+
+  // ── Drawing ──
+  draw(g, w, h) {
+    const cam = this.camY;
+    const surf = -cam;                    // screen y of the waterline
+    const t = this.t;
+
+    // Sky.
+    if (surf > 0) {
+      const sky = g.createLinearGradient(0, 0, 0, Math.max(1, surf));
+      sky.addColorStop(0, "#8fd0e8");
+      sky.addColorStop(1, "#e6f2f2");
+      g.fillStyle = sky; g.fillRect(0, 0, w, surf + 1);
+      g.fillStyle = "rgba(255,255,255,.75)";
+      g.beginPath(); g.arc(w * 0.17, surf * 0.26, Math.max(13, Math.min(surf * 0.14, 44)), 0, TAU); g.fill();
+    }
+
+    // Water, coloured by how deep the camera is.
+    const top = Math.max(0, cam), bot = cam + h;
+    const water = g.createLinearGradient(0, Math.max(0, surf), 0, h);
+    for (let i = 0; i <= 4; i++) water.addColorStop(i / 4, waterCol(top + (bot - top) * i / 4));
+    g.fillStyle = water;
+    g.fillRect(0, Math.max(0, surf), w, h - Math.max(0, surf));
+
+    // Sunbeams near the surface.
+    if (cam < 1100) {
+      g.save();
+      g.globalAlpha = clamp(1 - cam / 1100, 0, 1) * 0.16;
+      g.fillStyle = "#dffaff";
+      for (let i = 0; i < 5; i++) {
+        const bx = w * (0.1 + i * 0.2) + Math.sin(t * 0.4 + i) * 18;
+        g.beginPath();
+        g.moveTo(bx - 14, surf); g.lineTo(bx + 14, surf);
+        g.lineTo(bx + 74, surf + h * 1.2); g.lineTo(bx + 6, surf + h * 1.2);
+        g.closePath(); g.fill();
+      }
+      g.restore();
+    }
+
+    // Marine snow.
+    g.fillStyle = "rgba(255,255,255,.22)";
+    for (const s of this.snow) {
+      const y = s.y - cam + Math.sin(t * 0.5 + s.ph) * 4;
+      if (y < -6 || y > h + 6) continue;
+      g.beginPath(); g.arc(s.x + Math.sin(t * 0.3 + s.ph) * 6, y, s.r, 0, TAU); g.fill();
+    }
+
+    // Depth marks.
+    if (this.state === "down" || this.state === "up") {
+      g.font = "600 10px system-ui, sans-serif";
+      g.textAlign = "left"; g.textBaseline = "middle";
+      for (let d = 500; d <= this.lineLen + 500; d += 500) {
+        const y = d - cam;
+        if (y < 20 || y > h - 20) continue;
+        g.fillStyle = "rgba(255,255,255,.16)";
+        g.fillRect(0, y, w, 1);
+        g.fillStyle = "rgba(255,255,255,.42)";
+        g.fillText((d / 10) + " m", 8, y - 8);
+      }
+      // The bottom of the line.
+      const ly = this.lineLen - cam;
+      if (ly > -20 && ly < h + 20) {
+        g.strokeStyle = "rgba(255,255,255,.22)";
+        g.setLineDash([5, 6]); g.lineWidth = 1;
+        g.beginPath(); g.moveTo(0, ly); g.lineTo(w, ly); g.stroke();
+        g.setLineDash([]);
+      }
+    }
+
+    // Fish still in the water.
+    for (const f of this.fish) {
+      const y = f.y - cam;
+      if (y < -70 || y > h + 70) continue;
+      g.save();
+      g.translate(f.x, y + Math.sin(t * 1.6 + f.bob) * 2.5);
+      drawCreature(g, f.sp, f.scale, f.dir, t + f.bob);
+      g.restore();
+    }
+
+    // Line, hook and the catch riding along it.
+    const boatX = w / 2, bob = Math.sin(t * 1.5) * 3;
+    const rodX = boatX + 46, rodY = surf - 64 + bob;      // rod tip
+    const gunX = boatX + 6,  gunY = surf - 42 + bob;      // shoulder
+    if (this.state !== "shoot" && this.state !== "fly" && this.state !== "tally") {
+      const hy = this.hook.y - cam;
+      g.strokeStyle = "rgba(255,255,255,.62)"; g.lineWidth = 1.4;
+      g.beginPath();
+      g.moveTo(rodX, rodY);
+      g.quadraticCurveTo((rodX + this.hook.x) / 2 + Math.sin(t * 2) * 4, (rodY + hy) / 2, this.hook.x, hy);
+      g.stroke();
+
+      for (let i = 0; i < this.caught.length; i++) {
+        const f = this.caught[i];
+        const cy = hy - 22 - i * 21;
+        if (cy < -60) break;
+        g.save();
+        g.translate(this.hook.x + (i % 2 ? 13 : -13), cy);
+        g.rotate((i % 2 ? 0.5 : -0.5) + Math.sin(t * 5 + i) * 0.12);
+        drawCreature(g, f.sp, f.scale * 0.9, i % 2 ? 1 : -1, t + i);
+        g.restore();
+      }
+
+      // The hook itself.
+      g.save();
+      g.translate(this.hook.x, hy);
+      g.strokeStyle = "#e8eef5"; g.lineWidth = 2.4; g.lineCap = "round";
+      g.beginPath(); g.moveTo(0, -8); g.lineTo(0, 2);
+      g.arc(0, 2, 5, -Math.PI / 2, Math.PI * 0.85); g.stroke();
+      g.restore();
+    }
+
+    // Boat and fisherman.
+    this.drawBoat(g, boatX, surf + bob, w, h);
+
+    // Airborne catch.
+    for (const p of this.flyers) {
+      if (p.dead || p.y > h + 60) continue;
+      g.save();
+      g.translate(p.x, p.y); g.rotate(p.rot);
+      drawCreature(g, p.f.sp, p.f.scale * 1.15, 1, t + p.bob);
+      if (this.state === "shoot") {
+        g.globalAlpha = 0.35 + Math.sin(t * 4 + p.bob) * 0.15;
+        g.strokeStyle = "#fff"; g.lineWidth = 1.2;
+        const r = Math.max(24, p.f.sp.len * p.f.scale * 0.7);
+        g.beginPath(); g.arc(0, 0, r, 0, TAU); g.stroke();
+      }
+      g.restore();
+    }
+
+    // Muzzle flash and tracer.
+    if (this.aim && this.aim.life > 0) {
+      const a = clamp(this.aim.life, 0, 1);
+      g.save();
+      g.globalAlpha = a;
+      g.strokeStyle = "#ffe08a"; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(gunX, gunY); g.lineTo(this.aim.x, this.aim.y); g.stroke();
+      g.fillStyle = "#fff2c2";
+      g.beginPath(); g.arc(gunX, gunY, 6 * a, 0, TAU); g.fill();
+      g.restore();
+    }
+
+    // Bits and points.
+    for (const b of this.bits) {
+      g.globalAlpha = clamp(b.life, 0, 1);
+      g.fillStyle = b.col;
+      g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+    g.textAlign = "center"; g.textBaseline = "middle";
+    for (const p of this.pops) {
+      g.globalAlpha = clamp(p.life, 0, 1);
+      g.fillStyle = "#ffd76b";
+      g.font = "800 18px system-ui, sans-serif";
+      g.fillText(p.txt, p.x, p.y);
+    }
+    g.globalAlpha = 1;
+
+    // Shooting clock.
+    if (this.state === "shoot") {
+      const left = clamp(1 - this.shotT / this.shotMax, 0, 1);
+      const bw = w * 0.6, bx = (w - bw) / 2, by = h - 34;
+      g.fillStyle = "rgba(255,255,255,.18)";
+      g.fillRect(bx, by, bw, 5);
+      g.fillStyle = left < 0.3 ? "#ff6b6b" : "#ffd76b";
+      g.fillRect(bx, by, bw * left, 5);
+    }
+
+    // Prompts.
+    g.textAlign = "center"; g.textBaseline = "middle";
+    if (this.state === "aim") {
+      g.globalAlpha = 0.55 + Math.sin(t * 3) * 0.3;
+      g.fillStyle = "#fff";
+      g.font = "800 15px system-ui, sans-serif";
+      g.fillText("TAP TO DROP THE LINE", w / 2, h * 0.62);
+      g.globalAlpha = 0.5;
+      g.font = "600 12px system-ui, sans-serif";
+      g.fillText(CONTROL_LINE[Settings.controls], w / 2, h * 0.62 + 22);
+      g.globalAlpha = 1;
+    }
+    if (this.state === "shoot" && this.shotT < 1.4) {
+      g.globalAlpha = clamp(1.4 - this.shotT, 0, 1) * 0.85;
+      g.fillStyle = "#fff";
+      g.font = "800 15px system-ui, sans-serif";
+      g.fillText("TAP EACH FISH", w / 2, h * 0.78);
+      g.globalAlpha = 1;
+    }
+    if (this.banner) {
+      const a = clamp(this.banner.life, 0, 1);
+      g.globalAlpha = Math.min(1, a * 2);
+      g.fillStyle = "#fff";
+      g.font = "800 22px system-ui, sans-serif";
+      g.fillText(this.banner.a, w / 2, h * 0.44);
+      g.font = "600 14px system-ui, sans-serif";
+      g.fillStyle = "rgba(255,255,255,.75)";
+      g.fillText(this.banner.b, w / 2, h * 0.44 + 26);
+      g.globalAlpha = 1;
+    }
+  },
+
+  drawBoat(g, x, y, w, h) {
+    const t = this.t;
+    g.save();
+    g.translate(x, y);
+
+    // Hull.
+    g.fillStyle = "#c8543f";
+    g.beginPath();
+    g.moveTo(-46, -10); g.lineTo(46, -10); g.lineTo(32, 12); g.lineTo(-32, 12);
+    g.closePath(); g.fill();
+    g.fillStyle = "#e8ded0";
+    g.fillRect(-46, -14, 92, 5);
+
+    // He turns to face whatever he is aiming at.
+    const shooting = this.state === "shoot" || this.state === "fly";
+    let dir = 1, ang = -0.5 + Math.sin(t * 1.5) * 0.05;
+    if (shooting) {
+      const tgt = this.aim || this.flyers.find((p) => !p.dead);
+      if (tgt) {
+        dir = tgt.x >= x ? 1 : -1;
+        ang = Math.atan2(tgt.y - (y - 42), (tgt.x - x) * dir - 6);
+      }
+    }
+
+    g.save();
+    g.scale(dir, 1);
+
+    // Legs, coat, head, hat.
+    g.fillStyle = "#2f3a4a";
+    g.fillRect(-10, -30, 6, 16); g.fillRect(-2, -30, 6, 16);
+    g.fillStyle = "#f0b03c";
+    g.fillRect(-12, -48, 20, 20);
+    g.fillStyle = "#e8b48c";
+    g.beginPath(); g.arc(-2, -55, 8, 0, TAU); g.fill();
+    g.fillStyle = "#2f3a4a";
+    g.beginPath(); g.arc(-2, -58, 8, Math.PI, TAU); g.fill();
+    g.fillRect(-13, -59, 22, 3);
+
+    // Arm: a rod normally, a rifle once the catch is in the air.
+    g.save();
+    g.translate(6, -42);
+    g.rotate(ang);
+    g.fillStyle = "#e8b48c"; g.fillRect(0, -3, 14, 6);
+    g.fillStyle = shooting ? "#3d4757" : "#8a6a3a";
+    g.fillRect(12, -2.5, shooting ? 22 : 34, shooting ? 5 : 3);
+    g.restore();
+    g.restore();
+    g.restore();
+  },
+};
+
+function waterCol(d) {
+  d = clamp(d, 0, 6400);
+  for (let i = 1; i < WATER.length; i++) {
+    if (d > WATER[i][0]) continue;
+    const a = WATER[i - 1], b = WATER[i];
+    const k = (d - a[0]) / (b[0] - a[0]);
+    const c = [0, 1, 2].map((j) => Math.round(a[1][j] + (b[1][j] - a[1][j]) * k));
+    return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+  }
+  return "rgb(2,10,20)";
+}
+
+// One creature, drawn from shapes. Origin is the middle of the animal.
+function drawCreature(g, sp, scale, dir, t) {
+  const L = sp.len * scale;
+  g.save();
+  g.scale(dir < 0 ? -1 : 1, 1);
+  g.lineJoin = "round";
+
+  if (sp.kind === "fish") {
+    const wag = Math.sin(t * 6) * L * 0.06;
+    g.fillStyle = sp.fin;
+    g.beginPath();
+    g.moveTo(-L * 0.34, 0);
+    g.lineTo(-L * 0.56, -L * 0.24 + wag);
+    g.lineTo(-L * 0.56, L * 0.24 + wag);
+    g.closePath(); g.fill();
+    g.beginPath();                                     // dorsal
+    g.moveTo(-L * 0.05, -L * 0.2); g.lineTo(L * 0.12, -L * 0.4); g.lineTo(L * 0.2, -L * 0.18);
+    g.closePath(); g.fill();
+    g.fillStyle = sp.col;
+    g.beginPath(); g.ellipse(0, 0, L * 0.46, L * 0.22, 0, 0, TAU); g.fill();
+    g.fillStyle = "rgba(255,255,255,.22)";
+    g.beginPath(); g.ellipse(-L * 0.05, -L * 0.06, L * 0.3, L * 0.08, 0, 0, TAU); g.fill();
+    if (sp.lure) {
+      g.strokeStyle = sp.fin; g.lineWidth = Math.max(1, L * 0.04);
+      g.beginPath(); g.moveTo(L * 0.24, -L * 0.16);
+      g.quadraticCurveTo(L * 0.5, -L * 0.6, L * 0.6, -L * 0.34); g.stroke();
+      g.fillStyle = "#ffe9a3";
+      g.beginPath(); g.arc(L * 0.6, -L * 0.34, L * 0.09, 0, TAU); g.fill();
+      g.fillStyle = "rgba(255,233,163,.28)";
+      g.beginPath(); g.arc(L * 0.6, -L * 0.34, L * 0.22, 0, TAU); g.fill();
+      g.fillStyle = "#fff";                            // teeth
+      for (let i = 0; i < 4; i++) {
+        g.beginPath();
+        g.moveTo(L * (0.2 + i * 0.07), L * 0.04);
+        g.lineTo(L * (0.235 + i * 0.07), L * 0.16);
+        g.lineTo(L * (0.27 + i * 0.07), L * 0.04);
+        g.closePath(); g.fill();
+      }
+    }
+    g.fillStyle = "#fff";
+    g.beginPath(); g.arc(L * 0.28, -L * 0.05, L * 0.075, 0, TAU); g.fill();
+    g.fillStyle = "#101018";
+    g.beginPath(); g.arc(L * 0.3, -L * 0.05, L * 0.04, 0, TAU); g.fill();
+
+  } else if (sp.kind === "jelly") {
+    g.fillStyle = sp.fin;
+    g.lineWidth = Math.max(1, L * 0.05); g.strokeStyle = sp.fin;
+    for (let i = 0; i < 5; i++) {
+      const ox = (i - 2) * L * 0.13;
+      g.beginPath();
+      g.moveTo(ox, L * 0.05);
+      g.quadraticCurveTo(ox + Math.sin(t * 3 + i) * L * 0.16, L * 0.4, ox + Math.sin(t * 3 + i) * L * 0.24, L * 0.72);
+      g.stroke();
+    }
+    g.fillStyle = sp.col;
+    g.beginPath(); g.ellipse(0, 0, L * 0.42, L * 0.36, 0, Math.PI, TAU); g.fill();
+    g.fillRect(-L * 0.42, -0.5, L * 0.84, L * 0.06);
+    g.fillStyle = "rgba(255,255,255,.3)";
+    g.beginPath(); g.ellipse(-L * 0.12, -L * 0.14, L * 0.14, L * 0.09, 0, 0, TAU); g.fill();
+
+  } else if (sp.kind === "squid") {
+    g.fillStyle = sp.fin;
+    g.beginPath();
+    g.moveTo(-L * 0.3, -L * 0.1); g.lineTo(-L * 0.56, -L * 0.26);
+    g.lineTo(-L * 0.5, L * 0.1); g.closePath(); g.fill();
+    g.lineWidth = Math.max(1, L * 0.055); g.strokeStyle = sp.fin;
+    for (let i = 0; i < 5; i++) {
+      g.beginPath();
+      g.moveTo(L * 0.28, (i - 2) * L * 0.05);
+      g.quadraticCurveTo(L * 0.5, (i - 2) * L * 0.1 + Math.sin(t * 4 + i) * L * 0.1,
+                         L * 0.68, (i - 2) * L * 0.14 + Math.sin(t * 4 + i) * L * 0.16);
+      g.stroke();
+    }
+    g.fillStyle = sp.col;
+    g.beginPath(); g.ellipse(0, 0, L * 0.4, L * 0.2, 0, 0, TAU); g.fill();
+    g.fillStyle = "#fff";
+    g.beginPath(); g.arc(L * 0.2, -L * 0.03, L * 0.1, 0, TAU); g.fill();
+    g.fillStyle = "#101018";
+    g.beginPath(); g.arc(L * 0.22, -L * 0.03, L * 0.05, 0, TAU); g.fill();
+
+  } else if (sp.kind === "gulper") {
+    g.fillStyle = sp.col;
+    g.beginPath();
+    g.moveTo(L * 0.44, -L * 0.24);
+    g.lineTo(L * 0.44, L * 0.22);
+    g.quadraticCurveTo(-L * 0.1, L * 0.1, -L * 0.5, Math.sin(t * 4) * L * 0.1);
+    g.quadraticCurveTo(-L * 0.1, -L * 0.06, L * 0.44, -L * 0.24);
+    g.closePath(); g.fill();
+    g.fillStyle = "#2a0f22";
+    g.beginPath();
+    g.moveTo(L * 0.44, -L * 0.2); g.lineTo(L * 0.44, L * 0.18); g.lineTo(L * 0.1, 0);
+    g.closePath(); g.fill();
+    g.fillStyle = "#ffe9a3";
+    g.beginPath(); g.arc(-L * 0.48, Math.sin(t * 4) * L * 0.1, L * 0.05, 0, TAU); g.fill();
+    g.fillStyle = "#fff";
+    g.beginPath(); g.arc(L * 0.3, -L * 0.13, L * 0.05, 0, TAU); g.fill();
+
+  } else {                                              // boot
+    g.fillStyle = sp.col;
+    g.fillRect(-L * 0.16, -L * 0.42, L * 0.32, L * 0.56);
+    g.fillRect(-L * 0.16, L * 0.06, L * 0.62, L * 0.22);
+    g.fillStyle = sp.fin;
+    g.fillRect(-L * 0.2, L * 0.24, L * 0.7, L * 0.12);
+    g.fillStyle = "rgba(255,255,255,.14)";
+    g.fillRect(-L * 0.1, -L * 0.36, L * 0.08, L * 0.4);
+  }
+  g.restore();
+}
+
+// ── Golf Fall (not built yet) ────────────────────────────────────────────────
+const GolfFall = {
+  id: "golf",
+  title: "Golf Fall",
+  soon: true,
+};
+
+// ── Home ─────────────────────────────────────────────────────────────────────
+const ART = {
+  dino: '<svg viewBox="0 0 40 40" width="66" height="66">' +
+    '<rect width="40" height="40" rx="14" fill="#7a4a55"/>' +
+    '<rect x="8" y="6" width="6" height="6" fill="#15151a"/>' +
+    '<rect x="24" y="4" width="5" height="10" fill="#15151a"/>' +
+    '<rect x="17" y="12" width="4" height="4" fill="#d76b5b" transform="rotate(45 19 14)"/>' +
+    '<path d="M20 33h9v-6h-4v-4h-3v4h-4v3h2z" fill="#15151a"/>' +
+    '<rect x="4" y="33" width="32" height="3" fill="#3a2430"/></svg>',
+  fish: '<svg viewBox="0 0 40 40" width="66" height="66">' +
+    '<rect width="40" height="40" rx="14" fill="#0d4a75"/>' +
+    '<rect y="0" width="40" height="11" fill="#2fa3d8"/>' +
+    '<path d="M20 3h5v5h-5z" fill="#c8543f"/>' +
+    '<path d="M22 8v13" stroke="#fff" stroke-width="1.2" fill="none"/>' +
+    '<ellipse cx="18" cy="28" rx="7" ry="3.4" fill="#f0776f"/>' +
+    '<path d="M11 28l-4-3v6z" fill="#cf5a55"/>' +
+    '<circle cx="22" cy="27" r="1.2" fill="#fff"/></svg>',
+  golf: '<svg viewBox="0 0 40 40" width="66" height="66">' +
+    '<rect width="40" height="40" rx="14" fill="#2c3a30"/>' +
+    '<circle cx="20" cy="14" r="5" fill="#e8ede6"/>' +
+    '<circle cx="18" cy="12" r="1" fill="#b8c2b4"/><circle cx="22" cy="15" r="1" fill="#b8c2b4"/>' +
+    '<ellipse cx="20" cy="30" rx="7" ry="3" fill="#101a12"/>' +
+    '<rect x="4" y="26" width="32" height="3" fill="#4a7a4a" opacity=".5"/></svg>',
+};
+
+const GAMES = [
+  { g: DinoFall, art: "dino",
+    blurb: "Blocks fall out of a red sky. You are a small dinosaur with nowhere to hide.",
+    fmt: (v) => v ? "Best " + Number(v).toFixed(1) + "s" : "Not played yet" },
+  { g: FishFall, art: "fish",
+    blurb: "Drop a line, thread past the shallows, and shoot the catch out of the sky.",
+    fmt: (v) => v ? "Best " + v + " points" : "Not played yet" },
+  { g: GolfFall, art: "golf",
+    blurb: "One ball, a long way down. Being built next.",
+    fmt: () => "In development" },
+];
+
+const Home = {
+  paint() {
+    $("cards").innerHTML = GAMES.map((entry, i) => {
+      const soon = entry.g.soon;
+      return '<button class="card' + (soon ? " locked" : "") + '" data-i="' + i + '"' +
+             (soon ? ' disabled' : '') + '>' +
+        '<span class="art">' + ART[entry.art] + '</span>' +
+        '<span><h2>' + entry.g.title +
+          (soon ? '<span class="tag soon">Soon</span>' : '<span class="tag">Beta</span>') + '</h2>' +
+          '<p>' + entry.blurb + '</p>' +
+          '<span class="meta">' + entry.fmt(Best.get(entry.g.id)) + '</span></span>' +
+      '</button>';
+    }).join("");
+
+    $("cards").querySelectorAll(".card").forEach((el) => {
+      el.addEventListener("click", () => {
+        const entry = GAMES[Number(el.dataset.i)];
+        if (entry.g.soon) return;
+        Sound.wake();
+        Engine.run(entry.g);
+      });
+    });
+  },
+};
+
+// ── Settings wiring ──────────────────────────────────────────────────────────
+function paintSeg(id, value) {
+  $(id).querySelectorAll("button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.v === value));
+  });
+}
+function paintSwitch(id, on) { $(id).setAttribute("aria-pressed", String(!!on)); }
+
+function paintSettings() {
+  paintSeg("ctrlSeg", Settings.controls);
+  paintSeg("tiltSeg", Settings.tilt);
+  paintSwitch("optSound", Settings.sound);
+  paintSwitch("optHaptics", Settings.haptics);
+  paintSwitch("optLefty", Settings.lefty);
+
+  const needsPerm = typeof DeviceOrientationEvent !== "undefined" &&
+                    typeof DeviceOrientationEvent.requestPermission === "function";
+  $("tiltPerm").style.display = (Settings.controls === "tilt" && needsPerm && !Input.tiltSeen) ? "block" : "none";
+
+  let hint = CONTROL_LINE[Settings.controls];
+  if (Settings.controls === "tilt" && !Input.tiltSeen) {
+    hint += " This device has not reported any tilt yet — allow motion access, or pick another way to steer.";
+  }
+  $("ctrlHint").textContent = hint;
+}
+
+function wireSettings() {
+  $("toSettings").addEventListener("click", () => { Router.show("settings"); paintSettings(); });
+  $("settingsBack").addEventListener("click", () => Router.show("home"));
+
+  $("ctrlSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-v]");
+    if (!b) return;
+    Settings.save("controls", b.dataset.v);
+    paintSettings();
+  });
+  $("tiltSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-v]");
+    if (!b) return;
+    Settings.save("tilt", b.dataset.v);
+    paintSettings();
+  });
+
+  $("tiltPerm").addEventListener("click", () => {
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      DeviceOrientationEvent.requestPermission().then(() => {
+        setTimeout(paintSettings, 400);
+      }).catch(() => {});
+    }
+  });
+  $("tiltZero").addEventListener("click", (e) => {
+    Settings.save("tiltZero", Input.tiltAxis);
+    e.target.textContent = "Centred";
+    setTimeout(() => { e.target.textContent = "Recentre tilt"; }, 1200);
+  });
+
+  const toggle = (id, key) => $(id).addEventListener("click", () => {
+    Settings.save(key, !Settings[key]);
+    paintSwitch(id, Settings[key]);
+    if (key === "sound" && Settings.sound) { Sound.wake(); Sound.blip(760, 0.09, "sine", 0.1); }
+    if (key === "haptics" && Settings.haptics) buzz(18);
+  });
+  toggle("optSound", "sound");
+  toggle("optHaptics", "haptics");
+  toggle("optLefty", "lefty");
+
+  $("wipe").addEventListener("click", (e) => {
+    if (e.target.dataset.sure !== "1") {
+      e.target.dataset.sure = "1";
+      e.target.textContent = "Tap again to erase";
+      setTimeout(() => { e.target.dataset.sure = ""; e.target.textContent = "Erase every best score"; }, 3500);
+      return;
+    }
+    GAMES.forEach((entry) => Store.drop("best_" + entry.g.id));
+    e.target.dataset.sure = "";
+    e.target.textContent = "Gone";
+    setTimeout(() => { e.target.textContent = "Erase every best score"; }, 1500);
+  });
+
+  $("quit").addEventListener("click", () => Router.show("home"));
+}
+
+// ── Go ───────────────────────────────────────────────────────────────────────
+Engine.boot();
+wireSettings();
+Home.paint();
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+document.addEventListener("dblclick", (e) => e.preventDefault());
+</script>
+</body>
+</html>

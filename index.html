@@ -40,6 +40,14 @@
   a.card h2 { margin: 0 0 6px; font-size: 1.1rem; letter-spacing: -0.01em; }
   a.card p { margin: 0; color: var(--ink-2); font-size: .92rem; }
   a.card .go { color: var(--accent); font-size: .85rem; font-weight: 600; margin-top: 10px; display: block; }
+  .beta {
+    display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 999px;
+    font-size: .58rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    vertical-align: middle; background: rgba(179,84,30,.12); color: #b3541e;
+  }
+  @media (prefers-color-scheme: dark) {
+    .beta { background: rgba(224,139,76,.16); color: #e08b4c; }
+  }
   footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line);
            color: var(--muted); font-size: .82rem; }
   footer a { color: var(--ink-2); }
@@ -51,6 +59,30 @@
     <p class="lede">Each page is one HTML file. No build step, no backend.</p>
 
     <ul>
+      <li>
+        <a class="card" href="fall.html">
+          <h2>Fall <span class="beta">Beta</span></h2>
+          <p>Three small games for a phone, played with one thumb. <b>Dino Fall</b> drops
+             blocks out of a red sky and you have nowhere to hide. <b>Fish Fall</b> sends a
+             line to the sea floor: the first thing you touch on the way down stops you, so
+             a deep cast means threading past everything, and at the surface the catch goes
+             airborne and you shoot it out of the sky. <b>Golf Fall</b> is next. Steer by
+             dragging, by tilting the phone, or with on-screen buttons.</p>
+          <span class="go">Play &rarr;</span>
+        </a>
+      </li>
+      <li>
+        <a class="card" href="manor.html">
+          <h2>Manor <span class="beta">Beta</span></h2>
+          <p>A daily drafting game. Fourteen steps, an empty blueprint, and an Antechamber
+             that is sealed shut. Every room you place offers three choices and does
+             something different, and the price of the seal is paid in gems you have to
+             build an economy to earn. Chase points and the door stays shut. Chase gems and
+             you get in with nothing to show. The page explains none of it. Everyone gets
+             the same shuffle each day.</p>
+          <span class="go">Play &rarr;</span>
+        </a>
+      </li>
       <li>
         <a class="card" href="mexico-elections.html">
           <h2>Mexican presidential elections, 2000–2024</h2>
@@ -73,7 +105,7 @@
       </li>
       <li>
         <a class="card" href="metro_city.html">
-          <h2>Metro City</h2>
+          <h2>Metro City <span class="beta">Beta</span></h2>
           <p>A transit sim that runs in real time. Place stations, join them into
              lines, and run trains. Demand follows a daily curve and turns around
              between the morning and evening rush, so a platform fills while you watch

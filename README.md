@@ -74,11 +74,13 @@ in at the edges.
 
 ### Golf Fall
 
-Five randomly generated holes on a slab of course hanging in the sky, played
-isometrically. Fewest shots wins.
+One island of course hanging in the sky with five cups on it, in no order. You keep
+playing from wherever the last ball dropped, so which cup you take next, and in what
+order, is most of the game: the route is a small travelling-salesman problem you solve
+with a golf club.
 
 Drag back off the ball and let go, the way you would pull a catapult. Drag anywhere else
-to turn the course, pinch to zoom. Turning is not decoration: the shot arc is drawn in
+to turn the course, pinch to zoom. Turning is not decoration — the shot arc is drawn in
 world space, so from behind the ball it collapses into a line and from the side you can
 see exactly how high the ball goes and what it clears.
 
@@ -94,16 +96,22 @@ The driver goes a long way and keeps going after it lands. The wedge goes up rat
 out and stops near where it falls. The putter never leaves the ground, so instead of an
 arc and a landing circle it draws the line the ball will roll along.
 
-The ball runs on a fixed 120 Hz step and the aim preview runs the same physics on the same
-step, so the line you are shown is the line the ball takes — exactly, on any frame rate.
+The ground has height, and height is what makes the clubs matter. A driver into the face
+of a rise hits it and drops; a wedge goes over. Measured across forty spots with a rise of
+a unit or more in front of the ball, the wedge beat the driver by a clear margin in 53% of
+them — 0.8 units against 6.0 in one of them. Trees do the same job lower down, and both
+water and the edge of the island cost a stroke and put you back where you hit from.
 
-A hole is a quadratic bend from tee to green carved out of nothing, two rings of rough
-around it, bunkers on the shoulders and sometimes water straight across the fairway. Water
-and the edge both cost a stroke and put you back where you hit from. Everything the carve
-does not touch stays void, which is the edge you fall off.
+The ball rolls downhill, falls off ledges, and stops dead against a kerb it cannot climb.
+It runs on a fixed 120 Hz step and the aim preview runs the same physics on the same step,
+so the line you are shown is the line the ball takes — exactly, on any frame rate.
 
-Par is set by distance. A bot that searches 400 shots a turn with exact physics goes round
-in 10 to 12; par for the five holes is nearer 20.
+The island is a handful of overlapping lobes with a value-noise height field over it,
+five greens flattened into it and fairway carved along the shortest route between them.
+That shortest route is, of course, the one you are free to ignore. Everything the lobes do
+not cover is void, which is the edge you fall off.
+
+A bot that searches about 450 shots a turn with exact physics goes round in 7 to 8.
 
 ## mexico-elections.html
 

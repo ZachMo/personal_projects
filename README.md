@@ -27,7 +27,8 @@ size for eight seconds, and a small dino is a fast one. A **blue hourglass** dro
 to 42% speed for five and a half seconds — you keep your own speed, which is the whole
 point of it. An **amber bomb** clears every block on screen and whites out the frame.
 
-Countdown pills under the score show what is still running.
+Under the score, the two timed pickups get a countdown bar. The shield gets a small
+diamond instead — it runs until something hits you, so a draining bar would be a lie.
 
 It started as an easter egg in a page margin, moved with the arrow keys, and had only the
 shield. This version is built for a screen you hold.
@@ -48,15 +49,24 @@ is a very good one. The animals get rarer and worth more the deeper you go: sard
 perch near the top, tuna and jellyfish in the middle, squid, anglerfish and gulper eels in
 the dark.
 
-At the surface the whole catch scatters across the sky and hangs there. Tap each fish and
-the fisherman shoots it for its points. Anything you do not hit before the clock runs out
-falls back in the sea and is worth nothing.
+At the surface the whole catch is thrown clear of the water and falls back into it in slow
+motion, scattered across the sky. Tap a fish and the fisherman shoots it for its points.
+Anything that reaches the water again is gone.
+
+There is no clock on screen because there does not need to be one. How high a fish is *is*
+how long you have. The low ones splash first, so those are the ones to shoot first, and
+you can read the whole queue at a glance. Shooting lowest-first instead of at random is
+worth about 22% more points at a fast tap rate.
 
 Everything is drawn from shapes on a canvas — no images, no sprite sheets. The water and
-the sky carry all the colour. Every animal, the boat and the fisherman are drawn in ink
-with one rim light, so you tell a sardine from a gulper eel by its outline, the way you
-tell the blocks apart in Dino Fall. The only other colour is the gold on an anglerfish
-lure, a shot and the points it pays.
+the sky carry all the colour. Every animal, the boat and the fisherman are solid ink
+silhouettes, so you tell a sardine from a gulper eel by its shape, the way you tell the
+blocks apart in Dino Fall. The only other colour is the gold on an anglerfish lure, a shot
+and the points it pays.
+
+Which means the water can never go black, or the silhouettes in it would disappear. It
+bottoms out at a deep blue instead, and the dark of the deep comes from a vignette closing
+in at the edges.
 
 ### Golf Fall
 

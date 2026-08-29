@@ -935,8 +935,8 @@ const DinoFall = {
 
     // Dusk sky.
     const sky = g.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, "#3b2c56");
-    sky.addColorStop(0.45, "#7a4a55");
+    sky.addColorStop(0, "#5b4478");
+    sky.addColorStop(0.45, "#8f5560");
     sky.addColorStop(0.78, "#d98a5f");
     sky.addColorStop(1, "#f0b57c");
     g.fillStyle = sky; g.fillRect(-10, -10, w + 20, h + 20);
@@ -977,13 +977,10 @@ const DinoFall = {
         g.fillStyle = "rgba(0,0,0,.18)";
         g.fillRect(b.x + 2, b.y + 3, b.w, b.h);
         g.fillStyle = "#15151b";
-        g.strokeStyle = "rgba(255,214,190,.32)";
-        g.lineWidth = 1;
         if (b.k === "dot") {
-          g.beginPath(); g.arc(b.x + b.w / 2, b.y + b.h / 2, b.w / 2, 0, TAU); g.fill(); g.stroke();
+          g.beginPath(); g.arc(b.x + b.w / 2, b.y + b.h / 2, b.w / 2, 0, TAU); g.fill();
         } else {
           g.fillRect(b.x, b.y, b.w, b.h);
-          g.strokeRect(b.x + .5, b.y + .5, b.w - 1, b.h - 1);
         }
       }
     }
@@ -1007,21 +1004,33 @@ const DinoFall = {
     this.drawTimers(g, w);
   },
 
-  // Little countdown pills for whatever is still running.
+  // Countdown bars for the two that run on a clock. The shield has no clock —
+  // it sits there until something hits you — so it gets a diamond instead.
   drawTimers(g, w) {
-    const on = [];
-    if (this.slowT > 0) on.push({ t: this.slowT / SLOW_SECONDS, col: "#5aa9d6" });
-    if (this.miniT > 0) on.push({ t: this.miniT / MINI_SECONDS, col: "#6fbf73" });
-    if (this.shield)    on.push({ t: 1, col: "#d76b5b" });
-    if (!on.length) return;
-    const bw = 52, gap = 8;
-    let x = (w - (on.length * bw + (on.length - 1) * gap)) / 2;
-    for (const e of on) {
+    const bars = [];
+    if (this.slowT > 0) bars.push({ t: this.slowT / SLOW_SECONDS, col: "#5aa9d6" });
+    if (this.miniT > 0) bars.push({ t: this.miniT / MINI_SECONDS, col: "#6fbf73" });
+    const bw = 52, gap = 8, pip = this.shield ? 20 : 0;
+    const total = bars.length * bw + Math.max(0, bars.length - 1) * gap +
+                  (pip && bars.length ? gap : 0) + pip;
+    if (!total) return;
+
+    let x = (w - total) / 2;
+    for (const e of bars) {
       g.fillStyle = "rgba(0,0,0,.28)";
       g.fillRect(x, 74, bw, 5);
       g.fillStyle = e.col;
       g.fillRect(x, 74, bw * clamp(e.t, 0, 1), 5);
       x += bw + gap;
+    }
+    if (this.shield) {
+      g.save();
+      g.translate(x + pip / 2, 76.5);
+      g.fillStyle = "#d76b5b";
+      g.beginPath();
+      g.moveTo(0, -8); g.lineTo(7, 0); g.lineTo(0, 8); g.lineTo(-7, 0);
+      g.closePath(); g.fill();
+      g.restore();
     }
   },
 
@@ -1117,7 +1126,7 @@ const DinoFall = {
 // shoot it out of the sky.
 // Everything in the water is drawn in ink. You tell them apart by their
 // outline, the way you tell the blocks apart in Dino Fall.
-const INK = "#0d1219", INK_2 = "#1b2532", RIM = "rgba(219,233,246,.62)";
+const INK = "#080d14", INK_2 = "#141d29", LIT = "rgba(219,233,246,.72)";
 const GLOW = "#ffd76b";
 
 const FISH = [
@@ -1135,9 +1144,9 @@ const BY_ID = {};
 FISH.forEach((f) => { BY_ID[f.id] = f; });
 
 const WATER = [
-  [0,    [47, 163, 216]], [600,  [28, 118, 171]], [1500, [13, 74, 117]],
-  [2600, [8, 42, 72]],    [4000, [4, 22, 42]],    [6400, [2, 10, 20]],
-  [9000, [1, 5, 11]],
+  [0,    [47, 163, 216]], [600,  [28, 118, 171]], [1500, [16, 80, 124]],
+  [2600, [12, 52, 86]],   [4000, [10, 38, 64]],   [6400, [8, 28, 48]],
+  [9000, [7, 22, 40]],
 ];
 
 const CASTS_PER_TRIP = 5;
@@ -1264,9 +1273,10 @@ const FishFall = {
     const { w, h } = this;
     if (this.state === "ready" || this.state === "held" || this.state === "done") return;
 
-    // Swim.
+    // Swim. Everything below slows down while the catch is in the air.
+    const swim = (this.state === "shoot" || this.state === "tally") ? dt * 0.3 : dt;
     for (const f of this.fish) {
-      f.x += f.dir * f.speed * dt;
+      f.x += f.dir * f.speed * swim;
       const pad = f.sp.len * f.scale;
       if (f.x < -pad) f.x = w + pad;
       if (f.x > w + pad) f.x = -pad;
@@ -1275,27 +1285,15 @@ const FishFall = {
     if (this.state === "aim")   this.updateAim(dt);
     if (this.state === "down")  this.updateDown(dt);
     if (this.state === "up")    this.updateUp(dt);
-    if (this.state === "fly")   this.updateFly(dt);
     if (this.state === "shoot") this.updateShoot(dt);
     if (this.state === "tally") {
       this.banner.life -= dt;
-      // Whatever you did not shoot drops back in the sea.
-      for (const p of this.flyers) {
-        if (p.dead) continue;
-        p.vy = (p.vy || 0) + 1100 * dt;
-        p.y += p.vy * dt;
-        p.rot += dt * 2.2;
-        if (!p.splashed && p.y > -this.camY) {
-          p.splashed = true;
-          Sound.noise(0.12, 0.06);
-        }
-      }
       Hud.set(this.score, "trip score");
       if (this.banner.life <= 0) { this.banner = null; this.nextCast(); }
     }
 
     // Camera.
-    const sky = this.state === "fly" || this.state === "shoot" || this.state === "tally";
+    const sky = this.state === "shoot" || this.state === "tally";
     const want = (this.state === "down" || this.state === "up")
       ? this.hook.y - h * 0.42 : (sky ? -h * 0.62 : -h * 0.32);
     const lo = sky ? -h * 0.66 : -h * 0.34;
@@ -1371,85 +1369,93 @@ const FishFall = {
     buzz(this.state === "down" ? 24 : 10);
   },
 
+  // The catch is thrown clear of the water and falls back into it in slow
+  // motion. How high a fish is IS the clock on it: the low ones splash first,
+  // so those are the ones to shoot first.
   launch() {
-    this.state = "fly";
     Sound.slide(300, 700, 0.3, "sine");
     const n = this.caught.length;
     if (!n) { this.tally(); return; }
 
-    const surf = -this.camY;                       // the waterline, in screen pixels
-    const padX = 40, top = this.h * 0.10, bot = this.h * 0.52;
+    this.state = "shoot";
+    this.grav = this.h * 0.17;                     // gentle, so it hangs
+    const sky = this.h * 0.60;                     // room above the waterline
+    const padX = 40;
 
-    // Scattered, not stacked. Best-of-several sampling keeps them apart
-    // without ever putting them in a row.
+    // Scattered, not stacked. Best-of-several sampling spreads them out, and
+    // the apex height doubles as how long you have.
     const spots = [];
     for (let i = 0; i < n; i++) {
       let best = null, bestGap = -1;
       for (let k = 0; k < 16; k++) {
-        const c = { x: rand(padX, this.w - padX), y: rand(top, bot) };
+        const c = { x: rand(padX, this.w - padX), apex: rand(sky * 0.20, sky * 0.96) };
         let gap = 1e9;
-        for (const q of spots) gap = Math.min(gap, Math.hypot(q.x - c.x, q.y - c.y));
+        for (const q of spots) gap = Math.min(gap, Math.hypot(q.x - c.x, q.apex - c.apex));
         if (gap > bestGap) { bestGap = gap; best = c; }
       }
       spots.push(best);
     }
 
+    // Flyers live in world coordinates, where y = 0 is the waterline. That way
+    // the camera can still be panning up while they fly.
     this.flyers = this.caught.map((f, i) => ({
-      f, sx: this.hook.x, sy: surf, tx: spots[i].x, ty: spots[i].y,
-      x: this.hook.x, y: surf, t: 0, delay: rand(0, 0.28),
-      spin: rand(-3, 3), rot: 0, bob: rand(0, TAU),
-      sway: rand(3, 9), swayT: rand(0.6, 1.4), dead: false,
+      f,
+      x: this.hook.x + rand(-6, 6),
+      y: -4,
+      vx: (spots[i].x - this.hook.x) / Math.max(0.9, Math.sqrt(2 * spots[i].apex / this.grav)),
+      vy: -Math.sqrt(2 * this.grav * spots[i].apex),
+      rot: rand(-0.6, 0.6),
+      spin: rand(-1.5, 1.5),
+      dead: false, shot: false,
     }));
-    this.flyT = 0;
-  },
-
-  updateFly(dt) {
-    this.flyT += dt;
-    let settled = true;
-    for (const p of this.flyers) {
-      p.t = clamp((this.flyT - p.delay) / 0.55, 0, 1);
-      const e = 1 - Math.pow(1 - p.t, 3);
-      p.x = p.sx + (p.tx - p.sx) * e;
-      p.y = p.sy + (p.ty - p.sy) * e - Math.sin(p.t * Math.PI) * this.h * 0.14;
-      p.rot = p.spin * (1 - p.t) * 1.4;
-      if (p.t < 1) settled = false;
-    }
-    Hud.set(this.score, "here it comes");
-    if (settled) {
-      this.state = "shoot";
-      this.shotT = 0;
-      this.shotMax = Math.min(9, 3.4 + this.flyers.length * 0.42);
-      this.aim = null;
-      Input.onTap = (x, y) => this.shoot(x, y);
-    }
+    this.aim = null;
+    Input.onTap = (x, y) => this.shoot(x, y);
+    this.shotT = 0;
   },
 
   updateShoot(dt) {
     this.shotT += dt;
+    let left = 0;
     for (const p of this.flyers) {
       if (p.dead) continue;
-      p.bob += dt * 2.4 * p.swayT;
-      p.x = p.tx + Math.cos(p.bob * 0.6) * p.sway;
-      p.y = p.ty + Math.sin(p.bob) * p.sway * 0.7;
-      p.rot = Math.sin(p.bob * 0.7) * 0.14;
+      p.vy += this.grav * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.rot += p.spin * dt;
+
+      // Bounce off the sides rather than sailing out of reach.
+      if (p.x < 24 && p.vx < 0) { p.x = 24; p.vx *= -0.7; }
+      if (p.x > this.w - 24 && p.vx > 0) { p.x = this.w - 24; p.vx *= -0.7; }
+
+      if (p.y >= 0 && p.vy > 0) { this.splash(p); continue; }
+      left++;
     }
     if (this.aim) this.aim.life -= dt * 5;
-    const left = this.flyers.filter((p) => !p.dead).length;
-    Hud.set(this.score, left + " in the air");
-    if (!left || this.shotT >= this.shotMax) {
-      Input.onTap = null;
-      this.tally();
+    Hud.set(this.score, left ? left + " in the air" : "");
+    if (!left) { Input.onTap = null; this.tally(); }
+  },
+
+  splash(p) {
+    p.dead = true;
+    const sy = -this.camY;
+    for (let i = 0; i < 9; i++) {
+      this.bits.push({
+        x: p.x, y: sy, vx: rand(-70, 70), vy: rand(-150, -40),
+        r: rand(1.4, 3.2), life: 0.9, col: "rgba(226,240,250,.85)",
+      });
     }
+    Sound.noise(0.14, 0.07);
   },
 
   shoot(x, y) {
     if (this.state !== "shoot") return;
+    const cam = this.camY;
     let best = null, bestD = 1e9;
     for (const p of this.flyers) {
       if (p.dead) continue;
       const r = Math.max(30, p.f.sp.len * p.f.scale * 0.7);
-      const d = Math.hypot(p.x - x, p.y - y);
-      if (d < r + 22 && d < bestD) { best = p; bestD = d; }
+      const d = Math.hypot(p.x - x, (p.y - cam) - y);
+      if (d < r + 24 && d < bestD) { best = p; bestD = d; }
     }
     if (!best) {
       Sound.blip(160, 0.05, "square", 0.05);
@@ -1457,13 +1463,15 @@ const FishFall = {
       return;
     }
     best.dead = true;
+    best.shot = true;
     this.score += best.f.sp.pts;
     this.trip.push(best.f.sp.id);
-    this.aim = { x: best.x, y: best.y, life: 1 };
-    this.pops.push({ x: best.x, y: best.y, txt: "+" + best.f.sp.pts, life: 1 });
+    const by = best.y - cam;
+    this.aim = { x: best.x, y: by, life: 1 };
+    this.pops.push({ x: best.x, y: by, txt: "+" + best.f.sp.pts, life: 1 });
     for (let i = 0; i < 14; i++) {
       this.bits.push({
-        x: best.x, y: best.y, vx: rand(-160, 160), vy: rand(-190, 60),
+        x: best.x, y: by, vx: rand(-160, 160), vy: rand(-190, 60),
         r: rand(1.6, 4), life: 1, col: pick(["#dbe9f6", "#ffd76b", "#9fb4c8"]),
       });
     }
@@ -1474,7 +1482,7 @@ const FishFall = {
 
   tally() {
     const got = this.caught.length;
-    const shot = this.flyers.filter((p) => p.dead).length;
+    const shot = this.flyers.filter((p) => p.shot).length;
     this.banner = {
       life: 1.7,
       a: got ? shot + " of " + got + " landed" : "Nothing on the line",
@@ -1550,6 +1558,18 @@ const FishFall = {
       g.restore();
     }
 
+    // The deep gets its dark from the edges closing in, not from the water
+    // going black — a black sea would swallow every silhouette in it.
+    const gloom = clamp((cam - 400) / 4200, 0, 1) * 0.72;
+    if (gloom > 0.01) {
+      const vig = g.createRadialGradient(w / 2, h * 0.46, Math.min(w, h) * 0.14,
+                                         w / 2, h * 0.46, Math.max(w, h) * 0.78);
+      vig.addColorStop(0, "rgba(2,7,14,0)");
+      vig.addColorStop(1, "rgba(2,7,14," + gloom.toFixed(3) + ")");
+      g.fillStyle = vig;
+      g.fillRect(0, Math.max(0, surf), w, h - Math.max(0, surf));
+    }
+
     // Marine snow.
     g.fillStyle = "rgba(255,255,255,.22)";
     for (const s of this.snow) {
@@ -1599,7 +1619,7 @@ const FishFall = {
     const boatX = w / 2, bob = Math.sin(t * 1.5) * 3;
     const rodX = boatX + 46, rodY = surf - 64 + bob;      // rod tip
     const gunX = boatX + 6,  gunY = surf - 42 + bob;      // shoulder
-    if (this.state !== "shoot" && this.state !== "fly" && this.state !== "tally") {
+    if (this.state !== "shoot" && this.state !== "tally") {
       const hy = this.hook.y - cam;
       g.strokeStyle = "rgba(255,255,255,.62)"; g.lineWidth = 1.4;
       g.beginPath();
@@ -1630,18 +1650,14 @@ const FishFall = {
     // Boat and fisherman.
     this.drawBoat(g, boatX, surf + bob, w, h);
 
-    // Airborne catch.
+    // Airborne catch. It is in world coordinates like everything in the water.
     for (const p of this.flyers) {
-      if (p.dead || p.y > h + 60) continue;
+      if (p.dead) continue;
+      const py = p.y - cam;
+      if (py < -80 || py > h + 60) continue;
       g.save();
-      g.translate(p.x, p.y); g.rotate(p.rot);
-      drawCreature(g, p.f.sp, p.f.scale * 1.15, 1, t + p.bob);
-      if (this.state === "shoot") {
-        g.globalAlpha = 0.35 + Math.sin(t * 4 + p.bob) * 0.15;
-        g.strokeStyle = "#fff"; g.lineWidth = 1.2;
-        const r = Math.max(24, p.f.sp.len * p.f.scale * 0.7);
-        g.beginPath(); g.arc(0, 0, r, 0, TAU); g.stroke();
-      }
+      g.translate(p.x, py); g.rotate(p.rot);
+      drawCreature(g, p.f.sp, p.f.scale * 1.15, p.vx < 0 ? -1 : 1, t + p.x * 0.03);
       g.restore();
     }
 
@@ -1673,33 +1689,21 @@ const FishFall = {
     }
     g.globalAlpha = 1;
 
-    // Shooting clock.
-    if (this.state === "shoot") {
-      const left = clamp(1 - this.shotT / this.shotMax, 0, 1);
-      const bw = w * 0.6, bx = (w - bw) / 2, by = h - 34;
-      g.fillStyle = "rgba(255,255,255,.18)";
-      g.fillRect(bx, by, bw, 5);
-      g.fillStyle = left < 0.3 ? "#ff6b6b" : "#ffd76b";
-      g.fillRect(bx, by, bw * left, 5);
-    }
-
     // Prompts.
     g.textAlign = "center"; g.textBaseline = "middle";
     if (this.state === "aim") {
       g.globalAlpha = 0.55 + Math.sin(t * 3) * 0.3;
-      g.fillStyle = "#fff";
       g.font = "800 15px system-ui, sans-serif";
-      g.fillText("TAP TO DROP THE LINE", w / 2, h * 0.62);
+      shout(g, "TAP TO DROP THE LINE", w / 2, h * 0.62);
       g.globalAlpha = 0.5;
       g.font = "600 12px system-ui, sans-serif";
-      g.fillText(CONTROL_LINE[Settings.controls], w / 2, h * 0.62 + 22);
+      shout(g, CONTROL_LINE[Settings.controls], w / 2, h * 0.62 + 22);
       g.globalAlpha = 1;
     }
-    if (this.state === "shoot" && this.shotT < 1.4) {
-      g.globalAlpha = clamp(1.4 - this.shotT, 0, 1) * 0.85;
-      g.fillStyle = "#fff";
+    if (this.state === "shoot" && this.shotT < 2.2) {
+      g.globalAlpha = clamp(2.2 - this.shotT, 0, 1) * 0.8;
       g.font = "800 15px system-ui, sans-serif";
-      g.fillText("TAP EACH FISH", w / 2, h * 0.78);
+      shout(g, "SHOOT THE LOW ONES FIRST", w / 2, h * 0.86);
       g.globalAlpha = 1;
     }
     if (this.banner) {
@@ -1707,10 +1711,9 @@ const FishFall = {
       g.globalAlpha = Math.min(1, a * 2);
       g.fillStyle = "#fff";
       g.font = "800 22px system-ui, sans-serif";
-      g.fillText(this.banner.a, w / 2, h * 0.44);
+      shout(g, this.banner.a, w / 2, h * 0.44);
       g.font = "600 14px system-ui, sans-serif";
-      g.fillStyle = "rgba(255,255,255,.75)";
-      g.fillText(this.banner.b, w / 2, h * 0.44 + 26);
+      shout(g, this.banner.b, w / 2, h * 0.44 + 26, "rgba(255,255,255,.8)");
       g.globalAlpha = 1;
     }
     g.restore();
@@ -1730,7 +1733,7 @@ const FishFall = {
     g.fillRect(-46, -14, 92, 5);
 
     // He turns to face whatever he is aiming at.
-    const shooting = this.state === "shoot" || this.state === "fly";
+    const shooting = this.state === "shoot";
     let dir = 1, ang = -0.5 + Math.sin(t * 1.5) * 0.05;
     if (shooting) {
       const tgt = this.aim || this.flyers.find((p) => !p.dead);
@@ -1765,6 +1768,14 @@ const FishFall = {
   },
 };
 
+// White text with a soft shadow, so a prompt reads over water or sky.
+function shout(g, text, x, y, col) {
+  g.fillStyle = "rgba(4,12,22,.45)";
+  g.fillText(text, x + 1, y + 1.5);
+  g.fillStyle = col || "#fff";
+  g.fillText(text, x, y);
+}
+
 function waterCol(d) {
   d = clamp(d, 0, 9000);
   for (let i = 1; i < WATER.length; i++) {
@@ -1778,149 +1789,181 @@ function waterCol(d) {
 }
 
 // One creature, drawn from shapes. Origin is the middle of the animal.
-// All ink and one rim light, so it reads at any depth. Size and outline are
-// what tell a sardine from a gulper eel, not colour.
+// Solid silhouettes, no outlines: the water never goes darker than a deep blue,
+// so a near-black animal reads at any depth. Size and shape are what tell a
+// sardine from a gulper eel, not colour.
 function drawCreature(g, sp, scale, dir, t) {
   const L = sp.len * scale;
   g.save();
   g.scale(dir < 0 ? -1 : 1, 1);
   g.lineJoin = "round";
-  g.lineWidth = Math.max(1, L * 0.035);
-  g.strokeStyle = RIM;
+  g.lineCap = "round";
 
   if (sp.kind === "fish") {
-    const r = sp.ratio, wag = Math.sin(t * 6) * L * 0.06;
+    const r = sp.ratio, wag = Math.sin(t * 6) * L * 0.07;
 
+    // Tail.
     g.fillStyle = INK_2;
-    if (sp.dorsal === "sickle") {                        // tuna: crescent tail
+    if (sp.dorsal === "sickle") {                        // tuna: crescent
       g.beginPath();
-      g.moveTo(-L * 0.30, 0);
-      g.quadraticCurveTo(-L * 0.46, -L * 0.06 + wag, -L * 0.66, -L * 0.38 + wag);
-      g.quadraticCurveTo(-L * 0.46, -L * 0.16 + wag, -L * 0.36, 0);
-      g.quadraticCurveTo(-L * 0.46, L * 0.16 + wag, -L * 0.66, L * 0.38 + wag);
-      g.quadraticCurveTo(-L * 0.46, L * 0.06 + wag, -L * 0.30, 0);
-      g.closePath(); g.fill(); g.stroke();
+      g.moveTo(-L * 0.28, 0);
+      g.quadraticCurveTo(-L * 0.44, -L * 0.06 + wag, -L * 0.64, -L * 0.36 + wag);
+      g.quadraticCurveTo(-L * 0.46, -L * 0.15 + wag, -L * 0.36, 0);
+      g.quadraticCurveTo(-L * 0.46, L * 0.15 + wag, -L * 0.64, L * 0.36 + wag);
+      g.quadraticCurveTo(-L * 0.44, L * 0.06 + wag, -L * 0.28, 0);
+      g.closePath(); g.fill();
     } else {
       g.beginPath();
-      g.moveTo(-L * 0.3, 0);
-      g.lineTo(-L * 0.56, -L * (r + 0.06) + wag);
-      g.lineTo(-L * 0.56, L * (r + 0.06) + wag);
-      g.closePath(); g.fill(); g.stroke();
+      g.moveTo(-L * 0.26, 0);
+      g.quadraticCurveTo(-L * 0.42, -L * 0.05 + wag, -L * 0.55, -L * (r + 0.09) + wag);
+      g.quadraticCurveTo(-L * 0.42, 0 + wag, -L * 0.55, L * (r + 0.09) + wag);
+      g.quadraticCurveTo(-L * 0.42, L * 0.05 + wag, -L * 0.26, 0);
+      g.closePath(); g.fill();
     }
 
-    g.beginPath();                                       // dorsal fin
+    // Dorsal.
+    g.beginPath();
     if (sp.dorsal === "spiky") {
-      g.moveTo(-L * 0.14, -L * r);
+      g.moveTo(-L * 0.16, -L * r * 0.9);
       for (let i = 0; i < 4; i++) {
-        g.lineTo(-L * (0.1 - i * 0.07), -L * (r + 0.19));
-        g.lineTo(-L * (0.06 - i * 0.07), -L * (r + 0.02));
+        g.lineTo(-L * (0.12 - i * 0.07), -L * (r + 0.2));
+        g.lineTo(-L * (0.08 - i * 0.07), -L * (r * 0.85));
       }
     } else if (sp.dorsal === "sickle") {
-      g.moveTo(-L * 0.06, -L * r);
-      g.quadraticCurveTo(L * 0.04, -L * (r + 0.3), L * 0.16, -L * (r + 0.02));
+      g.moveTo(-L * 0.08, -L * r * 0.9);
+      g.quadraticCurveTo(L * 0.02, -L * (r + 0.32), L * 0.16, -L * (r * 0.85));
     } else {
-      g.moveTo(-L * 0.08, -L * r);
-      g.lineTo(L * 0.1, -L * (r + 0.24));
-      g.lineTo(L * 0.2, -L * (r - 0.02));
+      g.moveTo(-L * 0.12, -L * r * 0.9);
+      g.quadraticCurveTo(L * 0.02, -L * (r + 0.28), L * 0.22, -L * (r * 0.8));
     }
-    g.closePath(); g.fill(); g.stroke();
-
-    g.beginPath();                                       // pelvic fin
-    g.moveTo(L * 0.02, L * (r - 0.02));
-    g.lineTo(L * 0.04, L * (r + 0.2));
-    g.lineTo(L * 0.2, L * (r - 0.03));
     g.closePath(); g.fill();
 
-    g.fillStyle = INK;                                   // body
-    g.beginPath(); g.ellipse(0, 0, L * 0.46, L * r, 0, 0, TAU); g.fill(); g.stroke();
+    // Pelvic fin.
+    g.beginPath();
+    g.moveTo(L * 0.0, L * r * 0.85);
+    g.quadraticCurveTo(L * 0.04, L * (r + 0.22), L * 0.22, L * (r * 0.78));
+    g.closePath(); g.fill();
+
+    // Body: a proper tapered shape, not an ellipse.
+    g.fillStyle = INK;
+    g.beginPath();
+    g.moveTo(L * 0.5, 0);
+    g.bezierCurveTo(L * 0.28, -L * r * 1.08, L * 0.0, -L * r, -L * 0.27, -L * r * 0.34);
+    g.lineTo(-L * 0.27, L * r * 0.34);
+    g.bezierCurveTo(L * 0.0, L * r, L * 0.28, L * r * 1.08, L * 0.5, 0);
+    g.closePath(); g.fill();
+
+    // Belly, just enough to give the body a top and a bottom.
+    g.fillStyle = "rgba(150,180,205,.14)";
+    g.beginPath();
+    g.moveTo(L * 0.42, L * r * 0.16);
+    g.bezierCurveTo(L * 0.1, L * r * 0.95, -L * 0.05, L * r * 0.86, -L * 0.26, L * r * 0.3);
+    g.lineTo(-L * 0.26, L * r * 0.05);
+    g.closePath(); g.fill();
 
     if (sp.lure) {
-      g.strokeStyle = RIM; g.lineWidth = Math.max(1, L * 0.045);
-      g.beginPath(); g.moveTo(L * 0.22, -L * 0.2);
-      g.quadraticCurveTo(L * 0.52, -L * 0.66, L * 0.62, -L * 0.36); g.stroke();
-      g.fillStyle = "rgba(255,215,107,.22)";
-      g.beginPath(); g.arc(L * 0.62, -L * 0.36, L * 0.26, 0, TAU); g.fill();
+      g.strokeStyle = INK_2; g.lineWidth = Math.max(1.4, L * 0.05);
+      g.beginPath(); g.moveTo(L * 0.2, -L * r * 0.75);
+      g.quadraticCurveTo(L * 0.5, -L * 0.66, L * 0.6, -L * 0.36); g.stroke();
+      g.fillStyle = "rgba(255,215,107,.18)";
+      g.beginPath(); g.arc(L * 0.6, -L * 0.36, L * 0.28, 0, TAU); g.fill();
       g.fillStyle = GLOW;
-      g.beginPath(); g.arc(L * 0.62, -L * 0.36, L * 0.09, 0, TAU); g.fill();
-      g.fillStyle = RIM;                                 // teeth
+      g.beginPath(); g.arc(L * 0.6, -L * 0.36, L * 0.1, 0, TAU); g.fill();
+      g.fillStyle = LIT;                                 // teeth
       for (let i = 0; i < 4; i++) {
         g.beginPath();
-        g.moveTo(L * (0.16 + i * 0.07), L * 0.05);
-        g.lineTo(L * (0.195 + i * 0.07), L * 0.18);
-        g.lineTo(L * (0.23 + i * 0.07), L * 0.05);
+        g.moveTo(L * (0.18 + i * 0.07), L * 0.02);
+        g.lineTo(L * (0.215 + i * 0.07), L * 0.15);
+        g.lineTo(L * (0.25 + i * 0.07), L * 0.02);
         g.closePath(); g.fill();
       }
-      g.strokeStyle = RIM; g.lineWidth = Math.max(1, L * 0.035);
     }
 
-    g.fillStyle = RIM;                                   // eye
-    g.beginPath(); g.arc(L * 0.28, -L * (r * 0.25), L * 0.07, 0, TAU); g.fill();
+    g.fillStyle = LIT;
+    g.beginPath(); g.arc(L * 0.34, -L * r * 0.34, L * 0.045, 0, TAU); g.fill();
 
   } else if (sp.kind === "jelly") {
-    g.strokeStyle = RIM; g.lineWidth = Math.max(1, L * 0.05);
+    g.strokeStyle = INK; g.lineWidth = Math.max(1.4, L * 0.055);
     for (let i = 0; i < 5; i++) {
       const ox = (i - 2) * L * 0.13;
       g.beginPath();
-      g.moveTo(ox, L * 0.05);
+      g.moveTo(ox, L * 0.06);
       g.quadraticCurveTo(ox + Math.sin(t * 3 + i) * L * 0.16, L * 0.4,
                          ox + Math.sin(t * 3 + i) * L * 0.24, L * 0.72);
       g.stroke();
     }
-    g.lineWidth = Math.max(1, L * 0.035);
     g.fillStyle = INK;
-    g.beginPath(); g.ellipse(0, 0, L * 0.42, L * 0.36, 0, Math.PI, TAU); g.fill();
     g.beginPath();
-    g.ellipse(0, 0, L * 0.42, L * 0.36, 0, Math.PI, TAU);
-    g.lineTo(-L * 0.42, 0); g.stroke();
-    g.fillStyle = "rgba(219,233,246,.28)";
-    g.beginPath(); g.ellipse(-L * 0.12, -L * 0.15, L * 0.13, L * 0.08, 0, 0, TAU); g.fill();
+    g.moveTo(-L * 0.42, L * 0.04);
+    g.bezierCurveTo(-L * 0.42, -L * 0.46, L * 0.42, -L * 0.46, L * 0.42, L * 0.04);
+    g.quadraticCurveTo(L * 0.2, L * 0.14, 0, L * 0.08);
+    g.quadraticCurveTo(-L * 0.2, L * 0.14, -L * 0.42, L * 0.04);
+    g.closePath(); g.fill();
+    g.fillStyle = "rgba(150,180,205,.2)";
+    g.beginPath(); g.ellipse(-L * 0.13, -L * 0.16, L * 0.12, L * 0.07, -0.4, 0, TAU); g.fill();
 
   } else if (sp.kind === "squid") {
-    g.fillStyle = INK_2;
-    g.beginPath();
-    g.moveTo(-L * 0.28, -L * 0.12); g.lineTo(-L * 0.58, -L * 0.28);
-    g.lineTo(-L * 0.5, L * 0.12); g.closePath(); g.fill(); g.stroke();
-    g.strokeStyle = RIM; g.lineWidth = Math.max(1, L * 0.05);
+    g.strokeStyle = INK; g.lineWidth = Math.max(1.4, L * 0.055);
     for (let i = 0; i < 5; i++) {
       g.beginPath();
-      g.moveTo(L * 0.28, (i - 2) * L * 0.05);
+      g.moveTo(L * 0.26, (i - 2) * L * 0.05);
       g.quadraticCurveTo(L * 0.5, (i - 2) * L * 0.1 + Math.sin(t * 4 + i) * L * 0.1,
-                         L * 0.68, (i - 2) * L * 0.14 + Math.sin(t * 4 + i) * L * 0.16);
+                         L * 0.68, (i - 2) * L * 0.15 + Math.sin(t * 4 + i) * L * 0.16);
       g.stroke();
     }
-    g.lineWidth = Math.max(1, L * 0.035);
-    g.fillStyle = INK;
-    g.beginPath(); g.ellipse(0, 0, L * 0.4, L * 0.2, 0, 0, TAU); g.fill(); g.stroke();
-    g.fillStyle = RIM;
-    g.beginPath(); g.arc(L * 0.2, -L * 0.03, L * 0.09, 0, TAU); g.fill();
+    g.fillStyle = INK_2;                                 // mantle fins
+    g.beginPath();
+    g.moveTo(-L * 0.22, -L * 0.13);
+    g.quadraticCurveTo(-L * 0.62, -L * 0.3, -L * 0.5, L * 0.12);
+    g.closePath(); g.fill();
+    g.fillStyle = INK;                                   // mantle
+    g.beginPath();
+    g.moveTo(L * 0.3, 0);
+    g.bezierCurveTo(L * 0.14, -L * 0.22, -L * 0.24, -L * 0.2, -L * 0.42, 0);
+    g.bezierCurveTo(-L * 0.24, L * 0.2, L * 0.14, L * 0.22, L * 0.3, 0);
+    g.closePath(); g.fill();
+    g.fillStyle = LIT;
+    g.beginPath(); g.arc(L * 0.19, -L * 0.02, L * 0.06, 0, TAU); g.fill();
 
   } else if (sp.kind === "gulper") {
     g.fillStyle = INK;
     g.beginPath();
-    g.moveTo(L * 0.44, -L * 0.26);
-    g.lineTo(L * 0.44, L * 0.24);
-    g.quadraticCurveTo(-L * 0.1, L * 0.1, -L * 0.5, Math.sin(t * 4) * L * 0.1);
-    g.quadraticCurveTo(-L * 0.1, -L * 0.06, L * 0.44, -L * 0.26);
-    g.closePath(); g.fill(); g.stroke();
-    g.fillStyle = "#05080c";                             // the mouth
-    g.beginPath();
-    g.moveTo(L * 0.43, -L * 0.21); g.lineTo(L * 0.43, L * 0.19); g.lineTo(L * 0.08, 0);
+    g.moveTo(L * 0.46, -L * 0.3);
+    g.quadraticCurveTo(L * 0.2, -L * 0.08, -L * 0.12, -L * 0.07);
+    g.quadraticCurveTo(-L * 0.36, -L * 0.05, -L * 0.5, Math.sin(t * 4) * L * 0.12);
+    g.quadraticCurveTo(-L * 0.3, L * 0.06, -L * 0.1, L * 0.08);
+    g.quadraticCurveTo(L * 0.2, L * 0.12, L * 0.46, L * 0.28);
     g.closePath(); g.fill();
+    // The mouth is the whole point of a gulper eel, so open it.
+    g.fillStyle = "rgba(150,190,220,.22)";
+    g.beginPath();
+    g.moveTo(L * 0.44, -L * 0.24); g.lineTo(L * 0.44, L * 0.22); g.lineTo(L * 0.05, 0);
+    g.closePath(); g.fill();
+    g.fillStyle = LIT;
+    for (let i = 0; i < 3; i++) {
+      g.beginPath();
+      g.moveTo(L * (0.44 - i * 0.1), -L * (0.24 - i * 0.06));
+      g.lineTo(L * (0.40 - i * 0.1), -L * (0.13 - i * 0.04));
+      g.lineTo(L * (0.36 - i * 0.1), -L * (0.19 - i * 0.05));
+      g.closePath(); g.fill();
+    }
     g.fillStyle = GLOW;                                  // tail light
-    g.beginPath(); g.arc(-L * 0.49, Math.sin(t * 4) * L * 0.1, L * 0.05, 0, TAU); g.fill();
-    g.fillStyle = RIM;
-    g.beginPath(); g.arc(L * 0.3, -L * 0.15, L * 0.05, 0, TAU); g.fill();
+    g.beginPath(); g.arc(-L * 0.49, Math.sin(t * 4) * L * 0.12, L * 0.05, 0, TAU); g.fill();
+    g.fillStyle = LIT;
+    g.beginPath(); g.arc(L * 0.3, -L * 0.11, L * 0.04, 0, TAU); g.fill();
 
   } else {                                               // boot
     g.fillStyle = INK;
     g.beginPath();
-    g.moveTo(-L * 0.16, -L * 0.42); g.lineTo(L * 0.16, -L * 0.42);
-    g.lineTo(L * 0.16, L * 0.06);   g.lineTo(L * 0.5, L * 0.08);
-    g.lineTo(L * 0.5, L * 0.28);    g.lineTo(-L * 0.2, L * 0.28);
-    g.lineTo(-L * 0.16, -L * 0.42);
-    g.closePath(); g.fill(); g.stroke();
+    g.moveTo(-L * 0.17, -L * 0.44);
+    g.lineTo(L * 0.15, -L * 0.44);
+    g.quadraticCurveTo(L * 0.17, -L * 0.05, L * 0.2, L * 0.05);
+    g.lineTo(L * 0.48, L * 0.1);
+    g.quadraticCurveTo(L * 0.54, L * 0.16, L * 0.48, L * 0.28);
+    g.lineTo(-L * 0.2, L * 0.28);
+    g.closePath(); g.fill();
     g.fillStyle = INK_2;
-    g.fillRect(-L * 0.2, L * 0.22, L * 0.7, L * 0.06);
+    g.fillRect(-L * 0.2, L * 0.21, L * 0.68, L * 0.07);
   }
   g.restore();
 }

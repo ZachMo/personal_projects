@@ -167,6 +167,24 @@
   .pad.down { background: rgba(255,183,3,.3); }
   .pad svg { width: 28px; height: 28px; fill: rgba(255,255,255,.85); }
 
+  /* ── Club bar ── */
+  .clubs {
+    position: absolute; left: 0; right: 0; bottom: 0; display: none;
+    gap: 8px; padding: 10px calc(var(--pad-r) + 16px) calc(var(--pad-b) + 16px)
+                       calc(var(--pad-l) + 16px);
+    z-index: 4;
+  }
+  .clubs.on { display: flex; }
+  .clubs button {
+    flex: 1; padding: 13px 6px; border-radius: 14px;
+    font-size: .84rem; font-weight: 700; letter-spacing: .01em;
+    background: rgba(14,17,24,.5); border: 1px solid rgba(255,255,255,.18);
+    color: rgba(255,255,255,.82); backdrop-filter: blur(6px);
+  }
+  .clubs button[aria-pressed="true"] {
+    background: var(--accent); border-color: var(--accent); color: #17130a;
+  }
+
   /* ── Overlays ── */
   .veil {
     position: absolute; inset: 0; display: none; align-items: flex-start; justify-content: center;
@@ -187,15 +205,6 @@
   .veil .best { color: var(--muted); font-size: .8rem; font-weight: 600; letter-spacing: .06em;
                 text-transform: uppercase; margin: 0 0 20px; font-variant-numeric: tabular-nums; }
   .veil .btn + .btn { margin-top: 8px; }
-  .veil .rules { text-align: left; margin: 0 0 20px; padding: 0; list-style: none;
-                 display: grid; gap: 10px; }
-  .veil .rules li { display: grid; grid-template-columns: 26px 1fr; gap: 10px;
-                    color: var(--ink-2); font-size: .86rem; line-height: 1.35; }
-  .veil .rules b { color: var(--ink); font-weight: 700; }
-  .veil .rules .n {
-    width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center;
-    background: var(--panel-2); color: var(--accent); font-size: .74rem; font-weight: 800;
-  }
   .catch-list { display: grid; gap: 6px; margin: 0 0 18px; padding: 0; list-style: none;
                 text-align: left; font-size: .85rem; max-height: 34vh; overflow-y: auto; }
   .catch-list li { display: flex; justify-content: space-between; gap: 10px;
@@ -210,8 +219,6 @@
     .veil .why { margin-bottom: 12px; font-size: .82rem; }
     .veil .score { font-size: 2.1rem; }
     .veil .best { margin-bottom: 12px; }
-    .veil .rules { gap: 7px; margin-bottom: 12px; }
-    .veil .rules li { font-size: .8rem; }
     .catch-list { max-height: 26vh; margin-bottom: 12px; }
     .btn { padding: 11px; }
     .pad { height: 58px; }
@@ -231,15 +238,9 @@
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H2.9a2 2 0 1 1 0-4H3a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V2.9a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
           </button>
         </div>
-        <p class="lede">Three small games about things that go down. Built for a phone, one
-           thumb, and a few spare minutes.</p>
-
         <div class="cards" id="cards"></div>
 
-        <div class="foot">
-          Nothing leaves your phone. Scores live in this browser.
-          <a href="index.html">All projects</a>
-        </div>
+        <div class="foot"><a href="index.html">All projects</a></div>
       </div>
     </div>
   </section>
@@ -273,23 +274,21 @@
             <button data-v="mid" aria-pressed="false">Normal</button>
             <button data-v="high" aria-pressed="false">Twitchy</button>
           </div>
-          <p class="hint">Hold the phone the way you like, then tap Recentre. That angle
-             becomes straight ahead.</p>
           <button class="btn" id="tiltZero" style="margin-top:10px">Recentre tilt</button>
         </div>
 
         <div class="group">
           <label>Feel</label>
           <div class="row">
-            <div><div class="t">Sound</div><div class="s">Short blips and splashes.</div></div>
+            <div class="t">Sound</div>
             <button class="switch" id="optSound" aria-pressed="false" aria-label="Sound"></button>
           </div>
           <div class="row">
-            <div><div class="t">Vibration</div><div class="s">A tap on a catch or a crash.</div></div>
+            <div class="t">Vibration</div>
             <button class="switch" id="optHaptics" aria-pressed="false" aria-label="Vibration"></button>
           </div>
           <div class="row">
-            <div><div class="t">Left-handed</div><div class="s">Puts the buttons on the other side.</div></div>
+            <div class="t">Left-handed</div>
             <button class="switch" id="optLefty" aria-pressed="false" aria-label="Left-handed"></button>
           </div>
         </div>
@@ -321,6 +320,11 @@
       <button class="pad right" data-dir="1" aria-label="Right">
         <svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8z"/></svg>
       </button>
+    </div>
+    <div class="clubs" id="clubs">
+      <button data-c="0" aria-pressed="true">Driver</button>
+      <button data-c="1" aria-pressed="false">Wedge</button>
+      <button data-c="2" aria-pressed="false">Putter</button>
     </div>
     <div class="veil" id="veil"><div class="box" id="veilBox"></div></div>
   </section>
@@ -359,9 +363,15 @@ const Settings = {
 };
 
 const Best = {
-  get(game) { return Store.read("best_" + game, 0); },
+  get(game, fallback) { return Store.read("best_" + game, fallback === undefined ? 0 : fallback); },
   set(game, value) {
     if (value > this.get(game)) { Store.write("best_" + game, value); return true; }
+    return false;
+  },
+  // Golf is won by the smallest number.
+  setLow(game, value) {
+    const cur = this.get(game, 0);
+    if (!cur || value < cur) { Store.write("best_" + game, value); return true; }
     return false;
   },
 };
@@ -566,9 +576,12 @@ const Engine = {
     Sound.wake();
     this.game = game;
     Router.show("play");
-    $("pads").classList.toggle("on", Settings.controls === "buttons");
     const pads = $("pads");
+    pads.classList.toggle("on", Settings.controls === "buttons" && game.usesPads !== false);
     pads.style.flexDirection = Settings.lefty ? "row-reverse" : "row";
+    const clubs = $("clubs");
+    clubs.classList.toggle("on", !!game.clubs);
+    clubs.style.flexDirection = Settings.lefty ? "row-reverse" : "row";
     this.size();
     game.init(this.w, this.h);
     this.paused = false;
@@ -601,6 +614,7 @@ const Engine = {
     this.game = null;
     Veil.hide();
     $("pads").classList.remove("on");
+    $("clubs").classList.remove("on");
   },
 };
 
@@ -631,12 +645,6 @@ function overlay(html, actions) {
     if (el) el.addEventListener("click", actions[key]);
   });
 }
-
-const CONTROL_LINE = {
-  drag: "Slide your thumb anywhere on the screen.",
-  buttons: "Use the two pads at the bottom.",
-  tilt: "Tilt the phone left and right.",
-};
 
 // ── Dino Fall ────────────────────────────────────────────────────────────────
 // The sky drops blocks. You are a small dinosaur with nowhere to hide.
@@ -696,12 +704,7 @@ const DinoFall = {
   intro() {
     overlay(
       '<h3>Dino Fall</h3>' +
-      '<p class="why">The sky is falling. Do not be under it.</p>' +
-      '<ul class="rules">' +
-        '<li><span class="n">1</span><div>' + CONTROL_LINE[Settings.controls] + '</div></li>' +
-        '<li><span class="n">2</span><div>Black blocks end the run. They fall faster and closer together the longer you last.</div></li>' +
-        '<li><span class="n">3</span><div>Anything with colour in it is yours. A <b>clay diamond</b> shields one hit. A <b>green dino</b> shrinks you. A <b>blue hourglass</b> slows the sky. An <b>amber bomb</b> clears it.</div></li>' +
-      '</ul>' +
+      '<p class="why">The sky is falling.</p>' +
       '<button class="btn primary" data-act="play">Start</button>' +
       '<button class="btn ghost" data-act="home">Back</button>',
       { play: () => this.begin(), home: () => Router.show("home") }
@@ -730,7 +733,7 @@ const DinoFall = {
     if (this.state !== "run") return;
     this.state = "held";
     overlay(
-      '<h3>Paused</h3><p class="why">The blocks are waiting.</p>' +
+      '<h3>Paused</h3>' +
       '<button class="btn primary" data-act="go">Keep going</button>' +
       '<button class="btn ghost" data-act="home">Give up</button>',
       { go: () => { Veil.hide(); this.state = "run"; Input.dragDelta(); Engine.resume(); },
@@ -1182,14 +1185,8 @@ const FishFall = {
   intro() {
     overlay(
       '<h3>Fish Fall</h3>' +
-      '<p class="why">Five casts. Take everything the sea will give you.</p>' +
-      '<ul class="rules">' +
-        '<li><span class="n">1</span><div><b>Tap</b> to drop the line. ' + CONTROL_LINE[Settings.controls] + '</div></li>' +
-        '<li><span class="n">2</span><div>On the way <b>down</b>, the first thing you touch stops you. There is no end to the line — the water just gets thicker, so how deep you get is on you.</div></li>' +
-        '<li><span class="n">3</span><div>On the way <b>up</b>, hook everything you can.</div></li>' +
-        '<li><span class="n">4</span><div>At the surface the catch flies up. <b>Tap each fish</b> to shoot it before it drops.</div></li>' +
-      '</ul>' +
-      '<button class="btn primary" data-act="play">Start the trip</button>' +
+      '<p class="why">Five casts.</p>' +
+      '<button class="btn primary" data-act="play">Start</button>' +
       '<button class="btn ghost" data-act="home">Back</button>',
       { play: () => this.startTrip(), home: () => Router.show("home") }
     );
@@ -1200,7 +1197,7 @@ const FishFall = {
     this.held = this.state;
     this.state = "held";
     overlay(
-      '<h3>Paused</h3><p class="why">The sea is patient.</p>' +
+      '<h3>Paused</h3>' +
       '<button class="btn primary" data-act="go">Back to it</button>' +
       '<button class="btn ghost" data-act="home">End the trip</button>',
       { go: () => { Veil.hide(); this.state = this.held; Input.dragDelta(); Engine.resume(); },
@@ -1270,6 +1267,10 @@ const FishFall = {
   update(dt) {
     this.t += dt;
     this.shake = Math.max(0, this.shake - dt * 2.6);
+    if (this.aim) {
+      this.aim.life -= dt * 5;
+      if (this.aim.life <= 0) this.aim = null;
+    }
     const { w, h } = this;
     if (this.state === "ready" || this.state === "held" || this.state === "done") return;
 
@@ -1430,7 +1431,6 @@ const FishFall = {
       if (p.y >= 0 && p.vy > 0) { this.splash(p); continue; }
       left++;
     }
-    if (this.aim) this.aim.life -= dt * 5;
     Hud.set(this.score, left ? left + " in the air" : "");
     if (!left) { Input.onTap = null; this.tally(); }
   },
@@ -1481,6 +1481,7 @@ const FishFall = {
   },
 
   tally() {
+    this.aim = null;
     const got = this.caught.length;
     const shot = this.flyers.filter((p) => p.shot).length;
     this.banner = {
@@ -1691,20 +1692,13 @@ const FishFall = {
 
     // Prompts.
     g.textAlign = "center"; g.textBaseline = "middle";
-    if (this.state === "aim") {
-      g.globalAlpha = 0.55 + Math.sin(t * 3) * 0.3;
-      g.font = "800 15px system-ui, sans-serif";
-      shout(g, "TAP TO DROP THE LINE", w / 2, h * 0.62);
-      g.globalAlpha = 0.5;
-      g.font = "600 12px system-ui, sans-serif";
-      shout(g, CONTROL_LINE[Settings.controls], w / 2, h * 0.62 + 22);
-      g.globalAlpha = 1;
-    }
-    if (this.state === "shoot" && this.shotT < 2.2) {
-      g.globalAlpha = clamp(2.2 - this.shotT, 0, 1) * 0.8;
-      g.font = "800 15px system-ui, sans-serif";
-      shout(g, "SHOOT THE LOW ONES FIRST", w / 2, h * 0.86);
-      g.globalAlpha = 1;
+    if (this.state === "aim") {                        // a ring where the line waits
+      const pulse = (t * 0.8) % 1;
+      g.strokeStyle = "rgba(255,255,255," + (0.5 * (1 - pulse)).toFixed(3) + ")";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.arc(this.hook.x, surf + 6, 10 + pulse * 26, 0, TAU);
+      g.stroke();
     }
     if (this.banner) {
       const a = clamp(this.banner.life, 0, 1);
@@ -1968,12 +1962,778 @@ function drawCreature(g, sp, scale, dir, t) {
   g.restore();
 }
 
-// ── Golf Fall (not built yet) ────────────────────────────────────────────────
+// ── Golf Fall ────────────────────────────────────────────────────────────────
+// Five holes on a slab of course hanging in the air. Drag back off the ball to
+// hit it. Drag anywhere else to turn the course; pinch to zoom.
+//
+// The world is a grid on the ground plane, plus a height. Everything is drawn
+// through one axonometric projection you can spin, and sorted back to front.
+
+const T = {                              // terrain, in draw order of hardness
+  VOID:  0,
+  WATER: 1,
+  SAND:  2,
+  ROUGH: 3,
+  FAIR:  4,
+  GREEN: 5,
+  TEE:   6,
+};
+
+const GROUND = {
+  //           top       side      bounce  keep  drag
+  1: { top: "#2f6f9e", side: "#1e4a6c", e: 0.00, k: 0.00, f: 999 },   // water
+  2: { top: "#dcc48b", side: "#b39d67", e: 0.06, k: 0.16, f: 26 },    // sand
+  3: { top: "#4b7a41", side: "#33552d", e: 0.20, k: 0.46, f: 15 },    // rough
+  4: { top: "#6da851", side: "#4a7d3c", e: 0.42, k: 0.78, f: 7 },    // fairway
+  5: { top: "#8ccb6b", side: "#63954c", e: 0.30, k: 0.74, f: 4.2 },   // green
+  6: { top: "#7ab85d", side: "#568043", e: 0.34, k: 0.72, f: 6 },     // tee
+};
+
+const CLUBS = [
+  { id: "driver", name: "Driver", power: 27.5, angle: 0.40, bounce: 1.25, roll: 1.00, zoom: 0.72 },
+  { id: "wedge",  name: "Wedge",  power: 18.0, angle: 0.95, bounce: 0.42, roll: 0.38, zoom: 1.05 },
+  { id: "putter", name: "Putter", power: 10.5, angle: 0.00, bounce: 0.00, roll: 1.00, zoom: 1.60 },
+];
+
+const GRAV = 34;
+const HOLES = 5;
+const CUP_R = 0.42;
+const TICK = 1 / 120;                    // the ball runs on a fixed step, so the
+                                         // preview and the real shot agree exactly
+
 const GolfFall = {
   id: "golf",
   title: "Golf Fall",
-  soon: true,
+  clubs: true,
+  usesPads: false,
+
+  init(w, h) {
+    this.resize(w, h);
+    this.state = "ready";
+    this.rot = Math.PI / 4;
+    this.spin = 0;
+    this.userZoom = 1;
+    this.club = 0;
+    this.hole = 0;
+    this.strokes = 0;
+    this.total = 0;
+    this.card = [];
+    this.ball = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, rest: true, gone: false };
+    this.aim = null;
+    this.trail = [];
+    this.puff = [];
+    this.msg = null;
+    this.camX = 0; this.camY = 0;
+    this.bindTouch();
+    Hud.set("0", "");
+    this.intro();
+  },
+
+  resize(w, h) { this.w = w; this.h = h; },
+
+  destroy() { this.unbindTouch(); },
+
+  intro() {
+    overlay(
+      '<h3>Golf Fall</h3>' +
+      '<p class="why">Five holes. Fewest shots.</p>' +
+      '<button class="btn primary" data-act="play">Start</button>' +
+      '<button class="btn ghost" data-act="home">Back</button>',
+      { play: () => this.startRound(), home: () => Router.show("home") }
+    );
+  },
+
+  onPause() {
+    if (this.state === "ready" || this.state === "done") return;
+    this.held = this.state;
+    this.state = "held";
+    overlay(
+      '<h3>Paused</h3>' +
+      '<button class="btn primary" data-act="go">Play on</button>' +
+      '<button class="btn ghost" data-act="home">Walk off</button>',
+      { go: () => { Veil.hide(); this.state = this.held; Engine.resume(); },
+        home: () => Router.show("home") }
+    );
+  },
+
+  startRound() {
+    Veil.hide();
+    Engine.resume();
+    this.hole = 0;
+    this.total = 0;
+    this.card = [];
+    this.nextHole();
+  },
+
+  nextHole() {
+    this.hole++;
+    if (this.hole > HOLES) return this.finish();
+    this.course = genHole(this.hole);
+    this.strokes = 0;
+    this.club = 0;
+    this.userZoom = 1;
+    this.faceThePin();
+    this.setBall(this.course.tee.x, this.course.tee.y);
+    this.camX = this.ball.x; this.camY = this.ball.y;
+    this.state = "aim";
+    this.msg = { txt: "Hole " + this.hole + " · par " + this.course.par, life: 2 };
+    this.paintClubs();
+  },
+
+  // Start every hole looking down it, with the flag at the top of the screen.
+  faceThePin() {
+    const c = this.course;
+    this.rot = Math.atan2(c.pin.x - c.tee.x, c.pin.y - c.tee.y) + Math.PI;
+    this.spin = 0;
+  },
+
+  setBall(x, y) {
+    const b = this.ball;
+    b.x = x; b.y = y; b.z = 0;
+    b.vx = b.vy = b.vz = 0;
+    b.rest = true; b.gone = false;
+    this.lie = { x, y };
+    this.trail = [];
+  },
+
+  // ── Course lookups ──
+  cell(x, y) {
+    const c = this.course;
+    const i = Math.floor(x), j = Math.floor(y);
+    if (i < 0 || j < 0 || i >= c.w || j >= c.h) return T.VOID;
+    return c.grid[j * c.w + i];
+  },
+
+  ground(x, y) { return GROUND[this.cell(x, y)] || null; },
+
+  // ── Shooting ──
+  hit(dirX, dirY, power) {
+    const c = CLUBS[this.club];
+    const speed = c.power * clamp(power, 0.06, 1);
+    const b = this.ball;
+    const len = Math.hypot(dirX, dirY) || 1;
+    b.vx = (dirX / len) * speed * Math.cos(c.angle);
+    b.vy = (dirY / len) * speed * Math.cos(c.angle);
+    b.vz = speed * Math.sin(c.angle);
+    b.rest = false;
+    b.shotWith = c;
+    b.bounces = 0;
+    this.lie = { x: b.x, y: b.y };
+    this.strokes++;
+    this.trail = [];
+    this.state = "fly";
+    this.acc = 0;
+    this.aim = null;
+    Sound.blip(c.id === "putter" ? 420 : 260, 0.07, "square", 0.1);
+    Sound.noise(0.05, 0.1);
+    buzz(12);
+  },
+
+  // One step of ball physics. Shared by the live ball and the aim preview, so
+  // the line you are shown is the line the ball actually takes.
+  step(b, dt, preview) {
+    if (b.rest) return;
+    if (b.z > 0 || b.vz > 0) {                         // in the air
+      b.vz -= GRAV * dt;
+      b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
+      if (b.z > 0) return;
+      b.z = 0;
+      const g = this.ground(b.x, b.y);
+      if (!g) { b.gone = true; b.rest = true; return; }
+      const club = b.shotWith || CLUBS[0];
+      const e = g.e * club.bounce;
+      b.bounces = (b.bounces || 0) + 1;
+      if (e > 0.04 && -b.vz > 1.2) {
+        b.vz = -b.vz * e;
+        b.vx *= g.k * (0.55 + club.roll * 0.45);
+        b.vy *= g.k * (0.55 + club.roll * 0.45);
+        if (!preview) this.land(b.x, b.y, g);
+      } else {
+        b.vz = 0;
+        b.vx *= g.k * club.roll;
+        b.vy *= g.k * club.roll;
+        if (!preview) this.land(b.x, b.y, g);
+      }
+      return;
+    }
+
+    // rolling
+    const g = this.ground(b.x, b.y);
+    if (!g) { b.gone = true; b.rest = true; return; }
+    const sp = Math.hypot(b.vx, b.vy);
+    if (sp < 0.12) { b.vx = b.vy = 0; b.rest = true; return; }
+    const drop = Math.min(sp, g.f * dt);
+    b.vx -= (b.vx / sp) * drop;
+    b.vy -= (b.vy / sp) * drop;
+    b.x += b.vx * dt; b.y += b.vy * dt;
+  },
+
+  land(x, y, g) {
+    for (let i = 0; i < 5; i++) {
+      this.puff.push({ x, y, z: 0, vx: rand(-1.5, 1.5), vy: rand(-1.5, 1.5),
+                       vz: rand(1, 4), life: 1, col: g.top });
+    }
+    Sound.blip(180, 0.05, "sine", 0.05);
+  },
+
+  // ── Update ──
+  update(dt) {
+    if (this.state === "ready" || this.state === "held" || this.state === "done") return;
+    this.rot += this.spin * dt;
+    this.spin *= Math.pow(0.02, dt);
+    if (Math.abs(this.spin) < 0.01) this.spin = 0;
+
+    if (this.msg) { this.msg.life -= dt; if (this.msg.life <= 0) this.msg = null; }
+
+    for (let i = this.puff.length - 1; i >= 0; i--) {
+      const q = this.puff[i];
+      q.life -= dt * 1.8;
+      q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.vz -= 14 * dt;
+      if (q.life <= 0 || q.z < 0) this.puff.splice(i, 1);
+    }
+
+    const b = this.ball;
+
+    if (this.state === "fly") {
+      // Fixed steps. A variable step made the real shot drift off the line the
+      // preview drew, and no frame rate can tunnel the ball past the cup.
+      this.acc = Math.min((this.acc || 0) + dt, 0.25);
+      while (this.acc >= TICK) {
+        this.acc -= TICK;
+        this.step(b, TICK, false);
+        if (b.z <= 0.35) {
+          const c = this.course;
+          if (Math.hypot(b.x - c.pin.x, b.y - c.pin.y) < CUP_R &&
+              Math.hypot(b.vx, b.vy) < 4.2) { this.sink(); return; }
+        }
+        if (b.gone || b.rest) break;
+      }
+      if (this.trail.length > 90) this.trail.shift();
+      this.trail.push({ x: b.x, y: b.y, z: b.z });
+
+      if (b.gone) return this.penalty("off the edge");
+      if (b.rest) {
+        const g = this.ground(b.x, b.y);
+        if (!g || this.cell(b.x, b.y) === T.WATER) return this.penalty("in the water");
+        this.state = "aim";
+        // Close to the pin, the putter is the obvious club.
+        const d = Math.hypot(b.x - this.course.pin.x, b.y - this.course.pin.y);
+        this.club = d < 6 ? 2 : d < 17 ? 1 : 0;
+        this.paintClubs();
+      }
+    }
+
+    if (this.state === "sunk") {
+      this.sinkT -= dt;
+      if (this.sinkT <= 0) {
+        this.card.push(this.strokes);
+        this.total += this.strokes;
+        this.nextHole();
+      }
+      return;
+    }
+
+    // Camera follows the ball, and leads it while it is moving.
+    const tx = b.x + (this.state === "fly" ? b.vx * 0.22 : 0);
+    const ty = b.y + (this.state === "fly" ? b.vy * 0.22 : 0);
+    this.camX += (tx - this.camX) * Math.min(1, dt * 3.4);
+    this.camY += (ty - this.camY) * Math.min(1, dt * 3.4);
+
+    Hud.set(this.strokes, "hole " + this.hole + " · par " + this.course.par +
+                          (this.total ? " · " + this.total + " so far" : ""));
+  },
+
+  sink() {
+    const b = this.ball;
+    b.rest = true; b.vx = b.vy = b.vz = 0;
+    b.x = this.course.pin.x; b.y = this.course.pin.y; b.z = -0.3;
+    this.state = "sunk";
+    this.sinkT = 1.5;
+    const v = this.strokes - this.course.par;
+    this.msg = { txt: v < -1 ? "Eagle" : v === -1 ? "Birdie" : v === 0 ? "Par" :
+                      v === 1 ? "Bogey" : "+" + v, life: 1.5, big: true };
+    Sound.blip(680, 0.1, "sine", 0.12);
+    Sound.blip(1020, 0.22, "sine", 0.1);
+    buzz([16, 40, 24]);
+  },
+
+  penalty(why) {
+    this.strokes++;
+    this.setBall(this.lie.x, this.lie.y);
+    this.state = "aim";
+    this.msg = { txt: why + " · +1", life: 1.8 };
+    Sound.slide(280, 90, 0.3, "sawtooth");
+    buzz(40);
+    this.paintClubs();
+  },
+
+  finish() {
+    this.state = "done";
+    const par = this.card.length ? this.total : 0;
+    const fresh = this.total > 0 && Best.setLow(this.id, this.total);
+    const rows = this.card.map((v, i) =>
+      '<li><span>Hole ' + (i + 1) + '</span><span class="v">' + v + '</span></li>').join("");
+    const b = Best.get(this.id, 0);
+    overlay(
+      '<h3>' + (fresh ? "Best round yet" : "Round over") + '</h3>' +
+      '<div class="score">' + this.total + '</div>' +
+      '<p class="best">' + (b ? "Best " + b : "&nbsp;") + '</p>' +
+      '<ul class="catch-list">' + rows + '</ul>' +
+      '<button class="btn primary" data-act="again">Another round</button>' +
+      '<button class="btn ghost" data-act="home">Back</button>',
+      { again: () => this.startRound(), home: () => Router.show("home") }
+    );
+  },
+
+  // ── Projection ──
+  // Rotate on the ground plane, squash the vertical, lift by height.
+  scale() { return Math.min(this.w, this.h) * 0.082 * CLUBS[this.club].zoom * this.userZoom; },
+
+  proj(x, y, z) {
+    const k = this.scale(), c = Math.cos(this.rot), s = Math.sin(this.rot);
+    const dx = x - this.camX, dy = y - this.camY;
+    const rx = dx * c - dy * s, ry = dx * s + dy * c;
+    return { x: this.w / 2 + rx * k, y: this.h * 0.66 + ry * k * 0.52 - (z || 0) * k * 0.62, d: ry };
+  },
+
+  // Screen delta back to a direction on the ground.
+  unproj(sdx, sdy) {
+    const k = this.scale(), c = Math.cos(this.rot), s = Math.sin(this.rot);
+    const rx = sdx / k, ry = sdy / (k * 0.52);
+    return { x: rx * c + ry * s, y: -rx * s + ry * c };
+  },
+
+  // ── Touch: one finger on the ball aims, one finger elsewhere turns the
+  // course, two fingers zoom. ──
+  bindTouch() {
+    const cv = Engine.canvas;
+    this.pts = new Map();
+    const at = (e) => {
+      const r = cv.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+
+    this.onDown = (e) => {
+      if (this.state !== "aim" && this.state !== "fly") return;
+      const p = at(e);
+      this.pts.set(e.pointerId, p);
+      if (this.pts.size === 2) {
+        const [a, b] = [...this.pts.values()];
+        this.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: this.userZoom };
+        this.aim = null;
+        return;
+      }
+      if (this.state !== "aim") return;
+      const bp = this.proj(this.ball.x, this.ball.y, this.ball.z);
+      if (Math.hypot(p.x - bp.x, p.y - bp.y) < 54) {
+        this.aim = { ox: p.x, oy: p.y, x: p.x, y: p.y, power: 0 };
+        this.spin = 0;
+      } else {
+        this.turn = { x: p.x, last: p.x, t: performance.now() };
+      }
+    };
+
+    this.onMove = (e) => {
+      if (!this.pts.has(e.pointerId)) return;
+      const p = at(e);
+      this.pts.set(e.pointerId, p);
+
+      if (this.pinch && this.pts.size >= 2) {
+        const [a, b] = [...this.pts.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        this.userZoom = clamp(this.pinch.z * (d / Math.max(1, this.pinch.d)), 0.45, 2.6);
+        return;
+      }
+      if (this.aim) {
+        this.aim.x = p.x; this.aim.y = p.y;
+        const dx = p.x - this.aim.ox, dy = p.y - this.aim.oy;
+        this.aim.power = clamp(Math.hypot(dx, dy) / (Math.min(this.w, this.h) * 0.34), 0, 1);
+        return;
+      }
+      if (this.turn) {
+        const dx = p.x - this.turn.last;
+        this.rot -= dx * 0.006;
+        this.spin = -dx * 0.09;
+        this.turn.last = p.x;
+      }
+    };
+
+    this.onUp = (e) => {
+      const had = this.pts.get(e.pointerId);
+      this.pts.delete(e.pointerId);
+      if (this.pts.size < 2) this.pinch = null;
+      if (this.turn && !this.pts.size) this.turn = null;
+      if (!this.aim || !had) return;
+      const a = this.aim;
+      const dx = a.x - a.ox, dy = a.y - a.oy;
+      this.aim = null;
+      if (a.power < 0.06 || Math.hypot(dx, dy) < 14) return;   // a tap, not a swing
+      const dir = this.unproj(-dx, -dy);                       // pull back to send it forward
+      this.hit(dir.x, dir.y, a.power);
+    };
+
+    cv.addEventListener("pointerdown", this.onDown);
+    cv.addEventListener("pointermove", this.onMove);
+    cv.addEventListener("pointerup", this.onUp);
+    cv.addEventListener("pointercancel", this.onUp);
+  },
+
+  unbindTouch() {
+    const cv = Engine.canvas;
+    if (!this.onDown) return;
+    cv.removeEventListener("pointerdown", this.onDown);
+    cv.removeEventListener("pointermove", this.onMove);
+    cv.removeEventListener("pointerup", this.onUp);
+    cv.removeEventListener("pointercancel", this.onUp);
+    this.onDown = this.onMove = this.onUp = null;
+  },
+
+  paintClubs() {
+    const bar = $("clubs");
+    bar.querySelectorAll("button").forEach((b, i) => {
+      b.setAttribute("aria-pressed", String(i === this.club));
+    });
+  },
+
+  pickClub(i) {
+    if (this.state !== "aim") return;
+    this.club = i;
+    this.aim = null;
+    this.paintClubs();
+    Sound.blip(520 + i * 90, 0.05, "sine", 0.07);
+  },
+
+  // ── Drawing ──
+  draw(g, w, h) {
+    const sky = g.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, "#8fc3e8");
+    sky.addColorStop(0.55, "#cfe6f2");
+    sky.addColorStop(1, "#eef3ee");
+    g.fillStyle = sky; g.fillRect(0, 0, w, h);
+    if (!this.course) return;
+
+    const c = this.course, k = this.scale();
+    const THICK = 1.15;
+
+    // Every solid thing gets a depth key and is drawn back to front.
+    const items = [];
+    for (let j = 0; j < c.h; j++) {
+      for (let i = 0; i < c.w; i++) {
+        const t = c.grid[j * c.w + i];
+        if (t === T.VOID) continue;
+        items.push({ d: this.proj(i + 0.5, j + 0.5, 0).d, kind: "cell", i, j, t });
+      }
+    }
+    for (const tr of c.trees) items.push({ d: this.proj(tr.x, tr.y, 0).d, kind: "tree", tr });
+    items.push({ d: this.proj(c.pin.x, c.pin.y, 0).d + 0.02, kind: "pin" });
+    const b = this.ball;
+    if (this.state !== "sunk") {
+      items.push({ d: this.proj(b.x, b.y, 0).d + 0.03, kind: "ball" });
+    }
+    items.sort((a, z) => a.d - z.d);
+
+    for (const it of items) {
+      if (it.kind === "cell") this.drawCell(g, it.i, it.j, it.t, THICK);
+      else if (it.kind === "tree") this.drawTree(g, it.tr);
+      else if (it.kind === "pin") this.drawPin(g, c.pin);
+      else this.drawBall(g, b);
+    }
+
+    // Aim preview sits on top of the course.
+    if (this.state === "aim" && this.aim && this.aim.power > 0.06) this.drawAim(g);
+
+    // Flight trail.
+    if (this.trail.length > 1) {
+      g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = 2;
+      g.beginPath();
+      this.trail.forEach((p, i) => {
+        const s = this.proj(p.x, p.y, p.z);
+        i ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y);
+      });
+      g.stroke();
+    }
+
+    for (const q of this.puff) {
+      const s = this.proj(q.x, q.y, q.z);
+      g.globalAlpha = clamp(q.life, 0, 1) * 0.8;
+      g.fillStyle = q.col;
+      g.beginPath(); g.arc(s.x, s.y, Math.max(1.5, k * 0.09), 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+
+    if (this.msg) {
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.globalAlpha = clamp(this.msg.life, 0, 1);
+      g.font = (this.msg.big ? "800 34px" : "700 17px") + " system-ui, sans-serif";
+      g.fillStyle = "rgba(10,26,18,.35)";
+      g.fillText(this.msg.txt, w / 2 + 1, h * 0.14 + 1.5);
+      g.fillStyle = "#fff";
+      g.fillText(this.msg.txt, w / 2, h * 0.14);
+      g.globalAlpha = 1;
+    }
+  },
+
+  // A cell is a top face plus a side wall wherever it hangs over nothing.
+  drawCell(g, i, j, t, thick) {
+    const gr = GROUND[t];
+    const lift = t === T.WATER ? -0.16 : t === T.SAND ? -0.06 : 0;
+    const a = this.proj(i, j, lift), b2 = this.proj(i + 1, j, lift);
+    const c2 = this.proj(i + 1, j + 1, lift), d2 = this.proj(i, j + 1, lift);
+    const corners = [a, b2, c2, d2];
+
+    // Walls first, so the top face lands on them.
+    const nb = [[0, -1, a, b2], [1, 0, b2, c2], [0, 1, c2, d2], [-1, 0, d2, a]];
+    g.fillStyle = gr.side;
+    for (const [di, dj, p, q] of nb) {
+      const n = this.cell(i + di + 0.5, j + dj + 0.5);
+      if (n !== T.VOID) continue;
+      const drop = thick + Math.max(0, -lift);
+      g.beginPath();
+      g.moveTo(p.x, p.y); g.lineTo(q.x, q.y);
+      g.lineTo(q.x, q.y + drop * this.scale() * 0.62);
+      g.lineTo(p.x, p.y + drop * this.scale() * 0.62);
+      g.closePath(); g.fill();
+    }
+
+    g.fillStyle = gr.top;
+    g.beginPath();
+    corners.forEach((p, n) => n ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
+    g.closePath(); g.fill();
+
+    if (t === T.WATER) {                                // a little movement on it
+      g.fillStyle = "rgba(255,255,255,.16)";
+      const m = this.proj(i + 0.5, j + 0.5, lift);
+      g.beginPath();
+      g.ellipse(m.x, m.y + Math.sin(Engine.last * 0.002 + i + j) * 1.5,
+                this.scale() * 0.26, this.scale() * 0.09, 0, 0, TAU);
+      g.fill();
+    }
+  },
+
+  drawTree(g, tr) {
+    const k = this.scale();
+    const base = this.proj(tr.x, tr.y, 0);
+    const top = this.proj(tr.x, tr.y, tr.tall);
+    g.strokeStyle = "rgba(20,40,20,.18)";
+    g.lineWidth = k * 0.5;
+    g.lineCap = "round";
+    g.beginPath();                                       // shadow on the grass
+    g.moveTo(base.x, base.y); g.lineTo(base.x + k * 0.5, base.y + k * 0.2); g.stroke();
+    g.strokeStyle = "#5c4327"; g.lineWidth = Math.max(2, k * 0.14);
+    g.beginPath(); g.moveTo(base.x, base.y); g.lineTo(top.x, top.y); g.stroke();
+    g.fillStyle = "#2f6b33";
+    g.beginPath(); g.arc(top.x, top.y, k * tr.r, 0, TAU); g.fill();
+    g.fillStyle = "rgba(255,255,255,.14)";
+    g.beginPath(); g.arc(top.x - k * tr.r * 0.3, top.y - k * tr.r * 0.35, k * tr.r * 0.42, 0, TAU); g.fill();
+  },
+
+  drawPin(g, pin) {
+    const k = this.scale();
+    const base = this.proj(pin.x, pin.y, 0);
+    const top = this.proj(pin.x, pin.y, 2.4);
+    g.fillStyle = "#10231a";
+    g.beginPath(); g.ellipse(base.x, base.y, k * CUP_R, k * CUP_R * 0.52, 0, 0, TAU); g.fill();
+    g.strokeStyle = "#f3f3ef"; g.lineWidth = Math.max(1.6, k * 0.075);
+    g.beginPath(); g.moveTo(base.x, base.y); g.lineTo(top.x, top.y); g.stroke();
+    g.fillStyle = "#e8452f";
+    const flap = Math.sin(Engine.last * 0.004) * k * 0.1;
+    g.beginPath();
+    g.moveTo(top.x, top.y);
+    g.lineTo(top.x + k * 0.9, top.y + k * 0.25 + flap);
+    g.lineTo(top.x, top.y + k * 0.55);
+    g.closePath(); g.fill();
+  },
+
+  drawBall(g, b) {
+    const k = this.scale();
+    const sh = this.proj(b.x, b.y, 0);
+    const air = clamp(1 - b.z / 6, 0.25, 1);
+    g.fillStyle = "rgba(20,40,20," + (0.28 * air).toFixed(2) + ")";
+    g.beginPath();
+    g.ellipse(sh.x, sh.y, k * 0.24 * air, k * 0.12 * air, 0, 0, TAU); g.fill();
+    const s = this.proj(b.x, b.y, b.z);
+    g.fillStyle = "#fdfdf8";
+    g.beginPath(); g.arc(s.x, s.y, Math.max(2.4, k * 0.2), 0, TAU); g.fill();
+    g.fillStyle = "rgba(90,110,90,.35)";
+    g.beginPath(); g.arc(s.x + k * 0.06, s.y + k * 0.05, Math.max(1, k * 0.09), 0, TAU); g.fill();
+  },
+
+  // The preview runs the real physics forward, so what you see is what happens.
+  drawAim(g) {
+    const a = this.aim, club = CLUBS[this.club];
+    const dir = this.unproj(-(a.x - a.ox), -(a.y - a.oy));
+    const len = Math.hypot(dir.x, dir.y) || 1;
+    const speed = club.power * clamp(a.power, 0.06, 1);
+    const sim = {
+      x: this.ball.x, y: this.ball.y, z: 0,
+      vx: (dir.x / len) * speed * Math.cos(club.angle),
+      vy: (dir.y / len) * speed * Math.cos(club.angle),
+      vz: speed * Math.sin(club.angle),
+      rest: false, shotWith: club,
+    };
+
+    const pts = [];
+    let land = null;
+    for (let i = 0; i < 900 && !sim.rest && !sim.gone; i++) {
+      this.step(sim, TICK, true);
+      pts.push({ x: sim.x, y: sim.y, z: sim.z });
+      if (!land && sim.z <= 0 && i > 2) land = { x: sim.x, y: sim.y };
+      if (club.id === "putter" && i > 190) break;
+      if (land && club.id !== "putter") break;            // stop at the first bounce
+    }
+
+    const k = this.scale();
+    // The putter shows a line on the ground. The others show an arc.
+    g.strokeStyle = "rgba(255,255,255,.9)";
+    g.lineWidth = club.id === "putter" ? 3 : 2;
+    g.setLineDash(club.id === "putter" ? [] : [5, 6]);
+    g.beginPath();
+    pts.forEach((p, i) => {
+      const s = this.proj(p.x, p.y, p.z);
+      i ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y);
+    });
+    g.stroke();
+    g.setLineDash([]);
+
+    if (club.id !== "putter" && land) {
+      const spread = 0.5 + a.power * 1.5;
+      const m = this.proj(land.x, land.y, 0);
+      g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(m.x, m.y, k * spread, k * spread * 0.52, 0, 0, TAU); g.stroke();
+      g.fillStyle = "rgba(255,255,255,.16)"; g.fill();
+    }
+
+    // The pull-back itself.
+    const bp = this.proj(this.ball.x, this.ball.y, 0);
+    g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 2;
+    g.setLineDash([3, 5]);
+    g.beginPath(); g.moveTo(bp.x, bp.y);
+    g.lineTo(bp.x + (a.x - a.ox), bp.y + (a.y - a.oy)); g.stroke();
+    g.setLineDash([]);
+
+    // Power ring on the ball.
+    g.strokeStyle = a.power > 0.92 ? "#e8452f" : "#fff";
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(bp.x, bp.y, k * 0.55, -Math.PI / 2, -Math.PI / 2 + TAU * a.power);
+    g.stroke();
+  },
 };
+
+// ── Hole generation ──────────────────────────────────────────────────────────
+// A wandering spine from tee to green, carved out of nothing. Everything the
+// spine does not touch stays void, which is the edge you fall off.
+function genHole(n) {
+  const W = 15, H = 22 + n * 3 + ((Math.random() * 5) | 0);
+  const grid = new Uint8Array(W * H);
+  const put = (i, j, t) => {
+    if (i < 0 || j < 0 || i >= W || j >= H) return;
+    if (grid[j * W + i] < t) grid[j * W + i] = t;
+  };
+  const at = (i, j) => (i < 0 || j < 0 || i >= W || j >= H) ? T.VOID : grid[j * W + i];
+
+  // Spine: one quadratic bend from tee to green. A random walk wandered so far
+  // that the straight line from tee to pin left the map for whole stretches.
+  const x0 = rand(4, W - 4);
+  const x2 = clamp(x0 + rand(-4.5, 4.5), 3.4, W - 3.4);
+  const x1 = clamp((x0 + x2) / 2 + rand(-4.2, 4.2), 3.4, W - 3.4);
+  const spine = [];
+  for (let j = 1; j < H - 1; j++) {
+    const u = (j - 1) / (H - 3);
+    const v = 1 - u;
+    const sx = clamp(v * v * x0 + 2 * v * u * x1 + u * u * x2 + Math.sin(j * 0.9) * 0.12,
+                     2.6, W - 2.6);
+    spine.push({ x: sx, y: j + 0.5 });
+  }
+
+  // Fairway, wide at the ends and pinched in the middle.
+  const disc = (cx, cy, r, t) => {
+    for (let j = Math.floor(cy - r); j <= cy + r; j++) {
+      for (let i = Math.floor(cx - r); i <= cx + r; i++) {
+        if (Math.hypot(i + 0.5 - cx, j + 0.5 - cy) <= r) put(i, j, t);
+      }
+    }
+  };
+  spine.forEach((p, k) => {
+    const u = k / (spine.length - 1);
+    const wide = 2.35 + Math.sin(u * Math.PI) * -0.4 + (u < 0.12 || u > 0.88 ? 0.9 : 0);
+    disc(p.x, p.y, wide, T.FAIR);
+  });
+
+  // Two rings of rough, so a shot that misses the short grass usually still
+  // has somewhere to land.
+  for (let ring = 0; ring < 2; ring++) {
+    const edge = [];
+    for (let j = 0; j < H; j++) {
+      for (let i = 0; i < W; i++) {
+        if (at(i, j) !== T.VOID) continue;
+        let near = false;
+        for (let d = -1; d <= 1 && !near; d++) {
+          for (let e = -1; e <= 1; e++) {
+            if (at(i + d, j + e) !== T.VOID) { near = true; break; }
+          }
+        }
+        if (near && (ring === 0 || Math.random() < 0.6)) edge.push(j * W + i);
+      }
+    }
+    for (const n of edge) grid[n] = T.ROUGH;
+  }
+
+  // Hazards. Sand hugs the fairway, water cuts across it.
+  const bunkers = 1 + ((Math.random() * 3) | 0);
+  for (let b = 0; b < bunkers; b++) {
+    const p = spine[(spine.length * rand(0.2, 0.92)) | 0];
+    const off = (Math.random() < 0.5 ? -1 : 1) * rand(1.6, 2.9);
+    const cx = clamp(p.x + off, 1, W - 1), cy = p.y + rand(-1.5, 1.5);
+    for (let j = Math.floor(cy - 2); j <= cy + 2; j++) {
+      for (let i = Math.floor(cx - 2); i <= cx + 2; i++) {
+        const d = Math.hypot(i + 0.5 - cx, j + 0.5 - cy);
+        if (d <= rand(1.1, 1.9) && at(i, j) !== T.VOID) grid[j * W + i] = T.SAND;
+      }
+    }
+  }
+  if (n > 1 && Math.random() < 0.72) {
+    const p = spine[(spine.length * rand(0.28, 0.72)) | 0];
+    const cx = p.x + rand(-1.4, 1.4), cy = p.y, r = rand(2.0, 3.2);
+    for (let j = Math.floor(cy - r); j <= cy + r; j++) {
+      for (let i = Math.floor(cx - r); i <= cx + r; i++) {
+        const d = Math.hypot((i + 0.5 - cx) * 0.75, j + 0.5 - cy);
+        if (d <= r && at(i, j) !== T.VOID) grid[j * W + i] = T.WATER;
+      }
+    }
+  }
+
+  // Tee and green go on last so nothing overwrites them.
+  const tee = spine[0], pin = spine[spine.length - 1];
+  disc(tee.x, tee.y, 1.6, T.TEE);
+  disc(pin.x, pin.y, 2.6, T.GREEN);
+  for (let j = 0; j < H; j++) {
+    for (let i = 0; i < W; i++) {
+      const c = grid[j * W + i];
+      if (c === T.GREEN || c === T.TEE) continue;
+      if (Math.hypot(i + 0.5 - pin.x, j + 0.5 - pin.y) < 2.6) grid[j * W + i] = T.GREEN;
+      else if (Math.hypot(i + 0.5 - tee.x, j + 0.5 - tee.y) < 1.6) grid[j * W + i] = T.TEE;
+    }
+  }
+
+  // Trees, on the rough only, and never in the line of the tee shot.
+  const trees = [];
+  for (let j = 0; j < H; j++) {
+    for (let i = 0; i < W; i++) {
+      if (grid[j * W + i] !== T.ROUGH) continue;
+      if (Math.hypot(i + 0.5 - tee.x, j + 0.5 - tee.y) < 4) continue;
+      if (Math.random() < 0.17) {
+        trees.push({ x: i + rand(0.25, 0.75), y: j + rand(0.25, 0.75),
+                     r: rand(0.62, 0.95), tall: rand(1.5, 2.4) });
+      }
+    }
+  }
+
+  const dist = Math.hypot(pin.x - tee.x, pin.y - tee.y);
+  const par = dist < 22 ? 3 : dist < 32 ? 4 : 5;
+  return { w: W, h: H, grid, trees, tee: { x: tee.x, y: tee.y }, pin: { x: pin.x, y: pin.y }, par, dist };
+}
 
 // ── Home ─────────────────────────────────────────────────────────────────────
 const ART = {
@@ -1993,23 +2753,22 @@ const ART = {
     '<path d="M10 28l-4-3.4v6.8z" fill="#1b2532"/>' +
     '<circle cx="21" cy="27" r="1.2" fill="#dbe9f6"/></svg>',
   golf: '<svg viewBox="0 0 40 40" width="66" height="66">' +
-    '<rect width="40" height="40" rx="14" fill="#2c3a30"/>' +
-    '<circle cx="20" cy="14" r="5" fill="#e8ede6"/>' +
-    '<circle cx="18" cy="12" r="1" fill="#b8c2b4"/><circle cx="22" cy="15" r="1" fill="#b8c2b4"/>' +
-    '<ellipse cx="20" cy="30" rx="7" ry="3" fill="#101a12"/>' +
-    '<rect x="4" y="26" width="32" height="3" fill="#4a7a4a" opacity=".5"/></svg>',
+    '<rect width="40" height="40" rx="14" fill="#8fc3e8"/>' +
+    '<path d="M20 15l14 7-14 7-14-7z" fill="#6da851"/>' +
+    '<path d="M6 22v4l14 7v-4z" fill="#4a7d3c"/>' +
+    '<path d="M34 22v4l-14 7v-4z" fill="#3d6b32"/>' +
+    '<path d="M24 12v9" stroke="#f3f3ef" stroke-width="1.4" fill="none"/>' +
+    '<path d="M24 12l5 1.6-5 1.8z" fill="#e8452f"/>' +
+    '<circle cx="15" cy="23" r="2.1" fill="#fdfdf8"/></svg>',
 };
 
 const GAMES = [
   { g: DinoFall, art: "dino",
-    blurb: "Blocks fall out of a red sky. Grab the shield, the bomb, the hourglass and the little green dino before they land.",
-    fmt: (v) => v ? "Best " + Number(v).toFixed(1) + "s" : "Not played yet" },
+    fmt: (v) => v ? "Best " + Number(v).toFixed(1) + "s" : "Never played" },
   { g: FishFall, art: "fish",
-    blurb: "Drop a line as deep as the water lets you, then shoot the catch out of the sky.",
-    fmt: (v) => v ? "Best " + v + " points" : "Not played yet" },
+    fmt: (v) => v ? "Best " + v + " points" : "Never played" },
   { g: GolfFall, art: "golf",
-    blurb: "One ball, a long way down. Being built next.",
-    fmt: () => "In development" },
+    fmt: (v) => v ? "Best " + v + " shots" : "Never played" },
 ];
 
 const Home = {
@@ -2021,7 +2780,6 @@ const Home = {
         '<span class="art">' + ART[entry.art] + '</span>' +
         '<span><h2>' + entry.g.title +
           (soon ? '<span class="tag soon">Soon</span>' : '<span class="tag">Beta</span>') + '</h2>' +
-          '<p>' + entry.blurb + '</p>' +
           '<span class="meta">' + entry.fmt(Best.get(entry.g.id)) + '</span></span>' +
       '</button>';
     }).join("");
@@ -2056,11 +2814,10 @@ function paintSettings() {
                     typeof DeviceOrientationEvent.requestPermission === "function";
   $("tiltPerm").style.display = (Settings.controls === "tilt" && needsPerm && !Input.tiltSeen) ? "block" : "none";
 
-  let hint = CONTROL_LINE[Settings.controls];
-  if (Settings.controls === "tilt" && !Input.tiltSeen) {
-    hint += " This device has not reported any tilt yet — allow motion access, or pick another way to steer.";
-  }
-  $("ctrlHint").textContent = hint;
+  const noTilt = Settings.controls === "tilt" && !Input.tiltSeen;
+  $("ctrlHint").textContent = noTilt
+    ? "This device has not reported any tilt yet. Allow motion access, or steer another way."
+    : "";
 }
 
 function wireSettings() {
@@ -2118,6 +2875,11 @@ function wireSettings() {
   });
 
   $("quit").addEventListener("click", () => Router.show("home"));
+
+  $("clubs").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-c]");
+    if (b && Engine.game && Engine.game.pickClub) Engine.game.pickClub(Number(b.dataset.c));
+  });
 }
 
 // ── Go ───────────────────────────────────────────────────────────────────────

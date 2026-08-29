@@ -9,6 +9,10 @@ Three small games for a phone, played with one thumb. The page is a full-screen 
 shell: a home list, a settings screen and one canvas the games draw into. Nothing leaves
 the browser. Best scores and settings live in localStorage.
 
+There are almost no instructions anywhere on the page, on purpose. A game names itself,
+gives you a Start button and then gets out of the way. Working out that the low fish
+splash first, or that the driver keeps rolling, is the game.
+
 Steering is one setting shared by every game. **Drag** moves whatever you are steering by
 the distance your thumb travels, so your thumb never has to cover the thing you are
 watching. **Buttons** puts two pads at the bottom, and they swap sides for left-handers.
@@ -70,7 +74,36 @@ in at the edges.
 
 ### Golf Fall
 
-Not built yet. The card on the home screen is there and locked.
+Five randomly generated holes on a slab of course hanging in the sky, played
+isometrically. Fewest shots wins.
+
+Drag back off the ball and let go, the way you would pull a catapult. Drag anywhere else
+to turn the course, pinch to zoom. Turning is not decoration: the shot arc is drawn in
+world space, so from behind the ball it collapses into a line and from the side you can
+see exactly how high the ball goes and what it clears.
+
+Three clubs, and picking one zooms the camera to its range:
+
+| | carry | roll | total | apex |
+|---|---|---|---|---|
+| **Driver** | 15.8 | 14.2 | 30.0 | 1.6 |
+| **Wedge** | 9.0 | 1.0 | 10.0 | 3.1 |
+| **Putter** | — | 7.8 | 7.8 | 0 |
+
+The driver goes a long way and keeps going after it lands. The wedge goes up rather than
+out and stops near where it falls. The putter never leaves the ground, so instead of an
+arc and a landing circle it draws the line the ball will roll along.
+
+The ball runs on a fixed 120 Hz step and the aim preview runs the same physics on the same
+step, so the line you are shown is the line the ball takes — exactly, on any frame rate.
+
+A hole is a quadratic bend from tee to green carved out of nothing, two rings of rough
+around it, bunkers on the shoulders and sometimes water straight across the fairway. Water
+and the edge both cost a stroke and put you back where you hit from. Everything the carve
+does not touch stays void, which is the edge you fall off.
+
+Par is set by distance. A bot that searches 400 shots a turn with exact physics goes round
+in 10 to 12; par for the five holes is nearer 20.
 
 ## mexico-elections.html
 

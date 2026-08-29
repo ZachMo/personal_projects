@@ -74,44 +74,56 @@ in at the edges.
 
 ### Golf Fall
 
-One island of course hanging in the sky with five cups on it, in no order. You keep
-playing from wherever the last ball dropped, so which cup you take next, and in what
-order, is most of the game: the route is a small travelling-salesman problem you solve
-with a golf club.
+One island of course hanging in the sky: a hub with five arms reaching out of it and a cup
+on the head of each, in no order. You keep playing from wherever the last ball dropped, so
+which cup you take next, and in what order, is most of the game. Some arms are cut through
+part way along, so getting out to the head is a carry.
+
+The cups sit 20 to 27 units from the tee and up to 49 apart, which is more than one drive.
 
 Drag back off the ball and let go, the way you would pull a catapult. Drag anywhere else
 to turn the course, pinch to zoom. Turning is not decoration — the shot arc is drawn in
 world space, so from behind the ball it collapses into a line and from the side you can
-see exactly how high the ball goes and what it clears.
+see exactly how high the ball goes and what it clears. The round opens zoomed out far
+enough to plan a route across the whole island.
 
-Three clubs, and picking one zooms the camera to its range:
+**The clubs**, measured on flat ground from a good lie:
 
 | | carry | roll | total | apex |
 |---|---|---|---|---|
-| **Driver** | 15.8 | 14.2 | 30.0 | 1.6 |
-| **Wedge** | 9.0 | 1.0 | 10.0 | 3.1 |
-| **Putter** | — | 7.8 | 7.8 | 0 |
+| **Driver** | 19.4 | 15.2 | 34.6 | 3.9 |
+| **Wedge** | 9.0 | 1.5 | 10.5 | 3.6 |
+| **Putter** | — | 13.7 | 13.7 | 0 |
 
-The driver goes a long way and keeps going after it lands. The wedge goes up rather than
-out and stops near where it falls. The putter never leaves the ground, so instead of an
-arc and a landing circle it draws the line the ball will roll along.
+**The lie decides which one is any use.** Same club, same power, different ground:
+
+| | driver | wedge | putter |
+|---|---|---|---|
+| fairway | 32.4 | 10.5 | 4.1 |
+| green | 30.6 | 9.6 | **13.7** |
+| rough | 10.6 | 7.3 | 0.6 |
+| sand | 4.2 | **9.3** | 0.1 |
+
+Sand is a wedge shot and nothing else. Rough costs a driver two thirds of its length. The
+putter is a green club: it rolls 13.7 on a green, 4.1 on fairway and essentially nowhere
+out of sand.
+
+**The cup takes pace, not aim.** A ball has to be rolling, and slow enough to fall the
+depth of the cup while it crosses it. Dead centre that means arriving under 2.55 units a
+second; clipping the edge means crawling. A shade too quick and it catches the lip, swings
+round it and comes out with the pace taken off. Quicker still and it rolls straight over.
+On a two-unit putt the window that drops is about a sixth of the power range, and a
+four-unit putt is tighter. You cannot hole out from across the course any more: 1300
+driver and wedge attempts at a cup 21 units away went in zero times.
 
 The ground has height, and height is what makes the clubs matter. A driver into the face
-of a rise hits it and drops; a wedge goes over. Measured across forty spots with a rise of
-a unit or more in front of the ball, the wedge beat the driver by a clear margin in 53% of
-them — 0.8 units against 6.0 in one of them. Trees do the same job lower down, and both
-water and the edge of the island cost a stroke and put you back where you hit from.
+of a rise hits it and drops; a wedge goes over. The ball rolls downhill, trades pace for
+height going up, falls off ledges, and stops dead against a wall it cannot climb. Every
+green carries an apron that steps down to the land around it, because a green on a sheer
+plateau is one a rolling ball can never get onto.
 
-The ball rolls downhill, falls off ledges, and stops dead against a kerb it cannot climb.
 It runs on a fixed 120 Hz step and the aim preview runs the same physics on the same step,
 so the line you are shown is the line the ball takes — exactly, on any frame rate.
-
-The island is a handful of overlapping lobes with a value-noise height field over it,
-five greens flattened into it and fairway carved along the shortest route between them.
-That shortest route is, of course, the one you are free to ignore. Everything the lobes do
-not cover is void, which is the edge you fall off.
-
-A bot that searches about 450 shots a turn with exact physics goes round in 7 to 8.
 
 ## mexico-elections.html
 

@@ -1975,25 +1975,36 @@ const T = { VOID: 0, WATER: 1, SAND: 2, ROUGH: 3, FAIR: 4, GREEN: 5, TEE: 6 };
 const GROUND = {
   //           top          side       bounce  keep   drag
   1: { top: "#3d86b8", side: "#6b5a43", e: 0.00, k: 0.00, f: 999 },   // water
-  2: { top: "#e0c98f", side: "#b8a16a", e: 0.06, k: 0.16, f: 26 },    // sand
-  3: { top: "#4e8043", side: "#35592e", e: 0.20, k: 0.46, f: 15 },    // rough
+  2: { top: "#e0c98f", side: "#b8a16a", e: 0.06, k: 0.16, f: 20 },    // sand
+  3: { top: "#4e8043", side: "#35592e", e: 0.22, k: 0.50, f: 10 },    // rough
   4: { top: "#71ad55", side: "#4d8040", e: 0.42, k: 0.78, f: 7 },     // fairway
   5: { top: "#93d271", side: "#689a50", e: 0.30, k: 0.74, f: 4.0 },   // green
   6: { top: "#82bf63", side: "#5c8747", e: 0.34, k: 0.72, f: 6 },     // tee
 };
 
 const CLUBS = [
-  { id: "driver", name: "Driver", power: 27.5, angle: 0.40, bounce: 1.25, roll: 1.00, zoom: 0.62 },
+  { id: "driver", name: "Driver", power: 26.0, angle: 0.68, bounce: 1.25, roll: 1.00, zoom: 0.62 },
   { id: "wedge",  name: "Wedge",  power: 18.5, angle: 1.02, bounce: 0.42, roll: 0.38, zoom: 0.92 },
   { id: "putter", name: "Putter", power: 10.5, angle: 0.00, bounce: 0.00, roll: 1.00, zoom: 1.45 },
 ];
 
+// terrain -> how much of the club's power actually reaches the ball
+const LIE = {
+  2: { driver: 0.34, wedge: 0.94, putter: 0.22 },   // sand
+  3: { driver: 0.66, wedge: 0.90, putter: 0.45 },   // rough
+  4: { driver: 1.00, wedge: 1.00, putter: 0.72 },   // fairway
+  5: { driver: 0.94, wedge: 1.00, putter: 1.00 },   // green
+  6: { driver: 1.00, wedge: 1.00, putter: 0.76 },   // tee
+};
+
 const GRAV = 34;
+const DROP = 4.0;                        // fastest a dead-centre ball can drop
+const LIP = 1.5;                         // above capture x this, it rims out
 const CUPS = 5;
 const CUP_R = 0.42;
 const TICK = 1 / 120;                    // the ball runs on a fixed step, so the
                                          // preview and the real shot agree exactly
-const STEP_UP = 0.35;                    // a lip taller than this is a wall
+const STEP_UP = 0.55;                    // one terrain step; taller than this is a wall
 
 const GolfFall = {
   id: "golf",
@@ -2052,7 +2063,7 @@ const GolfFall = {
     this.course = genCourse();
     this.shots = 0;
     this.club = 0;
-    this.userZoom = 0.70;                              // wide enough to plan a route
+    this.userZoom = 1;
     this.rot = Math.PI / 4;
     this.spin = 0;
     this.trail = [];
@@ -2061,6 +2072,7 @@ const GolfFall = {
     this.setBall(t.x, t.y);
     const look = this.lookAt();
     this.camX = look.x; this.camY = look.y; this.camZ = look.z;
+    this.userZoom = this.fitZoom();                    // the whole course, to plan on
     this.state = "aim";
     this.msg = null;
     this.paintClubs();
@@ -2071,8 +2083,10 @@ const GolfFall = {
     b.x = b.px = x; b.y = b.py = y;
     b.z = b.pz = this.groundZ(x, y);
     b.vx = b.vy = b.vz = 0;
-    b.rest = true; b.gone = false; b.squash = 0; b.slow = 0;
-    this.lie = { x, y };
+    b.rest = true; b.gone = false; b.squash = 0; b.slow = 0; b.age = 0;
+    const tr = this.treeHit(b.x, b.y, b.z + 0.2);
+    if (tr) this.shoveOut(b, tr);
+    this.lie = { x: b.x, y: b.y };
     this.trail = [];
     this.alpha = 1;
   },
@@ -2114,7 +2128,7 @@ const GolfFall = {
         const list = c.treeAt.get((j + e) * c.w + (i + d));
         if (!list) continue;
         for (const tr of list) {
-          if (z > tr.z + tr.tall + tr.r * 0.6) continue;
+          if (z > tr.z + tr.tall) continue;
           if (z < tr.z - 0.2) continue;
           if (Math.hypot(x - tr.x, y - tr.y) < tr.r * 0.62) return tr;
         }
@@ -2124,9 +2138,19 @@ const GolfFall = {
   },
 
   // ── Shooting ──
+  // `this.lie` is where the shot was played from, so this one needs its own name.
+  lieMul() {
+    const t = this.cell(this.ball.x, this.ball.y);
+    return (LIE[t] || LIE[4])[CLUBS[this.club].id];
+  },
+
+  shotSpeed(power) {
+    return CLUBS[this.club].power * clamp(power, 0.06, 1) * this.lieMul();
+  },
+
   hit(dirX, dirY, power) {
     const c = CLUBS[this.club];
-    const speed = c.power * clamp(power, 0.06, 1);
+    const speed = this.shotSpeed(power);
     const b = this.ball;
     const len = Math.hypot(dirX, dirY) || 1;
     b.vx = (dirX / len) * speed * Math.cos(c.angle);
@@ -2179,6 +2203,7 @@ const GolfFall = {
       const tr = this.treeHit(nx, ny, nz);
       if (tr) {                                         // into a tree
         b.vx *= -0.16; b.vy *= -0.16; b.vz *= 0.2;
+        this.shoveOut(b, tr);
         if (!preview) this.thud(nx, ny, nz);
         return;
       }
@@ -2225,7 +2250,8 @@ const GolfFall = {
       b.vy -= (b.vy / sp) * drop;
     }
     const nx = b.x + b.vx * dt, ny = b.y + b.vy * dt;
-    if (this.treeHit(nx, ny, b.z + 0.2)) { b.vx *= -0.2; b.vy *= -0.2; return; }
+    const rt = this.treeHit(nx, ny, b.z + 0.2);
+    if (rt) { b.vx *= -0.2; b.vy *= -0.2; this.shoveOut(b, rt); return; }
     const nCell = this.cell(nx, ny);
     if (nCell === T.VOID) { b.x = nx; b.y = ny; b.vz = 0; return; }   // rolls off
     const nh = this.heightAt(nx, ny);
@@ -2233,9 +2259,28 @@ const GolfFall = {
       b.vx *= -0.3; b.vy *= -0.3;
       return;
     }
+    // Rolling uphill trades speed for height.
+    if (nh > b.z + 0.02) {
+      const rise = nh - b.z;
+      const v2 = b.vx * b.vx + b.vy * b.vy - 2 * GRAV * rise * 0.34;
+      if (v2 <= 0.02) { b.vx *= -0.25; b.vy *= -0.25; return; }
+      const k = Math.sqrt(v2) / Math.hypot(b.vx, b.vy);
+      b.vx *= k; b.vy *= k;
+    }
     b.x = nx; b.y = ny;
     // A real drop leaves the ball in the air, so it falls off ledges properly.
     if (nh > b.z - 0.05) b.z = nh;
+  },
+
+  // Move the ball to the edge of a trunk it is inside, keeping it on land.
+  shoveOut(b, tr) {
+    const d = Math.hypot(b.x - tr.x, b.y - tr.y);
+    const want = tr.r * 0.62 + 0.12;
+    if (d >= want) return;
+    const nx = d > 0.001 ? (b.x - tr.x) / d : 1;
+    const ny = d > 0.001 ? (b.y - tr.y) / d : 0;
+    const px = tr.x + nx * want, py = tr.y + ny * want;
+    if (this.cell(px, py) !== T.VOID) { b.x = px; b.y = py; b.z = this.heightAt(px, py); }
   },
 
   land(x, y, z, g) {
@@ -2281,8 +2326,14 @@ const GolfFall = {
         this.acc -= TICK;
         b.px = b.x; b.py = b.y; b.pz = b.z;
         this.step(b, TICK, false);
-        const cup = this.cupUnder(b);
+        const cup = this.cupCheck(b);
         if (cup) { this.sink(cup); return; }
+        if (this.lipped) {
+          this.lipped = 0;
+          Sound.blip(300, 0.09, "square", 0.09);
+          Sound.blip(190, 0.14, "sine", 0.07);
+          buzz(22);
+        }
         if (b.gone || b.rest) { this.acc = 0; break; }
         if (this.trail.length > 150) this.trail.shift();
         this.trail.push({ x: b.x, y: b.y, z: b.z });
@@ -2344,13 +2395,36 @@ const GolfFall = {
     return { x, y, z: Math.max(0, b.z) * 0.45 };
   },
 
-  cupUnder(b) {
+  // A ball has to be rolling, near the middle, and slow enough to fall the
+  // depth of the cup while it crosses it. A shade too quick and it rims out
+  // instead, which leaves it beside the hole with the pace taken off.
+  cupCheck(b) {
+    if (b.z > this.groundZ(b.x, b.y) + 0.03) return null;   // still in the air
     for (const c of this.course.cups) {
       if (c.done) continue;
-      if (Math.abs(b.z - c.z) > 0.5) continue;
-      if (Math.hypot(b.x - c.x, b.y - c.y) > CUP_R) continue;
-      if (Math.hypot(b.vx, b.vy) > 4.2) continue;
-      return c;
+      if (Math.abs(b.z - c.z) > 0.3) continue;
+      const d = Math.hypot(b.x - c.x, b.y - c.y);
+      if (d > CUP_R) continue;
+      const sp = Math.hypot(b.vx, b.vy);
+      // How near the middle the ball will actually pass, not how near it is on
+      // the tick it crosses the rim — otherwise every putt is judged at its
+      // worst moment.
+      const perp = sp > 0.001
+        ? Math.abs((b.x - c.x) * b.vy - (b.y - c.y) * b.vx) / sp
+        : d;
+      const cap = DROP * (0.40 + 0.60 * (1 - clamp(perp / CUP_R, 0, 1)));
+      if (sp <= cap) return c;
+      if (sp <= cap * LIP) {                                // round the lip and out
+        const nx = d > 0.001 ? (b.x - c.x) / d : 1;
+        const ny = d > 0.001 ? (b.y - c.y) / d : 0;
+        const sgn = (b.vx * -ny + b.vy * nx) >= 0 ? 1 : -1;
+        b.vx = -ny * sgn * sp * 0.40;
+        b.vy = nx * sgn * sp * 0.40;
+        b.x = c.x + nx * (CUP_R + 0.05);
+        b.y = c.y + ny * (CUP_R + 0.05);
+        this.lipped = 0.6;
+        return null;
+      }
     }
     return null;
   },
@@ -2397,6 +2471,26 @@ const GolfFall = {
   // ── Projection ──
   // Rotate on the ground plane, squash the vertical, lift by height.
   scale() { return Math.min(this.w, this.h) * 0.082 * CLUBS[this.club].zoom * this.userZoom; },
+
+  // The zoom that puts the far corners of the land on screen.
+  fitZoom() {
+    const c = this.course, k = this.scale() / this.userZoom;
+    let lo = 1e9, hi = -1e9, top = 1e9, bot = -1e9;
+    for (let j = 0; j < c.h; j += 2) {
+      for (let i = 0; i < c.w; i += 2) {
+        if (c.grid[j * c.w + i] === T.VOID) continue;
+        const cs = Math.cos(this.rot), sn = Math.sin(this.rot);
+        const dx = i + 0.5 - this.camX, dy = j + 0.5 - this.camY;
+        const rx = dx * cs - dy * sn, ry = dx * sn + dy * cs;
+        lo = Math.min(lo, rx); hi = Math.max(hi, rx);
+        top = Math.min(top, ry * 0.52); bot = Math.max(bot, ry * 0.52);
+      }
+    }
+    if (hi < lo) return 1;
+    const needX = (this.w * 0.88) / (Math.max(Math.abs(lo), Math.abs(hi)) * 2 * k);
+    const needY = (this.h * 0.62) / (Math.max(Math.abs(top), Math.abs(bot)) * 2 * k);
+    return clamp(Math.min(needX, needY), 0.16, 1.4);
+  },
 
   proj(x, y, z) {
     const k = this.scale(), c = Math.cos(this.rot), s = Math.sin(this.rot);
@@ -2453,7 +2547,7 @@ const GolfFall = {
       if (this.pinch && this.pts.size >= 2) {
         const [a, b] = [...this.pts.values()];
         const d = Math.hypot(a.x - b.x, a.y - b.y);
-        this.userZoom = clamp(this.pinch.z * (d / Math.max(1, this.pinch.d)), 0.3, 2.6);
+        this.userZoom = clamp(this.pinch.z * (d / Math.max(1, this.pinch.d)), 0.14, 2.8);
         return;
       }
       if (this.aim) {
@@ -2527,14 +2621,22 @@ const GolfFall = {
 
     // Terrain and everything standing on it, back to front.
     const items = [];
+    const k = this.scale(), padX = k * 2.2, padT = k * 5, padB = k * 3;
+    const seen = (p) => p.x > -padX && p.x < w + padX && p.y > -padT && p.y < h + padB;
     for (let j = 0; j < c.h; j++) {
       for (let i = 0; i < c.w; i++) {
         const t = c.grid[j * c.w + i];
         if (t === T.VOID) continue;
-        items.push({ d: this.proj(i + 0.5, j + 0.5, 0).d, k: 0, i, j, t });
+        const p = this.proj(i + 0.5, j + 0.5, this.heightAt(i + 0.5, j + 0.5));
+        if (!seen(p)) continue;
+        items.push({ d: p.d, k: 0, i, j, t });
       }
     }
-    for (const tr of c.trees) items.push({ d: this.proj(tr.x, tr.y, 0).d + 0.01, k: 1, tr });
+    for (const tr of c.trees) {
+      const p = this.proj(tr.x, tr.y, tr.z + tr.tall);
+      if (!seen(p)) continue;
+      items.push({ d: this.proj(tr.x, tr.y, 0).d + 0.01, k: 1, tr });
+    }
     for (const cup of c.cups) {
       if (!cup.done) items.push({ d: this.proj(cup.x, cup.y, 0).d + 0.02, k: 2, cup });
     }
@@ -2696,7 +2798,7 @@ const GolfFall = {
     const a = this.aim, club = CLUBS[this.club];
     const dir = this.unproj(-(a.x - a.ox), -(a.y - a.oy));
     const len = Math.hypot(dir.x, dir.y) || 1;
-    const speed = club.power * clamp(a.power, 0.06, 1);
+    const speed = this.shotSpeed(a.power);
     const sim = {
       x: this.ball.x, y: this.ball.y, z: this.ball.z,
       vx: (dir.x / len) * speed * Math.cos(club.angle),
@@ -2754,171 +2856,154 @@ const GolfFall = {
 };
 
 // ── The island ───────────────────────────────────────────────────────────────
-// A blob of land with a rolling height field, five greens spread across it and
-// fairway carved between them. Everything the blob does not cover is void.
+// A hub with five arms reaching out of it, a cup on the head of each. The arms
+// are long enough that crossing the course is driver work, and some of them are
+// broken part way along, so getting out there is a carry.
 function genCourse() {
-  const W = 30, H = 34;
+  const W = 62, H = 62;
   const grid = new Uint8Array(W * H);
   const hgt = new Float32Array(W * H);
   const idx = (i, j) => j * W + i;
   const inside = (i, j) => i >= 0 && j >= 0 && i < W && j < H;
   const cellT = (i, j) => inside(i, j) ? grid[idx(i, j)] : T.VOID;
 
-  // Shape: a handful of overlapping lobes, so the edge is ragged rather than round.
-  const lobes = [];
-  const cx = W / 2, cy = H / 2;
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * TAU + rand(-0.3, 0.3);
-    const d = i === 0 ? 0 : rand(4, 9.5);
-    lobes.push({ x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d * 1.15, r: rand(5.5, 8.5) });
-  }
-  for (let j = 0; j < H; j++) {
-    for (let i = 0; i < W; i++) {
-      for (const L of lobes) {
-        if (Math.hypot(i + 0.5 - L.x, j + 0.5 - L.y) < L.r) { grid[idx(i, j)] = T.ROUGH; break; }
+  const land = (cx, cy, r) => {
+    for (let j = Math.floor(cy - r); j <= cy + r; j++) {
+      for (let i = Math.floor(cx - r); i <= cx + r; i++) {
+        if (inside(i, j) && Math.hypot(i + 0.5 - cx, j + 0.5 - cy) <= r) {
+          if (grid[idx(i, j)] === T.VOID) grid[idx(i, j)] = T.ROUGH;
+        }
       }
     }
+  };
+  const paint = (cx, cy, r, t) => {
+    for (let j = Math.floor(cy - r); j <= cy + r; j++) {
+      for (let i = Math.floor(cx - r); i <= cx + r; i++) {
+        if (!inside(i, j) || cellT(i, j) === T.VOID) continue;
+        if (Math.hypot(i + 0.5 - cx, j + 0.5 - cy) <= r && grid[idx(i, j)] < t) {
+          grid[idx(i, j)] = t;
+        }
+      }
+    }
+  };
+  const force = (cx, cy, r, t) => {
+    for (let j = Math.floor(cy - r); j <= cy + r; j++) {
+      for (let i = Math.floor(cx - r); i <= cx + r; i++) {
+        if (!inside(i, j) || cellT(i, j) === T.VOID) continue;
+        if (Math.hypot(i + 0.5 - cx, j + 0.5 - cy) <= r) grid[idx(i, j)] = t;
+      }
+    }
+  };
+
+  // Hub, then an arm per cup.
+  const hub = { x: W / 2, y: H / 2 };
+  land(hub.x, hub.y, rand(7, 9));
+
+  const arms = [];
+  const spin = Math.random() * TAU;
+  for (let a = 0; a < CUPS; a++) {
+    const ang = spin + (a / CUPS) * TAU + rand(-0.22, 0.22);
+    const len = rand(20, 27);
+    const bend = rand(-0.012, 0.012);
+    const pts = [];
+    for (let sdist = 2; sdist <= len; sdist += 1.1) {
+      const aa = ang + bend * sdist * sdist * 0.1;
+      pts.push({ x: hub.x + Math.cos(aa) * sdist, y: hub.y + Math.sin(aa) * sdist, u: sdist / len });
+    }
+    // Some arms are cut through, so the head is only reachable over air.
+    const gapAt = Math.random() < 0.55 ? rand(0.42, 0.68) : -1;
+    for (const p of pts) {
+      if (gapAt > 0 && Math.abs(p.u - gapAt) < 0.16) continue;
+      land(p.x, p.y, 2.8 + Math.sin(p.u * Math.PI) * 0.8);
+    }
+    const head = pts[pts.length - 1];
+    land(head.x, head.y, rand(6.6, 8));
+    arms.push({ pts, head, gapAt });
   }
 
   // Height: value noise on a coarse lattice, smoothed and stepped.
-  const CO = 5, cw = Math.ceil(W / CO) + 2, ch = Math.ceil(H / CO) + 2;
+  const CO = 7, cw = Math.ceil(W / CO) + 2, ch = Math.ceil(H / CO) + 2;
   const seed = [];
   for (let n = 0; n < cw * ch; n++) seed.push(Math.random());
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const smooth = (t) => t * t * (3 - 2 * t);
+  const mix = (a, b, t) => a + (b - a) * t;
+  const ease = (t) => t * t * (3 - 2 * t);
   for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {
       const gx = i / CO, gy = j / CO;
       const x0 = Math.floor(gx), y0 = Math.floor(gy);
-      const tx = smooth(gx - x0), ty = smooth(gy - y0);
-      const s = (a, b) => seed[Math.min(ch - 1, b) * cw + Math.min(cw - 1, a)];
-      const v = lerp(lerp(s(x0, y0), s(x0 + 1, y0), tx),
-                     lerp(s(x0, y0 + 1), s(x0 + 1, y0 + 1), tx), ty);
-      hgt[idx(i, j)] = Math.round(v * 6) * 0.5;          // 0 .. 3, in half steps
+      const tx = ease(gx - x0), ty = ease(gy - y0);
+      const at = (a, b) => seed[Math.min(ch - 1, b) * cw + Math.min(cw - 1, a)];
+      const v = mix(mix(at(x0, y0), at(x0 + 1, y0), tx),
+                    mix(at(x0, y0 + 1), at(x0 + 1, y0 + 1), tx), ty);
+      hgt[idx(i, j)] = Math.round(v * 7) * 0.5;          // 0 .. 3.5, in half steps
     }
   }
 
-  // Greens: five flat discs, spread out, on ground that is not the very lowest.
-  const cups = [];
-  let guard = 0;
-  while (cups.length < CUPS && guard++ < 9000) {
-    const apart = guard < 3000 ? 9 : guard < 6000 ? 7 : 5.5;
-    const margin = guard < 6000 ? 3 : 2;
-    const i = 2 + ((Math.random() * (W - 4)) | 0);
-    const j = 2 + ((Math.random() * (H - 4)) | 0);
-    if (cellT(i, j) === T.VOID) continue;
-    let ok = true;
-    for (let d = -margin; d <= margin && ok; d++) {
-      for (let e = -margin; e <= margin; e++) if (cellT(i + d, j + e) === T.VOID) { ok = false; break; }
-    }
-    if (!ok) continue;
-    for (const c of cups) if (Math.hypot(c.x - i, c.y - j) < apart) { ok = false; break; }
-    if (!ok) continue;
-    cups.push({ x: i + 0.5, y: j + 0.5, z: hgt[idx(i, j)], done: false });
+  // Fairway down the middle of every arm, and across the hub.
+  paint(hub.x, hub.y, 5.5, T.FAIR);
+  for (const arm of arms) {
+    for (const p of arm.pts) paint(p.x, p.y, 2.2, T.FAIR);
+    paint(arm.head.x, arm.head.y, 4.4, T.FAIR);
   }
 
-  // A tee as far from every cup as the island allows.
-  let tee = null, teeScore = -1;
-  for (let j = 1; j < H - 1; j++) {
-    for (let i = 1; i < W - 1; i++) {
-      if (cellT(i, j) === T.VOID) continue;
-      let inland = true;
-      for (let d = -3; d <= 3 && inland; d++) {
-        for (let e = -3; e <= 3; e++) if (cellT(i + d, j + e) === T.VOID) { inland = false; break; }
-      }
-      if (!inland) continue;
-      let near = 1e9;
-      for (const c of cups) near = Math.min(near, Math.hypot(c.x - i, c.y - j));
-      if (near > teeScore) { teeScore = near; tee = { x: i + 0.5, y: j + 0.5 }; }
-    }
-  }
-  if (!tee) tee = { x: W / 2, y: H / 2 };
-
-  // Fairway: carve a chain from the tee through the cups, nearest first. It is
-  // the shortest sensible route, which is exactly the route you get to ignore.
-  const flat = (cxx, cyy, r, height) => {
-    for (let j = Math.floor(cyy - r); j <= cyy + r; j++) {
-      for (let i = Math.floor(cxx - r); i <= cxx + r; i++) {
-        if (!inside(i, j) || cellT(i, j) === T.VOID) continue;
-        if (Math.hypot(i + 0.5 - cxx, j + 0.5 - cyy) <= r) hgt[idx(i, j)] = height;
-      }
-    }
-  };
-  const paint = (cxx, cyy, r, t) => {
-    for (let j = Math.floor(cyy - r); j <= cyy + r; j++) {
-      for (let i = Math.floor(cxx - r); i <= cxx + r; i++) {
-        if (!inside(i, j) || cellT(i, j) === T.VOID) continue;
-        if (Math.hypot(i + 0.5 - cxx, j + 0.5 - cyy) <= r && grid[idx(i, j)] < t) grid[idx(i, j)] = t;
-      }
-    }
-  };
-
-  const order = [];
-  let at = tee, left = cups.slice();
-  while (left.length) {
-    left.sort((a, b) => Math.hypot(a.x - at.x, a.y - at.y) - Math.hypot(b.x - at.x, b.y - at.y));
-    const nx = left.shift();
-    order.push(nx); at = nx;
-  }
-  let from = tee;
-  for (const c of order) {
-    const steps = Math.ceil(Math.hypot(c.x - from.x, c.y - from.y) * 2);
-    for (let k = 0; k <= steps; k++) {
-      const u = k / steps;
-      paint(from.x + (c.x - from.x) * u, from.y + (c.y - from.y) * u, 2.1, T.FAIR);
-    }
-    from = c;
-  }
-
-  // Hazards, then the greens and tee flattened on top of everything.
-  for (let b = 0; b < 7; b++) {
-    const p = order[(Math.random() * order.length) | 0];
-    const a = Math.random() * TAU, d = rand(3.5, 8);
-    paint(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, rand(1.3, 2.2), T.SAND);
-  }
-  // Water fills the lowest ground.
+  // Water in the low ground, away from the greens.
   for (let n = 0; n < W * H; n++) {
     if (grid[n] !== T.ROUGH) continue;
-    if (hgt[n] <= 0.5 && Math.random() < 0.75) { grid[n] = T.WATER; hgt[n] = 0.35; }
+    if (hgt[n] <= 0.5 && Math.random() < 0.7) { grid[n] = T.WATER; hgt[n] = 0.35; }
   }
 
-  for (const c of cups) {
-    c.z = hgt[idx(Math.floor(c.x), Math.floor(c.y))];
-    flat(c.x, c.y, 3.0, c.z);
-    paint(c.x, c.y, 2.7, T.GREEN);
-    for (let j = 0; j < H; j++) {
-      for (let i = 0; i < W; i++) {
-        if (Math.hypot(i + 0.5 - c.x, j + 0.5 - c.y) < 2.7 && cellT(i, j) !== T.VOID) {
-          grid[idx(i, j)] = T.GREEN;
-        }
+  // Greens, flattened, each with a bunker or two guarding it.
+  const cups = [];
+  const flat = (cx, cy, r, z) => {
+    for (let j = Math.floor(cy - r); j <= cy + r; j++) {
+      for (let i = Math.floor(cx - r); i <= cx + r; i++) {
+        if (inside(i, j) && Math.hypot(i + 0.5 - cx, j + 0.5 - cy) <= r) hgt[idx(i, j)] = z;
       }
     }
-  }
-  const teeZ = hgt[idx(Math.floor(tee.x), Math.floor(tee.y))];
-  flat(tee.x, tee.y, 1.8, teeZ);
-  for (let j = 0; j < H; j++) {
-    for (let i = 0; i < W; i++) {
-      if (Math.hypot(i + 0.5 - tee.x, j + 0.5 - tee.y) < 1.8 && cellT(i, j) !== T.VOID) {
-        grid[idx(i, j)] = T.TEE;
+  };
+  for (const arm of arms) {
+    const h = arm.head;
+    const z = hgt[idx(Math.floor(h.x), Math.floor(h.y))];
+    flat(h.x, h.y, 3.4, z);
+    // Apron: nothing round a green may sit more than one step off it, or a
+    // rolling ball can never get on.
+    for (let j = Math.floor(h.y - 7); j <= h.y + 7; j++) {
+      for (let i = Math.floor(h.x - 7); i <= h.x + 7; i++) {
+        if (!inside(i, j)) continue;
+        const dd = Math.hypot(i + 0.5 - h.x, j + 0.5 - h.y);
+        if (dd <= 3.4 || dd > 7) continue;
+        const step = Math.min(0.5 * Math.ceil((dd - 3.4) / 1.4), 2);
+        hgt[idx(i, j)] = clamp(hgt[idx(i, j)], z - step, z + step);
       }
     }
+    force(h.x, h.y, 2.8, T.GREEN);
+    const guards = 1 + ((Math.random() * 2) | 0);
+    for (let b = 0; b < guards; b++) {
+      const ga = Math.random() * TAU, gd = rand(3.6, 4.8);
+      force(h.x + Math.cos(ga) * gd, h.y + Math.sin(ga) * gd, rand(1.4, 2.1), T.SAND);
+    }
+    cups.push({ x: h.x, y: h.y, z, done: false });
   }
 
-  // Trees, kept off the greens and out of the tee's face. Bucketed by cell so
-  // the flight test only ever looks at the nine cells around the ball.
+  // A tee in the middle of the hub.
+  const teeZ = hgt[idx(Math.floor(hub.x), Math.floor(hub.y))];
+  flat(hub.x, hub.y, 2.2, teeZ);
+  force(hub.x, hub.y, 1.9, T.TEE);
+
+  // Trees, bucketed by cell so a flight test only looks at the nine cells round
+  // the ball.
   const trees = [];
   const treeAt = new Map();
   for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {
       const t = grid[idx(i, j)];
       if (t !== T.ROUGH && t !== T.FAIR) continue;
-      if (t === T.FAIR && Math.random() > 0.05) continue;
-      if (t === T.ROUGH && Math.random() > 0.2) continue;
-      let clear = Math.hypot(i + 0.5 - tee.x, j + 0.5 - tee.y) > 3.5;
-      for (const c of cups) if (Math.hypot(i + 0.5 - c.x, j + 0.5 - c.y) < 4) clear = false;
+      if (Math.random() > (t === T.FAIR ? 0.02 : 0.12)) continue;
+      let clear = Math.hypot(i + 0.5 - hub.x, j + 0.5 - hub.y) > 4;
+      for (const c of cups) if (Math.hypot(i + 0.5 - c.x, j + 0.5 - c.y) < 4.6) clear = false;
       if (!clear) continue;
       const tr = { x: i + 0.5 + rand(-0.2, 0.2), y: j + 0.5 + rand(-0.2, 0.2),
-                   z: hgt[idx(i, j)], r: rand(0.55, 0.85), tall: rand(1.8, 3.2) };
+                   z: hgt[idx(i, j)], r: rand(0.5, 0.78), tall: rand(1.1, 2.2) };
       trees.push(tr);
       const key = idx(i, j);
       if (!treeAt.has(key)) treeAt.set(key, []);
@@ -2926,7 +3011,8 @@ function genCourse() {
     }
   }
 
-  return { w: W, h: H, grid, hgt, trees, treeAt, cups, tee: { x: tee.x, y: tee.y, z: teeZ } };
+  return { w: W, h: H, grid, hgt, trees, treeAt, cups,
+           tee: { x: hub.x, y: hub.y, z: teeZ } };
 }
 
 // ── Home ─────────────────────────────────────────────────────────────────────

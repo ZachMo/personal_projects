@@ -640,7 +640,7 @@ const CONTROL_LINE = {
 
 // ── Dino Fall ────────────────────────────────────────────────────────────────
 // The sky drops blocks. You are a small dinosaur with nowhere to hide.
-// Clay diamonds give you one free hit. Score is time on your feet.
+// Four things fall that are not blocks. Score is time on your feet.
 const DINO_ART = [
   [12, 0, 11, 8], [12, 8, 8, 9], [8, 9, 4, 7], [4, 8, 4, 5], [0, 6, 4, 4], [20, 10, 3, 2],
 ];
@@ -653,7 +653,15 @@ const SHAPES = [
   { k: "wide", w: 1.00, h: 0.34 },
   { k: "dot",  w: 0.52, h: 0.52 },
 ];
-const GEM = { k: "gem", w: 0.56, h: 0.56 };
+// The only colour in the game, apart from the sky.
+const PICKUPS = [
+  { id: "shield", col: "#d76b5b", weight: 34, size: 0.56 },
+  { id: "mini",   col: "#6fbf73", weight: 26, size: 0.60 },
+  { id: "slow",   col: "#5aa9d6", weight: 24, size: 0.56 },
+  { id: "bomb",   col: "#e8b33c", weight: 16, size: 0.52 },
+];
+const PICKUP_ODDS = 0.13;
+const SLOW_SECONDS = 5.5, MINI_SECONDS = 8, MINI_SCALE = 0.55;
 
 const DinoFall = {
   id: "dino",
@@ -668,6 +676,10 @@ const DinoFall = {
     this.shield = false;
     this.shieldFlash = 0;
     this.shake = 0;
+    this.flash = 0;
+    this.slowT = 0;
+    this.miniT = 0;
+    this.mini = 1;
     this.scroll = 0;
     this.x = w / 2;
     Hud.set("0.0", "seconds");
@@ -687,8 +699,8 @@ const DinoFall = {
       '<p class="why">The sky is falling. Do not be under it.</p>' +
       '<ul class="rules">' +
         '<li><span class="n">1</span><div>' + CONTROL_LINE[Settings.controls] + '</div></li>' +
-        '<li><span class="n">2</span><div>Black blocks end the run. They fall faster the longer you last.</div></li>' +
-        '<li><span class="n">3</span><div>A <b>clay diamond</b> is a shield. It soaks up one hit.</div></li>' +
+        '<li><span class="n">2</span><div>Black blocks end the run. They fall faster and closer together the longer you last.</div></li>' +
+        '<li><span class="n">3</span><div>Anything with colour in it is yours. A <b>clay diamond</b> shields one hit. A <b>green dino</b> shrinks you. A <b>blue hourglass</b> slows the sky. An <b>amber bomb</b> clears it.</div></li>' +
       '</ul>' +
       '<button class="btn primary" data-act="play">Start</button>' +
       '<button class="btn ghost" data-act="home">Back</button>',
@@ -704,6 +716,11 @@ const DinoFall = {
     this.dust = [];
     this.elapsed = 0;
     this.shield = false;
+    this.slowT = 0;
+    this.miniT = 0;
+    this.mini = 1;
+    this.flash = 0;
+    this.shake = 0;
     this.nextSpawn = 0.7;
     this.x = this.w / 2 - this.unit * 0.46;
     Input.dragDelta();
@@ -723,35 +740,63 @@ const DinoFall = {
 
   spawn() {
     const u = this.unit;
-    const gem = Math.random() < 0.11;
-    const s = gem ? GEM : pick(SHAPES);
-    const w = s.w * u, h = s.h * u;
+    let kind = null, w, h;
+    if (Math.random() < PICKUP_ODDS) {
+      let total = 0;
+      for (const p of PICKUPS) total += p.weight;
+      let r = Math.random() * total;
+      kind = PICKUPS[0];
+      for (const p of PICKUPS) { r -= p.weight; if (r <= 0) { kind = p; break; } }
+      w = h = kind.size * u;
+    } else {
+      const s = pick(SHAPES);
+      w = s.w * u; h = s.h * u;
+      this.blocks.push({
+        k: s.k, pick: null, w, h,
+        x: rand(0, Math.max(1, this.w - w)),
+        y: -h - rand(0, u),
+        rot: 0,
+        jitter: rand(0.86, 1.18),
+      });
+      return;
+    }
     this.blocks.push({
-      k: s.k, gem, w, h,
+      k: kind.id, pick: kind, w, h,
       x: rand(0, Math.max(1, this.w - w)),
       y: -h - rand(0, u),
-      spin: s.k === "gem" ? rand(-1.6, 1.6) : 0,
+      spin: rand(-1.6, 1.6),
       rot: 0,
-      jitter: rand(0.86, 1.18),
+      jitter: rand(0.8, 1.0),
     });
   },
 
   update(dt) {
+    // These keep running past the end of the run so a death still lands.
+    this.shake = Math.max(0, this.shake - dt * 2.2);
+    this.flash = Math.max(0, this.flash - dt * 3);
     if (this.state !== "run") return;
+
     const { w, h, unit } = this;
     this.elapsed += dt;
     this.scroll += dt * (140 + this.elapsed * 5);
-    this.shake = Math.max(0, this.shake - dt * 4);
     this.shieldFlash = Math.max(0, this.shieldFlash - dt * 2);
+
+    // Timed pickups. Only the sky slows down — you still move at full speed.
+    this.slowT = Math.max(0, this.slowT - dt);
+    this.miniT = Math.max(0, this.miniT - dt);
+    const wantMini = this.miniT > 0 ? MINI_SCALE : 1;
+    this.mini += (wantMini - this.mini) * Math.min(1, dt * 9);
+    const slow = this.slowT > 0 ? 0.42 : 1;
 
     Hud.set(this.elapsed.toFixed(1), "seconds");
 
-    // Steering.
-    this.x = Input.steer(this.x, dt, w * 1.25, 0, w - unit * 0.92);
+    // Steering. A small dino is a nimble dino.
+    const dw = unit * 0.92 * this.mini, dh = unit * this.mini;
+    this.x = Input.steer(this.x, dt, w * (1.25 + (1 - this.mini) * 0.5), 0, w - dw);
 
     // Difficulty ramp: quicker falls, tighter gaps.
-    const fall = Math.min(h * (0.30 + this.elapsed * 0.011), h * 0.95);
-    const gap  = Math.max(0.13, 0.60 - this.elapsed * 0.016);
+    const fall = Math.min(h * (0.30 + this.elapsed * 0.011), h * 0.95) * slow;
+    const gap  = Math.max(0.13, 0.60 - this.elapsed * 0.016) / slow;
 
     this.nextSpawn -= dt;
     if (this.nextSpawn <= 0) {
@@ -761,9 +806,8 @@ const DinoFall = {
     }
 
     // Dino hitbox, a little kinder than the drawing.
-    const dw = unit * 0.92, dh = unit;
     const hx = this.x + dw * 0.18, hw = dw * 0.64;
-    const hy = this.ground + dh * 0.14, hh = dh * 0.8;
+    const hy = this.ground + unit - dh + dh * 0.14, hh = dh * 0.8;
 
     for (let i = this.blocks.length - 1; i >= 0; i--) {
       const b = this.blocks[i];
@@ -772,7 +816,7 @@ const DinoFall = {
 
       if (b.y + b.h >= this.ground + unit) {
         this.blocks.splice(i, 1);
-        if (!b.gem) for (let k = 0; k < 5; k++) {
+        if (!b.pick) for (let k = 0; k < 5; k++) {
           this.dust.push({ x: b.x + rand(0, b.w), y: this.ground + unit,
                            r: rand(1.5, 3.5), life: 0.8, vx: rand(-60, 60) });
         }
@@ -783,16 +827,15 @@ const DinoFall = {
       if (!hit) continue;
 
       this.blocks.splice(i, 1);
-      if (b.gem) {
-        this.shield = true; this.shieldFlash = 1;
-        Sound.blip(880, 0.14, "triangle", 0.13);
-        Sound.blip(1320, 0.18, "triangle", 0.09);
-        buzz(14);
+      if (b.pick) {
+        this.take(b);
       } else if (this.shield) {
-        this.shield = false; this.shake = 0.6;
+        this.shield = false;
+        this.shake = 1;
         this.burst(b.x + b.w / 2, b.y + b.h / 2, "#d76b5b");
-        Sound.noise(0.18, 0.16);
-        buzz(28);
+        Sound.noise(0.2, 0.18);
+        Sound.slide(420, 120, 0.2, "square");
+        buzz(34);
       } else {
         this.die();
         return;
@@ -811,6 +854,51 @@ const DinoFall = {
     }
   },
 
+  take(b) {
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    this.burst(cx, cy, b.pick.col);
+    buzz(14);
+    switch (b.pick.id) {
+      case "shield":
+        this.shield = true; this.shieldFlash = 1;
+        Sound.blip(880, 0.14, "triangle", 0.13);
+        Sound.blip(1320, 0.18, "triangle", 0.09);
+        break;
+      case "mini":
+        this.miniT = MINI_SECONDS;
+        Sound.slide(300, 900, 0.22, "triangle");
+        break;
+      case "slow":
+        this.slowT = SLOW_SECONDS;
+        Sound.slide(900, 260, 0.4, "sine");
+        break;
+      case "bomb":
+        this.bomb(cx, cy);
+        break;
+    }
+  },
+
+  // Clears the sky. Pickups already falling survive it.
+  bomb(cx, cy) {
+    let cleared = 0;
+    this.blocks = this.blocks.filter((b) => {
+      if (b.pick) return true;
+      cleared++;
+      this.burst(b.x + b.w / 2, b.y + b.h / 2, "#e8b33c");
+      return false;
+    });
+    this.flash = 1;
+    this.shake = 1.3;
+    for (let i = 0; i < 26; i++) {
+      this.dust.push({ x: cx, y: cy, r: rand(2, 6), life: 1,
+                       vx: rand(-260, 260), col: "#e8b33c" });
+    }
+    Sound.noise(0.4, 0.3);
+    Sound.slide(220, 40, 0.5, "sawtooth");
+    buzz([40, 30, 60]);
+    return cleared;
+  },
+
   burst(x, y, col) {
     for (let i = 0; i < 12; i++) {
       this.dust.push({ x, y, r: rand(2, 4.5), life: 1, vx: rand(-90, 90), col });
@@ -819,6 +907,8 @@ const DinoFall = {
 
   die() {
     this.state = "over";
+    this.shake = 1.6;
+    this.burst(this.x + this.unit * 0.46, this.ground + this.unit * 0.5, "#15151b");
     const secs = Number(this.elapsed.toFixed(1));
     const fresh = Best.set(this.id, secs);
     Sound.slide(300, 60, 0.45, "sawtooth");
@@ -838,7 +928,9 @@ const DinoFall = {
     const u = this.unit;
     g.save();
     if (this.shake > 0) {
-      g.translate(rand(-1, 1) * this.shake * 5, rand(-1, 1) * this.shake * 5);
+      const k = this.shake * this.shake * 16;
+      g.translate(rand(-1, 1) * k, rand(-1, 1) * k);
+      g.rotate(rand(-1, 1) * this.shake * 0.012);
     }
 
     // Dusk sky.
@@ -876,17 +968,10 @@ const DinoFall = {
 
     // Falling blocks.
     for (const b of this.blocks) {
-      if (b.gem) {
+      if (b.pick) {
         g.save();
         g.translate(b.x + b.w / 2, b.y + b.h / 2); g.rotate(b.rot);
-        g.fillStyle = "#d76b5b";
-        g.beginPath();
-        g.moveTo(0, -b.h / 2); g.lineTo(b.w / 2, 0); g.lineTo(0, b.h / 2); g.lineTo(-b.w / 2, 0);
-        g.closePath(); g.fill();
-        g.fillStyle = "rgba(255,255,255,.5)";
-        g.beginPath();
-        g.moveTo(0, -b.h / 2); g.lineTo(b.w / 4, -b.h / 6); g.lineTo(0, 0); g.lineTo(-b.w / 4, -b.h / 6);
-        g.closePath(); g.fill();
+        this.drawPickup(g, b.pick, b.w);
         g.restore();
       } else {
         g.fillStyle = "rgba(0,0,0,.18)";
@@ -903,8 +988,84 @@ const DinoFall = {
       }
     }
 
-    this.drawDino(g, this.x, this.ground, u);
+    this.drawDino(g, this.x, this.ground + u, u * this.mini);
+
+    // Slow-motion wash.
+    if (this.slowT > 0) {
+      g.globalAlpha = Math.min(1, this.slowT) * 0.13;
+      g.fillStyle = "#5aa9d6"; g.fillRect(0, 0, w, h);
+      g.globalAlpha = 1;
+    }
     g.restore();
+
+    // The bomb goes off outside the shake, so the whole frame whites out.
+    if (this.flash > 0) {
+      g.globalAlpha = this.flash * 0.75;
+      g.fillStyle = "#fff5e0"; g.fillRect(0, 0, w, h);
+      g.globalAlpha = 1;
+    }
+    this.drawTimers(g, w);
+  },
+
+  // Little countdown pills for whatever is still running.
+  drawTimers(g, w) {
+    const on = [];
+    if (this.slowT > 0) on.push({ t: this.slowT / SLOW_SECONDS, col: "#5aa9d6" });
+    if (this.miniT > 0) on.push({ t: this.miniT / MINI_SECONDS, col: "#6fbf73" });
+    if (this.shield)    on.push({ t: 1, col: "#d76b5b" });
+    if (!on.length) return;
+    const bw = 52, gap = 8;
+    let x = (w - (on.length * bw + (on.length - 1) * gap)) / 2;
+    for (const e of on) {
+      g.fillStyle = "rgba(0,0,0,.28)";
+      g.fillRect(x, 74, bw, 5);
+      g.fillStyle = e.col;
+      g.fillRect(x, 74, bw * clamp(e.t, 0, 1), 5);
+      x += bw + gap;
+    }
+  },
+
+  drawPickup(g, kind, size) {
+    const r = size / 2;
+    g.fillStyle = kind.col;
+    if (kind.id === "shield") {
+      g.beginPath();
+      g.moveTo(0, -r); g.lineTo(r, 0); g.lineTo(0, r); g.lineTo(-r, 0);
+      g.closePath(); g.fill();
+      g.fillStyle = "rgba(255,255,255,.5)";
+      g.beginPath();
+      g.moveTo(0, -r); g.lineTo(r / 2, -r / 3); g.lineTo(0, 0); g.lineTo(-r / 2, -r / 3);
+      g.closePath(); g.fill();
+
+    } else if (kind.id === "slow") {                      // hourglass
+      g.beginPath();
+      g.moveTo(-r * 0.7, -r); g.lineTo(r * 0.7, -r); g.lineTo(-r * 0.7, r);
+      g.lineTo(r * 0.7, r); g.closePath(); g.fill();
+      g.fillRect(-r * 0.85, -r - r * 0.22, r * 1.7, r * 0.22);
+      g.fillRect(-r * 0.85, r, r * 1.7, r * 0.22);
+      g.fillStyle = "rgba(255,255,255,.7)";
+      g.beginPath(); g.arc(0, r * 0.55, r * 0.14, 0, TAU); g.fill();
+
+    } else if (kind.id === "bomb") {                      // bomb and fuse
+      g.beginPath(); g.arc(0, r * 0.18, r * 0.78, 0, TAU); g.fill();
+      g.strokeStyle = kind.col; g.lineWidth = Math.max(2, r * 0.24);
+      g.lineCap = "round";
+      g.beginPath();
+      g.moveTo(r * 0.3, -r * 0.5);
+      g.quadraticCurveTo(r * 0.9, -r * 0.9, r * 0.6, -r * 1.25);
+      g.stroke();
+      g.fillStyle = "#fff5e0";
+      g.beginPath(); g.arc(r * 0.6, -r * 1.3, r * 0.22, 0, TAU); g.fill();
+
+    } else {                                              // a very small dinosaur
+      const sc = size / 26;
+      g.save();
+      g.translate(-12 * sc, -13 * sc);
+      for (const q of DINO_ART)   g.fillRect(q[0] * sc, q[1] * sc, q[2] * sc, q[3] * sc);
+      for (const q of DINO_LEGS)  g.fillRect(q[0] * sc, q[1] * sc, q[2] * sc, q[3] * sc);
+      for (const q of DINO_LEGS_B) g.fillRect(q[0] * sc, q[1] * sc, q[2] * sc, q[3] * sc);
+      g.restore();
+    }
   },
 
   dunes(g, w, h, base, col, off) {
@@ -919,12 +1080,13 @@ const DinoFall = {
     g.lineTo(w, h); g.closePath(); g.fill();
   },
 
-  drawDino(g, x, y, u) {
+  // `base` is the ground line. The dino stands on it whatever size it is.
+  drawDino(g, x, base, u) {
     const s = u / 26;                     // art is 24 x 26
     const step = this.state === "run" ? Math.sin(this.elapsed * 15) : 0;
 
     g.save();
-    g.translate(x, y);
+    g.translate(x, base - u);
 
     // Shadow.
     g.fillStyle = "rgba(0,0,0,.22)";
@@ -949,19 +1111,25 @@ const DinoFall = {
 
 // ── Fish Fall ────────────────────────────────────────────────────────────────
 // Tap to drop the line. The first thing you touch on the way down ends the
-// descent, so a deep cast means threading past everything. On the way up you
+// descent, so a deep cast means threading past everything. Nothing stops the
+// line but the sea itself, which thickens as it darkens. On the way up you
 // hook whatever you can reach. At the surface the catch goes airborne and you
 // shoot it out of the sky.
+// Everything in the water is drawn in ink. You tell them apart by their
+// outline, the way you tell the blocks apart in Dino Fall.
+const INK = "#0d1219", INK_2 = "#1b2532", RIM = "rgba(219,233,246,.62)";
+const GLOW = "#ffd76b";
+
 const FISH = [
-  { id: "sardine", name: "Sardine",     kind: "fish",  len: 24, pts: 15,  col: "#a9dcea", fin: "#7ec4d8", min: 0,    max: 800,  w: 30, spd: 46 },
-  { id: "boot",    name: "Old boot",    kind: "boot",  len: 30, pts: 5,   col: "#6f5c4a", fin: "#54443a", min: 0,    max: 1100, w: 7,  spd: 6 },
-  { id: "perch",   name: "Perch",       kind: "fish",  len: 33, pts: 30,  col: "#8fc978", fin: "#6ba85a", min: 220,  max: 1500, w: 24, spd: 40 },
-  { id: "snapper", name: "Snapper",     kind: "fish",  len: 42, pts: 55,  col: "#f0776f", fin: "#cf5a55", min: 700,  max: 2400, w: 18, spd: 38 },
-  { id: "jelly",   name: "Jellyfish",   kind: "jelly", len: 30, pts: 70,  col: "#c9a6ff", fin: "#a37ce0", min: 900,  max: 3400, w: 11, spd: 12 },
-  { id: "tuna",    name: "Tuna",        kind: "fish",  len: 58, pts: 90,  col: "#6ea3e0", fin: "#4d7fbd", min: 1300, max: 3600, w: 14, spd: 66 },
-  { id: "squid",   name: "Squid",       kind: "squid", len: 46, pts: 130, col: "#f4a35c", fin: "#d4813c", min: 1900, max: 4400, w: 9,  spd: 30 },
-  { id: "angler",  name: "Anglerfish",  kind: "fish",  len: 50, pts: 220, col: "#4a5578", fin: "#333c58", min: 2800, max: 6200, w: 7,  spd: 22, lure: true },
-  { id: "gulper",  name: "Gulper eel",  kind: "gulper",len: 66, pts: 320, col: "#7d3f6d", fin: "#5c2c50", min: 3800, max: 6200, w: 5,  spd: 20 },
+  { id: "sardine", name: "Sardine",    kind: "fish",   len: 24, pts: 15,  ratio: 0.20, dorsal: "soft",   min: 0,    max: 900,  w: 30, spd: 46 },
+  { id: "boot",    name: "Old boot",   kind: "boot",   len: 30, pts: 5,                                  min: 0,    max: 1200, w: 7,  spd: 6 },
+  { id: "perch",   name: "Perch",      kind: "fish",   len: 33, pts: 30,  ratio: 0.29, dorsal: "spiky",  min: 220,  max: 1800, w: 24, spd: 40 },
+  { id: "snapper", name: "Snapper",    kind: "fish",   len: 42, pts: 55,  ratio: 0.36, dorsal: "soft",   min: 700,  max: 3000, w: 18, spd: 38 },
+  { id: "jelly",   name: "Jellyfish",  kind: "jelly",  len: 30, pts: 70,                                 min: 900,  max: 4200, w: 11, spd: 12 },
+  { id: "tuna",    name: "Tuna",       kind: "fish",   len: 58, pts: 90,  ratio: 0.24, dorsal: "sickle", min: 1300, max: 5000, w: 14, spd: 66 },
+  { id: "squid",   name: "Squid",      kind: "squid",  len: 46, pts: 130,                                min: 1900, max: 6500, w: 9,  spd: 30 },
+  { id: "angler",  name: "Anglerfish", kind: "fish",   len: 50, pts: 220, ratio: 0.37, dorsal: "soft",   min: 2800, max: 9000, w: 7,  spd: 22, lure: true },
+  { id: "gulper",  name: "Gulper eel", kind: "gulper", len: 66, pts: 320,                                min: 3800, max: 9000, w: 5,  spd: 20 },
 ];
 const BY_ID = {};
 FISH.forEach((f) => { BY_ID[f.id] = f; });
@@ -969,9 +1137,11 @@ FISH.forEach((f) => { BY_ID[f.id] = f; });
 const WATER = [
   [0,    [47, 163, 216]], [600,  [28, 118, 171]], [1500, [13, 74, 117]],
   [2600, [8, 42, 72]],    [4000, [4, 22, 42]],    [6400, [2, 10, 20]],
+  [9000, [1, 5, 11]],
 ];
 
 const CASTS_PER_TRIP = 5;
+const SEABED = 9000;                    // 900 m. Nobody is getting there.
 
 const FishFall = {
   id: "fish",
@@ -991,6 +1161,7 @@ const FishFall = {
     this.banner = null;
     this.hook = { x: w / 2, y: 0 };
     this.camY = -h * 0.32;
+    this.shake = 0;
     this.t = 0;
     this.aim = null;
     Hud.set("0", "trip score");
@@ -1005,7 +1176,7 @@ const FishFall = {
       '<p class="why">Five casts. Take everything the sea will give you.</p>' +
       '<ul class="rules">' +
         '<li><span class="n">1</span><div><b>Tap</b> to drop the line. ' + CONTROL_LINE[Settings.controls] + '</div></li>' +
-        '<li><span class="n">2</span><div>On the way <b>down</b>, the first thing you touch stops you. Dodge the shallow fish to reach the good ones.</div></li>' +
+        '<li><span class="n">2</span><div>On the way <b>down</b>, the first thing you touch stops you. There is no end to the line — the water just gets thicker, so how deep you get is on you.</div></li>' +
         '<li><span class="n">3</span><div>On the way <b>up</b>, hook everything you can.</div></li>' +
         '<li><span class="n">4</span><div>At the surface the catch flies up. <b>Tap each fish</b> to shoot it before it drops.</div></li>' +
       '</ul>' +
@@ -1041,7 +1212,6 @@ const FishFall = {
     this.cast++;
     if (this.cast > CASTS_PER_TRIP) return this.finish();
 
-    this.lineLen = Math.min(1500 + (this.cast - 1) * 1150, 6200);
     this.hook.x = this.w / 2;
     this.hook.y = 0;
     this.caught = [];
@@ -1051,11 +1221,13 @@ const FishFall = {
     Input.onTap = () => this.drop();
   },
 
-  // Fill the column with fish, thinning out as it gets deeper.
+  // Fill the column top to bottom. It gets thicker and the animals get bigger
+  // the further down you go, so the sea closes in on you instead of the line
+  // running out.
   stock() {
     this.fish = [];
-    for (let d = 120; d < this.lineLen + 60; d += 100) {
-      if (Math.random() > 0.75) continue;
+    for (let d = 120; d < SEABED; d += clamp(150 - d * 0.02, 30, 150)) {
+      if (Math.random() > 0.78) continue;
       const pool = FISH.filter((f) => d >= f.min && d <= f.max);
       if (!pool.length) continue;
       let total = 0;
@@ -1067,12 +1239,12 @@ const FishFall = {
         dir: Math.random() < 0.5 ? -1 : 1,
         speed: sp.spd * rand(0.75, 1.3),
         bob: rand(0, TAU),
-        scale: rand(0.85, 1.2),
+        scale: rand(0.85, 1.2) * (1 + (d / SEABED) * 0.5),
       });
     }
     this.snow = [];
     for (let i = 0; i < 150; i++) {
-      this.snow.push({ x: rand(0, this.w), y: rand(0, this.lineLen + 400), r: rand(0.6, 2.1), ph: rand(0, TAU) });
+      this.snow.push({ x: rand(0, this.w), y: rand(0, SEABED), r: rand(0.6, 2.1), ph: rand(0, TAU) });
     }
   },
 
@@ -1088,6 +1260,7 @@ const FishFall = {
   // ── Update ──
   update(dt) {
     this.t += dt;
+    this.shake = Math.max(0, this.shake - dt * 2.6);
     const { w, h } = this;
     if (this.state === "ready" || this.state === "held" || this.state === "done") return;
 
@@ -1154,7 +1327,11 @@ const FishFall = {
 
     const grab = this.grab();
     if (grab >= 0) { this.hookFish(grab); this.reel(); return; }
-    if (this.hook.y >= this.lineLen) { this.hook.y = this.lineLen; this.reel(); }
+    if (this.hook.y >= SEABED - 40) {                  // you hit the bottom
+      this.hook.y = SEABED - 40;
+      this.shake = 1;
+      this.reel();
+    }
   },
 
   reel() {
@@ -1188,8 +1365,10 @@ const FishFall = {
   hookFish(i) {
     const f = this.fish.splice(i, 1)[0];
     this.caught.push(f);
+    // The first one stops you dead, so it gets the jolt.
+    this.shake = this.state === "down" ? 0.75 : 0.25;
     Sound.blip(660 + Math.min(this.caught.length, 10) * 40, 0.09, "square", 0.07);
-    buzz(10);
+    buzz(this.state === "down" ? 24 : 10);
   },
 
   launch() {
@@ -1199,19 +1378,28 @@ const FishFall = {
     if (!n) { this.tally(); return; }
 
     const surf = -this.camY;                       // the waterline, in screen pixels
-    const cols = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(n))));
-    const rows = Math.ceil(n / cols);
-    const top = this.h * 0.11, bot = this.h * 0.48;
-    this.flyers = this.caught.map((f, i) => {
-      const c = i % cols, r = (i / cols) | 0;
-      const tx = this.w * (0.5 + ((c + 0.5) / cols - 0.5) * 0.82) + rand(-10, 10);
-      const ty = top + (rows === 1 ? (bot - top) * 0.4 : (r / (rows - 1)) * (bot - top)) + rand(-12, 12);
-      return {
-        f, sx: this.hook.x, sy: surf, tx, ty,
-        x: this.hook.x, y: surf, t: 0, delay: i * 0.045,
-        spin: rand(-3, 3), rot: 0, bob: rand(0, TAU), dead: false,
-      };
-    });
+    const padX = 40, top = this.h * 0.10, bot = this.h * 0.52;
+
+    // Scattered, not stacked. Best-of-several sampling keeps them apart
+    // without ever putting them in a row.
+    const spots = [];
+    for (let i = 0; i < n; i++) {
+      let best = null, bestGap = -1;
+      for (let k = 0; k < 16; k++) {
+        const c = { x: rand(padX, this.w - padX), y: rand(top, bot) };
+        let gap = 1e9;
+        for (const q of spots) gap = Math.min(gap, Math.hypot(q.x - c.x, q.y - c.y));
+        if (gap > bestGap) { bestGap = gap; best = c; }
+      }
+      spots.push(best);
+    }
+
+    this.flyers = this.caught.map((f, i) => ({
+      f, sx: this.hook.x, sy: surf, tx: spots[i].x, ty: spots[i].y,
+      x: this.hook.x, y: surf, t: 0, delay: rand(0, 0.28),
+      spin: rand(-3, 3), rot: 0, bob: rand(0, TAU),
+      sway: rand(3, 9), swayT: rand(0.6, 1.4), dead: false,
+    }));
     this.flyT = 0;
   },
 
@@ -1240,9 +1428,10 @@ const FishFall = {
     this.shotT += dt;
     for (const p of this.flyers) {
       if (p.dead) continue;
-      p.bob += dt * 2.4;
-      p.y = p.ty + Math.sin(p.bob) * 4;
-      p.rot = Math.sin(p.bob * 0.7) * 0.12;
+      p.bob += dt * 2.4 * p.swayT;
+      p.x = p.tx + Math.cos(p.bob * 0.6) * p.sway;
+      p.y = p.ty + Math.sin(p.bob) * p.sway * 0.7;
+      p.rot = Math.sin(p.bob * 0.7) * 0.14;
     }
     if (this.aim) this.aim.life -= dt * 5;
     const left = this.flyers.filter((p) => !p.dead).length;
@@ -1275,7 +1464,7 @@ const FishFall = {
     for (let i = 0; i < 14; i++) {
       this.bits.push({
         x: best.x, y: best.y, vx: rand(-160, 160), vy: rand(-190, 60),
-        r: rand(1.6, 4), life: 1, col: best.f.sp.col,
+        r: rand(1.6, 4), life: 1, col: pick(["#dbe9f6", "#ffd76b", "#9fb4c8"]),
       });
     }
     Sound.blip(1200, 0.05, "square", 0.09);
@@ -1323,14 +1512,20 @@ const FishFall = {
     const surf = -cam;                    // screen y of the waterline
     const t = this.t;
 
+    g.save();
+    if (this.shake > 0) {
+      const k = this.shake * this.shake * 13;
+      g.translate(rand(-1, 1) * k, rand(-1, 1) * k);
+    }
+
     // Sky.
     if (surf > 0) {
       const sky = g.createLinearGradient(0, 0, 0, Math.max(1, surf));
       sky.addColorStop(0, "#8fd0e8");
       sky.addColorStop(1, "#e6f2f2");
       g.fillStyle = sky; g.fillRect(0, 0, w, surf + 1);
-      g.fillStyle = "rgba(255,255,255,.75)";
-      g.beginPath(); g.arc(w * 0.17, surf * 0.26, Math.max(13, Math.min(surf * 0.14, 44)), 0, TAU); g.fill();
+      g.fillStyle = "rgba(255,255,255,.42)";
+      g.beginPath(); g.arc(w * 0.30, surf * 0.42, Math.max(13, Math.min(surf * 0.14, 44)), 0, TAU); g.fill();
     }
 
     // Water, coloured by how deep the camera is.
@@ -1367,7 +1562,7 @@ const FishFall = {
     if (this.state === "down" || this.state === "up") {
       g.font = "600 10px system-ui, sans-serif";
       g.textAlign = "left"; g.textBaseline = "middle";
-      for (let d = 500; d <= this.lineLen + 500; d += 500) {
+      for (let d = 500; d <= SEABED; d += 500) {
         const y = d - cam;
         if (y < 20 || y > h - 20) continue;
         g.fillStyle = "rgba(255,255,255,.16)";
@@ -1375,14 +1570,19 @@ const FishFall = {
         g.fillStyle = "rgba(255,255,255,.42)";
         g.fillText((d / 10) + " m", 8, y - 8);
       }
-      // The bottom of the line.
-      const ly = this.lineLen - cam;
-      if (ly > -20 && ly < h + 20) {
-        g.strokeStyle = "rgba(255,255,255,.22)";
-        g.setLineDash([5, 6]); g.lineWidth = 1;
-        g.beginPath(); g.moveTo(0, ly); g.lineTo(w, ly); g.stroke();
-        g.setLineDash([]);
+    }
+
+    // The sea floor, if anyone ever gets that far.
+    const fy = SEABED - cam;
+    if (fy < h + 60) {
+      g.fillStyle = "#05080c";
+      g.beginPath();
+      g.moveTo(0, h + 10);
+      for (let i = 0; i <= 6; i++) {
+        const bx = (i / 6) * w;
+        g.lineTo(bx, fy + Math.sin(i * 1.7) * 14);
       }
+      g.lineTo(w, h + 10); g.closePath(); g.fill();
     }
 
     // Fish still in the water.
@@ -1513,6 +1713,7 @@ const FishFall = {
       g.fillText(this.banner.b, w / 2, h * 0.44 + 26);
       g.globalAlpha = 1;
     }
+    g.restore();
   },
 
   drawBoat(g, x, y, w, h) {
@@ -1520,12 +1721,12 @@ const FishFall = {
     g.save();
     g.translate(x, y);
 
-    // Hull.
-    g.fillStyle = "#c8543f";
+    // Hull. Ink, like everything else that is not the sea or the sky.
+    g.fillStyle = INK;
     g.beginPath();
     g.moveTo(-46, -10); g.lineTo(46, -10); g.lineTo(32, 12); g.lineTo(-32, 12);
     g.closePath(); g.fill();
-    g.fillStyle = "#e8ded0";
+    g.fillStyle = INK_2;
     g.fillRect(-46, -14, 92, 5);
 
     // He turns to face whatever he is aiming at.
@@ -1543,22 +1744,20 @@ const FishFall = {
     g.scale(dir, 1);
 
     // Legs, coat, head, hat.
-    g.fillStyle = "#2f3a4a";
+    g.fillStyle = INK;
     g.fillRect(-10, -30, 6, 16); g.fillRect(-2, -30, 6, 16);
-    g.fillStyle = "#f0b03c";
     g.fillRect(-12, -48, 20, 20);
-    g.fillStyle = "#e8b48c";
     g.beginPath(); g.arc(-2, -55, 8, 0, TAU); g.fill();
-    g.fillStyle = "#2f3a4a";
-    g.beginPath(); g.arc(-2, -58, 8, Math.PI, TAU); g.fill();
-    g.fillRect(-13, -59, 22, 3);
+    g.fillRect(-13, -60, 22, 4);
+    g.beginPath(); g.arc(-2, -59, 8, Math.PI, TAU); g.fill();
+    g.fillStyle = INK_2;                                 // collar, so the head reads
+    g.fillRect(-12, -49, 20, 3);
 
     // Arm: a rod normally, a rifle once the catch is in the air.
     g.save();
     g.translate(6, -42);
     g.rotate(ang);
-    g.fillStyle = "#e8b48c"; g.fillRect(0, -3, 14, 6);
-    g.fillStyle = shooting ? "#3d4757" : "#8a6a3a";
+    g.fillStyle = INK_2; g.fillRect(0, -3, 14, 6);
     g.fillRect(12, -2.5, shooting ? 22 : 34, shooting ? 5 : 3);
     g.restore();
     g.restore();
@@ -1567,7 +1766,7 @@ const FishFall = {
 };
 
 function waterCol(d) {
-  d = clamp(d, 0, 6400);
+  d = clamp(d, 0, 9000);
   for (let i = 1; i < WATER.length; i++) {
     if (d > WATER[i][0]) continue;
     const a = WATER[i - 1], b = WATER[i];
@@ -1575,75 +1774,113 @@ function waterCol(d) {
     const c = [0, 1, 2].map((j) => Math.round(a[1][j] + (b[1][j] - a[1][j]) * k));
     return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
   }
-  return "rgb(2,10,20)";
+  return "rgb(1,5,11)";
 }
 
 // One creature, drawn from shapes. Origin is the middle of the animal.
+// All ink and one rim light, so it reads at any depth. Size and outline are
+// what tell a sardine from a gulper eel, not colour.
 function drawCreature(g, sp, scale, dir, t) {
   const L = sp.len * scale;
   g.save();
   g.scale(dir < 0 ? -1 : 1, 1);
   g.lineJoin = "round";
+  g.lineWidth = Math.max(1, L * 0.035);
+  g.strokeStyle = RIM;
 
   if (sp.kind === "fish") {
-    const wag = Math.sin(t * 6) * L * 0.06;
-    g.fillStyle = sp.fin;
-    g.beginPath();
-    g.moveTo(-L * 0.34, 0);
-    g.lineTo(-L * 0.56, -L * 0.24 + wag);
-    g.lineTo(-L * 0.56, L * 0.24 + wag);
+    const r = sp.ratio, wag = Math.sin(t * 6) * L * 0.06;
+
+    g.fillStyle = INK_2;
+    if (sp.dorsal === "sickle") {                        // tuna: crescent tail
+      g.beginPath();
+      g.moveTo(-L * 0.30, 0);
+      g.quadraticCurveTo(-L * 0.46, -L * 0.06 + wag, -L * 0.66, -L * 0.38 + wag);
+      g.quadraticCurveTo(-L * 0.46, -L * 0.16 + wag, -L * 0.36, 0);
+      g.quadraticCurveTo(-L * 0.46, L * 0.16 + wag, -L * 0.66, L * 0.38 + wag);
+      g.quadraticCurveTo(-L * 0.46, L * 0.06 + wag, -L * 0.30, 0);
+      g.closePath(); g.fill(); g.stroke();
+    } else {
+      g.beginPath();
+      g.moveTo(-L * 0.3, 0);
+      g.lineTo(-L * 0.56, -L * (r + 0.06) + wag);
+      g.lineTo(-L * 0.56, L * (r + 0.06) + wag);
+      g.closePath(); g.fill(); g.stroke();
+    }
+
+    g.beginPath();                                       // dorsal fin
+    if (sp.dorsal === "spiky") {
+      g.moveTo(-L * 0.14, -L * r);
+      for (let i = 0; i < 4; i++) {
+        g.lineTo(-L * (0.1 - i * 0.07), -L * (r + 0.19));
+        g.lineTo(-L * (0.06 - i * 0.07), -L * (r + 0.02));
+      }
+    } else if (sp.dorsal === "sickle") {
+      g.moveTo(-L * 0.06, -L * r);
+      g.quadraticCurveTo(L * 0.04, -L * (r + 0.3), L * 0.16, -L * (r + 0.02));
+    } else {
+      g.moveTo(-L * 0.08, -L * r);
+      g.lineTo(L * 0.1, -L * (r + 0.24));
+      g.lineTo(L * 0.2, -L * (r - 0.02));
+    }
+    g.closePath(); g.fill(); g.stroke();
+
+    g.beginPath();                                       // pelvic fin
+    g.moveTo(L * 0.02, L * (r - 0.02));
+    g.lineTo(L * 0.04, L * (r + 0.2));
+    g.lineTo(L * 0.2, L * (r - 0.03));
     g.closePath(); g.fill();
-    g.beginPath();                                     // dorsal
-    g.moveTo(-L * 0.05, -L * 0.2); g.lineTo(L * 0.12, -L * 0.4); g.lineTo(L * 0.2, -L * 0.18);
-    g.closePath(); g.fill();
-    g.fillStyle = sp.col;
-    g.beginPath(); g.ellipse(0, 0, L * 0.46, L * 0.22, 0, 0, TAU); g.fill();
-    g.fillStyle = "rgba(255,255,255,.22)";
-    g.beginPath(); g.ellipse(-L * 0.05, -L * 0.06, L * 0.3, L * 0.08, 0, 0, TAU); g.fill();
+
+    g.fillStyle = INK;                                   // body
+    g.beginPath(); g.ellipse(0, 0, L * 0.46, L * r, 0, 0, TAU); g.fill(); g.stroke();
+
     if (sp.lure) {
-      g.strokeStyle = sp.fin; g.lineWidth = Math.max(1, L * 0.04);
-      g.beginPath(); g.moveTo(L * 0.24, -L * 0.16);
-      g.quadraticCurveTo(L * 0.5, -L * 0.6, L * 0.6, -L * 0.34); g.stroke();
-      g.fillStyle = "#ffe9a3";
-      g.beginPath(); g.arc(L * 0.6, -L * 0.34, L * 0.09, 0, TAU); g.fill();
-      g.fillStyle = "rgba(255,233,163,.28)";
-      g.beginPath(); g.arc(L * 0.6, -L * 0.34, L * 0.22, 0, TAU); g.fill();
-      g.fillStyle = "#fff";                            // teeth
+      g.strokeStyle = RIM; g.lineWidth = Math.max(1, L * 0.045);
+      g.beginPath(); g.moveTo(L * 0.22, -L * 0.2);
+      g.quadraticCurveTo(L * 0.52, -L * 0.66, L * 0.62, -L * 0.36); g.stroke();
+      g.fillStyle = "rgba(255,215,107,.22)";
+      g.beginPath(); g.arc(L * 0.62, -L * 0.36, L * 0.26, 0, TAU); g.fill();
+      g.fillStyle = GLOW;
+      g.beginPath(); g.arc(L * 0.62, -L * 0.36, L * 0.09, 0, TAU); g.fill();
+      g.fillStyle = RIM;                                 // teeth
       for (let i = 0; i < 4; i++) {
         g.beginPath();
-        g.moveTo(L * (0.2 + i * 0.07), L * 0.04);
-        g.lineTo(L * (0.235 + i * 0.07), L * 0.16);
-        g.lineTo(L * (0.27 + i * 0.07), L * 0.04);
+        g.moveTo(L * (0.16 + i * 0.07), L * 0.05);
+        g.lineTo(L * (0.195 + i * 0.07), L * 0.18);
+        g.lineTo(L * (0.23 + i * 0.07), L * 0.05);
         g.closePath(); g.fill();
       }
+      g.strokeStyle = RIM; g.lineWidth = Math.max(1, L * 0.035);
     }
-    g.fillStyle = "#fff";
-    g.beginPath(); g.arc(L * 0.28, -L * 0.05, L * 0.075, 0, TAU); g.fill();
-    g.fillStyle = "#101018";
-    g.beginPath(); g.arc(L * 0.3, -L * 0.05, L * 0.04, 0, TAU); g.fill();
+
+    g.fillStyle = RIM;                                   // eye
+    g.beginPath(); g.arc(L * 0.28, -L * (r * 0.25), L * 0.07, 0, TAU); g.fill();
 
   } else if (sp.kind === "jelly") {
-    g.fillStyle = sp.fin;
-    g.lineWidth = Math.max(1, L * 0.05); g.strokeStyle = sp.fin;
+    g.strokeStyle = RIM; g.lineWidth = Math.max(1, L * 0.05);
     for (let i = 0; i < 5; i++) {
       const ox = (i - 2) * L * 0.13;
       g.beginPath();
       g.moveTo(ox, L * 0.05);
-      g.quadraticCurveTo(ox + Math.sin(t * 3 + i) * L * 0.16, L * 0.4, ox + Math.sin(t * 3 + i) * L * 0.24, L * 0.72);
+      g.quadraticCurveTo(ox + Math.sin(t * 3 + i) * L * 0.16, L * 0.4,
+                         ox + Math.sin(t * 3 + i) * L * 0.24, L * 0.72);
       g.stroke();
     }
-    g.fillStyle = sp.col;
+    g.lineWidth = Math.max(1, L * 0.035);
+    g.fillStyle = INK;
     g.beginPath(); g.ellipse(0, 0, L * 0.42, L * 0.36, 0, Math.PI, TAU); g.fill();
-    g.fillRect(-L * 0.42, -0.5, L * 0.84, L * 0.06);
-    g.fillStyle = "rgba(255,255,255,.3)";
-    g.beginPath(); g.ellipse(-L * 0.12, -L * 0.14, L * 0.14, L * 0.09, 0, 0, TAU); g.fill();
+    g.beginPath();
+    g.ellipse(0, 0, L * 0.42, L * 0.36, 0, Math.PI, TAU);
+    g.lineTo(-L * 0.42, 0); g.stroke();
+    g.fillStyle = "rgba(219,233,246,.28)";
+    g.beginPath(); g.ellipse(-L * 0.12, -L * 0.15, L * 0.13, L * 0.08, 0, 0, TAU); g.fill();
 
   } else if (sp.kind === "squid") {
-    g.fillStyle = sp.fin;
+    g.fillStyle = INK_2;
     g.beginPath();
-    g.moveTo(-L * 0.3, -L * 0.1); g.lineTo(-L * 0.56, -L * 0.26);
-    g.lineTo(-L * 0.5, L * 0.1); g.closePath(); g.fill();
-    g.lineWidth = Math.max(1, L * 0.055); g.strokeStyle = sp.fin;
+    g.moveTo(-L * 0.28, -L * 0.12); g.lineTo(-L * 0.58, -L * 0.28);
+    g.lineTo(-L * 0.5, L * 0.12); g.closePath(); g.fill(); g.stroke();
+    g.strokeStyle = RIM; g.lineWidth = Math.max(1, L * 0.05);
     for (let i = 0; i < 5; i++) {
       g.beginPath();
       g.moveTo(L * 0.28, (i - 2) * L * 0.05);
@@ -1651,38 +1888,39 @@ function drawCreature(g, sp, scale, dir, t) {
                          L * 0.68, (i - 2) * L * 0.14 + Math.sin(t * 4 + i) * L * 0.16);
       g.stroke();
     }
-    g.fillStyle = sp.col;
-    g.beginPath(); g.ellipse(0, 0, L * 0.4, L * 0.2, 0, 0, TAU); g.fill();
-    g.fillStyle = "#fff";
-    g.beginPath(); g.arc(L * 0.2, -L * 0.03, L * 0.1, 0, TAU); g.fill();
-    g.fillStyle = "#101018";
-    g.beginPath(); g.arc(L * 0.22, -L * 0.03, L * 0.05, 0, TAU); g.fill();
+    g.lineWidth = Math.max(1, L * 0.035);
+    g.fillStyle = INK;
+    g.beginPath(); g.ellipse(0, 0, L * 0.4, L * 0.2, 0, 0, TAU); g.fill(); g.stroke();
+    g.fillStyle = RIM;
+    g.beginPath(); g.arc(L * 0.2, -L * 0.03, L * 0.09, 0, TAU); g.fill();
 
   } else if (sp.kind === "gulper") {
-    g.fillStyle = sp.col;
+    g.fillStyle = INK;
     g.beginPath();
-    g.moveTo(L * 0.44, -L * 0.24);
-    g.lineTo(L * 0.44, L * 0.22);
+    g.moveTo(L * 0.44, -L * 0.26);
+    g.lineTo(L * 0.44, L * 0.24);
     g.quadraticCurveTo(-L * 0.1, L * 0.1, -L * 0.5, Math.sin(t * 4) * L * 0.1);
-    g.quadraticCurveTo(-L * 0.1, -L * 0.06, L * 0.44, -L * 0.24);
-    g.closePath(); g.fill();
-    g.fillStyle = "#2a0f22";
+    g.quadraticCurveTo(-L * 0.1, -L * 0.06, L * 0.44, -L * 0.26);
+    g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "#05080c";                             // the mouth
     g.beginPath();
-    g.moveTo(L * 0.44, -L * 0.2); g.lineTo(L * 0.44, L * 0.18); g.lineTo(L * 0.1, 0);
+    g.moveTo(L * 0.43, -L * 0.21); g.lineTo(L * 0.43, L * 0.19); g.lineTo(L * 0.08, 0);
     g.closePath(); g.fill();
-    g.fillStyle = "#ffe9a3";
-    g.beginPath(); g.arc(-L * 0.48, Math.sin(t * 4) * L * 0.1, L * 0.05, 0, TAU); g.fill();
-    g.fillStyle = "#fff";
-    g.beginPath(); g.arc(L * 0.3, -L * 0.13, L * 0.05, 0, TAU); g.fill();
+    g.fillStyle = GLOW;                                  // tail light
+    g.beginPath(); g.arc(-L * 0.49, Math.sin(t * 4) * L * 0.1, L * 0.05, 0, TAU); g.fill();
+    g.fillStyle = RIM;
+    g.beginPath(); g.arc(L * 0.3, -L * 0.15, L * 0.05, 0, TAU); g.fill();
 
-  } else {                                              // boot
-    g.fillStyle = sp.col;
-    g.fillRect(-L * 0.16, -L * 0.42, L * 0.32, L * 0.56);
-    g.fillRect(-L * 0.16, L * 0.06, L * 0.62, L * 0.22);
-    g.fillStyle = sp.fin;
-    g.fillRect(-L * 0.2, L * 0.24, L * 0.7, L * 0.12);
-    g.fillStyle = "rgba(255,255,255,.14)";
-    g.fillRect(-L * 0.1, -L * 0.36, L * 0.08, L * 0.4);
+  } else {                                               // boot
+    g.fillStyle = INK;
+    g.beginPath();
+    g.moveTo(-L * 0.16, -L * 0.42); g.lineTo(L * 0.16, -L * 0.42);
+    g.lineTo(L * 0.16, L * 0.06);   g.lineTo(L * 0.5, L * 0.08);
+    g.lineTo(L * 0.5, L * 0.28);    g.lineTo(-L * 0.2, L * 0.28);
+    g.lineTo(-L * 0.16, -L * 0.42);
+    g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = INK_2;
+    g.fillRect(-L * 0.2, L * 0.22, L * 0.7, L * 0.06);
   }
   g.restore();
 }
@@ -1706,11 +1944,11 @@ const ART = {
   fish: '<svg viewBox="0 0 40 40" width="66" height="66">' +
     '<rect width="40" height="40" rx="14" fill="#0d4a75"/>' +
     '<rect y="0" width="40" height="11" fill="#2fa3d8"/>' +
-    '<path d="M20 3h5v5h-5z" fill="#c8543f"/>' +
-    '<path d="M22 8v13" stroke="#fff" stroke-width="1.2" fill="none"/>' +
-    '<ellipse cx="18" cy="28" rx="7" ry="3.4" fill="#f0776f"/>' +
-    '<path d="M11 28l-4-3v6z" fill="#cf5a55"/>' +
-    '<circle cx="22" cy="27" r="1.2" fill="#fff"/></svg>',
+    '<path d="M17 4h8l-2 4h-6z" fill="#0d1219"/>' +
+    '<path d="M21 8v13" stroke="#dbe9f6" stroke-width="1.1" fill="none"/>' +
+    '<ellipse cx="17" cy="28" rx="7" ry="3.4" fill="#0d1219"/>' +
+    '<path d="M10 28l-4-3.4v6.8z" fill="#1b2532"/>' +
+    '<circle cx="21" cy="27" r="1.2" fill="#dbe9f6"/></svg>',
   golf: '<svg viewBox="0 0 40 40" width="66" height="66">' +
     '<rect width="40" height="40" rx="14" fill="#2c3a30"/>' +
     '<circle cx="20" cy="14" r="5" fill="#e8ede6"/>' +
@@ -1721,10 +1959,10 @@ const ART = {
 
 const GAMES = [
   { g: DinoFall, art: "dino",
-    blurb: "Blocks fall out of a red sky. You are a small dinosaur with nowhere to hide.",
+    blurb: "Blocks fall out of a red sky. Grab the shield, the bomb, the hourglass and the little green dino before they land.",
     fmt: (v) => v ? "Best " + Number(v).toFixed(1) + "s" : "Not played yet" },
   { g: FishFall, art: "fish",
-    blurb: "Drop a line, thread past the shallows, and shoot the catch out of the sky.",
+    blurb: "Drop a line as deep as the water lets you, then shoot the catch out of the sky.",
     fmt: (v) => v ? "Best " + v + " points" : "Not played yet" },
   { g: GolfFall, art: "golf",
     blurb: "One ball, a long way down. Being built next.",

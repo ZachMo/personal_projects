@@ -19,11 +19,18 @@ so there is a button in settings that asks for it.
 ### Dino Fall
 
 Blocks drop out of a dusk sky and you dodge along the ground. They fall faster and closer
-together the longer you last. A clay diamond is a shield and soaks up one hit. The score
-is the number of seconds you stay on your feet.
+together the longer you last. The score is the number of seconds you stay on your feet.
 
-It started as an easter egg in a page margin, moved with the arrow keys. This version is
-built for a screen you hold.
+Four things fall that are not blocks, and they are the only colour in the game apart from
+the sky. A **clay diamond** shields one hit. A **green dino** shrinks you to just over half
+size for eight seconds, and a small dino is a fast one. A **blue hourglass** drops the sky
+to 42% speed for five and a half seconds — you keep your own speed, which is the whole
+point of it. An **amber bomb** clears every block on screen and whites out the frame.
+
+Countdown pills under the score show what is still running.
+
+It started as an easter egg in a page margin, moved with the arrow keys, and had only the
+shield. This version is built for a screen you hold.
 
 ### Fish Fall
 
@@ -33,16 +40,23 @@ Going down, the first thing you touch stops the descent and starts the reel, so 
 cast means threading past every fish in the shallows. Coming back up, you hook everything
 you can reach.
 
-The line reaches 150 m on the first cast and 620 m on the fifth, and it speeds up as it
-drops, so a long cast is not a long wait. The animals get rarer and worth more the deeper
-you go: sardines and perch near the top, tuna and jellyfish in the middle, squid,
-anglerfish and gulper eels in the dark.
+There is no end to the line. What stops you is the water: five animals per 100 m at the
+top, twenty-eight per 100 m near the floor, and they grow as they thin the space between
+them. The line also speeds up as it drops, so a deep cast is not a long wait. The sea
+floor is at 900 m and is there for completeness — a good run reaches about 180 m, and 390 m
+is a very good one. The animals get rarer and worth more the deeper you go: sardines and
+perch near the top, tuna and jellyfish in the middle, squid, anglerfish and gulper eels in
+the dark.
 
-At the surface the whole catch flies into the air and hangs there. Tap each fish and the
-fisherman shoots it for its points. Anything you do not hit before the clock runs out
+At the surface the whole catch scatters across the sky and hangs there. Tap each fish and
+the fisherman shoots it for its points. Anything you do not hit before the clock runs out
 falls back in the sea and is worth nothing.
 
-Everything is drawn from shapes on a canvas — no images, no sprite sheets.
+Everything is drawn from shapes on a canvas — no images, no sprite sheets. The water and
+the sky carry all the colour. Every animal, the boat and the fisherman are drawn in ink
+with one rim light, so you tell a sardine from a gulper eel by its outline, the way you
+tell the blocks apart in Dino Fall. The only other colour is the gold on an anglerfish
+lure, a shot and the points it pays.
 
 ### Golf Fall
 

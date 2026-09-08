@@ -5,7 +5,7 @@ network calls. Open any of them in a browser.
 
 ## fall.html
 
-Three small games for a phone, played with one thumb. The page is a full-screen app
+Four small games for a phone, played with one thumb. The page is a full-screen app
 shell: a home list, a settings screen and one canvas the games draw into. Nothing leaves
 the browser. Best scores and settings live in localStorage.
 
@@ -89,41 +89,98 @@ enough to plan a route across the whole island.
 
 **The clubs**, measured on flat ground from a good lie:
 
-| | carry | roll | total | apex |
-|---|---|---|---|---|
-| **Driver** | 19.4 | 15.2 | 34.6 | 3.9 |
-| **Wedge** | 9.0 | 1.5 | 10.5 | 3.6 |
-| **Putter** | — | 13.7 | 13.7 | 0 |
+| | carry | roll | total | apex | hang |
+|---|---|---|---|---|---|
+| **Driver** | 25.9 | 7.2 | 33.0 | 5.2 | 2.2s |
+| **Wedge** | 11.1 | 1.3 | 12.4 | 4.5 | 2.1s |
+| **Putter** | — | 13.8 | 13.8 | 0 | — |
 
-**The lie decides which one is any use.** Same club, same power, different ground:
+A shot hangs for over two seconds and takes four to finish. That is on purpose.
+Gravity is a quarter of what it was and the clubs are half as quick, which
+leaves every distance exactly where it was and gives you time to watch the ball
+instead of the number. It bounces three or four times and runs out about a third
+of its carry, the way a ball does.
+
+**The lie decides which one is any use.** Same club, same power, different
+ground:
 
 | | driver | wedge | putter |
 |---|---|---|---|
-| fairway | 32.4 | 10.5 | 4.1 |
-| green | 30.6 | 9.6 | **13.7** |
-| rough | 10.6 | 7.3 | 0.6 |
-| sand | 4.2 | **9.3** | 0.1 |
+| fairway | 33.0 | 12.4 | 2.4 |
+| green | 27.7 | 11.5 | **13.8** |
+| rough | 12.1 | 9.2 | 0.5 |
+| sand | 3.0 | **9.8** | 0.1 |
 
-Sand is a wedge shot and nothing else. Rough costs a driver two thirds of its length. The
-putter is a green club: it rolls 13.7 on a green, 4.1 on fairway and essentially nowhere
-out of sand.
+Sand is a wedge shot and nothing else. Rough costs a driver two thirds of its
+length. The putter is a green club: it rolls 13.8 on a green, 2.4 on fairway and
+nowhere at all out of sand.
 
-**The cup takes pace, not aim.** A ball has to be rolling, and slow enough to fall the
-depth of the cup while it crosses it. Dead centre that means arriving under 2.55 units a
-second; clipping the edge means crawling. A shade too quick and it catches the lip, swings
-round it and comes out with the pace taken off. Quicker still and it rolls straight over.
-On a two-unit putt the window that drops is about a sixth of the power range, and a
-four-unit putt is tighter. You cannot hole out from across the course any more: 1300
-driver and wedge attempts at a cup 21 units away went in zero times.
+**The cup is a hole, not a target.** The ball has to fall its own depth in the
+time it takes to cross the opening, and that one rule does the rest. Straight
+through the middle is the longest crossing, so it takes the most pace — up to
+2.39 units a second. Clip the edge and the crossing is short, so only a crawl
+stays down. A shade too quick and the ball rides the lip, comes out the side and
+loses two thirds of its pace. Quicker again and it crosses, dips, and leaves
+14% of its pace in the hole on the way over.
 
-The ground has height, and height is what makes the clubs matter. A driver into the face
-of a rise hits it and drops; a wedge goes over. The ball rolls downhill, trades pace for
-height going up, falls off ledges, and stops dead against a wall it cannot climb. Every
-green carries an apron that steps down to the land around it, because a green on a sheer
-plateau is one a rolling ball can never get onto.
+From two units that is a quarter of the power range, from four units a fifth,
+from nine a little over a tenth. The putter asks for nearly twice the drag of
+the other clubs for the same power, so on the screen the window is about twice
+as wide as those numbers suggest — a putt is decided by a fraction of a pull,
+and it is worth having the room to find it. Holing out from across the course is
+still close to luck: a driver aimed at a cup 21 units away went in 61 times in
+2400.
 
-It runs on a fixed 120 Hz step and the aim preview runs the same physics on the same step,
-so the line you are shown is the line the ball takes — exactly, on any frame rate.
+**The aim line runs the real physics to the point the ball stops.** Dashed while
+it is in the air, solid once it is running, a faint ring where it first touches
+down and a bright one where it comes to rest. That ring goes gold when the shot
+holes. Nothing about the shot is hidden and nothing about it is random, so a
+missed putt is a misread, not bad luck.
+
+**Height is the colour.** Low ground is grass, high ground is bare dirt, and
+there is one band between them rather than a long gradient, so a rise is a
+different colour and not a slightly different one. Every wall is earth with a
+sunlit lip along the top. Height is worth a quarter more on screen than it used
+to be.
+
+One step of terrain is ground and anything more is a face. A ball flies over a
+step and lands on it, and rolls up it by trading pace for height; a ball that
+meets a face hits it, in the air or on the ground. So a lie tucked under a ledge
+is still playable with a lofted club, and no hollow on the island is walled in
+on every side — the ground is smoothed until each one has a way out. Bunkers are
+levelled at the low point of the ground they sit in with their lips cut back to
+one step, and they are kept off the green and off the flat collar round it. Sand
+you cannot be played out of is not a hazard, it is a dead end.
+
+A bot that plans each shot the way the aim line lets you plan it goes round in
+10.9 shots, and finished all 16 rounds it was given.
+
+It runs on a fixed 120 Hz step and the aim preview runs the same physics on the
+same step, so the line you are shown is the line the ball takes — exactly, on
+any frame rate.
+
+### Ski Fall
+
+Straight down a mountain that never ends. Steer left and right. The score is how
+far you get.
+
+The trees come at you in ranks with one gap in each, and the gap narrows the
+longer you last. Between the ranks there are loose trees and rocks to pick your
+way through.
+
+Everything that pays, pays in speed. Thread a tree close enough to hear it and
+you get a push. Take one of the ramps and you fly, over anything in the way, and
+the landing gives you another push. Speed is the score, so speed is what you
+want, and speed is also what brings the next rank of trees on sooner. Nothing on
+the screen says any of this. The number climbing faster after a near miss says
+it.
+
+A skier cuts across the hill about as fast as they are going down it, so the
+sideways move is capped against the speed and not against the screen. Going
+faster does not make you nimbler.
+
+A bot that steers for the widest opening gets about 210 m and has reached 940.
+Mashing the controls gets about 60.
 
 ## mexico-elections.html
 

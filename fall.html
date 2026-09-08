@@ -153,6 +153,9 @@
     color: rgba(255,255,255,.7); text-shadow: 0 1px 5px rgba(0,0,0,.6);
     font-variant-numeric: tabular-nums;
   }
+  /* Golf and Ski are played over sky and snow, where white on white is nothing. */
+  #play.light .hud .big { color: #16232e; text-shadow: 0 1px 7px rgba(255,255,255,.9); }
+  #play.light .hud .sub { color: rgba(22,35,46,.62); text-shadow: 0 1px 6px rgba(255,255,255,.9); }
 
   /* ── On-screen pads ── */
   .pads { position: absolute; inset: auto 0 0 0; height: 40%; display: none; pointer-events: none; }
@@ -579,6 +582,7 @@ const Engine = {
     const pads = $("pads");
     pads.classList.toggle("on", Settings.controls === "buttons" && game.usesPads !== false);
     pads.style.flexDirection = Settings.lefty ? "row-reverse" : "row";
+    $("play").classList.toggle("light", !!game.light);
     const clubs = $("clubs");
     clubs.classList.toggle("on", !!game.clubs);
     clubs.style.flexDirection = Settings.lefty ? "row-reverse" : "row";
@@ -615,6 +619,7 @@ const Engine = {
     Veil.hide();
     $("pads").classList.remove("on");
     $("clubs").classList.remove("on");
+    $("play").classList.remove("light");
   },
 };
 
@@ -1972,20 +1977,24 @@ function drawCreature(g, sp, scale, dir, t) {
 
 const T = { VOID: 0, WATER: 1, SAND: 2, ROUGH: 3, FAIR: 4, GREEN: 5, TEE: 6 };
 
+// The colour of a cell is not fixed: the higher the ground, the more the grass
+// wears through to dirt, so height reads at a glance. `dirt` is where the top
+// face lands at the summit, and every wall is bare earth whatever grows on it.
 const GROUND = {
-  //           top          side       bounce  keep   drag
-  1: { top: "#3d86b8", side: "#6b5a43", e: 0.00, k: 0.00, f: 999 },   // water
-  2: { top: "#e0c98f", side: "#b8a16a", e: 0.06, k: 0.16, f: 20 },    // sand
-  3: { top: "#4e8043", side: "#35592e", e: 0.22, k: 0.50, f: 10 },    // rough
-  4: { top: "#71ad55", side: "#4d8040", e: 0.42, k: 0.78, f: 7 },     // fairway
-  5: { top: "#93d271", side: "#689a50", e: 0.30, k: 0.74, f: 4.0 },   // green
-  6: { top: "#82bf63", side: "#5c8747", e: 0.34, k: 0.72, f: 6 },     // tee
+  //           low grass    dirt at height  wall face  bounce  keep   drag
+  1: { top: "#3d86b8", dirt: "#3d86b8", side: "#4a6f86", e: 0.00, k: 0.00, f: 999 },  // water
+  2: { top: "#e6d19a", dirt: "#d9bb7c", side: "#a98a52", e: 0.05, k: 0.14, f: 9.0 },  // sand
+  3: { top: "#48803a", dirt: "#7a5730", side: "#6b4a2c", e: 0.16, k: 0.34, f: 5.0 },  // rough
+  4: { top: "#71b652", dirt: "#a56f38", side: "#7d5734", e: 0.30, k: 0.55, f: 3.0 },  // fairway
+  5: { top: "#9ada75", dirt: "#8cc268", side: "#7d5734", e: 0.22, k: 0.52, f: 1.0 },  // green
+  6: { top: "#83c762", dirt: "#9d7040", side: "#7d5734", e: 0.26, k: 0.54, f: 2.6 },  // tee
 };
+const HIGH = 3.5;                        // the top of the height range
 
 const CLUBS = [
-  { id: "driver", name: "Driver", power: 26.0, angle: 0.68, bounce: 1.25, roll: 1.00, zoom: 0.62 },
-  { id: "wedge",  name: "Wedge",  power: 18.5, angle: 1.02, bounce: 0.42, roll: 0.38, zoom: 0.92 },
-  { id: "putter", name: "Putter", power: 10.5, angle: 0.00, bounce: 0.00, roll: 1.00, zoom: 1.45 },
+  { id: "driver", name: "Driver", power: 15.0, angle: 0.68, bounce: 1.25, roll: 1.00, zoom: 0.62 },
+  { id: "wedge",  name: "Wedge",  power: 10.3, angle: 1.02, bounce: 0.42, roll: 0.38, zoom: 0.92 },
+  { id: "putter", name: "Putter", power: 5.25, angle: 0.00, bounce: 0.00, roll: 1.00, zoom: 1.45 },
 ];
 
 // terrain -> how much of the club's power actually reaches the ball
@@ -1997,18 +2006,34 @@ const LIE = {
   6: { driver: 1.00, wedge: 1.00, putter: 0.76 },   // tee
 };
 
-const GRAV = 34;
-const DROP = 4.0;                        // fastest a dead-centre ball can drop
-const LIP = 1.5;                         // above capture x this, it rims out
+// Gravity is low and the clubs are slow to match, so a shot hangs for two
+// seconds instead of half of one. The distances are unchanged — only the clock
+// the ball runs on is, and a ball you can watch is a ball you can read.
+const GRAV = 8.5;
 const CUPS = 5;
-const CUP_R = 0.42;
+const CUP_R = 0.42;                      // the hole
+const BALL_R = 0.15;                     // and the ball, which has to fall past
+const CUP_DEPTH = 0.34;                  // its own width to stay down
+const LIP = 1.5;                         // above capture pace this, it rims out
+const VZ = 0.78;                         // how much of a unit of height a unit
+                                         // of screen height is worth
 const TICK = 1 / 120;                    // the ball runs on a fixed step, so the
                                          // preview and the real shot agree exactly
 const STEP_UP = 0.55;                    // one terrain step; taller than this is a wall
 
+// Blend two hex colours. Used once per cell when a course is built, never in a
+// frame.
+function mixHex(a, b, t) {
+  t = clamp(t, 0, 1);
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const ch = (sh) => Math.round(((pa >> sh) & 255) + (((pb >> sh) & 255) - ((pa >> sh) & 255)) * t);
+  return "rgb(" + ch(16) + "," + ch(8) + "," + ch(0) + ")";
+}
+
 const GolfFall = {
   id: "golf",
   title: "Golf Fall",
+  light: true,
   clubs: true,
   usesPads: false,
 
@@ -2183,7 +2208,7 @@ const GolfFall = {
     // Last resort. A ball wedged in a trench can keep enough speed to dodge the
     // slow check, and nobody wants to watch that.
     b.age = (b.age || 0) + dt;
-    if (b.age > 14) { b.vx = b.vy = b.vz = 0; b.rest = true; return; }
+    if (b.age > 30) { b.vx = b.vy = b.vz = 0; b.rest = true; return; }
     const gz = this.groundZ(b.x, b.y);
 
     if (b.z > gz + 0.001 || b.vz > 0) {                 // in the air
@@ -2193,7 +2218,12 @@ const GolfFall = {
 
       if (nCell !== T.VOID) {
         const nh = this.heightAt(nx, ny);
-        if (nh > nz + 0.08 && nh > b.z + 0.08) {        // into the face of a rise
+        // One step is ground, and a ball flies over ground and lands on it.
+        // More than a step is a face, and a ball flying at a face hits it. The
+        // same line decides it for a rolling ball, so a ledge behaves the same
+        // way whether you putt at it or fly into it — and a lie tucked under
+        // one is still playable with a lofted club.
+        if (nh > nz + 0.08 && nh > b.z + STEP_UP) {     // into the face of a rise
           b.vx *= -0.28; b.vy *= -0.28; b.vz *= 0.25;
           b.z = Math.max(b.z, gz);
           if (!preview) this.thud(b.x, b.y, b.z);
@@ -2219,7 +2249,7 @@ const GolfFall = {
       const g = this.ground(b.x, b.y);
       const club = b.shotWith || CLUBS[0];
       const e = g.e * club.bounce;
-      if (e > 0.04 && -b.vz > 1.2) {
+      if (e > 0.04 && -b.vz > 0.6) {
         b.vz = -b.vz * e;
         b.vx *= g.k * (0.55 + club.roll * 0.45);
         b.vy *= g.k * (0.55 + club.roll * 0.45);
@@ -2236,13 +2266,13 @@ const GolfFall = {
     const g = this.ground(b.x, b.y);
     if (!g) { b.gone = true; b.rest = true; return; }
     const sl = this.slope(b.x, b.y);
-    b.vx += sl.x * dt * 5; b.vy += sl.y * dt * 5;
+    b.vx += sl.x * dt * 2.6; b.vy += sl.y * dt * 2.6;
     const sp = Math.hypot(b.vx, b.vy);
 
     // Anything this slow for this long has stopped, whatever the slope says.
     // Without this a ball nudged into a kerb bounces off it for ever.
-    b.slow = sp < 0.3 ? (b.slow || 0) + 1 : 0;
-    if (sp < 0.12 || b.slow > 60) { b.vx = b.vy = 0; b.rest = true; return; }
+    b.slow = sp < 0.15 ? (b.slow || 0) + 1 : 0;
+    if (sp < 0.06 || b.slow > 120) { b.vx = b.vy = 0; b.rest = true; return; }
 
     if (sp > 0.0001) {
       const drop = Math.min(sp, g.f * dt);
@@ -2335,7 +2365,7 @@ const GolfFall = {
           buzz(22);
         }
         if (b.gone || b.rest) { this.acc = 0; break; }
-        if (this.trail.length > 150) this.trail.shift();
+        if (this.trail.length > 300) this.trail.shift();
         this.trail.push({ x: b.x, y: b.y, z: b.z });
       }
       this.alpha = this.acc / TICK;
@@ -2395,36 +2425,64 @@ const GolfFall = {
     return { x, y, z: Math.max(0, b.z) * 0.45 };
   },
 
-  // A ball has to be rolling, near the middle, and slow enough to fall the
-  // depth of the cup while it crosses it. A shade too quick and it rims out
-  // instead, which leaves it beside the hole with the pace taken off.
+  // The cup is a hole, not a target, so it is judged the way a hole is: the ball
+  // has to fall its own depth in the time it takes to cross the opening. That
+  // one line does everything. Straight through the middle is the longest
+  // crossing and takes the most pace; clip the edge and the crossing is short,
+  // so only a crawl stays down. Too quick for that but not by much and the ball
+  // runs round the lip and comes out with the pace taken off it.
+  //
+  // A ball dropping out of the sky is a separate case: it holes if it lands
+  // inside the rim slowly enough not to skid over the far edge.
   cupCheck(b) {
-    if (b.z > this.groundZ(b.x, b.y) + 0.03) return null;   // still in the air
+    const air = b.z > this.groundZ(b.x, b.y) + 0.03;
     for (const c of this.course.cups) {
       if (c.done) continue;
-      if (Math.abs(b.z - c.z) > 0.3) continue;
+      if (!air && Math.abs(b.z - c.z) > 0.3) continue;
       const d = Math.hypot(b.x - c.x, b.y - c.y);
-      if (d > CUP_R) continue;
       const sp = Math.hypot(b.vx, b.vy);
+
+      if (air) {                                            // dropped in
+        if (b.vz > -1) continue;
+        if (b.z > c.z + 0.25 || b.z < c.z - 0.6) continue;
+        if (d > CUP_R - BALL_R * 0.5) continue;
+        if (sp > 2.4) continue;
+        return c;
+      }
+      if (d > CUP_R) continue;
+
       // How near the middle the ball will actually pass, not how near it is on
       // the tick it crosses the rim — otherwise every putt is judged at its
       // worst moment.
       const perp = sp > 0.001
         ? Math.abs((b.x - c.x) * b.vy - (b.y - c.y) * b.vx) / sp
         : d;
-      const cap = DROP * (0.40 + 0.60 * (1 - clamp(perp / CUP_R, 0, 1)));
+      const reach = CUP_R - BALL_R * 0.55;                  // the far lip holds a
+      if (perp >= reach) continue;                          // ball hanging on it
+      const chord = 2 * Math.sqrt(reach * reach - perp * perp);
+      const cap = chord * Math.sqrt(GRAV / (2 * CUP_DEPTH));
+
       if (sp <= cap) return c;
+
+      // Everything past here crosses the hole and comes out the other side, so
+      // it is put down on the far rim rather than left to be judged again on
+      // the next tick.
+      const nx = d > 0.001 ? (b.x - c.x) / d : 1;
+      const ny = d > 0.001 ? (b.y - c.y) / d : 0;
       if (sp <= cap * LIP) {                                // round the lip and out
-        const nx = d > 0.001 ? (b.x - c.x) / d : 1;
-        const ny = d > 0.001 ? (b.y - c.y) / d : 0;
         const sgn = (b.vx * -ny + b.vy * nx) >= 0 ? 1 : -1;
-        b.vx = -ny * sgn * sp * 0.40;
-        b.vy = nx * sgn * sp * 0.40;
+        b.vx = -ny * sgn * sp * 0.34;
+        b.vy = nx * sgn * sp * 0.34;
         b.x = c.x + nx * (CUP_R + 0.05);
         b.y = c.y + ny * (CUP_R + 0.05);
         this.lipped = 0.6;
         return null;
       }
+      const ex = b.vx / sp, ey = b.vy / sp;                 // straight over it,
+      b.vx *= 0.86; b.vy *= 0.86;                           // but it still dips
+      b.x = c.x + ex * (CUP_R + 0.03);
+      b.y = c.y + ey * (CUP_R + 0.03);
+      return null;
     }
     return null;
   },
@@ -2498,7 +2556,7 @@ const GolfFall = {
     const rx = dx * c - dy * s, ry = dx * s + dy * c;
     return {
       x: this.w / 2 + rx * k,
-      y: this.h * 0.60 + ry * k * 0.52 - ((z || 0) - this.camZ) * k * 0.62,
+      y: this.h * 0.60 + ry * k * 0.52 - ((z || 0) - this.camZ) * k * VZ,
       d: ry,
     };
   },
@@ -2553,7 +2611,10 @@ const GolfFall = {
       if (this.aim) {
         this.aim.x = p.x; this.aim.y = p.y;
         const dx = p.x - this.aim.ox, dy = p.y - this.aim.oy;
-        this.aim.power = clamp(Math.hypot(dx, dy) / (Math.min(this.w, this.h) * 0.34), 0, 1);
+        // The putter asks for a longer pull for the same power, because a putt
+        // is decided by a fraction of it.
+        const pull = Math.min(this.w, this.h) * (CLUBS[this.club].id === "putter" ? 0.62 : 0.34);
+        this.aim.power = clamp(Math.hypot(dx, dy) / pull, 0, 1);
         return;
       }
       if (this.turn) {
@@ -2690,28 +2751,39 @@ const GolfFall = {
 
   // A cell is a top face at its own height, with walls dropping to whatever is
   // beside it. A neighbour that is lower, or missing, leaves a cliff.
+  //
+  // Colour carries the height. Low ground is grass; the higher it climbs the
+  // more it wears through to dirt, and every wall is bare earth with a lighter
+  // band along its top edge. So a rise looks like a rise before the ball
+  // reaches it, which is the only way the clubs can mean anything.
   drawCell(g, i, j, t) {
-    const gr = GROUND[t];
+    const c = this.course, n = j * c.w + i;
     const z = this.heightAt(i + 0.5, j + 0.5);
     const a = this.proj(i, j, z), b = this.proj(i + 1, j, z);
-    const c = this.proj(i + 1, j + 1, z), d = this.proj(i, j + 1, z);
+    const cc = this.proj(i + 1, j + 1, z), d = this.proj(i, j + 1, z);
 
-    const nb = [[0, -1, a, b], [1, 0, b, c], [0, 1, c, d], [-1, 0, d, a]];
+    const nb = [[0, -1, a, b], [1, 0, b, cc], [0, 1, cc, d], [-1, 0, d, a]];
     for (const [di, dj, p, q] of nb) {
       const t2 = this.cell(i + di + 0.5, j + dj + 0.5);
       const nz = t2 === T.VOID ? z - 2.6 : this.heightAt(i + di + 0.5, j + dj + 0.5);
       if (nz >= z - 0.001) continue;
-      const drop = (z - nz) * this.scale() * 0.62;
-      g.fillStyle = gr.side;
+      const drop = (z - nz) * this.scale() * VZ;
+      g.fillStyle = c.sideCol[n];
       g.beginPath();
       g.moveTo(p.x, p.y); g.lineTo(q.x, q.y);
       g.lineTo(q.x, q.y + drop); g.lineTo(p.x, p.y + drop);
       g.closePath(); g.fill();
+      const cap = Math.min(drop, this.scale() * 0.14);      // sunlit lip of the cliff
+      g.fillStyle = c.capCol[n];
+      g.beginPath();
+      g.moveTo(p.x, p.y); g.lineTo(q.x, q.y);
+      g.lineTo(q.x, q.y + cap); g.lineTo(p.x, p.y + cap);
+      g.closePath(); g.fill();
     }
 
-    g.fillStyle = gr.top;
+    g.fillStyle = c.topCol[n];
     g.beginPath();
-    g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.lineTo(c.x, c.y); g.lineTo(d.x, d.y);
+    g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.lineTo(cc.x, cc.y); g.lineTo(d.x, d.y);
     g.closePath(); g.fill();
 
     if (t === T.WATER) {
@@ -2769,16 +2841,16 @@ const GolfFall = {
       const air = clamp(z - gz, 0, 9);
       const fade = clamp(1 - air / 9, 0.16, 1);
       const sh = this.proj(x, y, gz);
-      g.fillStyle = "rgba(24,52,26," + (0.34 * fade).toFixed(3) + ")";
+      g.fillStyle = "rgba(24,52,26," + (0.38 * fade).toFixed(3) + ")";
       g.beginPath();
-      g.ellipse(sh.x, sh.y, k * 0.27 * (0.5 + fade * 0.5), k * 0.135 * (0.5 + fade * 0.5),
+      g.ellipse(sh.x, sh.y, k * 0.20 * (0.55 + fade * 0.45), k * 0.10 * (0.55 + fade * 0.45),
                 0, 0, TAU);
       g.fill();
     }
 
     const s = this.proj(x, y, z);
     const sq = this.ball.squash || 0;
-    const r = Math.max(3, k * 0.21);
+    const r = Math.max(2.6, k * BALL_R);
     g.save();
     g.translate(s.x, s.y);
     g.scale(1 + sq * 0.35, 1 - sq * 0.3);
@@ -2793,14 +2865,23 @@ const GolfFall = {
     g.restore();
   },
 
-  // The preview runs the real physics forward, so what you see is what happens.
-  drawAim(g) {
-    const a = this.aim, club = CLUBS[this.club];
+  // The preview runs the real physics forward to the point the ball stops, so
+  // what you see is what happens — the carry, the bounces, the run-out and the
+  // spot it comes to rest on. That last one is the whole game on a short shot:
+  // you can dial a putt until the ring sits on the cup instead of past it.
+  //
+  // Simulating the shot is cheap but not free, so it is only redone when the
+  // pull actually changes.
+  aimPath() {
+    const a = this.aim, club = CLUBS[this.club], b = this.ball;
+    const key = [a.x - a.ox, a.y - a.oy, this.club, b.x, b.y, this.rot.toFixed(3)].join(",");
+    if (this.path && this.path.key === key) return this.path;
+
     const dir = this.unproj(-(a.x - a.ox), -(a.y - a.oy));
     const len = Math.hypot(dir.x, dir.y) || 1;
     const speed = this.shotSpeed(a.power);
     const sim = {
-      x: this.ball.x, y: this.ball.y, z: this.ball.z,
+      x: b.x, y: b.y, z: b.z,
       vx: (dir.x / len) * speed * Math.cos(club.angle),
       vy: (dir.y / len) * speed * Math.cos(club.angle),
       vz: speed * Math.sin(club.angle),
@@ -2808,36 +2889,64 @@ const GolfFall = {
     };
 
     const pts = [];
-    let land = null;
-    for (let i = 0; i < 900 && !sim.rest && !sim.gone; i++) {
+    let land = null, holed = false;
+    for (let i = 0; i < 1600 && !sim.rest && !sim.gone; i++) {
       this.step(sim, TICK, true);
-      if (i % 2 === 0) pts.push({ x: sim.x, y: sim.y, z: sim.z });
-      if (!land && i > 2 && sim.z <= this.groundZ(sim.x, sim.y) + 0.02) {
-        land = { x: sim.x, y: sim.y, z: sim.z };
-      }
-      if (club.id === "putter" && i > 190) break;
-      if (land && club.id !== "putter") break;
+      const onGround = sim.z <= this.groundZ(sim.x, sim.y) + 0.02;
+      if (i % 2 === 0) pts.push({ x: sim.x, y: sim.y, z: sim.z, air: !onGround });
+      if (!land && i > 2 && onGround) land = { x: sim.x, y: sim.y, z: sim.z };
+      if (this.cupCheck(sim)) { holed = true; break; }
+      this.lipped = 0;
     }
+    this.path = { key, pts, land, holed, gone: sim.gone,
+                  stop: { x: sim.x, y: sim.y, z: sim.z } };
+    return this.path;
+  },
 
-    const k = this.scale();
-    g.strokeStyle = "rgba(255,255,255,.92)";
-    g.lineWidth = club.id === "putter" ? 3 : 2;
-    g.setLineDash(club.id === "putter" ? [] : [5, 6]);
-    g.beginPath();
-    pts.forEach((p, i) => {
+  drawAim(g) {
+    const a = this.aim, club = CLUBS[this.club], k = this.scale();
+    const path = this.aimPath();
+    const pts = path.pts;
+
+    // Dashed while it is in the air, solid once it is running along the ground.
+    g.lineWidth = 2.4; g.lineCap = "round";
+    let run = null;
+    const flush = () => {
+      if (!run || run.list.length < 2) { run = null; return; }
+      g.strokeStyle = run.air ? "rgba(255,255,255,.86)" : "rgba(255,255,255,.95)";
+      g.setLineDash(run.air ? [5, 6] : []);
+      g.beginPath();
+      run.list.forEach((s, i) => (i ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y)));
+      g.stroke();
+      run = null;
+    };
+    for (const p of pts) {
       const s = this.proj(p.x, p.y, p.z);
-      i ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y);
-    });
-    g.stroke();
+      if (!run || run.air !== p.air) {
+        const tail = run && run.list.length ? run.list[run.list.length - 1] : null;
+        flush();
+        run = { air: p.air, list: tail ? [tail] : [] };
+      }
+      run.list.push(s);
+    }
+    flush();
     g.setLineDash([]);
 
-    if (club.id !== "putter" && land) {
-      const spread = 0.5 + a.power * 1.5;
-      const m = this.proj(land.x, land.y, land.z);
-      g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 2;
+    // Where it first touches down, and where it finally sits.
+    if (path.land && club.id !== "putter") {
+      const m = this.proj(path.land.x, path.land.y, path.land.z);
+      g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = 1.6;
       g.beginPath();
-      g.ellipse(m.x, m.y, k * spread, k * spread * 0.52, 0, 0, TAU);
-      g.fillStyle = "rgba(255,255,255,.16)"; g.fill(); g.stroke();
+      g.ellipse(m.x, m.y, k * 0.34, k * 0.34 * 0.52, 0, 0, TAU); g.stroke();
+    }
+    if (!path.gone) {
+      const e = this.proj(path.stop.x, path.stop.y, path.stop.z);
+      g.strokeStyle = path.holed ? "#ffd76b" : "rgba(255,255,255,.95)";
+      g.lineWidth = path.holed ? 3.4 : 2.4;
+      g.beginPath();
+      g.ellipse(e.x, e.y, k * 0.5, k * 0.5 * 0.52, 0, 0, TAU); g.stroke();
+      g.fillStyle = path.holed ? "rgba(255,215,107,.28)" : "rgba(255,255,255,.14)";
+      g.fill();
     }
 
     const bp = this.proj(this.ball.x, this.ball.y, this.ball.z);
@@ -2977,13 +3086,63 @@ function genCourse() {
       }
     }
     force(h.x, h.y, 2.8, T.GREEN);
+    // Bunkers guard the green from outside it, never on it.
+    //
+    // A bunker is a dish, not a well: it is levelled at the low point of the
+    // ground it sits in and its lip is cut back to one step, so there is always
+    // somewhere for a wedge to go. Sand a ball cannot be played out of is not a
+    // hazard, it is a dead end. The green itself is never touched by any of it.
     const guards = 1 + ((Math.random() * 2) | 0);
     for (let b = 0; b < guards; b++) {
-      const ga = Math.random() * TAU, gd = rand(3.6, 4.8);
-      force(h.x + Math.cos(ga) * gd, h.y + Math.sin(ga) * gd, rand(1.4, 2.1), T.SAND);
+      const br = rand(1.4, 2.1);
+      const ga = Math.random() * TAU, gd = rand(3.2 + br, 4.4 + br);
+      const bx = h.x + Math.cos(ga) * gd, by = h.y + Math.sin(ga) * gd;
+      force(bx, by, br, T.SAND);
+
+      const around = (r, f) => {
+        for (let j = Math.floor(by - r); j <= by + r; j++) {
+          for (let i = Math.floor(bx - r); i <= bx + r; i++) {
+            if (!inside(i, j) || cellT(i, j) === T.VOID) continue;
+            // The green and the flat collar round it are off limits. A bunker
+            // that cuts a trench into the collar leaves lies beside the cup
+            // that nothing can be played out of.
+            if (Math.hypot(i + 0.5 - h.x, j + 0.5 - h.y) <= 3.6) continue;
+            const dd = Math.hypot(i + 0.5 - bx, j + 0.5 - by);
+            if (dd <= r) f(idx(i, j), dd);
+          }
+        }
+      };
+      let lo = 1e9;
+      around(br + 1.2, (n) => { lo = Math.min(lo, hgt[n]); });
+      if (lo > 1e8) continue;
+      around(br + 1.6, (n, dd) => {
+        hgt[n] = dd <= br ? lo : Math.min(hgt[n], lo + STEP_UP);
+      });
     }
+    flat(h.x, h.y, 3.4, z);                       // the green stays a green
     cups.push({ x: h.x, y: h.y, z, done: false });
   }
+
+  // No hollow anywhere on the island may be walled in on all four sides by more
+  // than a ball can climb. Anything that is gets raised until one wall is a
+  // step, so every lie has a way out.
+  const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (let pass = 0; pass < 4; pass++) {
+    for (let j = 0; j < H; j++) {
+      for (let i = 0; i < W; i++) {
+        if (cellT(i, j) === T.VOID) continue;
+        let lowest = 1e9, open = false;
+        for (const [di, dj] of NB) {
+          if (cellT(i + di, j + dj) === T.VOID) { open = true; break; }
+          lowest = Math.min(lowest, hgt[idx(i + di, j + dj)]);
+        }
+        if (open) continue;                       // the edge is always a way out
+        const h0 = hgt[idx(i, j)];
+        if (lowest > h0 + STEP_UP) hgt[idx(i, j)] = Math.ceil((lowest - STEP_UP) * 2) / 2;
+      }
+    }
+  }
+  for (const c of cups) c.z = hgt[idx(Math.floor(c.x), Math.floor(c.y))];
 
   // A tee in the middle of the hub.
   const teeZ = hgt[idx(Math.floor(hub.x), Math.floor(hub.y))];
@@ -3011,9 +3170,508 @@ function genCourse() {
     }
   }
 
-  return { w: W, h: H, grid, hgt, trees, treeAt, cups,
+  // Colour every cell once, now that the ground has stopped moving. Grass wears
+  // to dirt as it climbs, walls are bare earth, and the lip of a wall catches
+  // the light.
+  const topCol = new Array(W * H), sideCol = new Array(W * H), capCol = new Array(W * H);
+  for (let n = 0; n < W * H; n++) {
+    const t = grid[n];
+    if (t === T.VOID) continue;
+    const gr = GROUND[t];
+    // Grass below, dirt above, and one band in between rather than a long
+    // gradient — so a rise is a different colour, not a slightly different one.
+    const rise = clamp((hgt[n] - 1.0) / 1.5, 0, 1);
+    const up = rise * rise * (3 - 2 * rise);
+    topCol[n] = mixHex(gr.top, gr.dirt, up);
+    sideCol[n] = mixHex(gr.side, "#9a7145", up);
+    capCol[n] = mixHex(gr.side, "#c79c66", 0.42 + up * 0.3);
+  }
+
+  return { w: W, h: H, grid, hgt, trees, treeAt, cups, topCol, sideCol, capCol,
            tee: { x: hub.x, y: hub.y, z: teeZ } };
 }
+
+// ── Ski Fall ─────────────────────────────────────────────────────────────────
+// Straight down a mountain that never ends. The trees come at you in rows with
+// one gap in them, and the gap gets narrower the longer you last.
+//
+// Speed is the score and speed is the danger, so everything that pays, pays in
+// speed: thread a tree close enough to hear it and you get a push, take a ramp
+// and the landing gives you another. Nothing on screen says so. The number
+// climbing faster after a near miss says it.
+const SKI_SKY = ["#bcd9ef", "#a7c6de"];
+const SNOW = "#f7fbff";
+
+const SkiFall = {
+  id: "ski",
+  title: "Ski Fall",
+  light: true,
+
+  init(w, h) {
+    this.resize(w, h);
+    this.state = "ready";
+    this.obs = [];
+    this.spray = [];
+    this.track = [];
+    this.dist = 0;
+    this.boost = 0;
+    this.z = 0; this.vz = 0; this.airT = 0;
+    this.lean = 0;
+    this.scroll = 0;
+    Hud.set("0", "metres");
+    this.intro();
+  },
+
+  resize(w, h) {
+    this.w = w; this.h = h;
+    this.unit = clamp(Math.min(w, h) * 0.088, 24, 62);   // skier height
+    this.band = h * 0.13;                                // the far mountain
+    this.lineY = h * 0.66;                               // where the skier rides
+    this.x = clamp(this.x || w / 2, this.unit * 0.6, w - this.unit * 0.6);
+  },
+
+  intro() {
+    overlay(
+      '<h3>Ski Fall</h3>' +
+      '<p class="why">Down the mountain.</p>' +
+      '<button class="btn primary" data-act="play">Start</button>' +
+      '<button class="btn ghost" data-act="home">Back</button>',
+      { play: () => this.begin(), home: () => Router.show("home") }
+    );
+  },
+
+  begin() {
+    Veil.hide();
+    Engine.resume();
+    this.state = "run";
+    this.obs = [];
+    this.spray = [];
+    this.track = [];
+    this.dist = 0;
+    this.boost = 0;
+    this.z = 0; this.vz = 0; this.airT = 0;
+    this.lean = 0;
+    this.shake = 0;
+    this.nextRow = this.h * 0.35;
+    this.nextLone = this.h * 0.2;
+    this.x = this.w / 2;
+    Input.dragDelta();
+  },
+
+  onPause() {
+    if (this.state !== "run") return;
+    this.state = "held";
+    overlay(
+      '<h3>Paused</h3>' +
+      '<button class="btn primary" data-act="go">Keep going</button>' +
+      '<button class="btn ghost" data-act="home">Give up</button>',
+      { go: () => { Veil.hide(); this.state = "run"; Input.dragDelta(); Engine.resume(); },
+        home: () => Router.show("home") }
+    );
+  },
+
+  // How fast the mountain goes past. Distance makes it quicker, a boost makes
+  // it quicker still, and both make it harder to steer out of trouble.
+  speed() {
+    return this.unit * (5.4 + Math.min(this.dist / 230, 3.4)) * (1 + this.boost * 0.5);
+  },
+
+  // One rank of trees with a single gap in it. The gap is what you aim at.
+  row() {
+    const w = this.w, u = this.unit;
+    const gapW = Math.max(u * 2.0, u * (4.4 - this.dist * 0.0018));
+    const gx = rand(gapW * 0.55, w - gapW * 0.55);
+    const top = -u * 2.6;
+    let x = rand(-u * 0.6, u * 0.9);
+    while (x < w + u) {
+      if (Math.abs(x - gx) > gapW * 0.5) this.place(x, top + rand(-u * 0.5, u * 0.5));
+      x += rand(u * 1.4, u * 3.0);
+    }
+    // Now and then the way through is a ramp, which is worth taking.
+    if (Math.random() < 0.30) {
+      this.obs.push({ k: "ramp", x: gx + rand(-u * 0.4, u * 0.4), y: top - u * 1.4,
+                      s: u * rand(0.95, 1.3), r: u * 0.62, hit: 0 });
+    }
+  },
+
+  place(x, y) {
+    const u = this.unit;
+    if (Math.random() < 0.78) {
+      const s = u * rand(0.95, 1.5);
+      this.obs.push({ k: "tree", x, y, s, r: s * 0.17, lean: rand(-0.05, 0.05), hit: 0 });
+    } else {
+      const s = u * rand(0.4, 0.7);
+      this.obs.push({ k: "rock", x, y, s, r: s * 0.42, hit: 0 });
+    }
+  },
+
+  update(dt) {
+    this.shake = Math.max(0, this.shake - dt * 2.4);
+    if (this.state !== "run") return;
+
+    const { w, h, unit: u } = this;
+    const spd = this.speed();
+    const step = spd * dt;
+    this.dist += step / (u * 0.55);
+    this.scroll += step;
+    this.boost = Math.max(0, this.boost - dt * 0.42);
+    Hud.set(Math.floor(this.dist), "metres");
+
+    // Steering. The skier carves rather than slides, so the sideways move is
+    // capped and the lean comes out of what it actually did.
+    // A skier cuts across the hill about as fast as they are going down it, so
+    // the sideways move is capped against the speed rather than the screen.
+    // Going quicker does not make you nimbler; it only brings the trees on
+    // sooner.
+    const want = Input.steer(this.x, dt, w * 1.35, u * 0.6, w - u * 0.6);
+    const cap = Math.max(spd * 1.2, w * 0.6) * dt;
+    const dx = clamp(want - this.x, -cap, cap);
+    this.x += dx;
+    const target = clamp(dx / (cap || 1), -1, 1);
+    this.lean += (target - this.lean) * Math.min(1, dt * 11);
+
+    // Air.
+    if (this.z > 0 || this.vz > 0) {
+      this.airT += dt;
+      this.vz -= u * 10 * dt;
+      this.z += this.vz * dt;
+      if (this.z <= 0) {
+        this.z = 0; this.vz = 0;
+        this.boost = Math.min(1.6, this.boost + clamp(this.airT * 0.4, 0.1, 0.6));
+        for (let i = 0; i < 14; i++) this.puff(this.x, this.lineY, 1);
+        Sound.noise(0.14, 0.16);
+        Sound.blip(220, 0.09, "sine", 0.07);
+        buzz(16);
+        this.airT = 0;
+      }
+    }
+
+    // Spawning, measured in ground covered rather than seconds, so the pattern
+    // stays the same however fast you are going.
+    this.nextRow -= step;
+    if (this.nextRow <= 0) {
+      this.row();
+      this.nextRow = Math.max(u * 4.4, u * (9.5 - this.dist * 0.004)) * rand(0.85, 1.2);
+    }
+    this.nextLone -= step;
+    if (this.nextLone <= 0) {
+      this.place(rand(0, w), -u * 2.6);
+      this.nextLone = u * rand(2.4, 6.5);
+    }
+
+    // Tracks, laid down where the skis are and scrolled away with the snow.
+    if (this.z <= 0) this.track.push({ x: this.x, y: this.lineY, l: this.lean });
+    if (this.track.length > 90) this.track.shift();
+    for (const t of this.track) t.y += step;
+
+    const half = u * 0.24, tall = u * 0.3;
+    for (let i = this.obs.length - 1; i >= 0; i--) {
+      const o = this.obs[i];
+      o.y += step;
+      if (o.y > h + u * 2) { this.obs.splice(i, 1); continue; }
+
+      const gapX = Math.abs(o.x - this.x), gapY = Math.abs(o.y - this.lineY);
+
+      if (o.k === "ramp") {
+        if (this.z <= 0 && gapX < o.r && gapY < o.s * 0.42) {
+          this.vz = u * (7.0 + this.boost * 0.9);
+          this.airT = 0;
+          for (let n = 0; n < 10; n++) this.puff(this.x, this.lineY, 0.8);
+          Sound.slide(280, 720, 0.22, "triangle");
+          buzz(20);
+        }
+        continue;
+      }
+
+      if (this.z <= 0 && gapX < o.r + half && gapY < o.r * 0.6 + tall) {
+        this.crash(o);
+        return;
+      }
+      // Threading one close enough pays in speed. It only counts once, on the
+      // way past.
+      if (!o.hit && o.y > this.lineY) {
+        o.hit = 1;
+        if (this.z <= 0 && gapX < o.r + u * 0.95) {
+          this.boost = Math.min(1.6, this.boost + 0.26);
+          this.puff(o.x, this.lineY, 0.7);
+          Sound.blip(760 + Math.random() * 120, 0.05, "triangle", 0.07);
+          buzz(8);
+        }
+      }
+    }
+
+    // Snow off the edges when the skier is on them.
+    if (this.z <= 0 && Math.abs(this.lean) > 0.35 && Math.random() < 0.7) {
+      this.puff(this.x - this.lean * u * 0.3, this.lineY + u * 0.28, 0.5);
+    }
+    for (let i = this.spray.length - 1; i >= 0; i--) {
+      const p = this.spray[i];
+      p.life -= dt * 2.1;
+      p.x += p.vx * dt; p.y += (p.vy + spd * 0.55) * dt;
+      if (p.life <= 0) this.spray.splice(i, 1);
+    }
+  },
+
+  puff(x, y, force) {
+    for (let i = 0; i < 4; i++) {
+      this.spray.push({ x, y, r: rand(1.5, 3.6) * (0.6 + force),
+                        vx: rand(-90, 90) * force, vy: rand(-40, 40) * force, life: 1 });
+    }
+  },
+
+  crash(o) {
+    this.state = "over";
+    this.shake = 1.5;
+    for (let i = 0; i < 22; i++) this.puff(this.x, this.lineY, 1.4);
+    const m = Math.floor(this.dist);
+    const fresh = Best.set(this.id, m);
+    Sound.noise(0.3, 0.26);
+    Sound.slide(320, 70, 0.4, "sawtooth");
+    buzz([30, 50, 60]);
+    overlay(
+      '<h3>' + (fresh ? "New best" : (o.k === "rock" ? "Rock" : "Tree")) + '</h3>' +
+      '<div class="score">' + m + 'm</div>' +
+      '<p class="best">Best ' + Best.get(this.id) + 'm</p>' +
+      '<button class="btn primary" data-act="again">Again</button>' +
+      '<button class="btn ghost" data-act="home">Back</button>',
+      { again: () => this.begin(), home: () => Router.show("home") }
+    );
+  },
+
+  // ── Drawing ──
+  draw(g, w, h) {
+    const u = this.unit;
+    g.save();
+    if (this.shake > 0) {
+      const k = this.shake * this.shake * 14;
+      g.translate(rand(-1, 1) * k, rand(-1, 1) * k);
+    }
+
+    // Snow, cooling towards the bottom of the frame.
+    const snow = g.createLinearGradient(0, this.band, 0, h);
+    snow.addColorStop(0, "#eaf2fb");
+    snow.addColorStop(0.35, SNOW);
+    snow.addColorStop(1, "#dce7f4");
+    g.fillStyle = snow; g.fillRect(-20, this.band - 2, w + 40, h);
+
+    this.horizon(g, w);
+
+    // Groomer lines, scrolling, to show the speed on empty snow.
+    g.strokeStyle = "rgba(150,178,206,.22)";
+    g.lineWidth = 1;
+    const gapLine = u * 1.15, span = Math.ceil(h / gapLine) + 2;
+    for (let i = 0; i < span; i++) {
+      const n = ((i - Math.floor(this.scroll * 0.55 / (h + gapLine)) * span) % 97 + 97) % 97;
+      const y = this.band + ((i * gapLine - this.scroll * 0.55) % (h + gapLine) + h + gapLine) % (h + gapLine);
+      if (y < this.band || y > h) continue;
+      const x0 = ((n * 37) % 60) / 60 * w * 0.5;
+      const x1 = x0 + w * (0.35 + ((n * 53) % 40) / 100);
+      g.beginPath(); g.moveTo(x0, y); g.lineTo(Math.min(w, x1), y); g.stroke();
+    }
+
+    // Tracks.
+    g.strokeStyle = "rgba(146,175,205,.55)";
+    g.lineWidth = Math.max(1.2, u * 0.045);
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      let on = false;
+      for (const t of this.track) {
+        if (t.y < this.band) { on = false; continue; }
+        const px = t.x + side * u * 0.17;
+        on ? g.lineTo(px, t.y) : g.moveTo(px, t.y);
+        on = true;
+      }
+      g.stroke();
+    }
+
+    // Everything standing on the snow, near ones over far ones.
+    const sorted = this.obs.slice().sort((a, b) => a.y - b.y);
+    for (const o of sorted) {
+      if (o.y < this.band - u * 3) continue;
+      if (o.k === "ramp") this.drawRamp(g, o);
+      else if (o.k === "rock") this.drawRock(g, o);
+      else this.drawTree(g, o);
+    }
+
+    if (this.state !== "over") this.drawSkier(g);
+
+    for (const p of this.spray) {
+      g.globalAlpha = clamp(p.life, 0, 1) * 0.8;
+      g.fillStyle = "#ffffff";
+      g.beginPath(); g.arc(p.x, p.y, p.r, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+
+    // Haze at the top, so things come out of the distance instead of appearing.
+    const haze = g.createLinearGradient(0, this.band, 0, this.band + u * 2.6);
+    haze.addColorStop(0, "rgba(226,238,250,1)");
+    haze.addColorStop(1, "rgba(226,238,250,0)");
+    g.fillStyle = haze; g.fillRect(0, this.band, w, u * 2.6);
+
+    this.horizon(g, w);
+    g.restore();
+    this.drawBoost(g, w);
+  },
+
+  // The rest of the mountain, far below. It never moves.
+  horizon(g, w) {
+    const b = this.band;
+    const sky = g.createLinearGradient(0, 0, 0, b);
+    sky.addColorStop(0, SKI_SKY[0]);
+    sky.addColorStop(1, SKI_SKY[1]);
+    g.fillStyle = sky; g.fillRect(-20, -20, w + 40, b + 20);
+
+    const peaks = (base, amp, col, seed) => {
+      g.fillStyle = col;
+      g.beginPath();
+      g.moveTo(-10, b + 2);
+      for (let i = 0; i <= 10; i++) {
+        const x = -10 + (i / 10) * (w + 20);
+        const t = Math.sin(i * 1.7 + seed) * 0.5 + Math.sin(i * 0.7 + seed * 2) * 0.5;
+        g.lineTo(x, base - amp * (0.45 + t * 0.55));
+      }
+      g.lineTo(w + 10, b + 2);
+      g.closePath(); g.fill();
+    };
+    peaks(b * 0.82, b * 0.52, "#9db9d2", 1.3);
+    peaks(b * 1.0, b * 0.36, "#c3d8ea", 3.1);
+  },
+
+  drawTree(g, o) {
+    const u = this.unit, s = o.s;
+    g.fillStyle = "rgba(96,124,152,.26)";
+    g.beginPath();
+    g.ellipse(o.x + s * 0.1, o.y + s * 0.06, s * 0.4, s * 0.15, 0, 0, TAU); g.fill();
+
+    g.save();
+    g.translate(o.x, o.y);
+    g.fillStyle = "#4b3722";
+    g.fillRect(-s * 0.06, -s * 0.22, s * 0.12, s * 0.26);
+    g.fillStyle = "#1d3524";
+    for (let i = 0; i < 3; i++) {
+      const t = i / 3;
+      const wid = s * (0.42 - t * 0.11);
+      const top = -s * (0.34 + t * 0.34);
+      const bot = -s * (0.10 + t * 0.34);
+      g.beginPath();
+      g.moveTo(0, top - s * 0.16);
+      g.lineTo(wid, bot); g.lineTo(-wid, bot);
+      g.closePath(); g.fill();
+    }
+    g.fillStyle = "rgba(255,255,255,.75)";           // snow sitting on the top
+    g.beginPath();
+    g.moveTo(0, -s * 0.727); g.lineTo(s * 0.125, -s * 0.58); g.lineTo(-s * 0.125, -s * 0.58);
+    g.closePath(); g.fill();
+    g.restore();
+  },
+
+  drawRock(g, o) {
+    const s = o.s;
+    g.fillStyle = "rgba(96,124,152,.26)";
+    g.beginPath(); g.ellipse(o.x + s * 0.1, o.y + s * 0.08, s * 0.62, s * 0.24, 0, 0, TAU); g.fill();
+    g.fillStyle = "#59616b";
+    g.beginPath();
+    g.moveTo(o.x - s * 0.6, o.y);
+    g.lineTo(o.x - s * 0.34, o.y - s * 0.62);
+    g.lineTo(o.x + s * 0.16, o.y - s * 0.72);
+    g.lineTo(o.x + s * 0.6, o.y - s * 0.2);
+    g.lineTo(o.x + s * 0.42, o.y + s * 0.08);
+    g.closePath(); g.fill();
+    g.fillStyle = "rgba(255,255,255,.7)";
+    g.beginPath();
+    g.moveTo(o.x - s * 0.34, o.y - s * 0.62);
+    g.lineTo(o.x + s * 0.16, o.y - s * 0.72);
+    g.lineTo(o.x + s * 0.3, o.y - s * 0.48);
+    g.lineTo(o.x - s * 0.16, o.y - s * 0.42);
+    g.closePath(); g.fill();
+  },
+
+  drawRamp(g, o) {
+    const s = o.s;
+    g.fillStyle = "rgba(120,150,180,.22)";
+    g.beginPath();
+    g.ellipse(o.x, o.y + s * 0.1, s * 0.72, s * 0.2, 0, 0, TAU); g.fill();
+    g.fillStyle = "#cfe0f0";
+    g.beginPath();
+    g.moveTo(o.x - s * 0.66, o.y + s * 0.16);
+    g.lineTo(o.x + s * 0.66, o.y + s * 0.16);
+    g.lineTo(o.x + s * 0.44, o.y - s * 0.34);
+    g.lineTo(o.x - s * 0.44, o.y - s * 0.34);
+    g.closePath(); g.fill();
+    g.fillStyle = "#ffffff";
+    g.beginPath();
+    g.moveTo(o.x - s * 0.44, o.y - s * 0.34);
+    g.lineTo(o.x + s * 0.44, o.y - s * 0.34);
+    g.lineTo(o.x + s * 0.38, o.y - s * 0.5);
+    g.lineTo(o.x - s * 0.38, o.y - s * 0.5);
+    g.closePath(); g.fill();
+    g.fillStyle = "#e8452f";
+    g.fillRect(o.x - s * 0.5, o.y - s * 0.5, s * 0.1, s * 0.06);
+    g.fillRect(o.x + s * 0.4, o.y - s * 0.5, s * 0.1, s * 0.06);
+  },
+
+  // Seen from behind: two skis, a body over them, and a red hat. Ink and one
+  // colour, the way everything else in Fall is drawn.
+  drawSkier(g) {
+    const u = this.unit, air = this.z / u;
+    const y = this.lineY - this.z;
+
+    g.fillStyle = "rgba(96,124,152," + (0.3 / (1 + air * 1.6)).toFixed(3) + ")";
+    g.beginPath();
+    g.ellipse(this.x, this.lineY + u * 0.3, u * 0.34, u * 0.11, 0, 0, TAU); g.fill();
+
+    g.save();
+    g.translate(this.x, y);
+    const sc = 1 + air * 0.14;
+    g.scale(sc, sc);
+    g.rotate(this.lean * 0.24);
+
+    g.fillStyle = "#16232e";
+    for (const side of [-1, 1]) {                     // skis
+      g.save();
+      g.translate(side * u * 0.19, u * 0.16);
+      g.rotate(this.lean * 0.3);
+      g.beginPath();
+      g.roundRect ? g.roundRect(-u * 0.055, -u * 0.42, u * 0.11, u * 0.84, u * 0.055)
+                  : g.rect(-u * 0.055, -u * 0.42, u * 0.11, u * 0.84);
+      g.fill();
+      g.restore();
+    }
+    // Poles, trailing.
+    g.strokeStyle = "#16232e"; g.lineWidth = Math.max(1.4, u * 0.045); g.lineCap = "round";
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(side * u * 0.28, -u * 0.12);
+      g.lineTo(side * u * 0.42, u * 0.5);
+      g.stroke();
+    }
+    g.fillStyle = "#16232e";
+    g.beginPath();                                     // legs and back
+    g.moveTo(-u * 0.2, u * 0.2);
+    g.lineTo(-u * 0.26, -u * 0.2);
+    g.lineTo(-u * 0.2, -u * 0.5);
+    g.lineTo(u * 0.2, -u * 0.5);
+    g.lineTo(u * 0.26, -u * 0.2);
+    g.lineTo(u * 0.2, u * 0.2);
+    g.closePath(); g.fill();
+    g.fillStyle = "#e8452f";                           // hat
+    g.beginPath(); g.arc(0, -u * 0.6, u * 0.16, 0, TAU); g.fill();
+    g.fillStyle = "#16232e";
+    g.fillRect(-u * 0.17, -u * 0.56, u * 0.34, u * 0.07);
+    g.restore();
+  },
+
+  // The push you are carrying, under the score. No label — it fills when you
+  // cut it fine and drains when you play safe.
+  drawBoost(g, w) {
+    if (this.boost <= 0.01) return;
+    const bw = 76, x = (w - bw) / 2;
+    g.fillStyle = "rgba(22,35,46,.20)";
+    g.fillRect(x, 74, bw, 5);
+    g.fillStyle = "#e8452f";
+    g.fillRect(x, 74, bw * clamp(this.boost / 1.6, 0, 1), 5);
+  },
+};
 
 // ── Home ─────────────────────────────────────────────────────────────────────
 const ART = {
@@ -3032,6 +3690,15 @@ const ART = {
     '<ellipse cx="17" cy="28" rx="7" ry="3.4" fill="#0d1219"/>' +
     '<path d="M10 28l-4-3.4v6.8z" fill="#1b2532"/>' +
     '<circle cx="21" cy="27" r="1.2" fill="#dbe9f6"/></svg>',
+  ski: '<svg viewBox="0 0 40 40" width="66" height="66">' +
+    '<rect width="40" height="40" rx="14" fill="#dce9f5"/>' +
+    '<path d="M0 0h40v13H0z" fill="#a7c6de"/>' +
+    '<path d="M0 13l9-7 7 5 8-6 9 8v0z" fill="#c3d8ea"/>' +
+    '<path d="M6 34l5-13 5 13z" fill="#1d3524"/>' +
+    '<path d="M29 33l4-11 4 11z" fill="#1d3524"/>' +
+    '<path d="M20 22h3l1 8h-5z" fill="#16232e"/>' +
+    '<circle cx="21.5" cy="19" r="2.4" fill="#e8452f"/>' +
+    '<path d="M18 30l-1 7M25 30l1 7" stroke="#16232e" stroke-width="1.6" fill="none"/></svg>',
   golf: '<svg viewBox="0 0 40 40" width="66" height="66">' +
     '<rect width="40" height="40" rx="14" fill="#8fc3e8"/>' +
     '<path d="M20 15l14 7-14 7-14-7z" fill="#6da851"/>' +
@@ -3049,6 +3716,8 @@ const GAMES = [
     fmt: (v) => v ? "Best " + v + " points" : "Never played" },
   { g: GolfFall, art: "golf",
     fmt: (v) => v ? "Best " + v + " shots" : "Never played" },
+  { g: SkiFall, art: "ski",
+    fmt: (v) => v ? "Best " + v + " metres" : "Never played" },
 ];
 
 const Home = {

@@ -2095,9 +2095,12 @@ const GolfFall = {
     this.puff = [];
     const t = this.course.tee;
     this.setBall(t.x, t.y);
-    const look = this.lookAt();
+    let look = this.lookAt();
     this.camX = look.x; this.camY = look.y; this.camZ = look.z;
     this.userZoom = this.fitZoom();                    // the whole course, to plan on
+    look = this.lookAt();
+    this.camX = look.x; this.camY = look.y; this.camZ = look.z;
+    this.frameBall();
     this.state = "aim";
     this.msg = null;
     this.paintClubs();
@@ -2402,6 +2405,7 @@ const GolfFall = {
     this.camX += (look.x - this.camX) * rate;
     this.camY += (look.y - this.camY) * rate;
     this.camZ += (look.z - this.camZ) * rate;
+    this.frameBall();
 
     const left = this.course.cups.filter((c) => !c.done).length;
     Hud.set(this.shots, left + (left === 1 ? " cup left" : " cups left"));
@@ -2409,6 +2413,11 @@ const GolfFall = {
 
   // Where the camera wants to be: the ball, pulled toward the cups still in
   // play. While the ball is moving it leads the ball instead.
+  //
+  // The pull is capped at what it is worth on the screen rather than in the
+  // world, so zooming in walks the camera back onto the ball. Without that, the
+  // camera sits off to one side, the course turns about that point instead of
+  // about the ball, and a spin at any real zoom parks the ball in a corner.
   lookAt() {
     const b = this.ball;
     const flying = this.state === "fly";
@@ -2419,10 +2428,31 @@ const GolfFall = {
       let sx = 0, sy = 0;
       for (const c of left) { sx += c.x; sy += c.y; }
       const pull = flying ? 0.12 : 0.38;
-      x += (sx / left.length - x) * pull;
-      y += (sy / left.length - y) * pull;
+      let ox = (sx / left.length - x) * pull;
+      let oy = (sy / left.length - y) * pull;
+      const cap = Math.min(this.w, this.h) * 0.15 / Math.max(this.scale(), 0.001);
+      const d = Math.hypot(ox, oy);
+      if (d > cap) { ox *= cap / d; oy *= cap / d; }
+      x += ox; y += oy;
     }
     return { x, y, z: Math.max(0, b.z) * 0.45 };
+  },
+
+  // Whatever the camera wants, the ball stays inside a box on the screen. This
+  // runs after the smoothing, so it is a wall and not a suggestion: turn the
+  // course as hard as you like and the ball cannot be pushed out of frame.
+  frameBall() {
+    const b = this.ball;
+    const p = this.proj(b.x, b.y, b.z);
+    const mx = this.w * 0.27, top = this.h * 0.20, bot = this.h * 0.78;
+    let dx = 0, dy = 0;
+    if (p.x < mx) dx = p.x - mx;
+    else if (p.x > this.w - mx) dx = p.x - (this.w - mx);
+    if (p.y < top) dy = p.y - top;
+    else if (p.y > bot) dy = p.y - bot;
+    if (!dx && !dy) return;
+    const move = this.unproj(dx, dy);                 // screen pixels back into
+    this.camX += move.x; this.camY += move.y;         // the world
   },
 
   // The cup is a hole, not a target, so it is judged the way a hole is: the ball
@@ -2693,13 +2723,17 @@ const GolfFall = {
         items.push({ d: p.d, k: 0, i, j, t });
       }
     }
+    // Anything standing on a cell is sorted by that cell, not by its own
+    // position inside it. A flag sitting a third of a cell forward of the
+    // centre used to sort ahead of the ground it stands on, so at some angles
+    // its own cell was painted over the top of it and the hole vanished.
     for (const tr of c.trees) {
       const p = this.proj(tr.x, tr.y, tr.z + tr.tall);
       if (!seen(p)) continue;
-      items.push({ d: this.proj(tr.x, tr.y, 0).d + 0.01, k: 1, tr });
+      items.push({ d: this.cellD(tr.x, tr.y) + 0.01, k: 1, tr });
     }
     for (const cup of c.cups) {
-      if (!cup.done) items.push({ d: this.proj(cup.x, cup.y, 0).d + 0.02, k: 2, cup });
+      if (!cup.done) items.push({ d: this.cellD(cup.x, cup.y) + 0.02, k: 2, cup });
     }
     items.sort((a, z) => a.d - z.d);
     for (const it of items) {
@@ -2747,6 +2781,11 @@ const GolfFall = {
       g.fillText(this.msg.txt, w / 2, h * 0.14);
       g.globalAlpha = 1;
     }
+  },
+
+  // The sort depth of the cell a thing stands on.
+  cellD(x, y) {
+    return this.proj(Math.floor(x) + 0.5, Math.floor(y) + 0.5, 0).d;
   },
 
   // A cell is a top face at its own height, with walls dropping to whatever is
@@ -3192,14 +3231,19 @@ function genCourse() {
 }
 
 // ── Ski Fall ─────────────────────────────────────────────────────────────────
-// Straight down a mountain that never ends. The trees come at you in rows with
+// Straight down a mountain that never ends. The trees come at you in ranks with
 // one gap in them, and the gap gets narrower the longer you last.
+//
+// Looking down at the slope from behind and above, the way you would see it
+// over your own skis. Down the mountain is down the screen, so the snow scrolls
+// up, and everything ahead of you comes in at the bottom edge and rises to meet
+// you. There is no horizon: a horizon at the top would put the summit in front
+// of you and make the whole thing read as a climb.
 //
 // Speed is the score and speed is the danger, so everything that pays, pays in
 // speed: thread a tree close enough to hear it and you get a push, take a ramp
 // and the landing gives you another. Nothing on screen says so. The number
 // climbing faster after a near miss says it.
-const SKI_SKY = ["#bcd9ef", "#a7c6de"];
 const SNOW = "#f7fbff";
 
 const SkiFall = {
@@ -3225,8 +3269,7 @@ const SkiFall = {
   resize(w, h) {
     this.w = w; this.h = h;
     this.unit = clamp(Math.min(w, h) * 0.088, 24, 62);   // skier height
-    this.band = h * 0.13;                                // the far mountain
-    this.lineY = h * 0.66;                               // where the skier rides
+    this.lineY = h * 0.30;                               // where the skier rides
     this.x = clamp(this.x || w / 2, this.unit * 0.6, w - this.unit * 0.6);
   },
 
@@ -3270,26 +3313,29 @@ const SkiFall = {
     );
   },
 
-  // How fast the mountain goes past. Distance makes it quicker, a boost makes
-  // it quicker still, and both make it harder to steer out of trouble.
+  // How fast the mountain goes past. It climbs by half again over the first
+  // 200 m and keeps going to nearly double, which is a ramp you feel inside one
+  // run rather than one that only exists on paper.
   speed() {
-    return this.unit * (5.4 + Math.min(this.dist / 230, 3.4)) * (1 + this.boost * 0.5);
+    return this.unit * (5.2 + Math.min(this.dist / 90, 4.8)) * (1 + this.boost * 0.5);
   },
 
-  // One rank of trees with a single gap in it. The gap is what you aim at.
+  // One rank of trees with a single gap in it. The gap is what you aim at, and
+  // it closes as you go. Everything is laid down below the bottom edge, because
+  // that is what is in front of you.
   row() {
     const w = this.w, u = this.unit;
-    const gapW = Math.max(u * 2.0, u * (4.4 - this.dist * 0.0018));
+    const gapW = Math.max(u * 2.0, u * (4.4 - this.dist * 0.006));
     const gx = rand(gapW * 0.55, w - gapW * 0.55);
-    const top = -u * 2.6;
+    const far = this.h + u * 2.6;
     let x = rand(-u * 0.6, u * 0.9);
     while (x < w + u) {
-      if (Math.abs(x - gx) > gapW * 0.5) this.place(x, top + rand(-u * 0.5, u * 0.5));
+      if (Math.abs(x - gx) > gapW * 0.5) this.place(x, far + rand(-u * 0.5, u * 0.5));
       x += rand(u * 1.4, u * 3.0);
     }
     // Now and then the way through is a ramp, which is worth taking.
     if (Math.random() < 0.30) {
-      this.obs.push({ k: "ramp", x: gx + rand(-u * 0.4, u * 0.4), y: top - u * 1.4,
+      this.obs.push({ k: "ramp", x: gx + rand(-u * 0.4, u * 0.4), y: far + u * 1.4,
                       s: u * rand(0.95, 1.3), r: u * 0.62, hit: 0 });
     }
   },
@@ -3351,24 +3397,24 @@ const SkiFall = {
     this.nextRow -= step;
     if (this.nextRow <= 0) {
       this.row();
-      this.nextRow = Math.max(u * 4.4, u * (9.5 - this.dist * 0.004)) * rand(0.85, 1.2);
+      this.nextRow = Math.max(u * 4.4, u * (9.5 - this.dist * 0.014)) * rand(0.85, 1.2);
     }
     this.nextLone -= step;
     if (this.nextLone <= 0) {
-      this.place(rand(0, w), -u * 2.6);
+      this.place(rand(0, w), h + u * 2.6);
       this.nextLone = u * rand(2.4, 6.5);
     }
 
-    // Tracks, laid down where the skis are and scrolled away with the snow.
+    // Tracks, laid down where the skis are and left behind up the hill.
     if (this.z <= 0) this.track.push({ x: this.x, y: this.lineY, l: this.lean });
     if (this.track.length > 90) this.track.shift();
-    for (const t of this.track) t.y += step;
+    for (const t of this.track) t.y -= step;
 
     const half = u * 0.24, tall = u * 0.3;
     for (let i = this.obs.length - 1; i >= 0; i--) {
       const o = this.obs[i];
-      o.y += step;
-      if (o.y > h + u * 2) { this.obs.splice(i, 1); continue; }
+      o.y -= step;                                   // the snow goes up past you
+      if (o.y < -u * 2) { this.obs.splice(i, 1); continue; }
 
       const gapX = Math.abs(o.x - this.x), gapY = Math.abs(o.y - this.lineY);
 
@@ -3389,7 +3435,7 @@ const SkiFall = {
       }
       // Threading one close enough pays in speed. It only counts once, on the
       // way past.
-      if (!o.hit && o.y > this.lineY) {
+      if (!o.hit && o.y < this.lineY) {
         o.hit = 1;
         if (this.z <= 0 && gapX < o.r + u * 0.95) {
           this.boost = Math.min(1.6, this.boost + 0.26);
@@ -3402,12 +3448,12 @@ const SkiFall = {
 
     // Snow off the edges when the skier is on them.
     if (this.z <= 0 && Math.abs(this.lean) > 0.35 && Math.random() < 0.7) {
-      this.puff(this.x - this.lean * u * 0.3, this.lineY + u * 0.28, 0.5);
+      this.puff(this.x - this.lean * u * 0.3, this.lineY + u * 0.2, 0.5);
     }
     for (let i = this.spray.length - 1; i >= 0; i--) {
       const p = this.spray[i];
       p.life -= dt * 2.1;
-      p.x += p.vx * dt; p.y += (p.vy + spd * 0.55) * dt;
+      p.x += p.vx * dt; p.y += (p.vy - spd * 0.55) * dt;
       if (p.life <= 0) this.spray.splice(i, 1);
     }
   },
@@ -3447,36 +3493,38 @@ const SkiFall = {
       g.translate(rand(-1, 1) * k, rand(-1, 1) * k);
     }
 
-    // Snow, cooling towards the bottom of the frame.
-    const snow = g.createLinearGradient(0, this.band, 0, h);
-    snow.addColorStop(0, "#eaf2fb");
-    snow.addColorStop(0.35, SNOW);
-    snow.addColorStop(1, "#dce7f4");
-    g.fillStyle = snow; g.fillRect(-20, this.band - 2, w + 40, h);
+    // Snow. The slope you have already skied is in shadow behind you, the run
+    // ahead of you is in the light, so the frame itself points downhill.
+    const snow = g.createLinearGradient(0, 0, 0, h);
+    snow.addColorStop(0, "#cddced");
+    snow.addColorStop(0.22, "#e3ecf7");
+    snow.addColorStop(0.62, SNOW);
+    snow.addColorStop(1, "#ffffff");
+    g.fillStyle = snow; g.fillRect(-20, -20, w + 40, h + 40);
 
-    this.horizon(g, w);
-
-    // Groomer lines, scrolling, to show the speed on empty snow.
+    // Groomer lines, scrolling up, to show the speed on empty snow. Broken into
+    // segments so empty snow looks like snow and not like ruled paper.
     g.strokeStyle = "rgba(150,178,206,.22)";
     g.lineWidth = 1;
     const gapLine = u * 1.15, span = Math.ceil(h / gapLine) + 2;
     for (let i = 0; i < span; i++) {
-      const n = ((i - Math.floor(this.scroll * 0.55 / (h + gapLine)) * span) % 97 + 97) % 97;
-      const y = this.band + ((i * gapLine - this.scroll * 0.55) % (h + gapLine) + h + gapLine) % (h + gapLine);
-      if (y < this.band || y > h) continue;
+      const n = (i * 37) % 97;
+      const y = ((i * gapLine + this.scroll * 0.55) % (h + gapLine) + h + gapLine) % (h + gapLine)
+                - gapLine;
+      if (y < 0 || y > h) continue;
       const x0 = ((n * 37) % 60) / 60 * w * 0.5;
       const x1 = x0 + w * (0.35 + ((n * 53) % 40) / 100);
       g.beginPath(); g.moveTo(x0, y); g.lineTo(Math.min(w, x1), y); g.stroke();
     }
 
-    // Tracks.
+    // Tracks, running back up the hill behind the skier.
     g.strokeStyle = "rgba(146,175,205,.55)";
     g.lineWidth = Math.max(1.2, u * 0.045);
     for (const side of [-1, 1]) {
       g.beginPath();
       let on = false;
       for (const t of this.track) {
-        if (t.y < this.band) { on = false; continue; }
+        if (t.y < 0) { on = false; continue; }
         const px = t.x + side * u * 0.17;
         on ? g.lineTo(px, t.y) : g.moveTo(px, t.y);
         on = true;
@@ -3484,10 +3532,11 @@ const SkiFall = {
       g.stroke();
     }
 
-    // Everything standing on the snow, near ones over far ones.
+    // Everything standing on the snow. Lower on the screen is nearer the
+    // bottom of the hill, so it is drawn last and stands in front.
     const sorted = this.obs.slice().sort((a, b) => a.y - b.y);
     for (const o of sorted) {
-      if (o.y < this.band - u * 3) continue;
+      if (o.y > h + u * 3) continue;
       if (o.k === "ramp") this.drawRamp(g, o);
       else if (o.k === "rock") this.drawRock(g, o);
       else this.drawTree(g, o);
@@ -3502,39 +3551,15 @@ const SkiFall = {
     }
     g.globalAlpha = 1;
 
-    // Haze at the top, so things come out of the distance instead of appearing.
-    const haze = g.createLinearGradient(0, this.band, 0, this.band + u * 2.6);
-    haze.addColorStop(0, "rgba(226,238,250,1)");
-    haze.addColorStop(1, "rgba(226,238,250,0)");
-    g.fillStyle = haze; g.fillRect(0, this.band, w, u * 2.6);
+    // Haze along the bottom edge, so what is coming fades up out of the slope
+    // instead of appearing in one frame.
+    const haze = g.createLinearGradient(0, h, 0, h - u * 2.4);
+    haze.addColorStop(0, "rgba(255,255,255,1)");
+    haze.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = haze; g.fillRect(0, h - u * 2.4, w, u * 2.4 + 2);
 
-    this.horizon(g, w);
     g.restore();
     this.drawBoost(g, w);
-  },
-
-  // The rest of the mountain, far below. It never moves.
-  horizon(g, w) {
-    const b = this.band;
-    const sky = g.createLinearGradient(0, 0, 0, b);
-    sky.addColorStop(0, SKI_SKY[0]);
-    sky.addColorStop(1, SKI_SKY[1]);
-    g.fillStyle = sky; g.fillRect(-20, -20, w + 40, b + 20);
-
-    const peaks = (base, amp, col, seed) => {
-      g.fillStyle = col;
-      g.beginPath();
-      g.moveTo(-10, b + 2);
-      for (let i = 0; i <= 10; i++) {
-        const x = -10 + (i / 10) * (w + 20);
-        const t = Math.sin(i * 1.7 + seed) * 0.5 + Math.sin(i * 0.7 + seed * 2) * 0.5;
-        g.lineTo(x, base - amp * (0.45 + t * 0.55));
-      }
-      g.lineTo(w + 10, b + 2);
-      g.closePath(); g.fill();
-    };
-    peaks(b * 0.82, b * 0.52, "#9db9d2", 1.3);
-    peaks(b * 1.0, b * 0.36, "#c3d8ea", 3.1);
   },
 
   drawTree(g, o) {

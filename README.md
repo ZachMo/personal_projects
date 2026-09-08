@@ -87,6 +87,12 @@ world space, so from behind the ball it collapses into a line and from the side 
 see exactly how high the ball goes and what it clears. The round opens zoomed out far
 enough to plan a route across the whole island.
 
+The camera sits on the ball and leans toward the cups you have left, but only by
+what that lean is worth on the screen — so zooming in walks it back onto the
+ball, and the course turns about the ball instead of about a point beside it.
+Under all of that the ball is held inside a box on the screen, so no amount of
+spinning and pinching can put it in a corner.
+
 **The clubs**, measured on flat ground from a good lie:
 
 | | carry | roll | total | apex | hang |
@@ -164,9 +170,20 @@ any frame rate.
 Straight down a mountain that never ends. Steer left and right. The score is how
 far you get.
 
+You are looking down at the slope from behind your own skis. Down the mountain
+is down the screen, so the snow scrolls up, your tracks run away uphill behind
+you, and everything in front of you comes in at the bottom edge and rises to
+meet you out of the haze. There is no horizon, on purpose: a ridge of peaks
+across the top would put the summit in front of you and make the whole thing
+read as a climb.
+
 The trees come at you in ranks with one gap in each, and the gap narrows the
 longer you last. Between the ranks there are loose trees and rocks to pick your
 way through.
+
+**It gets faster as you go.** Half again as fast by 200 m and near enough double
+by 430 m, and the ranks close up behind it. A run ends because the mountain got
+quick, not because it was ever going to be the same speed twice.
 
 Everything that pays, pays in speed. Thread a tree close enough to hear it and
 you get a push. Take one of the ramps and you fly, over anything in the way, and
@@ -179,7 +196,7 @@ A skier cuts across the hill about as fast as they are going down it, so the
 sideways move is capped against the speed and not against the screen. Going
 faster does not make you nimbler.
 
-A bot that steers for the widest opening gets about 210 m and has reached 940.
+A bot that steers for the widest opening gets about 180 m and has reached 570.
 Mashing the controls gets about 60.
 
 ## mexico-elections.html

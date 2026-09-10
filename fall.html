@@ -1174,6 +1174,7 @@ const FishFall = {
     this.flyers = [];
     this.bits = [];
     this.pops = [];
+    this.waves = [];
     this.snow = [];
     this.banner = null;
     this.hook = { x: w / 2, y: 0 };
@@ -1412,8 +1413,10 @@ const FishFall = {
       vy: -Math.sqrt(2 * this.grav * spots[i].apex),
       rot: rand(-0.6, 0.6),
       spin: rand(-1.5, 1.5),
+      float: 0,
       dead: false, shot: false,
     }));
+    this.waves = [];
     this.aim = null;
     Input.onTap = (x, y) => this.shoot(x, y);
     this.shotT = 0;
@@ -1421,20 +1424,59 @@ const FishFall = {
 
   updateShoot(dt) {
     this.shotT += dt;
+    const ceil = this.camY + 28;                   // keep the blast in frame
     let left = 0;
     for (const p of this.flyers) {
       if (p.dead) continue;
-      p.vy += this.grav * dt;
+
+      // A fish that just took a blast hangs: weak gravity and heavy drag, so
+      // the shot buys you time on everything near it.
+      let g = this.grav;
+      if (p.float > 0) {
+        p.float -= dt;
+        g *= 0.45;
+        p.vx *= Math.max(0, 1 - dt * 1.7);
+        p.vy *= Math.max(0, 1 - dt * 0.7);
+      }
+      p.vy += g * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.rot += p.spin * dt;
+      p.spin *= Math.max(0, 1 - dt * 0.8);
 
       // Bounce off the sides rather than sailing out of reach.
       if (p.x < 24 && p.vx < 0) { p.x = 24; p.vx *= -0.7; }
       if (p.x > this.w - 24 && p.vx > 0) { p.x = this.w - 24; p.vx *= -0.7; }
+      // The top of the screen is a lid, not a shelf: anything driven into it
+      // comes back down rather than hanging there out of the way.
+      if (p.y < ceil && p.vy < 0) { p.y = ceil; p.vy *= -0.5; p.float *= 0.4; p.spin += rand(-2, 2); }
 
       if (p.y >= 0 && p.vy > 0) { this.splash(p); continue; }
       left++;
+    }
+
+    // Fish shoulder each other apart. Without this a run of shots herds the
+    // whole catch into one corner and you are firing at a single dark lump.
+    for (let i = 0; i < this.flyers.length; i++) {
+      const a = this.flyers[i];
+      if (a.dead) continue;
+      for (let j = i + 1; j < this.flyers.length; j++) {
+        const b = this.flyers[j];
+        if (b.dead) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.hypot(dx, dy);
+        if (d > 46 || d < 0.001) continue;
+        const push = (1 - d / 46) * 300 * dt;
+        a.vx -= (dx / d) * push; a.vy -= (dy / d) * push;
+        b.vx += (dx / d) * push; b.vy += (dy / d) * push;
+      }
+    }
+
+    for (let i = this.waves.length - 1; i >= 0; i--) {
+      const wv = this.waves[i];
+      wv.life -= dt * 1.7;
+      wv.r += (wv.max - wv.r) * Math.min(1, dt * 9);
+      if (wv.life <= 0) this.waves.splice(i, 1);
     }
     Hud.set(this.score, left ? left + " in the air" : "");
     if (!left) { Input.onTap = null; this.tally(); }
@@ -1463,8 +1505,9 @@ const FishFall = {
       if (d < r + 24 && d < bestD) { best = p; bestD = d; }
     }
     if (!best) {
-      Sound.blip(160, 0.05, "square", 0.05);
+      this.blast(x, y + cam, 0.8);
       this.aim = { x, y, life: 1 };
+      Sound.blip(160, 0.05, "square", 0.05);
       return;
     }
     best.dead = true;
@@ -1480,9 +1523,49 @@ const FishFall = {
         r: rand(1.6, 4), life: 1, col: pick(["#dbe9f6", "#ffd76b", "#9fb4c8"]),
       });
     }
+    this.blast(best.x, best.y, 1);
     Sound.blip(1200, 0.05, "square", 0.09);
-    Sound.noise(0.09, 0.12);
     buzz(12);
+  },
+
+  // Every shot lands like buckshot. Whatever is near the impact gets thrown
+  // outward and, above all, up: the shot is how you keep the sky full.
+  blast(wx, wy, power) {
+    const R = Math.min(this.w, this.h) * 0.46 * (0.8 + power * 0.3);
+    const cam = this.camY;
+
+    for (const p of this.flyers) {
+      if (p.dead) continue;
+      const dx = p.x - wx, dy = p.y - wy;
+      const d = Math.hypot(dx, dy);
+      if (d > R) continue;
+      const fall = Math.pow(1 - d / R, 1.7) * power;
+      const nx = d < 1 ? rand(-1, 1) : dx / d;
+      const ny = d < 1 ? -1 : dy / d;
+
+      // A fish with sky over it gets the full lift. One already near the top
+      // gets shoved sideways instead, so shot after shot spreads the catch out
+      // rather than stacking it all in the same corner of the ceiling.
+      const room = clamp((p.y - (this.camY + 28)) / (this.h * 0.5), 0, 1);
+      p.vx += nx * this.h * 0.45 * fall;
+      p.vy += ny * this.h * 0.2 * fall - this.h * 0.55 * fall * (0.35 + room * 0.65);
+      p.vy = Math.max(p.vy, -this.h * 0.8);
+      p.vx = clamp(p.vx, -this.w * 0.8, this.w * 0.8);
+      p.spin += rand(-6, 6) * fall;
+      p.float = Math.max(p.float, 0.35 + fall * 0.55);
+    }
+
+    this.waves.push({ x: wx, y: wy, r: 12, max: R, life: 1 });
+    for (let i = 0; i < 18; i++) {
+      const a = rand(0, TAU), sp = rand(90, 260) * (0.6 + power * 0.5);
+      this.bits.push({
+        x: wx, y: wy - cam, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+        r: rand(1.2, 2.8), life: 0.8, col: pick(["#ffe08a", "#fff2c2", "#9fb4c8"]),
+      });
+    }
+    this.shake = Math.max(this.shake, 0.35 * power);
+    Sound.noise(0.22, 0.16);
+    Sound.blip(90, 0.16, "sawtooth", 0.06);
   },
 
   tally() {
@@ -1667,15 +1750,40 @@ const FishFall = {
       g.restore();
     }
 
+    // Blast rings. They sit in world coordinates like the flyers do.
+    for (const wv of this.waves) {
+      const a = clamp(wv.life, 0, 1);
+      const y = wv.y - cam;
+      g.save();
+      g.globalAlpha = a * a * 0.3;                     // the flash at the heart of it
+      g.fillStyle = "#fff2c2";
+      g.beginPath(); g.arc(wv.x, y, wv.r * 0.55, 0, TAU); g.fill();
+      g.globalAlpha = a * 0.7;
+      g.strokeStyle = "#ffe08a"; g.lineWidth = 2 + a * 4;
+      g.beginPath(); g.arc(wv.x, y, wv.r, 0, TAU); g.stroke();
+      g.globalAlpha = a * 0.3;
+      g.strokeStyle = "#fff2c2"; g.lineWidth = 1.4;
+      g.beginPath(); g.arc(wv.x, y, wv.r * 0.66, 0, TAU); g.stroke();
+      g.restore();
+    }
+
     // Muzzle flash and tracer.
     if (this.aim && this.aim.life > 0) {
       const a = clamp(this.aim.life, 0, 1);
       g.save();
+      const ang = Math.atan2(this.aim.y - gunY, this.aim.x - gunX);
+      const len = Math.hypot(this.aim.x - gunX, this.aim.y - gunY);
+      g.globalAlpha = a * 0.8;
+      g.strokeStyle = "#ffe08a"; g.lineWidth = 1.4;
+      for (let k = -2; k <= 2; k++) {                  // a spread, not a bullet
+        const sp = ang + k * 0.045;
+        g.beginPath(); g.moveTo(gunX, gunY);
+        g.lineTo(gunX + Math.cos(sp) * len, gunY + Math.sin(sp) * len);
+        g.stroke();
+      }
       g.globalAlpha = a;
-      g.strokeStyle = "#ffe08a"; g.lineWidth = 2;
-      g.beginPath(); g.moveTo(gunX, gunY); g.lineTo(this.aim.x, this.aim.y); g.stroke();
       g.fillStyle = "#fff2c2";
-      g.beginPath(); g.arc(gunX, gunY, 6 * a, 0, TAU); g.fill();
+      g.beginPath(); g.arc(gunX, gunY, 7 * a, 0, TAU); g.fill();
       g.restore();
     }
 
@@ -1977,19 +2085,20 @@ function drawCreature(g, sp, scale, dir, t) {
 
 const T = { VOID: 0, WATER: 1, SAND: 2, ROUGH: 3, FAIR: 4, GREEN: 5, TEE: 6 };
 
-// The colour of a cell is not fixed: the higher the ground, the more the grass
-// wears through to dirt, so height reads at a glance. `dirt` is where the top
-// face lands at the summit, and every wall is bare earth whatever grows on it.
+// A cell only names its top face here. The wall under it and the lit lip along
+// its edge are worked out from that colour when the course is built, so a step
+// looks like the same ground seen edge on rather than a brown cut through it.
 const GROUND = {
-  //           low grass    dirt at height  wall face  bounce  keep   drag
-  1: { top: "#3d86b8", dirt: "#3d86b8", side: "#4a6f86", e: 0.00, k: 0.00, f: 999 },  // water
-  2: { top: "#e6d19a", dirt: "#d9bb7c", side: "#a98a52", e: 0.05, k: 0.14, f: 9.0 },  // sand
-  3: { top: "#48803a", dirt: "#7a5730", side: "#6b4a2c", e: 0.16, k: 0.34, f: 5.0 },  // rough
-  4: { top: "#71b652", dirt: "#a56f38", side: "#7d5734", e: 0.30, k: 0.55, f: 3.0 },  // fairway
-  5: { top: "#9ada75", dirt: "#8cc268", side: "#7d5734", e: 0.22, k: 0.52, f: 1.0 },  // green
-  6: { top: "#83c762", dirt: "#9d7040", side: "#7d5734", e: 0.26, k: 0.54, f: 2.6 },  // tee
+  //           top face     bounce  keep   drag
+  1: { top: "#5aa9c9", e: 0.00, k: 0.00, f: 999 },   // water
+  2: { top: "#f2debb", e: 0.05, k: 0.14, f: 9.0 },   // sand
+  3: { top: "#4e8f52", e: 0.16, k: 0.34, f: 5.0 },   // rough
+  4: { top: "#79bb62", e: 0.30, k: 0.55, f: 3.0 },   // fairway
+  5: { top: "#a3d67d", e: 0.22, k: 0.52, f: 1.0 },   // green
+  6: { top: "#8dc96c", e: 0.26, k: 0.54, f: 2.6 },   // tee
 };
-const HIGH = 3.5;                        // the top of the height range
+const STEP = 0.5;                        // one terrace
+const LEVELS = 2;                        // and the number of them above the floor
 
 const CLUBS = [
   { id: "driver", name: "Driver", power: 15.0, angle: 0.68, bounce: 1.25, roll: 1.00, zoom: 0.62 },
@@ -2021,13 +2130,16 @@ const TICK = 1 / 120;                    // the ball runs on a fixed step, so th
                                          // preview and the real shot agree exactly
 const STEP_UP = 0.55;                    // one terrain step; taller than this is a wall
 
-// Blend two hex colours. Used once per cell when a course is built, never in a
-// frame.
-function mixHex(a, b, t) {
-  t = clamp(t, 0, 1);
-  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
-  const ch = (sh) => Math.round(((pa >> sh) & 255) + (((pb >> sh) & 255) - ((pa >> sh) & 255)) * t);
-  return "rgb(" + ch(16) + "," + ch(8) + "," + ch(0) + ")";
+// Pull a hex colour towards a list of [hex, amount] tints. Used once per cell
+// when a course is built, never in a frame.
+function tintHex(base, mixes) {
+  const rgb = (hex) => { const v = parseInt(hex.slice(1), 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+  const c = rgb(base);
+  for (const [hex, amt] of mixes) {
+    const t = clamp(amt, 0, 1), o = rgb(hex);
+    for (let n = 0; n < 3; n++) c[n] += (o[n] - c[n]) * t;
+  }
+  return "rgb(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + ")";
 }
 
 const GolfFall = {
@@ -2051,6 +2163,11 @@ const GolfFall = {
     this.puff = [];
     this.msg = null;
     this.camX = 0; this.camY = 0; this.camZ = 0;
+    this.clouds = [];
+    for (let i = 0; i < 7; i++) {
+      this.clouds.push({ x: Math.random(), y: rand(0.04, 0.3), s: rand(0.42, 0.9),
+                         sp: rand(0.004, 0.013) });
+    }
     this.bindTouch();
     Hud.set("0", "");
     this.intro();
@@ -2702,10 +2819,12 @@ const GolfFall = {
   // ── Drawing ──
   draw(g, w, h) {
     const sky = g.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, "#87c1e8");
-    sky.addColorStop(0.55, "#cde5f2");
-    sky.addColorStop(1, "#eff4ee");
+    sky.addColorStop(0, "#6fbbe4");
+    sky.addColorStop(0.42, "#a9d8ee");
+    sky.addColorStop(0.78, "#dcecdf");
+    sky.addColorStop(1, "#f4f3e0");
     g.fillStyle = sky; g.fillRect(0, 0, w, h);
+    this.drawSky(g, w, h);
     if (!this.course) return;
 
     const c = this.course;
@@ -2783,6 +2902,34 @@ const GolfFall = {
     }
   },
 
+  // Sun and weather. The light sits high and to the right, the same side the
+  // trees are lit from, so the sky and the island agree about where it is.
+  drawSky(g, w, h) {
+    const sx = w * 0.78, sy = h * 0.13, sr = Math.min(w, h) * 0.4;
+    const glow = g.createRadialGradient(sx, sy, 0, sx, sy, sr);
+    glow.addColorStop(0, "rgba(255,247,214,.85)");
+    glow.addColorStop(0.24, "rgba(255,243,199,.34)");
+    glow.addColorStop(1, "rgba(255,243,199,0)");
+    g.fillStyle = glow;
+    g.beginPath(); g.arc(sx, sy, sr, 0, TAU); g.fill();
+
+    const t = (Engine.last || 0) * 0.001;
+    for (const c of this.clouds) {
+      const cx = (((c.x + t * c.sp) % 1.3) - 0.15) * w;
+      const cy = c.y * h, r = Math.min(w, h) * 0.075 * c.s;
+      if (cx < -r * 4 || cx > w + r * 4) continue;
+      const puff = (dx, dy, rr, col) => {
+        g.fillStyle = col;
+        g.beginPath(); g.ellipse(cx + dx * r, cy + dy * r, rr * r, rr * r * 0.62, 0, 0, TAU); g.fill();
+      };
+      puff(0.1, 0.34, 1.5, "rgba(198,222,236,.5)");     // underside
+      puff(-1.2, 0.1, 0.78, "rgba(255,255,255,.9)");
+      puff(1.15, 0.16, 0.66, "rgba(255,255,255,.9)");
+      puff(0, 0, 1.05, "rgba(255,255,255,.95)");
+      puff(0.55, -0.3, 0.72, "rgba(255,255,255,.95)");
+    }
+  },
+
   // The sort depth of the cell a thing stands on.
   cellD(x, y) {
     return this.proj(Math.floor(x) + 0.5, Math.floor(y) + 0.5, 0).d;
@@ -2807,12 +2954,27 @@ const GolfFall = {
       const nz = t2 === T.VOID ? z - 2.6 : this.heightAt(i + di + 0.5, j + dj + 0.5);
       if (nz >= z - 0.001) continue;
       const drop = (z - nz) * this.scale() * VZ;
-      g.fillStyle = c.sideCol[n];
+      if (t2 === T.VOID) {
+        // The island has no underside, so the edge falls away into haze
+        // instead of ending in a flat brown band.
+        const fade = g.createLinearGradient(0, p.y, 0, p.y + drop);
+        fade.addColorStop(0, c.sideCol[n]);
+        fade.addColorStop(0.22, "#7a5f42");
+        fade.addColorStop(0.6, "#54432f");
+        fade.addColorStop(1, "rgba(150,178,192,0)");
+        g.fillStyle = fade;
+      } else {
+        g.fillStyle = c.sideCol[n];
+      }
       g.beginPath();
       g.moveTo(p.x, p.y); g.lineTo(q.x, q.y);
       g.lineTo(q.x, q.y + drop); g.lineTo(p.x, p.y + drop);
-      g.closePath(); g.fill();
-      const cap = Math.min(drop, this.scale() * 0.14);      // sunlit lip of the cliff
+      g.closePath();
+      // Fill and stroke the same shape. Neighbouring faces meet on a shared
+      // edge, and without the stroke the seam between them shows as a hairline
+      // of sky — which is what made the ground read as a grid.
+      g.fill(); g.lineWidth = 1; g.strokeStyle = g.fillStyle; g.stroke();
+      const cap = Math.min(drop, this.scale() * 0.14);      // lit lip of the step
       g.fillStyle = c.capCol[n];
       g.beginPath();
       g.moveTo(p.x, p.y); g.lineTo(q.x, q.y);
@@ -2823,7 +2985,8 @@ const GolfFall = {
     g.fillStyle = c.topCol[n];
     g.beginPath();
     g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.lineTo(cc.x, cc.y); g.lineTo(d.x, d.y);
-    g.closePath(); g.fill();
+    g.closePath();
+    g.fill(); g.lineWidth = 1; g.strokeStyle = g.fillStyle; g.stroke();
 
     if (t === T.WATER) {
       g.fillStyle = "rgba(255,255,255,.15)";
@@ -2835,21 +2998,29 @@ const GolfFall = {
     }
   },
 
+  // A crown built from overlapping blobs, dark at the skirt and bright at the
+  // top. One flat circle on a stick read as a lollipop, and a hundred
+  // lollipops is most of what made the course look cheap.
   drawTree(g, tr) {
-    const k = this.scale();
+    const k = this.scale(), R = k * tr.r;
     const base = this.proj(tr.x, tr.y, tr.z);
     const top = this.proj(tr.x, tr.y, tr.z + tr.tall);
-    g.fillStyle = "rgba(20,45,20,.16)";
+    g.fillStyle = "rgba(26,54,32,.18)";
     g.beginPath();
-    g.ellipse(base.x + k * 0.35, base.y + k * 0.12, k * tr.r * 0.9, k * tr.r * 0.4, 0, 0, TAU);
+    g.ellipse(base.x + k * 0.3, base.y + k * 0.1, R * 0.95, R * 0.42, 0, 0, TAU);
     g.fill();
-    g.strokeStyle = "#5b4227"; g.lineWidth = Math.max(2, k * 0.13); g.lineCap = "round";
+    g.strokeStyle = "#6b4e30"; g.lineWidth = Math.max(2, k * 0.12); g.lineCap = "round";
     g.beginPath(); g.moveTo(base.x, base.y); g.lineTo(top.x, top.y); g.stroke();
-    g.fillStyle = "#2e6b32";
-    g.beginPath(); g.arc(top.x, top.y, k * tr.r, 0, TAU); g.fill();
-    g.fillStyle = "rgba(255,255,255,.13)";
-    g.beginPath();
-    g.arc(top.x - k * tr.r * 0.3, top.y - k * tr.r * 0.35, k * tr.r * 0.44, 0, TAU); g.fill();
+
+    const blob = (dx, dy, r, col) => {
+      g.fillStyle = col;
+      g.beginPath(); g.arc(top.x + dx * R, top.y + dy * R, r * R, 0, TAU); g.fill();
+    };
+    blob(-0.34, 0.26, 0.72, "#2f6738");                 // shaded skirt
+    blob(0.36, 0.2, 0.66, "#356f3b");
+    blob(0, -0.06, 1, "#3d7c40");
+    blob(0.26, -0.42, 0.54, "#4d9349");                 // crown, towards the sun
+    blob(0.46, -0.2, 0.34, "#5da551");
   },
 
   drawFlag(g, cup) {
@@ -3069,23 +3240,66 @@ function genCourse() {
     arms.push({ pts, head, gapAt });
   }
 
-  // Height: value noise on a coarse lattice, smoothed and stepped.
-  const CO = 7, cw = Math.ceil(W / CO) + 2, ch = Math.ceil(H / CO) + 2;
-  const seed = [];
-  for (let n = 0; n < cw * ch; n++) seed.push(Math.random());
-  const mix = (a, b, t) => a + (b - a) * t;
-  const ease = (t) => t * t * (3 - 2 * t);
+  // Height. Three terraces and no more: the valley floor, a shoulder, a summit.
+  // They are not noise chopped into blocks — they are the contour lines of a
+  // handful of hills placed on purpose. A smooth mound field crossed by two
+  // thresholds gives long rounded edges, so the island reads as slopes.
+  const hills = [];
+  const tall = 2 + ((Math.random() * 2) | 0);           // this many reach the top
+  for (let n = 0, tries = 0; n < 7 && tries < 500; tries++) {
+    const i = rand(5, W - 5) | 0, j = rand(5, H - 5) | 0;
+    if (cellT(i, j) === T.VOID) continue;
+    let far = Math.hypot(i + 0.5 - hub.x, j + 0.5 - hub.y) > 5;
+    for (const m of hills) if (Math.hypot(m.x - i, m.y - j) < 12) far = false;
+    if (!far) continue;
+    hills.push({
+      x: i + 0.5, y: j + 0.5,
+      r: rand(8, 13),
+      s: n < tall ? rand(1.1, 1.4) : rand(0.55, 0.82),
+      st: rand(0.78, 1.34), rot: Math.random() * TAU,   // stretched and turned,
+    });                                                 // so no hill is a disc
+    n++;
+  }
+
+  const field = new Float32Array(W * H);
   for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {
-      const gx = i / CO, gy = j / CO;
-      const x0 = Math.floor(gx), y0 = Math.floor(gy);
-      const tx = ease(gx - x0), ty = ease(gy - y0);
-      const at = (a, b) => seed[Math.min(ch - 1, b) * cw + Math.min(cw - 1, a)];
-      const v = mix(mix(at(x0, y0), at(x0 + 1, y0), tx),
-                    mix(at(x0, y0 + 1), at(x0 + 1, y0 + 1), tx), ty);
-      hgt[idx(i, j)] = Math.round(v * 7) * 0.5;          // 0 .. 3.5, in half steps
+      let v = 0;
+      for (const m of hills) {
+        const dx = i + 0.5 - m.x, dy = j + 0.5 - m.y;
+        const co = Math.cos(m.rot), si = Math.sin(m.rot);
+        const ux = (dx * co + dy * si) / m.st, uy = (dy * co - dx * si) * m.st;
+        const d2 = (ux * ux + uy * uy) / (m.r * m.r);
+        if (d2 >= 1) continue;
+        const f = 1 - d2;
+        v += m.s * f * f;                               // flat on top, soft at the foot
+      }
+      field[idx(i, j)] = v;
     }
   }
+  const lvl = new Uint8Array(W * H);
+  for (let n = 0; n < W * H; n++) lvl[n] = field[n] > 0.74 ? 2 : field[n] > 0.3 ? 1 : 0;
+
+  // Round off the contours: a lone cell that disagrees with everything round it
+  // is a bump nobody meant to put there.
+  for (let pass = 0; pass < 2; pass++) {
+    const was = lvl.slice();
+    for (let j = 1; j < H - 1; j++) {
+      for (let i = 1; i < W - 1; i++) {
+        const n = idx(i, j);
+        const tally = [0, 0, 0];
+        for (let dj = -1; dj <= 1; dj++)
+          for (let di = -1; di <= 1; di++) {
+            if (!di && !dj) continue;
+            tally[was[idx(i + di, j + dj)]]++;
+          }
+        let top = 0;
+        for (let v = 1; v < 3; v++) if (tally[v] > tally[top]) top = v;
+        if (tally[was[n]] <= 2) lvl[n] = top;
+      }
+    }
+  }
+  for (let n = 0; n < W * H; n++) hgt[n] = lvl[n] * STEP;
 
   // Fairway down the middle of every arm, and across the hub.
   paint(hub.x, hub.y, 5.5, T.FAIR);
@@ -3094,10 +3308,33 @@ function genCourse() {
     paint(arm.head.x, arm.head.y, 4.4, T.FAIR);
   }
 
-  // Water in the low ground, away from the greens.
-  for (let n = 0; n < W * H; n++) {
-    if (grid[n] !== T.ROUGH) continue;
-    if (hgt[n] <= 0.5 && Math.random() < 0.7) { grid[n] = T.WATER; hgt[n] = 0.35; }
+  // Water: two or three ponds sunk into the valley floor, each one placed.
+  // Sprinkling wet cells through the rough wherever the ground was low only
+  // made the island look mouldy.
+  const ponds = [];
+  for (let n = 0, tries = 0; n < 3 && tries < 400; tries++) {
+    const i = rand(6, W - 6) | 0, j = rand(6, H - 6) | 0;
+    if (grid[idx(i, j)] !== T.ROUGH || hgt[idx(i, j)] > 0.01) continue;
+    let ok = Math.hypot(i + 0.5 - hub.x, j + 0.5 - hub.y) > 8;
+    for (const arm of arms) if (Math.hypot(i + 0.5 - arm.head.x, j + 0.5 - arm.head.y) < 9) ok = false;
+    for (const p of ponds) if (Math.hypot(p.x - i, p.y - j) < 11) ok = false;
+    if (!ok) continue;
+    const r = rand(2.4, 3.8), wob = Math.random() * TAU;
+    ponds.push({ x: i + 0.5, y: j + 0.5, r });
+    for (let b = j - 6; b <= j + 6; b++) {
+      for (let a = i - 6; a <= i + 6; a++) {
+        if (!inside(a, b) || grid[idx(a, b)] !== T.ROUGH || hgt[idx(a, b)] > 0.01) continue;
+        // Never against a green: the collar has to stay playable.
+        let clear = true;
+        for (const arm of arms) if (Math.hypot(a + 0.5 - arm.head.x, b + 0.5 - arm.head.y) < 7.6) clear = false;
+        if (!clear) continue;
+        const dx = a - i, dy = b - j, d = Math.hypot(dx, dy);
+        const edge = r * (1 + Math.sin(Math.atan2(dy, dx) * 2 + wob) * 0.16);
+        if (d > edge) continue;
+        grid[idx(a, b)] = T.WATER; hgt[idx(a, b)] = -0.22;
+      }
+    }
+    n++;
   }
 
   // Greens, flattened, each with a bunker or two guarding it.
@@ -3209,21 +3446,35 @@ function genCourse() {
     }
   }
 
-  // Colour every cell once, now that the ground has stopped moving. Grass wears
-  // to dirt as it climbs, walls are bare earth, and the lip of a wall catches
-  // the light.
+  // Colour every cell once, now that the ground has stopped moving. Height is
+  // told by light rather than by wear: each terrace up catches more sun, and a
+  // cell tucked under a step sits in its shadow. Cut grass carries mower bands
+  // running the one way across the island.
+  const SUN = "#fff4cb", SHADE = "#1d3b2e";
   const topCol = new Array(W * H), sideCol = new Array(W * H), capCol = new Array(W * H);
-  for (let n = 0; n < W * H; n++) {
-    const t = grid[n];
-    if (t === T.VOID) continue;
-    const gr = GROUND[t];
-    // Grass below, dirt above, and one band in between rather than a long
-    // gradient — so a rise is a different colour, not a slightly different one.
-    const rise = clamp((hgt[n] - 1.0) / 1.5, 0, 1);
-    const up = rise * rise * (3 - 2 * rise);
-    topCol[n] = mixHex(gr.top, gr.dirt, up);
-    sideCol[n] = mixHex(gr.side, "#9a7145", up);
-    capCol[n] = mixHex(gr.side, "#c79c66", 0.42 + up * 0.3);
+  for (let j = 0; j < H; j++) {
+    for (let i = 0; i < W; i++) {
+      const n = idx(i, j), t = grid[n];
+      if (t === T.VOID) continue;
+      const gr = GROUND[t];
+      const step = clamp(Math.round(hgt[n] / STEP), 0, LEVELS);
+      const mixes = [[SUN, 0.085 * step]];
+      if (t === T.FAIR || t === T.GREEN || t === T.TEE) {
+        mixes.push(((i >> 1) & 1) ? [SUN, 0.075] : [SHADE, 0.055]);
+      }
+      let dark = 0;
+      for (const [di, dj] of NB) {
+        if (!inside(i + di, j + dj) || cellT(i + di, j + dj) === T.VOID) continue;
+        if (hgt[idx(i + di, j + dj)] > hgt[n] + 0.2) dark += 0.075;
+      }
+      if (dark > 0) mixes.push([SHADE, Math.min(dark, 0.15)]);
+      // A terrace wall is the same ground seen edge on, so it takes its colour
+      // from the top face. Brown earth walls turned every rise into a scar
+      // across the grass.
+      topCol[n] = tintHex(gr.top, mixes);
+      sideCol[n] = tintHex(gr.top, [[SHADE, 0.42], [SUN, 0.05 * step]]);
+      capCol[n] = tintHex(gr.top, [[SHADE, 0.16], [SUN, 0.05 * step]]);
+    }
   }
 
   return { w: W, h: H, grid, hgt, trees, treeAt, cups, topCol, sideCol, capCol,

@@ -3,6 +3,9 @@
 Five pages. Each one is a single HTML file with no build step, no dependencies and no
 network calls. Open any of them in a browser.
 
+`ios/` is the exception. It is a native rewrite of `fall.html` in Swift and SpriteKit,
+and it does need Xcode. It has [its own README](ios/README.md).
+
 ## fall.html
 
 Four small games for a phone, played with one thumb. The page is a full-screen app
@@ -289,3 +292,16 @@ Simulated over 50 seeded days: a player who takes the highest-scoring room every
 builds a manor worth 38 and gets in **0%** of the time. A player who works out that gems
 are the gate gets in 36% of the time but only scores 21. A player doing both scores 45 and
 gets in 68%.
+
+## ios/
+
+Fall, rewritten for the phone. Same games, same feel, native.
+
+The split follows the page it came from. Menus were HTML and CSS, so they are SwiftUI.
+Gameplay was a canvas, so it is a SpriteKit scene. Best scores moved from localStorage to
+UserDefaults, and the sounds are still synthesised rather than loaded, so there are no
+audio files in the bundle either.
+
+Dino Fall is finished. Fish, Golf and Ski are still only on the web.
+
+Open `ios/Fall.xcodeproj`. There is no package manager and nothing to install.

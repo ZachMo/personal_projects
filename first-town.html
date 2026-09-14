@@ -414,16 +414,16 @@ const DEF = {
                rules: [{ k: "on", t: "grass", p: 1 }, { k: "near", cats: ["leisure"], p: 2 }] },
   gristmill: { name: "Gristmill", cat: "agri", shape: "I2", n: 1, era: 2, base: 2, roof: ["#a7836a", "#86684f"],
                roles: ["hall", "wheel"], blurb: "A water wheel grinding the harvest.",
-               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", cats: ["agri"], p: 2 }] },
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", cats: ["agri"], p: 2 }, { k: "by", t: "wheat", p: 1 }] },
   stables:   { name: "Stables", plural: "Stables", cat: "agri", shape: "T4", n: 1, era: 2, base: 2, roof: ["#a2603c", "#7f492c"],
                roles: ["hall", "hall", "hall", "hay"], blurb: "Horses for hire, broken from the herds.",
                rules: [{ k: "by", t: "herd", p: 2 }, { k: "near", cats: ["leisure", "civic"], p: 1 }] },
   granary:   { name: "Granary", plural: "Granaries", cat: "agri", shape: "I2", n: 1, era: 3, base: 1, roof: ["#caa24e", "#a8843a"],
-               roles: ["hall", "hall"], blurb: "Stores the harvest of every food building in town.",
-               rules: [{ k: "town", cats: ["agri"], p: 1 }] },
+               roles: ["hall", "hall"], blurb: "Stores grain where it grows, and the harvest of every food building.",
+               rules: [{ k: "on", t: "wheat", p: 2 }, { k: "town", cats: ["agri"], p: 1 }] },
   windmill:  { name: "Windmill", cat: "agri", shape: "I1", n: 2, era: 1, base: 1,
                roles: ["windmill"], blurb: "Turns wherever the grain grows.",
-               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "by", t: "wheat", p: 1 }] },
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "on", t: "wheat", p: 2 }] },
 
   /* Industry */
   sluice:    { name: "Gold Sluice", plural: "Gold Sluices", cat: "industry", shape: "I3", n: 1, era: 1, base: 2,
@@ -448,7 +448,7 @@ const DEF = {
   /* Shops */
   bakery:    { name: "Bakery", plural: "Bakeries", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#d69a52", "#b47c3c"],
                roles: ["house", "crates"], blurb: "Flour from the farms, bread for the homes.",
-               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
+               rules: [{ k: "by", t: "wheat", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
   fishmarket:{ name: "Fish Market", cat: "shop", shape: "I3", n: 1, era: 2, base: 2, roof: ["#4f93b0", "#3d7690"],
                roles: ["shop", "shop", "crates"], blurb: "The day's catch, from the river to the homes.",
                rules: [{ k: "by", t: "water", p: 1 }, { k: "near", cats: ["home"], p: 2 }] },
@@ -2135,8 +2135,8 @@ function recordBest() {
   try { const best = +localStorage.getItem(BEST) || 0; if (total() > best) localStorage.setItem(BEST, total()); } catch (e) {}
 }
 
-/* Bump when a change to the map or the deck means an old link no longer gives the same game. */
-const LINK_VERSION = 1;
+/* Bump when a change to the map, the deck or the scoring means an old link no longer gives the same game. */
+const LINK_VERSION = 2;
 
 function challengeURL() {
   const base = location.href.split(/[?#]/)[0];
@@ -2255,7 +2255,7 @@ function intro(challenge = null) {
   hud();
   const lead = challenge
     ? `<div class="versus">${esc(challenge.from)} scored ${challenge.score} on this map<span>Same land, same buildings, same order. Can you beat it?</span></div>
-       ${challenge.v !== LINK_VERSION ? `<p>This link is from an older version of the game, so the map may not match.</p>` : ""}`
+       ${challenge.v !== LINK_VERSION ? `<p>This link is from an older version of the game, so the map or the scoring may be different.</p>` : ""}`
     : `<p>Fit odd-shaped buildings onto the map. Good spots score more.</p>`;
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
       <h1>First Town</h1>

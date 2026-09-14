@@ -79,11 +79,21 @@
 
   /* ── The piece in hand ── */
   #panel {
-    width: calc(100% - 20px); max-width: 520px; justify-self: center;
-    margin: 6px calc(var(--pad-r) + 10px) calc(var(--pad-b) + 10px) calc(var(--pad-l) + 10px); padding: 14px 14px 12px;
+    width: calc(100% - 16px); max-width: 520px; justify-self: center; display: flex; align-items: center; gap: 8px;
+    margin: 4px calc(var(--pad-r) + 8px) calc(var(--pad-b) + 8px) calc(var(--pad-l) + 8px); padding: 8px; border-radius: 18px;
   }
+  #piece { flex: 1; min-width: 0; }
+  #piece .head { grid-template-columns: 44px 1fr; gap: 10px; }
+  #piece .mini { width: 44px; height: 44px; border-radius: 12px; }
+  #piece .name { display: block; font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nx { display: inline-flex; align-items: center; gap: 4px; }
+  .nx svg { display: block; }
+  #controls { flex: 0 0 auto; margin-top: 0; }
+  #controls .tool { height: 44px; }
+  #bTurn, #bFlip { width: 44px; padding: 0; justify-content: center; }
+  #controls .primary { flex: 0 0 auto; height: 44px; padding: 0 20px; }
   .head { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; width: 100%; text-align: left; }
-  .hint { font-size: .74rem; font-weight: 650; color: var(--muted); margin-top: 2px; }
+  .hint { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-size: .74rem; font-weight: 650; color: var(--muted); margin-top: 2px; }
   .mini { width: 58px; height: 58px; display: grid; place-items: center; background: var(--card-2); border-radius: 14px; }
   .mini svg { display: block; }
   .name { font-weight: 750; font-size: 1.06rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
@@ -117,10 +127,9 @@
              box-shadow: inset 0 -3px 0 var(--accent-2); }
   .primary[disabled] { background: #dcd6ca; color: #8e897e; box-shadow: none; pointer-events: none; }
   .primary.dark { background: var(--ink); box-shadow: inset 0 -3px 0 #000; }
-  @media (max-width: 440px) { .tool .lbl { display: none; } .tool { padding: 0 13px; } }
 
-  .done { display: flex; align-items: center; gap: 12px; }
-  .done .big { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .done { display: flex; align-items: baseline; gap: 6px; padding-left: 6px; }
+  .done .big { font-size: 1.7rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
   .done .sub { font-size: .8rem; color: var(--ink-2); }
 
   /* ── Sheets and dialogs ── */
@@ -167,6 +176,14 @@
   .deckrow .mods li b { min-width: 30px; font-size: .72rem; padding: 1px 5px; }
   .count { font-size: .72rem; font-weight: 800; color: var(--ink-2); background: var(--card); border-radius: 999px; padding: 1px 7px; }
 
+  .versus { margin: 12px 0 4px; padding: 12px 14px; border-radius: 16px; background: #f6e7b4; color: #6b4a08;
+            font-weight: 750; font-size: 1rem; text-align: center; }
+  .versus span { display: block; font-size: .8rem; font-weight: 600; margin-top: 3px; }
+  .versus.win { background: var(--good-bg); color: var(--good); }
+  .versus.lose { background: var(--bad-bg); color: var(--bad); }
+  .wide { width: 100%; margin-top: 10px; }
+  .linkbtn { display: block; margin: 10px auto 0; padding: 6px; font-size: .84rem; font-weight: 700; color: var(--ink-2); }
+  .sharebox input { margin-top: 8px; font-size: .8rem; }
   .label { margin: 14px 0 2px; font-size: .72rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
   .tchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .tchip { font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #f6e7b4; color: #7a5608; }
@@ -222,13 +239,10 @@
     <div id="piece"></div>
     <div class="controls" id="controls">
       <button class="tool" id="bTurn" aria-label="Turn">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 9.5A5.5 5.5 0 1 1 13 5"/><path d="M13.5 1.8 13 5l3.2.6"/></svg><span class="lbl">Turn</span>
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 9.5A5.5 5.5 0 1 1 13 5"/><path d="M13.5 1.8 13 5l3.2.6"/></svg>
       </button>
       <button class="tool" id="bFlip" aria-label="Flip">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5v15"/><path d="M7 5 2.5 14H7zM13 5l4.5 9H13z"/></svg><span class="lbl">Flip</span>
-      </button>
-      <button class="tool" id="bSwap" aria-label="Swap with next">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h12l-3-3M16 13H4l3 3"/></svg><span class="lbl">Swap</span><em id="swaps">2</em>
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5v15"/><path d="M7 5 2.5 14H7zM13 5l4.5 9H13z"/></svg>
       </button>
       <button class="primary" id="bBuild">Build</button>
     </div>
@@ -251,23 +265,23 @@ const COLS = 9, ROWS = 12, N = COLS * ROWS;
 const FILL = .87;        // the deck covers this share of the land you can build on
 const AWAY = 5;           // points lost for each building that fits nowhere
 const ALL_FIT = 10;       // points won when every building finds a place
-const SWAPS = 2;          // times you can trade the building in hand for the next one
 
 const TERRAIN = {
   grass:  { name: "Open grass", short: "open grass", blurb: "Flat, easy land." },
   forest: { name: "Woods",      short: "woods",      blurb: "Tall trees. A building put here clears them." },
   ore:    { name: "Ore vein",   short: "ore",        blurb: "Rock with a seam of silver in it." },
   wheat:  { name: "Wild wheat", short: "wild wheat", blurb: "Rich soil where grain grows on its own." },
+  herd:   { name: "Grazing herd", short: "herd", on: "herd land", blurb: "Cattle and sheep on open range. A building here drives them off." },
   water:  { name: "Water",      short: "water",      blurb: "Only a bridge can be built on water." },
 };
 
 const CATS = {
   home:     { name: "Home",     one: "home",                many: "homes" },
-  agri:     { name: "Food",     one: "farm, ranch or dock", many: "farms, ranches or docks" },
+  agri:     { name: "Food",     one: "food building",       many: "food buildings" },
   industry: { name: "Industry", one: "industry building",   many: "industry buildings" },
   shop:     { name: "Shop",     one: "shop",                many: "shops" },
   civic:    { name: "Civic",    one: "civic building",      many: "civic buildings" },
-  leisure:  { name: "Leisure",  one: "saloon or hotel",     many: "saloons or hotels" },
+  leisure:  { name: "Leisure",  one: "leisure building",    many: "leisure buildings" },
 };
 
 /* Footprints. The order of the cells matters: each building's roles line up with it. */
@@ -315,144 +329,138 @@ const SHAPES = {
   bridge: true lets a building sit on water. Both of its ends must be on land.
   emblem: a small sign drawn on the roof.   tile: its own tile colours, instead of its category's.
 
-  Each game draws about 17 kinds from this library. See makeDeck.
+  Each game draws about 19 kinds from this library. See makeDeck.
 */
 const DEF = {
   well:      { name: "Town Well", plural: "Town Wells", cat: "civic", shape: "I1", n: 2, era: 1, base: 1,
-               roles: ["well"], blurb: "Fresh water for the families nearby.",
-               rules: [{ k: "near", cats: ["home"], p: 1 }] },
+               roles: ["well"], blurb: "Fresh water for homes and farms.",
+               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["agri"], p: 1 }] },
   cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, base: 2, roof: ["#dc7b50", "#b75d3a"],
-               roles: ["house", "garden"], blurb: "Two rooms and a porch with a view.",
-               rules: [{ k: "by", t: "water", p: 2, once: true }, { k: "by", t: "forest", p: 1 },
-                       { k: "near", cats: ["industry"], p: -2 }] },
+               roles: ["house", "garden"], blurb: "A porch by the woods, close to the food.",
+               rules: [{ k: "by", t: "forest", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
   homestead: { name: "Homestead", cat: "home", shape: "V3", n: 2, era: 1, base: 3, roof: ["#c86a4b", "#a45237"],
-               roles: ["garden", "house", "house"], blurb: "A family that likes company.",
-               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", types: ["well"], p: 2 },
-                       { k: "near", cats: ["industry"], p: -2 }] },
+               roles: ["garden", "house", "house"], blurb: "A family that likes neighbours and fresh food.",
+               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
   rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, base: 3, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
                roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close.",
-               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 },
-                       { k: "near", cats: ["industry"], p: -2 }] },
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   farm:      { name: "Farm", cat: "agri", shape: "O4", n: 2, era: 1, base: 2, roof: ["#cc5443", "#a43f31"],
                roles: ["barn", "field", "field", "field"], blurb: "Grain for the whole town.",
-               rules: [{ k: "on", t: "wheat", p: 3 }, { k: "by", t: "water", p: 2, once: true },
-                       { k: "near", cats: ["industry"], p: -1 }] },
-  ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, base: 3, roof: ["#b85a40", "#93432f"],
-               roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Cattle need room to roam.",
-               rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "water", p: 2, once: true },
-                       { k: "near", cats: ["home"], p: -1 }] },
+               rules: [{ k: "on", t: "wheat", p: 3 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["industry"], p: -1 }] },
+  ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, base: 2, roof: ["#b85a40", "#93432f"],
+               roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Round up a herd, or graze open grass.",
+               rules: [{ k: "on", t: "herd", p: 2 }, { k: "on", t: "grass", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
   lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, base: 2, roof: ["#8e6c4f", "#6e523b"],
                roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
-               rules: [{ k: "by", t: "forest", p: 2 }] },
+               rules: [{ k: "by", t: "forest", p: 2 }, { k: "near", cats: ["industry"], p: 1 }] },
   mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1, base: 1,
                roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging where the ore is.",
-               rules: [{ k: "on", t: "ore", p: 4 }] },
-  smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, base: 3, roof: ["#6f7985", "#535c67"],
-               roles: ["forge", "yard"], blurb: "Hammers out tools from fresh ore.",
-               rules: [{ k: "near", types: ["mine"], p: 4 }, { k: "by", t: "ore", p: 1 }] },
+               rules: [{ k: "on", t: "ore", p: 4 }, { k: "near", cats: ["industry"], p: 1 }] },
+  smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#6f7985", "#535c67"],
+               roles: ["forge", "yard"], blurb: "Tools for the mills, shoes for the herds.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "by", t: "herd", p: 1 }] },
   dock:      { name: "Fishing Dock", cat: "agri", shape: "I3", n: 1, era: 2, base: 1, roof: ["#927c64", "#73614d"],
                roles: ["shed", "plank", "plank"], blurb: "Nets and boats along the bank.",
-               rules: [{ k: "by", t: "water", p: 2 }] },
+               rules: [{ k: "by", t: "water", p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
   store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, base: 3, roof: ["#40a092", "#2f7e72"],
                roles: ["shop", "shop", "shop", "crates"], blurb: "A little of everything, for the families.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
   grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, base: 2, roof: ["#5ea56b", "#468753"],
                roles: ["shop", "shop", "produce", "produce"], blurb: "Fresh food, straight from the source.",
                rules: [{ k: "near", cats: ["agri"], p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
-  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 4, roof: ["#a95a90", "#864571"],
+  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 3, roof: ["#a95a90", "#864571"],
                roles: ["hall", "hall", "porch", "porch"], blurb: "Where the workers go after a shift.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 }] },
-  church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 4, roof: ["#8195b8", "#63779d"],
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["leisure"], p: 2 }] },
+  church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 3, roof: ["#8195b8", "#63779d"],
                roles: ["steeple", "tree", "nave", "tree", "nave"], blurb: "The heart of a quiet town.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", types: ["saloon"], p: -4 }] },
-  school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 4, roof: ["#cc5e4c", "#a84737"],
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["leisure"], p: -3 }] },
+  school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#cc5e4c", "#a84737"],
                roles: ["hall", "hall", "hall", "yard", "play"], blurb: "Lessons for the children next door.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["industry"], p: -2 },
-                       { k: "near", types: ["saloon"], p: -3 }] },
-  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 4, roof: ["#9160aa", "#724489"],
-               roles: ["big", "big", "big", "big", "porch"], blurb: "Travellers want a drink and a train.",
-               rules: [{ k: "near", types: ["saloon", "station"], p: 3 }, { k: "by", t: "water", p: 2, once: true }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 3, roof: ["#9160aa", "#724489"],
+               roles: ["big", "big", "big", "big", "porch"], blurb: "Travellers want a drink, a view and a store.",
+               rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["shop"], p: 1 }] },
   station:   { name: "Train Station", cat: "civic", shape: "I5", n: 1, era: 3, base: 3, roof: ["#5d7189", "#46586c"],
                roles: ["rail", "hall", "hall", "hall", "rail"], blurb: "The line comes in from the edge of the map.",
-               rules: [{ k: "edge", p: 4 }, { k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 }] },
+               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry", "shop"], p: 2 }] },
   townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, base: 3, roof: ["#5580c8", "#4065a8"],
                roles: ["tree", "flag", "hall", "hall", "hall"], blurb: "Wants every part of town at its door.",
                rules: [{ k: "variety", p: 2 }] },
 
   /* Homes */
-  manor:     { name: "Manor", cat: "home", shape: "O4", n: 1, era: 2, base: 5, roof: ["#7e8a9e", "#616c80"],
-               roles: ["big", "big", "garden", "tree"], blurb: "Old money wants a view and some quiet.",
-               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", cats: ["industry"], p: -3 }, { k: "near", cats: ["leisure"], p: -2 }] },
+  manor:     { name: "Manor", cat: "home", shape: "O4", n: 1, era: 2, base: 4, roof: ["#7e8a9e", "#616c80"],
+               roles: ["big", "big", "garden", "tree"], blurb: "Old money wants a view and fine neighbours.",
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["industry"], p: -3 }] },
   loghouse:  { name: "Log House", cat: "home", shape: "I3", n: 2, era: 1, base: 2, roof: ["#9b6a45", "#7a5234"],
-               roles: ["house", "house", "garden"], blurb: "Built from the trees around it.",
-               rules: [{ k: "by", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
-  boarding:  { name: "Boarding House", cat: "home", shape: "L4", n: 1, era: 2, base: 3, roof: ["#b07a52", "#8e5f3d"],
+               roles: ["house", "house", "garden"], blurb: "Built from the trees, a walk from the store.",
+               rules: [{ k: "by", t: "forest", p: 1 }, { k: "near", cats: ["shop"], p: 2 }] },
+  boarding:  { name: "Boarding House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#b07a52", "#8e5f3d"],
                roles: ["hall", "hall", "hall", "yard"], blurb: "Cheap beds for working men.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["saloon"], p: 1 }] },
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
   farmhouse: { name: "Farmhouse", cat: "home", shape: "V3", n: 2, era: 1, base: 2, roof: ["#d0885a", "#ad6a40"],
-               roles: ["house", "house", "garden"], blurb: "Wants the fields close by.",
-               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
+               roles: ["house", "house", "garden"], blurb: "Wants the fields and the herds close by.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "by", t: "wheat", p: 1 }, { k: "by", t: "herd", p: 1 }] },
   miners:    { name: "Miners' Shacks", plural: "Miners' Shacks", cat: "home", shape: "S4", n: 1, era: 2, base: 1,
                roof: ["#8c7f73", "#6d6259"], roof2: ["#a08f7c", "#7f7162"],
                roles: ["rowA", "yard", "rowB", "rowA"], blurb: "Close to the dig, far from comfort.",
-               rules: [{ k: "near", types: ["mine", "sluice"], p: 2 }, { k: "by", t: "ore", p: 1 }] },
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "by", t: "ore", p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
 
   /* Food */
   orchard:   { name: "Orchard", cat: "agri", shape: "L4", n: 1, era: 1, base: 2,
                roles: ["orchard", "orchard", "orchard", "orchard"], blurb: "Apple trees in neat rows.",
-               rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "water", p: 2, once: true }] },
-  vineyard:  { name: "Vineyard", cat: "agri", shape: "W5", n: 1, era: 2, base: 2,
-               roles: ["vines", "vines", "vines", "vines", "vines"], blurb: "Grapes for the saloon's wine.",
-               rules: [{ k: "on", t: "grass", p: 1 }, { k: "near", types: ["saloon", "hotel"], p: 3 }] },
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }] },
+  vineyard:  { name: "Vineyard", cat: "agri", shape: "W5", n: 1, era: 2, base: 1,
+               roles: ["vines", "vines", "vines", "vines", "vines"], blurb: "Grapes for the saloons and hotels.",
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "near", cats: ["leisure"], p: 2 }] },
   gristmill: { name: "Gristmill", cat: "agri", shape: "I2", n: 1, era: 2, base: 2, roof: ["#a7836a", "#86684f"],
                roles: ["hall", "wheel"], blurb: "A water wheel grinding the harvest.",
-               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", types: ["farm"], p: 3 }] },
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", cats: ["agri"], p: 2 }] },
   stables:   { name: "Stables", plural: "Stables", cat: "agri", shape: "T4", n: 1, era: 2, base: 2, roof: ["#a2603c", "#7f492c"],
-               roles: ["hall", "hall", "hall", "hay"], blurb: "Horses for hire.",
-               rules: [{ k: "on", t: "grass", p: 1 }, { k: "near", types: ["hotel", "station"], p: 2 }, { k: "near", cats: ["home"], p: -1 }] },
+               roles: ["hall", "hall", "hall", "hay"], blurb: "Horses for hire, broken from the herds.",
+               rules: [{ k: "by", t: "herd", p: 2 }, { k: "near", cats: ["leisure", "civic"], p: 1 }] },
   granary:   { name: "Granary", plural: "Granaries", cat: "agri", shape: "I2", n: 1, era: 3, base: 1, roof: ["#caa24e", "#a8843a"],
-               roles: ["hall", "hall"], blurb: "Stores grain from every farm in town.",
-               rules: [{ k: "town", types: ["farm", "gristmill"], p: 2 }] },
+               roles: ["hall", "hall"], blurb: "Stores the harvest of every food building in town.",
+               rules: [{ k: "town", cats: ["agri"], p: 1 }] },
   windmill:  { name: "Windmill", cat: "agri", shape: "I1", n: 2, era: 1, base: 1,
-               roles: ["windmill"], blurb: "Turns wherever the farms are.",
-               rules: [{ k: "near", types: ["farm"], p: 3 }] },
+               roles: ["windmill"], blurb: "Turns wherever the grain grows.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "by", t: "wheat", p: 1 }] },
 
   /* Industry */
   sluice:    { name: "Gold Sluice", plural: "Gold Sluices", cat: "industry", shape: "I3", n: 1, era: 1, base: 2,
                roles: ["sluice", "sluice", "sluice"], blurb: "Washes gold out of the rock.",
                rules: [{ k: "on", t: "ore", p: 3 }, { k: "by", t: "water", p: 3, once: true }] },
   stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 2, roof: ["#6c7480", "#525964"],
-               roles: ["big", "big", "rocks", "yard"], blurb: "Crushes ore to free the gold.",
-               rules: [{ k: "near", types: ["mine", "sluice"], p: 3 }, { k: "by", t: "water", p: 2, once: true }] },
+               roles: ["big", "big", "rocks", "yard"], blurb: "Crushes ore beside the diggings.",
+               rules: [{ k: "by", t: "ore", p: 2 }, { k: "near", cats: ["industry"], p: 2 }, { k: "by", t: "water", p: 2, once: true }] },
   brickworks:{ name: "Brickworks", plural: "Brickworks", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#b4533d", "#903f2e"],
-               roles: ["forge", "forge", "forge", "crates"], blurb: "Bricks for the grand houses.",
-               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "town", types: ["rowhouses", "manor"], p: 2 }] },
-  tannery:   { name: "Tannery", plural: "Tanneries", cat: "industry", shape: "I2", n: 1, era: 2, base: 3, roof: ["#8a6f4e", "#6b553b"],
-               roles: ["hall", "yard"], blurb: "Hides from the ranch. It smells.",
-               rules: [{ k: "near", types: ["ranch", "stables"], p: 3 }, { k: "near", cats: ["home"], p: -2 }] },
+               roles: ["forge", "forge", "forge", "crates"], blurb: "Bricks for every home in town.",
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "town", cats: ["home"], p: 1 }] },
+  tannery:   { name: "Tannery", plural: "Tanneries", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8a6f4e", "#6b553b"],
+               roles: ["hall", "yard"], blurb: "Hides from the herds. It smells.",
+               rules: [{ k: "by", t: "herd", p: 2 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
   kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 1,
                roles: ["kiln"], blurb: "Burns wood into fuel.",
                rules: [{ k: "by", t: "forest", p: 2 }] },
   freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"],
-               roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads the trains at the edge of town.",
-               rules: [{ k: "edge", p: 3 }, { k: "near", types: ["station"], p: 4 }] },
+               roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads goods at the edge of town.",
+               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry"], p: 2 }] },
 
   /* Shops */
   bakery:    { name: "Bakery", plural: "Bakeries", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#d69a52", "#b47c3c"],
-               roles: ["house", "crates"], blurb: "Flour in, bread out.",
-               rules: [{ k: "near", types: ["gristmill", "granary"], p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
+               roles: ["house", "crates"], blurb: "Flour from the farms, bread for the homes.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
   fishmarket:{ name: "Fish Market", cat: "shop", shape: "I3", n: 1, era: 2, base: 2, roof: ["#4f93b0", "#3d7690"],
-               roles: ["shop", "shop", "crates"], blurb: "Today's catch, straight off the dock.",
-               rules: [{ k: "near", types: ["dock"], p: 4 }, { k: "near", cats: ["home"], p: 1 }] },
-  bank:      { name: "Bank", cat: "shop", shape: "O4", n: 1, era: 3, base: 4, roof: ["#b9a26a", "#968250"], emblem: "dollar",
-               roles: ["big", "big", "big", "big"], blurb: "Wants busy shops and a sheriff close by.",
-               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", types: ["sheriff"], p: 3 }] },
+               roles: ["shop", "shop", "crates"], blurb: "The day's catch, from the river to the homes.",
+               rules: [{ k: "by", t: "water", p: 1 }, { k: "near", cats: ["home"], p: 2 }] },
+  bank:      { name: "Bank", cat: "shop", shape: "O4", n: 1, era: 3, base: 3, roof: ["#b9a26a", "#968250"], emblem: "dollar",
+               roles: ["big", "big", "big", "big"], blurb: "Wants busy shops and the law close by.",
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 2 }] },
   tradingpost:{ name: "Trading Post", cat: "shop", shape: "V3", n: 1, era: 1, base: 2, roof: ["#9a7b55", "#7a603f"],
                roles: ["hall", "hall", "crates"], blurb: "Trade with whoever comes in from outside.",
-               rules: [{ k: "edge", p: 3 }, { k: "by", t: "water", p: 2, once: true }] },
+               rules: [{ k: "edge", p: 3 }, { k: "by", t: "water", p: 2, once: true }, { k: "by", t: "herd", p: 1 }] },
   assay:     { name: "Assay Office", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8b8f96", "#6e7278"],
-               roles: ["shop", "shop"], blurb: "Weighs every nugget the town digs up.",
-               rules: [{ k: "town", types: ["mine", "sluice"], p: 3 }] },
+               roles: ["shop", "shop"], blurb: "Weighs what the diggings bring in.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "by", t: "ore", p: 1 }] },
 
   /* Civic */
   bridge:    { name: "Bridge", cat: "civic", shape: "I3", n: 1, era: 1, base: 2, bridge: true, tile: ["#c9a06f", "#8f6a45"],
@@ -461,47 +469,47 @@ const DEF = {
   coveredbridge: { name: "Covered Bridge", cat: "civic", shape: "I4", n: 1, era: 1, base: 3, bridge: true, tile: ["#c9a06f", "#8f6a45"],
                roof: ["#b0503c", "#8c3d2d"], roles: ["deck", "hall", "hall", "deck"], blurb: "A long, roofed crossing. Both ends must sit on land.",
                rules: [{ k: "on", t: "water", p: 3 }, { k: "near", any: true, p: 1 }] },
-  library:   { name: "Library", plural: "Libraries", cat: "civic", shape: "F5", n: 1, era: 3, base: 4, roof: ["#6d8f7a", "#557260"], emblem: "book",
+  library:   { name: "Library", plural: "Libraries", cat: "civic", shape: "F5", n: 1, era: 3, base: 3, roof: ["#6d8f7a", "#557260"], emblem: "book",
                roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, and readers next door.",
-               rules: [{ k: "without", cats: ["industry"], types: ["saloon"], p: 4 }, { k: "near", types: ["school"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
+               rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["civic"], p: 2 }] },
   sheriff:   { name: "Sheriff's Office", cat: "civic", shape: "V3", n: 1, era: 2, base: 3, roof: ["#8a6a4a", "#6c5238"], emblem: "star",
-               roles: ["hall", "hall", "yard"], blurb: "Keeps an eye on the saloons and the bank.",
-               rules: [{ k: "near", types: ["saloon", "bank"], p: 3 }, { k: "town", types: ["saloon", "casino"], p: 1 }] },
+               roles: ["hall", "hall", "yard"], blurb: "Keeps an eye on the saloons and the shops.",
+               rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
   jail:      { name: "Jail", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#7b7f86", "#5f636a"], emblem: "bars",
-               roles: ["hall", "yard"], blurb: "Belongs beside the sheriff, away from families.",
-               rules: [{ k: "near", types: ["sheriff"], p: 4 }, { k: "near", cats: ["home"], p: -2 }] },
+               roles: ["hall", "yard"], blurb: "Belongs with the law, away from families.",
+               rules: [{ k: "near", cats: ["civic"], p: 3 }, { k: "near", cats: ["home"], p: -2 }] },
   plaza:     { name: "Plaza", cat: "civic", shape: "O4", n: 1, era: 2, base: 1,
-               roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square, busy on every side.",
-               rules: [{ k: "near", any: true, p: 2 }] },
+               roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square among shops and homes.",
+               rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
   cemetery:  { name: "Cemetery", plural: "Cemeteries", cat: "civic", shape: "T4", n: 1, era: 2, base: 2,
-               roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet ground beside the church.",
-               rules: [{ k: "near", types: ["church"], p: 3 }, { k: "near", cats: ["home"], p: -1 }] },
+               roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet ground by the church and the trees.",
+               rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "by", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
   doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
                roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
-  courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 4, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
+  courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
                roles: ["hall", "hall", "hall", "yard", "flag"], blurb: "Law and order, on the main street.",
-               rules: [{ k: "near", types: ["sheriff", "jail"], p: 3 }, { k: "near", cats: ["shop"], p: 1 }] },
+               rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
 
   /* Leisure */
-  theater:   { name: "Theater", cat: "leisure", shape: "Y5", n: 1, era: 3, base: 4, roof: ["#b0445a", "#8c3447"], emblem: "mask",
+  theater:   { name: "Theater", cat: "leisure", shape: "Y5", n: 1, era: 3, base: 3, roof: ["#b0445a", "#8c3447"], emblem: "mask",
                roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "A show for the town and its visitors.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", types: ["hotel"], p: 3 }, { k: "near", cats: ["industry"], p: -2 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["leisure"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
   bathhouse: { name: "Bathhouse", cat: "leisure", shape: "L4", n: 1, era: 2, base: 2, roof: ["#6aa3b5", "#528596"],
                roles: ["hall", "hall", "pool", "pool"], blurb: "Hot water for tired travellers.",
-               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", types: ["hotel"], p: 2 }] },
-  casino:    { name: "Gambling Hall", cat: "leisure", shape: "P5", n: 1, era: 3, base: 5, roof: ["#2f6b4f", "#22523c"], emblem: "diamond",
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "by", t: "forest", p: 1 }, { k: "near", cats: ["leisure"], p: 1 }] },
+  casino:    { name: "Gambling Hall", cat: "leisure", shape: "P5", n: 1, era: 3, base: 4, roof: ["#2f6b4f", "#22523c"], emblem: "diamond",
                roles: ["big", "big", "big", "big", "porch"], blurb: "Big money. The law and the church hate it.",
-               rules: [{ k: "near", types: ["hotel", "bank"], p: 3 }, { k: "near", types: ["church", "sheriff"], p: -3 }] },
-  racetrack: { name: "Racetrack", cat: "leisure", shape: "R6", n: 1, era: 3, base: 3,
-               roles: ["track", "track", "track", "track", "track", "track"], blurb: "Needs open grass and fast horses.",
-               rules: [{ k: "on", t: "grass", p: 1 }, { k: "near", types: ["stables"], p: 3 }] },
+               rules: [{ k: "near", cats: ["leisure", "shop"], p: 2 }, { k: "near", cats: ["civic"], p: -3 }] },
+  racetrack: { name: "Racetrack", cat: "leisure", shape: "R6", n: 1, era: 3, base: 2,
+               roles: ["track", "track", "track", "track", "track", "track"], blurb: "Needs open grass and horses from the herds.",
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "herd", p: 2 }] },
   fairground:{ name: "Fairground", cat: "leisure", shape: "N5", n: 1, era: 2, base: 2,
                roles: ["tent", "tent", "tent", "tent", "tent"], blurb: "Tents at the edge of town, near the farms.",
-               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["agri"], p: 2 }] },
+               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["agri"], p: 2 }, { k: "by", t: "herd", p: 1 }] },
   park:      { name: "Park", cat: "leisure", shape: "Z5", n: 1, era: 2, base: 1,
                roles: ["tree", "garden", "tree", "garden", "tree"], blurb: "Green space for the families.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "by", t: "forest", p: 1 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "by", t: "forest", p: 1 }, { k: "by", t: "water", p: 1, once: true }] },
 };
 
 /* ───────────────────────── Small tools ───────────────────────── */
@@ -589,15 +597,16 @@ function makeMap(seed) {
   grow(t, r, spot(false), 2, "ore");
   grow(t, r, spot(true), n(4, 5), "wheat");
   grow(t, r, spot(false), n(3, 4), "wheat");
+  grow(t, r, spot(false), n(3, 4), "herd");
+  if (r() < .6) grow(t, r, spot(false), n(2, 3), "herd");
   return t;
 }
 
 /*
-  Each game draws a few kinds of building from every category. A building that wants a particular partner
-  usually gets it, and any map with water to cross gets a bridge. Then the counts go up or down until the
+  Each game draws a few kinds of building from every category, and any map with water to cross gets a bridge. Then the counts go up or down until the
   deck covers a bit less than the land can take.
 */
-const QUOTA = { home: 3, agri: 3, industry: 3, shop: 2, civic: 3, leisure: 2 };
+const QUOTA = { home: 4, agri: 3, industry: 3, shop: 3, civic: 3, leisure: 2 };
 
 function makeDeck(seed, terrain) {
   const r = mulberry(seed ^ 0x5bd1e995);
@@ -605,9 +614,6 @@ function makeDeck(seed, terrain) {
   const types = new Set();
   for (const cat in QUOTA) {
     shuffle(Object.keys(DEF).filter(k => DEF[k].cat === cat && !DEF[k].bridge)).slice(0, QUOTA[cat]).forEach(k => types.add(k));
-  }
-  for (const k of [...types]) for (const rule of DEF[k].rules) {
-    if (rule.p > 0 && rule.types && !rule.types.some(t => types.has(t)) && r() < .65) types.add(pick(rule.types, r));
   }
   const bridge = shuffle(Object.keys(DEF).filter(k => DEF[k].bridge)).find(k => placements(k).length);
   if (bridge) types.add(bridge);
@@ -674,8 +680,8 @@ function newGame(player, pickName, seed) {
   seed = seed ?? (Math.random() * 2 ** 31) | 0;
   MAP = makeMap(seed);
   OWNER = new Array(N).fill(-1);
-  G = { v: 5, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, swaps: SWAPS, away: [], pieces: [], over: false,
-        trophies: {}, streak: 0 };
+  G = { v: 6, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, away: [], pieces: [], over: false,
+        trophies: {}, streak: 0, challenge: null };
   settle();
 }
 
@@ -739,14 +745,6 @@ function build(cells) {
   const trophies = judge(type, cells, parts, pts, gain, changed);
   for (const id of trophies) G.trophies[id] = (G.trophies[id] || 0) + 1;
   return { type, k, pts, parts, gain, changed, trophies, events: settle() };
-}
-
-const canSwap = () => !G.over && G.swaps > 0 && !!upcoming() && fits(upcoming());
-function swap() {
-  if (!canSwap()) return false;
-  [G.deck[G.at], G.deck[G.at + 1]] = [G.deck[G.at + 1], G.deck[G.at]];
-  G.swaps--;
-  return true;
 }
 
 /* ───────────────────────── Scoring ───────────────────────── */
@@ -840,7 +838,7 @@ function judge(type, cells, parts, pts, gain, changed) {
   if (parts.some(q => { const r = ruleOf(q); return r && r.p < 0 && q.n >= 2; })) out.add("neighbours");
   if (changed.reduce((sum, x) => sum + Math.min(0, x.d), 0) <= -3) out.add("spoiler");
   const uses = new Set(d.rules.filter(r => r.k === "on").map(r => r.t));
-  if (cells.filter(c => (MAP[c] === "ore" || MAP[c] === "wheat") && !uses.has(MAP[c])).length >= 2) out.add("wasted");
+  if (cells.filter(c => ["ore", "wheat", "herd"].includes(MAP[c]) && !uses.has(MAP[c])).length >= 2) out.add("wasted");
   return Object.keys(TROPHIES).filter(id => out.has(id));
 }
 
@@ -848,7 +846,8 @@ function judge(type, cells, parts, pts, gain, changed) {
 
 const plural = (k) => DEF[k].plural || DEF[k].name + "s";
 const joinOr = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " or " + a[a.length - 1];
-const landWord = (t) => t === "water" ? "water" : TERRAIN[t].short;
+const landWord = (t) => TERRAIN[t].short;
+const onWord = (t) => TERRAIN[t].on || TERRAIN[t].short;
 const signed = (v) => (v < 0 ? "−" : "+") + Math.abs(v);
 const nearNoun = (r, n) => r.any ? (n === 1 ? "building" : "buildings") : joinOr(n === 1
   ? [...(r.types || []).map(t => DEF[t].name), ...(r.cats || []).map(c => CATS[c].one)]
@@ -856,7 +855,7 @@ const nearNoun = (r, n) => r.any ? (n === 1 ? "building" : "buildings") : joinOr
 
 /* A rule as the card shows it, after its points: "+2 each woods square beside it". */
 function ruleText(r) {
-  if (r.k === "on") return `each square on ${landWord(r.t)}`;
+  if (r.k === "on") return `each square on ${onWord(r.t)}`;
   if (r.k === "by") return r.once ? `if beside ${landWord(r.t)}` : `each ${landWord(r.t)} square beside it`;
   if (r.k === "near") return `each ${nearNoun(r, 1)} next to it`;
   if (r.k === "edge") return "if at the edge of the map";
@@ -870,7 +869,7 @@ function ruleText(r) {
 function partText(type, q) {
   if (q.r < 0) return "Base";
   const r = DEF[type].rules[q.r];
-  if (r.k === "on") return `${q.n} on ${landWord(r.t)}`;
+  if (r.k === "on") return `${q.n} on ${onWord(r.t)}`;
   if (r.k === "by") return r.once ? (q.n ? `Beside ${landWord(r.t)}` : `Not beside ${landWord(r.t)}`) : `${q.n} ${landWord(r.t)} beside`;
   if (r.k === "near") return `${q.n} ${nearNoun(r, q.n)} next to it`;
   if (r.k === "edge") return q.n ? "At the map edge" : "Not at the map edge";
@@ -930,7 +929,7 @@ function layout() {
   UI.dpr = dpr; UI.w = r.width; UI.h = r.height;
   cv.width = layer.width = Math.max(1, Math.round(r.width * dpr));
   cv.height = layer.height = Math.max(1, Math.round(r.height * dpr));
-  const pad = 12, frame = .34;
+  const pad = 6, frame = .24;
   UI.S = Math.max(16, Math.floor(Math.min((r.width - pad * 2) / (COLS + frame * 2), (r.height - pad * 2) / (ROWS + frame * 2))));
   UI.BX = Math.round((r.width - COLS * UI.S) / 2);
   UI.BY = Math.round((r.height - ROWS * UI.S) / 2);
@@ -984,7 +983,7 @@ function tree(g, x, y, r, seed) {
 }
 
 function drawLand(g) {
-  const S = UI.S, W = COLS * S, H = ROWS * S, m = S * .34;
+  const S = UI.S, W = COLS * S, H = ROWS * S, m = S * .24;
 
   g.save();
   g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = S * .7; g.shadowOffsetY = S * .22;
@@ -1027,6 +1026,10 @@ function drawLand(g) {
       circle(g, px + S * .035, py - S * .07, S * .028, "#f3dc92");
     }
   }
+
+  // Grazing herds: lush grass. The animals move, so they are drawn every frame.
+  union(g, of("herd"), S * .03, S * .3); g.fillStyle = "#c9de8f"; g.fill();
+  union(g, of("herd"), S * .1, S * .24); g.fillStyle = "#d2e39a"; g.fill();
 
   // Ore: grey rock with bright flecks.
   union(g, of("ore"), S * .04, S * .3); g.fillStyle = "#c3baa8"; g.fill();
@@ -1602,6 +1605,30 @@ function drawWater(g, now) {
   g.stroke();
 }
 
+/* Cattle and sheep that drift around their patch until something is built on it. */
+function drawHerds(g, now) {
+  const S = UI.S;
+  for (let i = 0; i < N; i++) {
+    if (MAP[i] !== "herd" || OWNER[i] >= 0) continue;
+    for (let k = 0; k < 2; k++) {
+      const ph = hash(i, k + 120) * 6, t = now * .25 + ph;
+      const x = cellX(i) + S * (.3 + .4 * hash(i, k + 130)) + Math.sin(t) * S * .06;
+      const y = cellY(i) + S * (.28 + .44 * hash(i, k + 140)) + Math.cos(t * .8) * S * .03;
+      const face = Math.cos(t) >= 0 ? 1 : -1, z = S * 1.35;
+      ellipse(g, x + z * .02, y + z * .07, z * .13, z * .05, "rgba(30,50,20,.25)");
+      if (hash(i, k + 150) < .45) {
+        for (const [dx, dy] of [[-.05, 0], [.04, -.02], [.03, .03], [-.02, -.03], [0, 0]]) circle(g, x + z * dx, y + z * dy, z * .055, "#fbf8f0");
+        circle(g, x + face * z * .1, y - z * .01, z * .038, "#3f3a36");
+      } else {
+        ellipse(g, x, y, z * .11, z * .065, "#f7f3ea");
+        circle(g, x - face * z * .03, y - z * .02, z * .032, "#4a382d");
+        circle(g, x + face * z * .045, y + z * .02, z * .026, "#4a382d");
+        circle(g, x + face * z * .12, y - z * .005, z * .042, "#6e5140");
+      }
+    }
+  }
+}
+
 function drawGlints(g, now) {
   const S = UI.S;
   for (let i = 0; i < N; i++) {
@@ -1758,6 +1785,7 @@ function frame(nowMs) {
   ctx.drawImage(layer, 0, 0, UI.w, UI.h);
   drawWater(ctx, now);
   drawGlints(ctx, now);
+  drawHerds(ctx, now);
   if (UI.drop) {
     UI.drop.t += dt;
     const k = Math.min(1, UI.drop.t / .32), p = G.pieces[UI.drop.k];
@@ -1800,7 +1828,7 @@ function shapeSVG(type, rot = 0, flip = false, box = 44) {
 }
 
 const CAT_HEX = { home: "#d8734a", agri: "#c9952a", industry: "#6f7d8b", shop: "#33968a", civic: "#5a7fc4", leisure: "#a8588f" };
-const LAND_HEX = { grass: "#a5c884", forest: "#5b9a58", ore: "#9a9285", wheat: "#e2bf5c", water: "#62abc9" };
+const LAND_HEX = { grass: "#a5c884", forest: "#5b9a58", ore: "#9a9285", wheat: "#e2bf5c", herd: "#c4a37c", water: "#62abc9" };
 
 /* A small picture of what a rule counts: land under a building, land around it, or a building beside it. */
 function ruleIcon(r) {
@@ -1835,31 +1863,29 @@ function modsHTML(type) {
 function hud() {
   $("townName").textContent = G.player ? townName(G.player, G.pick) : "First Town";
   const placed = G.pieces.length;
-  $("townSub").textContent = G.over ? "The town is done" : `${placed} built${G.away.length ? ` · ${G.away.length} turned away` : ""}`;
+  $("townSub").textContent = G.over ? "The town is done"
+    : `${placed} built${G.away.length ? ` · ${G.away.length} turned away` : ""}${G.challenge ? ` · Beat ${G.challenge.score}` : ""}`;
   $("left").textContent = G.over ? 0 : G.deck.length - G.at;
 }
 
 function paintPanel() {
   $("panel").hidden = false;
   if (G.over) {
-    $("piece").innerHTML = `<div class="done"><div><div class="big num">${total()}</div><div class="sub">points</div></div>
-      <div class="sub" style="flex:1">${esc(townName(G.player, G.pick))} is done. Tap any building to see its score.</div></div>`;
-    $("controls").innerHTML = `<button class="tool" id="bSummary" style="flex:1;justify-content:center">Summary</button><button class="primary" id="bNew">New town</button>`;
+    $("piece").innerHTML = `<div class="done"><div class="big num">${total()}</div><div class="sub">points</div></div>`;
+    $("controls").innerHTML = `<button class="tool" id="bSummary">Summary</button><button class="primary" id="bNew">New town</button>`;
     $("bSummary").onclick = showSummary;
-    $("bNew").onclick = intro;
+    $("bNew").onclick = () => intro();
     return;
   }
   if (!$("bTurn")) restoreControls();
-  const type = current(), nxt = upcoming(), d = DEF[type], o = UI.ghost || { rot: 0, flip: false };
+  const type = current(), nxt = upcoming(), o = UI.ghost || { rot: 0, flip: false };
   $("piece").innerHTML = `
     <button class="head" id="pieceHead" aria-expanded="${UI.rules}">
-      <div class="mini">${shapeSVG(type, o.rot, o.flip, 46)}</div>
-      <div><div class="name">${esc(d.name)} ${chip(d.cat)}</div><div class="hint">${UI.rules ? "Hide scoring ▴" : "Tap for scoring ▾"}</div></div>
-      <div class="next"><span>Next</span><div class="mini">${nxt ? shapeSVG(nxt, 0, false, 32) : "<span>—</span>"}</div></div>
+      <div class="mini">${shapeSVG(type, o.rot, o.flip, 34)}</div>
+      <div><div class="name">${esc(DEF[type].name)}</div>
+        <div class="hint"><span>${UI.rules ? "Scoring ▴" : "Scoring ▾"}</span>${nxt ? `<span class="nx">Next ${shapeSVG(nxt, 0, false, 15)}</span>` : ""}</div></div>
     </button>`;
   $("pieceHead").onclick = toggleRules;
-  $("swaps").textContent = G.swaps;
-  $("bSwap").disabled = !canSwap();
   $("bBuild").disabled = !canPlace(ghostCells(), current());
 }
 
@@ -1868,7 +1894,6 @@ function restoreControls() {
   $("controls").innerHTML = CONTROLS;
   $("bTurn").onclick = () => turnGhost(1, false);
   $("bFlip").onclick = () => turnGhost(0, true);
-  $("bSwap").onclick = doSwap;
   $("bBuild").onclick = doBuild;
 }
 
@@ -1994,12 +2019,6 @@ function bumpScore() {
   el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
 }
 
-function doSwap() {
-  if (!swap()) return;
-  freshGhost(); save(); paintPanel();
-  toast(`Swapped. ${G.swaps ? `${G.swaps} swap left.` : "No swaps left."}`);
-}
-
 /* ───────────────────────── Touch ───────────────────────── */
 
 function boardPoint(e) {
@@ -2055,7 +2074,6 @@ addEventListener("keydown", (e) => {
   if (moves[e.key]) { e.preventDefault(); placeGhost({ ...UI.ghost, ax: UI.ghost.ax + moves[e.key][0], ay: UI.ghost.ay + moves[e.key][1] }); paintPanel(); }
   else if (e.key === "r" || e.key === "R") turnGhost(e.shiftKey ? -1 : 1, false);
   else if (e.key === "f" || e.key === "F") turnGhost(0, true);
-  else if (e.key === "s" || e.key === "S") doSwap();
   else if (e.key === "Enter") doBuild();
 });
 
@@ -2074,7 +2092,6 @@ const RULES_HTML = `<ul class="rules">
   <li><b>Scores are live.</b> A building gains when you add what it likes next to it, and loses land you cover.</li>
   <li><b>Bridges</b> are the only buildings that can sit on water. Both ends must be on land.</li>
   <li><b>No room</b> for a building: −${AWAY}. Fit them all: +${ALL_FIT}.</li>
-  <li><b>Swap</b> trades your building for the next one, ${SWAPS} times a game.</li>
 </ul>`;
 
 function showMenu() {
@@ -2118,17 +2135,53 @@ function recordBest() {
   try { const best = +localStorage.getItem(BEST) || 0; if (total() > best) localStorage.setItem(BEST, total()); } catch (e) {}
 }
 
+/* Bump when a change to the map or the deck means an old link no longer gives the same game. */
+const LINK_VERSION = 1;
+
+function challengeURL() {
+  const base = location.href.split(/[?#]/)[0];
+  return `${base}?seed=${G.seed}&score=${total()}&from=${encodeURIComponent(G.player)}&v=${LINK_VERSION}`;
+}
+
+/* The phone's share sheet where there is one; otherwise copy the link, or show it to copy by hand. */
+async function shareChallenge() {
+  const url = challengeURL(), button = $("sShare");
+  if (navigator.share) {
+    try { await navigator.share({ title: "First Town", text: `I scored ${total()} in First Town. Beat me on the same map!`, url }); return; }
+    catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    if (button) button.textContent = "Link copied ✓";
+  } catch (e) {
+    const box = $("shareBox");
+    if (!box) return;
+    box.innerHTML = `<input readonly value="${esc(url)}">`;
+    box.querySelector("input").select();
+  }
+}
+
 function showSummary() {
   hidePop();
+  const me = total(), c = G.challenge;
   const top = G.pieces.map((p, k) => ({ p, v: pieceScore(k) })).sort((a, b) => b.v - a.v).slice(0, 3);
   const won = Object.keys(TROPHIES).filter(id => G.trophies[id]);
   let best = 0;
   try { best = +localStorage.getItem(BEST) || 0; } catch (e) {}
+  let versus = "";
+  if (c) {
+    const who = esc(c.from);
+    const line = me > c.score ? `You beat ${who} by ${me - c.score}!` : me < c.score ? `${who} wins by ${c.score - me}` : `A tie with ${who}!`;
+    versus = `<div class="versus ${me > c.score ? "win" : me < c.score ? "lose" : ""}">${line}<span>You ${me} · ${who} ${c.score}</span></div>`;
+  }
   showDialog(`<div class="final">
       <h2>${esc(townName(G.player, G.pick))} is done</h2>
-      <div class="big num">${total()}</div>
-      <div class="best">${total() >= best ? "Your best town yet" : `Your best is ${best}`}</div>
+      <div class="big num">${me}</div>
+      <div class="best">${me >= best ? "Your best town yet" : `Your best is ${best}`}</div>
     </div>
+    ${versus}
+    <button class="primary wide" id="sShare">${c ? `Challenge ${esc(c.from)} back` : "Challenge a friend"}</button>
+    <div id="shareBox" class="sharebox"></div>
     <ul class="tally">
       <li><span>Buildings</span><b>${boardScore()}</b></li>
       ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>`
@@ -2138,7 +2191,8 @@ function showSummary() {
       `<span class="tchip${TROPHIES[id].good ? "" : " bad"}">${esc(TROPHIES[id].name.replace("!", ""))}${G.trophies[id] > 1 ? ` ×${G.trophies[id]}` : ""}</span>`).join("")}</div>` : ""}
     <p class="label">Best buildings</p>
     <ul class="tally" style="margin-top:4px">${top.map(x => `<li><span>${esc(DEF[x.p.type].name)}</span><b>${signed(x.v)}</b></li>`).join("")}</ul>
-    <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="primary" id="sNew">New town</button></div>`);
+    <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button></div>`);
+  $("sShare").onclick = shareChallenge;
   $("sLook").onclick = closeDialog;
   $("sNew").onclick = () => { closeDialog(); intro(); };
 }
@@ -2164,7 +2218,7 @@ $("scoreBtn").onclick = showScore;
 
 function save() { if (!G || !G.player) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
 function load() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && (s.v === 4 || s.v === 5) && s.player) { restore(s); return true; } } catch (e) {}
+  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.v === 6 && s.player) { restore(s); return true; } } catch (e) {}
   return false;
 }
 
@@ -2174,14 +2228,15 @@ function resetScene() {
   UI.drop = null; UI.dirty = true; closeInfo();
 }
 
-/* The town gets its name when it is founded: Fort Zach, Zachville and so on. */
-function startTown(player) {
-  newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)));
+/* The town gets its name when it is founded: Fort Zach, Zachville and so on. It keeps the map shown behind the intro. */
+function startTown(player, challenge = null) {
+  newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)), G.seed);
+  G.challenge = challenge && { from: challenge.from, score: challenge.score };
   resetScene();
   UI.shown = 0; $("score").textContent = 0;
   freshGhost(); save(); hud(); paintPanel();
   layout();
-  toast(`Welcome to ${townName(player, G.pick)}!`);
+  toast(`Welcome to ${townName(player, G.pick)}!${challenge ? ` Beat ${challenge.score}.` : ""}`);
 }
 
 function showGame() {
@@ -2192,27 +2247,33 @@ function showGame() {
   layout();
 }
 
-function intro() {
-  try { localStorage.removeItem(SAVE); } catch (e) {}
-  newGame("", 0);
+/* A challenge link brings its map, its deck and a score to beat. */
+function intro(challenge = null) {
+  newGame("", 0, challenge ? challenge.seed : undefined);
   resetScene(); UI.ghost = null;
   $("panel").hidden = true;
   hud();
+  const lead = challenge
+    ? `<div class="versus">${esc(challenge.from)} scored ${challenge.score} on this map<span>Same land, same buildings, same order. Can you beat it?</span></div>
+       ${challenge.v !== LINK_VERSION ? `<p>This link is from an older version of the game, so the map may not match.</p>` : ""}`
+    : `<p>Fit odd-shaped buildings onto the map. Good spots score more.</p>`;
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
       <h1>First Town</h1>
-      <p>Fit odd-shaped buildings onto the map. Good spots score more.</p>
+      ${lead}
       <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="go" autocapitalize="words" spellcheck="false">
-      <div class="row"><button class="primary" id="found" type="submit" disabled>Start</button></div>
+      <div class="row"><button class="primary" id="found" type="submit" disabled>${challenge ? "Take the challenge" : "Start"}</button></div>
+      ${challenge ? `<button type="button" class="linkbtn" id="decline">Play a different map</button>` : ""}
       <details class="how"><summary>How to play</summary>${RULES_HTML}</details>
     </form>`);
   $("nameIn").addEventListener("input", () => { $("found").disabled = !$("nameIn").value.trim(); });
+  if ($("decline")) $("decline").onclick = () => intro();
   $("introForm").onsubmit = (e) => {
     e.preventDefault();
     const v = $("nameIn").value.trim();
     if (!v) return;
     $("nameIn").blur();
     closeDialog();
-    startTown(v);
+    startTown(v, challenge);
   };
   layout();
 }
@@ -2222,7 +2283,14 @@ addEventListener("pagehide", save);
 new ResizeObserver(layout).observe($("stage"));
 
 restoreControls();
-if (load()) showGame(); else intro();
+const link = new URLSearchParams(location.search);
+if (link.has("seed")) {
+  const from = (link.get("from") || "").trim().slice(0, 14) || "A friend";
+  const challenge = { seed: parseInt(link.get("seed"), 10) | 0, score: parseInt(link.get("score"), 10) || 0, from, v: parseInt(link.get("v"), 10) || 0 };
+  // Drop the link from the address bar, so a reload resumes the game instead of starting the challenge again.
+  history.replaceState(null, "", location.pathname);
+  intro(challenge);
+} else if (load()) showGame(); else intro();
 requestAnimationFrame(frame);
 </script>
 </body>

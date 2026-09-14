@@ -208,21 +208,20 @@ Each new town asks for your name. When the game starts, the town takes a name ma
 Fort Zach, St. Zach, New Zach, Port Zach, Zachville, Zachburg, Zachton or Zachfield.
 
 **The map.** Every game has a new map, 9 squares by 12. Water crosses it as a river, a lake
-with a creek or two ponds. Woods, ore veins and wild wheat grow on it in patches. You can build
+with a creek or two ponds. Woods, ore veins, wild wheat and grazing herds grow on it in
+patches. The cattle and sheep wander their patch until something is built on it. You can build
 on any square that is not water.
 
 **One building at a time.** The library holds 55 kinds of building, and each game draws about
-20 of them, so no two decks are alike. The draw takes a few kinds from each category: homes,
-food, industry, shops, civic buildings and leisure. A building that wants a particular partner
-usually gets it, so a Jail tends to come with a Sheriff's Office and a Stamp Mill with a Mine
-or a Gold Sluice. The To come button shows what this game's deck holds.
+19 of them, so no two decks are alike. The draw takes a few kinds from each category: homes,
+food, industry, shops, civic buildings and leisure. The To come button shows what this game's
+deck holds, so you can plan where the next shop or farm will pay off.
 
-A deck has about 23 buildings. A well or a windmill is one square, a cabin is two, a farm is a
+A deck has about 24 buildings. A well or a windmill is one square, a cabin is two, a farm is a
 2 by 2 square, a church is a plus sign, a racetrack is 2 by 3 and a train station is a straight
-line of five. You can see the next building. Drag the building onto the map, press Turn to turn
-it, press Flip to mirror it, then press Build. Small and simple buildings come early, and big
-civic buildings come late, so leave room for them. Swap trades the building in hand for the
-next one, twice a game.
+line of five. You can see the next building. Drag the building onto the map, press Turn or Flip,
+then press Build. Small and simple buildings come early, and big civic buildings come late, so
+leave room for them.
 
 **Bridges.** A Bridge (three squares) and a Covered Bridge (four) are the only buildings that can
 sit on water. Both ends must be on land. They score for each square on water and for each
@@ -234,19 +233,26 @@ leave a crossing open.
 how many squares it needs and how many squares you have.
 
 **Scoring you can count.** Every building has base points and a few modifiers. Tap the
-building in hand, on the map or in the panel, to see them. A cabin is +2 base, +2 if beside
-water, +1 for each woods square beside it and −2 for each industry building next to it. The
-game never works out a score before you build. Most rules use one of three words, and each has
-a small icon:
+building in hand, on the map or in the panel, to see them. A cabin is +2 base, +1 for each woods
+square beside it, +2 for each food building next to it and −2 for each industry building next
+to it. The game never works out a score before you build.
+
+Modifiers name a kind of building or a kind of land, never one particular building. So when a
+shop turns up, any home can use it, and most buildings have two or three ways to score. Every
+home wants food, shops or civic buildings nearby. A ranch can round up a herd or graze open
+grass. A library scores for civic neighbours, or for complete quiet.
+
+Most rules use one of three words, and each has a small icon:
 
 - **On** is the land under a building. A farm scores for wild wheat under it.
 - **Beside** is open land that shares a side with it. A lumber mill scores for woods around it.
   Land under another building is no longer open, so covering woods takes points from the mill.
-- **Next to** is a building that shares a side with it. A grocer scores for farms next to it.
+- **Next to** is a building that shares a side with it. A grocer scores for food buildings next
+  to it.
 
 Two more rules reach further. **In town** counts buildings anywhere on the map, so a Granary
-scores for every farm. **If no** gives a bonus for keeping something away, so a Library wants
-no industry and no saloon next to it.
+scores for every food building. **If no** gives a bonus for keeping something away, so a
+Library wants no industry and no leisure building next to it.
 
 While you drag a building, or while its scoring is open, the squares beside it get a dashed
 outline. Tap an empty square to see which buildings score for building on it and building
@@ -278,10 +284,17 @@ Streets appear between buildings, and people walk them. Chimneys and kilns smoke
 and ore glints. Everything is drawn with vector shapes on a canvas at the screen's full
 resolution. The game saves to localStorage after every move.
 
+**Challenge a friend.** At the end of a game, Challenge a friend opens the phone's share sheet
+with a link, or copies the link where there is no share sheet. The link holds the map's seed,
+your score and your name. Your friend sees "Zach scored 145 on this map", plays the same land
+and the same buildings in the same order, and gets a win or a loss at the end, with a button to
+challenge you back. There is no server: the seed builds the same map and deck on any phone. If
+a later change to the game changes what a seed builds, the link says it may not match.
+
 **Balance.** I tested with bots over 40 maps. A bot that weighs points against packing scores
-about 145 and fits every building about two games in three. A bot that only packs scores about
-108. A bot that only chases points scores about 123 and loses about two buildings. A bot that
-plays at random scores about 60. Over 300 decks every one of the 55 buildings was drawn.
+about 150 and fits every building three games in four. A bot that only packs scores about 117.
+A bot that only chases points scores about 134 and loses about two buildings. A bot that plays
+at random scores about 63. Over 300 decks every one of the 55 buildings was drawn.
 
 ## mexico-elections.html
 

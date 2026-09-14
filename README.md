@@ -246,7 +246,6 @@ Most rules use one of three words, and each has a small icon:
 
 - **On** is the land under a building. A farm scores for wild wheat under it.
 - **Beside** is open land that shares a side with it. A lumber mill scores for woods around it.
-  Land under another building is no longer open, so covering woods takes points from the mill.
 - **Next to** is a building that shares a side with it. A grocer scores for food buildings next
   to it.
 
@@ -258,8 +257,15 @@ While you drag a building, or while its scoring is open, the squares beside it g
 outline. Tap an empty square to see which buildings score for building on it and building
 beside it.
 
-Scores are live. A grocer goes up when you later build a farm next to it, and small +N numbers
-rise from any building whose score changed.
+**Land bonuses are kept, and neighbour bonuses grow.** Land bonuses are set when you build. If
+you later build over the woods beside a lumber mill, the mill keeps its points. Water never runs
+out: a bridge over it doesn't stop new buildings from counting it. Neighbour bonuses stay live,
+so a grocer goes up when you later build a farm next to it. Small +N numbers rise from any
+building whose score changed.
+
+Every building has at least one land bonus and at least one neighbour bonus. That is the shape of
+a game: early buildings score for the land they claim, later buildings score for the town around
+them, and a well-placed early building scores twice.
 
 **Celebration.** After each build only the score pops up, big, over the new building. A move
 that earns 8 or more turns it green, and 13 or more turns it gold with confetti. Trophies show
@@ -292,9 +298,10 @@ challenge you back. There is no server: the seed builds the same map and deck on
 a later change to the game changes what a seed builds, the link says it may not match.
 
 **Balance.** I tested with bots over 40 maps. A bot that weighs points against packing scores
-about 150 and fits every building three games in four. A bot that only packs scores about 117.
-A bot that only chases points scores about 134 and loses about two buildings. A bot that plays
-at random scores about 63. Over 300 decks every one of the 55 buildings was drawn.
+about 160 and fits every building about three games in four. A bot that only packs scores about
+128 and fits every building in most games. Over 20 games, later buildings raised the score of an
+earlier neighbour 234 times and lowered one 18 times. Over 300 decks every one of the 55
+buildings was drawn.
 
 ## mexico-elections.html
 

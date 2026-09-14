@@ -311,9 +311,10 @@ const SHAPES = {
 };
 
 /*
-  A building scores its base points plus its rules, and the score stays live: it goes up or down as the town grows.
-  On means the land under it. Beside means open land that shares a side with it. Next to means a building that
-  shares a side with it. Corners don't count, and land under a building is no longer open.
+  A building scores its base points plus its rules. On means the land under it. Beside means open land that
+  shares a side with it. Next to means a building that shares a side with it. Corners don't count.
+  Land bonuses are set when you build: covering that land later takes nothing away, and water under a bridge
+  still counts as water. Bonuses for buildings stay live, so a building gains whenever a neighbour it likes arrives.
 
   n:     how many are in a deck        era: 1 comes early, 3 comes late
   roles: what is drawn on each cell    roof: roof colours, light side then dark side
@@ -333,23 +334,23 @@ const SHAPES = {
 */
 const DEF = {
   well:      { name: "Town Well", plural: "Town Wells", cat: "civic", shape: "I1", n: 2, era: 1, base: 1,
-               roles: ["well"], blurb: "Fresh water for homes and farms.",
-               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["agri"], p: 1 }] },
+               roles: ["well"], blurb: "Water for the families and the herds.",
+               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "by", t: "herd", p: 1 }] },
   cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, base: 2, roof: ["#dc7b50", "#b75d3a"],
                roles: ["house", "garden"], blurb: "A porch by the woods, close to the food.",
                rules: [{ k: "by", t: "forest", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
   homestead: { name: "Homestead", cat: "home", shape: "V3", n: 2, era: 1, base: 3, roof: ["#c86a4b", "#a45237"],
-               roles: ["garden", "house", "house"], blurb: "A family that likes neighbours and fresh food.",
-               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
+               roles: ["garden", "house", "house"], blurb: "A family that wants food and grain close by.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "by", t: "wheat", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, base: 3, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
-               roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close.",
-               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+               roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close and a river view.",
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["industry"], p: -2 }] },
   farm:      { name: "Farm", cat: "agri", shape: "O4", n: 2, era: 1, base: 2, roof: ["#cc5443", "#a43f31"],
-               roles: ["barn", "field", "field", "field"], blurb: "Grain for the whole town.",
-               rules: [{ k: "on", t: "wheat", p: 3 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["industry"], p: -1 }] },
+               roles: ["barn", "field", "field", "field"], blurb: "Grain for the families next door.",
+               rules: [{ k: "on", t: "wheat", p: 3 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }] },
   ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, base: 2, roof: ["#b85a40", "#93432f"],
-               roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Round up a herd, or graze open grass.",
-               rules: [{ k: "on", t: "herd", p: 2 }, { k: "on", t: "grass", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
+               roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Round up a herd, or graze open grass. Sells to the shops.",
+               rules: [{ k: "on", t: "herd", p: 2 }, { k: "on", t: "grass", p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
   lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, base: 2, roof: ["#8e6c4f", "#6e523b"],
                roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
                rules: [{ k: "by", t: "forest", p: 2 }, { k: "near", cats: ["industry"], p: 1 }] },
@@ -363,20 +364,20 @@ const DEF = {
                roles: ["shed", "plank", "plank"], blurb: "Nets and boats along the bank.",
                rules: [{ k: "by", t: "water", p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
   store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, base: 3, roof: ["#40a092", "#2f7e72"],
-               roles: ["shop", "shop", "shop", "crates"], blurb: "A little of everything, for the families.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
+               roles: ["shop", "shop", "shop", "crates"], blurb: "A little of everything, brought up the river.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "by", t: "water", p: 2, once: true }] },
   grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, base: 2, roof: ["#5ea56b", "#468753"],
                roles: ["shop", "shop", "produce", "produce"], blurb: "Fresh food, straight from the source.",
-               rules: [{ k: "near", cats: ["agri"], p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "by", t: "herd", p: 1 }] },
   saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 3, roof: ["#a95a90", "#864571"],
-               roles: ["hall", "hall", "porch", "porch"], blurb: "Where the workers go after a shift.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["leisure"], p: 2 }] },
+               roles: ["hall", "hall", "porch", "porch"], blurb: "Where the miners and the cowhands go after a shift.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 }, { k: "by", t: "herd", p: 1 }] },
   church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 3, roof: ["#8195b8", "#63779d"],
                roles: ["steeple", "tree", "nave", "tree", "nave"], blurb: "The heart of a quiet town.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["leisure"], p: -3 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "by", t: "water", p: 1, once: true }, { k: "near", cats: ["leisure"], p: -3 }] },
   school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#cc5e4c", "#a84737"],
                roles: ["hall", "hall", "hall", "yard", "play"], blurb: "Lessons for the children next door.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "by", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 3, roof: ["#9160aa", "#724489"],
                roles: ["big", "big", "big", "big", "porch"], blurb: "Travellers want a drink, a view and a store.",
                rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["shop"], p: 1 }] },
@@ -385,7 +386,7 @@ const DEF = {
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry", "shop"], p: 2 }] },
   townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, base: 3, roof: ["#5580c8", "#4065a8"],
                roles: ["tree", "flag", "hall", "hall", "hall"], blurb: "Wants every part of town at its door.",
-               rules: [{ k: "variety", p: 2 }] },
+               rules: [{ k: "variety", p: 2 }, { k: "by", t: "water", p: 2, once: true }] },
 
   /* Homes */
   manor:     { name: "Manor", cat: "home", shape: "O4", n: 1, era: 2, base: 4, roof: ["#7e8a9e", "#616c80"],
@@ -396,7 +397,7 @@ const DEF = {
                rules: [{ k: "by", t: "forest", p: 1 }, { k: "near", cats: ["shop"], p: 2 }] },
   boarding:  { name: "Boarding House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#b07a52", "#8e5f3d"],
                roles: ["hall", "hall", "hall", "yard"], blurb: "Cheap beds for working men.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "by", t: "ore", p: 1 }] },
   farmhouse: { name: "Farmhouse", cat: "home", shape: "V3", n: 2, era: 1, base: 2, roof: ["#d0885a", "#ad6a40"],
                roles: ["house", "house", "garden"], blurb: "Wants the fields and the herds close by.",
                rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "by", t: "wheat", p: 1 }, { k: "by", t: "herd", p: 1 }] },
@@ -428,7 +429,7 @@ const DEF = {
   /* Industry */
   sluice:    { name: "Gold Sluice", plural: "Gold Sluices", cat: "industry", shape: "I3", n: 1, era: 1, base: 2,
                roles: ["sluice", "sluice", "sluice"], blurb: "Washes gold out of the rock.",
-               rules: [{ k: "on", t: "ore", p: 3 }, { k: "by", t: "water", p: 3, once: true }] },
+               rules: [{ k: "on", t: "ore", p: 3 }, { k: "by", t: "water", p: 3, once: true }, { k: "near", cats: ["industry"], p: 1 }] },
   stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 2, roof: ["#6c7480", "#525964"],
                roles: ["big", "big", "rocks", "yard"], blurb: "Crushes ore beside the diggings.",
                rules: [{ k: "by", t: "ore", p: 2 }, { k: "near", cats: ["industry"], p: 2 }, { k: "by", t: "water", p: 2, once: true }] },
@@ -440,7 +441,7 @@ const DEF = {
                rules: [{ k: "by", t: "herd", p: 2 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
   kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 1,
                roles: ["kiln"], blurb: "Burns wood into fuel.",
-               rules: [{ k: "by", t: "forest", p: 2 }] },
+               rules: [{ k: "by", t: "forest", p: 2 }, { k: "near", cats: ["industry"], p: 1 }] },
   freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"],
                roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads goods at the edge of town.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry"], p: 2 }] },
@@ -453,11 +454,11 @@ const DEF = {
                roles: ["shop", "shop", "crates"], blurb: "The day's catch, from the river to the homes.",
                rules: [{ k: "by", t: "water", p: 1 }, { k: "near", cats: ["home"], p: 2 }] },
   bank:      { name: "Bank", cat: "shop", shape: "O4", n: 1, era: 3, base: 3, roof: ["#b9a26a", "#968250"], emblem: "dollar",
-               roles: ["big", "big", "big", "big"], blurb: "Wants busy shops and the law close by.",
-               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 2 }] },
+               roles: ["big", "big", "big", "big"], blurb: "Holds the town's gold. Wants shops and the law close by.",
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }, { k: "by", t: "ore", p: 1 }] },
   tradingpost:{ name: "Trading Post", cat: "shop", shape: "V3", n: 1, era: 1, base: 2, roof: ["#9a7b55", "#7a603f"],
                roles: ["hall", "hall", "crates"], blurb: "Trade with whoever comes in from outside.",
-               rules: [{ k: "edge", p: 3 }, { k: "by", t: "water", p: 2, once: true }, { k: "by", t: "herd", p: 1 }] },
+               rules: [{ k: "edge", p: 3 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }] },
   assay:     { name: "Assay Office", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8b8f96", "#6e7278"],
                roles: ["shop", "shop"], blurb: "Weighs what the diggings bring in.",
                rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "by", t: "ore", p: 1 }] },
@@ -470,40 +471,40 @@ const DEF = {
                roof: ["#b0503c", "#8c3d2d"], roles: ["deck", "hall", "hall", "deck"], blurb: "A long, roofed crossing. Both ends must sit on land.",
                rules: [{ k: "on", t: "water", p: 3 }, { k: "near", any: true, p: 1 }] },
   library:   { name: "Library", plural: "Libraries", cat: "civic", shape: "F5", n: 1, era: 3, base: 3, roof: ["#6d8f7a", "#557260"], emblem: "book",
-               roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, and readers next door.",
-               rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["civic"], p: 2 }] },
+               roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, trees and civic neighbours.",
+               rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "near", cats: ["civic"], p: 2 }, { k: "by", t: "forest", p: 1 }] },
   sheriff:   { name: "Sheriff's Office", cat: "civic", shape: "V3", n: 1, era: 2, base: 3, roof: ["#8a6a4a", "#6c5238"], emblem: "star",
-               roles: ["hall", "hall", "yard"], blurb: "Keeps an eye on the saloons and the shops.",
-               rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
+               roles: ["hall", "hall", "yard"], blurb: "Watches the saloons, the shops and the road into town.",
+               rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "edge", p: 2 }] },
   jail:      { name: "Jail", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#7b7f86", "#5f636a"], emblem: "bars",
-               roles: ["hall", "yard"], blurb: "Belongs with the law, away from families.",
-               rules: [{ k: "near", cats: ["civic"], p: 3 }, { k: "near", cats: ["home"], p: -2 }] },
+               roles: ["hall", "yard"], blurb: "Belongs with the law, at the edge of town.",
+               rules: [{ k: "near", cats: ["civic"], p: 3 }, { k: "edge", p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
   plaza:     { name: "Plaza", cat: "civic", shape: "O4", n: 1, era: 2, base: 1,
                roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square among shops and homes.",
-               rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
+               rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "by", t: "water", p: 2, once: true }] },
   cemetery:  { name: "Cemetery", plural: "Cemeteries", cat: "civic", shape: "T4", n: 1, era: 2, base: 2,
                roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet ground by the church and the trees.",
                rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "by", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
   doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
                roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "by", t: "water", p: 1, once: true }, { k: "near", cats: ["industry"], p: -2 }] },
   courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
                roles: ["hall", "hall", "hall", "yard", "flag"], blurb: "Law and order, on the main street.",
-               rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
+               rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "on", t: "grass", p: 1 }] },
 
   /* Leisure */
   theater:   { name: "Theater", cat: "leisure", shape: "Y5", n: 1, era: 3, base: 3, roof: ["#b0445a", "#8c3447"], emblem: "mask",
                roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "A show for the town and its visitors.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["leisure"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 }, { k: "by", t: "water", p: 2, once: true }] },
   bathhouse: { name: "Bathhouse", cat: "leisure", shape: "L4", n: 1, era: 2, base: 2, roof: ["#6aa3b5", "#528596"],
                roles: ["hall", "hall", "pool", "pool"], blurb: "Hot water for tired travellers.",
                rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "by", t: "forest", p: 1 }, { k: "near", cats: ["leisure"], p: 1 }] },
   casino:    { name: "Gambling Hall", cat: "leisure", shape: "P5", n: 1, era: 3, base: 4, roof: ["#2f6b4f", "#22523c"], emblem: "diamond",
-               roles: ["big", "big", "big", "big", "porch"], blurb: "Big money. The law and the church hate it.",
-               rules: [{ k: "near", cats: ["leisure", "shop"], p: 2 }, { k: "near", cats: ["civic"], p: -3 }] },
+               roles: ["big", "big", "big", "big", "porch"], blurb: "A riverboat gamble. The law and the church hate it.",
+               rules: [{ k: "near", cats: ["leisure", "shop"], p: 2 }, { k: "by", t: "water", p: 2, once: true }, { k: "near", cats: ["civic"], p: -3 }] },
   racetrack: { name: "Racetrack", cat: "leisure", shape: "R6", n: 1, era: 3, base: 2,
                roles: ["track", "track", "track", "track", "track", "track"], blurb: "Needs open grass and horses from the herds.",
-               rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "herd", p: 2 }] },
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "herd", p: 2 }, { k: "near", cats: ["leisure"], p: 2 }] },
   fairground:{ name: "Fairground", cat: "leisure", shape: "N5", n: 1, era: 2, base: 2,
                roles: ["tent", "tent", "tent", "tent", "tent"], blurb: "Tents at the edge of town, near the farms.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["agri"], p: 2 }, { k: "by", t: "herd", p: 1 }] },
@@ -689,7 +690,11 @@ function restore(saved) {
   G = saved;
   MAP = makeMap(G.seed);
   OWNER = new Array(N).fill(-1);
-  G.pieces.forEach((p, k) => p.cells.forEach(c => { OWNER[c] = k; }));
+  G.pieces.forEach((p, k) => {
+    // Saves from before land was kept: work it out again, in the order the buildings went up.
+    if (!p.land) p.land = look(p.cells).by;
+    p.cells.forEach(c => { OWNER[c] = k; });
+  });
 }
 
 const current = () => G.over ? null : G.deck[G.at];
@@ -735,7 +740,7 @@ function settle() {
 /* Builds the building in hand. Scores are live, so the buildings next to it can go up or down too. */
 function build(cells) {
   const type = current(), before = G.pieces.map((_, k) => pieceScore(k));
-  G.pieces.push({ type, cells });
+  G.pieces.push({ type, cells, land: look(cells).by });
   const k = G.pieces.length - 1;
   cells.forEach(c => { OWNER[c] = k; });
   G.at++;
@@ -761,12 +766,15 @@ function look(cells, self = -1) {
       const j = idx(x + dx, y + dy);
       if (own.has(j)) continue;
       if (OWNER[j] >= 0 && OWNER[j] !== self) near.add(OWNER[j]);
-      else if (OWNER[j] < 0) by[j] = MAP[j];
+      // Water never runs out: a bridge over it doesn't stop it counting.
+      if (OWNER[j] < 0 || MAP[j] === "water") by[j] = MAP[j];
     }
   }
   const byCount = {};
   for (const j in by) byCount[by[j]] = (byCount[by[j]] || 0) + 1;
-  return { on, by: byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge, self };
+  // A placed building keeps the land it had beside it when it was built.
+  const land = self >= 0 && G.pieces[self].land;
+  return { on, by: land || byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge, self };
 }
 
 const matches = (r, type) => !!r.any || (r.types || []).includes(type) || (r.cats || []).includes(DEF[type].cat);
@@ -1945,7 +1953,7 @@ function paintInfo() {
     html += `<div class="kind">${t === "water" ? "Bridges only" : "Open land"}</div><h3>${TERRAIN[t].name}</h3>`;
     if (on.length) html += `<p class="label">Build on it</p><ul class="mods">${on.map(x => rowHTML(x.r.p, `${DEF[x.k].name}, each square`, undefined, ruleIcon(x.r))).join("")}</ul>`;
     if (by.length) html += `<p class="label">Build beside it</p><ul class="mods">${by.map(x => rowHTML(x.r.p, `${DEF[x.k].name}, ${x.r.once ? "once" : "each square"}`, undefined, ruleIcon(x.r))).join("")}</ul>`;
-    if (by.length && t !== "water") html += `<p style="margin-top:8px">Once a building covers it, it stops counting as beside.</p>`;
+    if (by.length && t !== "water") html += `<p style="margin-top:8px">Buildings beside it keep their points even if it is covered later.</p>`;
     if (!on.length && !by.length) html += `<p>No building scores for this land. Use it to fill gaps.</p>`;
     placeInfo(rowOf(i));
   } else {
@@ -2089,7 +2097,8 @@ $("scrim").onclick = closeSheet;
 const RULES_HTML = `<ul class="rules">
   <li><b>Build:</b> drag a building onto open land and press Build. Tap it to see how it scores.</li>
   <li><b>On</b> is the land under a building. <b>Beside</b> is open land that shares a side with it. <b>Next to</b> is a building that shares a side with it.</li>
-  <li><b>Scores are live.</b> A building gains when you add what it likes next to it, and loses land you cover.</li>
+  <li><b>Land bonuses are kept.</b> Covering land later doesn't take away points a building already earned from it.</li>
+  <li><b>Neighbour bonuses grow.</b> A building gains whenever you add a neighbour it likes.</li>
   <li><b>Bridges</b> are the only buildings that can sit on water. Both ends must be on land.</li>
   <li><b>No room</b> for a building: −${AWAY}. Fit them all: +${ALL_FIT}.</li>
 </ul>`;
@@ -2136,7 +2145,7 @@ function recordBest() {
 }
 
 /* Bump when a change to the map, the deck or the scoring means an old link no longer gives the same game. */
-const LINK_VERSION = 2;
+const LINK_VERSION = 3;
 
 function challengeURL() {
   const base = location.href.split(/[?#]/)[0];

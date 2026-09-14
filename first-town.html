@@ -258,7 +258,7 @@ const TERRAIN = {
   forest: { name: "Woods",      short: "woods",      blurb: "Tall trees. A building put here clears them." },
   ore:    { name: "Ore vein",   short: "ore",        blurb: "Rock with a seam of silver in it." },
   wheat:  { name: "Wild wheat", short: "wild wheat", blurb: "Rich soil where grain grows on its own." },
-  water:  { name: "Water",      short: "water",      blurb: "Nothing can be built on water." },
+  water:  { name: "Water",      short: "water",      blurb: "Only a bridge can be built on water." },
 };
 
 const CATS = {
@@ -287,6 +287,13 @@ const SHAPES = {
   T5: [[0,0],[1,0],[2,0],[1,1],[1,2]],
   P5: [[0,0],[1,0],[0,1],[1,1],[0,2]],
   U5: [[0,0],[2,0],[0,1],[1,1],[2,1]],
+  L5: [[0,0],[0,1],[0,2],[0,3],[1,3]],
+  N5: [[0,0],[1,0],[2,0],[2,1],[3,1]],
+  Y5: [[0,0],[1,0],[2,0],[3,0],[1,1]],
+  W5: [[0,0],[0,1],[1,1],[1,2],[2,2]],
+  Z5: [[0,0],[1,0],[1,1],[1,2],[2,2]],
+  F5: [[1,0],[2,0],[0,1],[1,1],[1,2]],
+  R6: [[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]],
 };
 
 /*
@@ -302,6 +309,13 @@ const SHAPES = {
     near    cats / types p: points for each building of that kind next to it
     edge                 p: points if it touches the edge of the map
     variety              p: points for each kind of building next to it
+    town    cats / types p: points for each building of that kind anywhere in town
+    without cats / types p: points if no building of that kind is next to it
+  near and without take any: true to mean every building.
+  bridge: true lets a building sit on water. Both of its ends must be on land.
+  emblem: a small sign drawn on the roof.   tile: its own tile colours, instead of its category's.
+
+  Each game draws about 17 kinds from this library. See makeDeck.
 */
 const DEF = {
   well:      { name: "Town Well", plural: "Town Wells", cat: "civic", shape: "I1", n: 2, era: 1, base: 1,
@@ -364,6 +378,130 @@ const DEF = {
   townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, base: 3, roof: ["#5580c8", "#4065a8"],
                roles: ["tree", "flag", "hall", "hall", "hall"], blurb: "Wants every part of town at its door.",
                rules: [{ k: "variety", p: 2 }] },
+
+  /* Homes */
+  manor:     { name: "Manor", cat: "home", shape: "O4", n: 1, era: 2, base: 5, roof: ["#7e8a9e", "#616c80"],
+               roles: ["big", "big", "garden", "tree"], blurb: "Old money wants a view and some quiet.",
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", cats: ["industry"], p: -3 }, { k: "near", cats: ["leisure"], p: -2 }] },
+  loghouse:  { name: "Log House", cat: "home", shape: "I3", n: 2, era: 1, base: 2, roof: ["#9b6a45", "#7a5234"],
+               roles: ["house", "house", "garden"], blurb: "Built from the trees around it.",
+               rules: [{ k: "by", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+  boarding:  { name: "Boarding House", cat: "home", shape: "L4", n: 1, era: 2, base: 3, roof: ["#b07a52", "#8e5f3d"],
+               roles: ["hall", "hall", "hall", "yard"], blurb: "Cheap beds for working men.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["saloon"], p: 1 }] },
+  farmhouse: { name: "Farmhouse", cat: "home", shape: "V3", n: 2, era: 1, base: 2, roof: ["#d0885a", "#ad6a40"],
+               roles: ["house", "house", "garden"], blurb: "Wants the fields close by.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
+  miners:    { name: "Miners' Shacks", plural: "Miners' Shacks", cat: "home", shape: "S4", n: 1, era: 2, base: 1,
+               roof: ["#8c7f73", "#6d6259"], roof2: ["#a08f7c", "#7f7162"],
+               roles: ["rowA", "yard", "rowB", "rowA"], blurb: "Close to the dig, far from comfort.",
+               rules: [{ k: "near", types: ["mine", "sluice"], p: 2 }, { k: "by", t: "ore", p: 1 }] },
+
+  /* Food */
+  orchard:   { name: "Orchard", cat: "agri", shape: "L4", n: 1, era: 1, base: 2,
+               roles: ["orchard", "orchard", "orchard", "orchard"], blurb: "Apple trees in neat rows.",
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "water", p: 2, once: true }] },
+  vineyard:  { name: "Vineyard", cat: "agri", shape: "W5", n: 1, era: 2, base: 2,
+               roles: ["vines", "vines", "vines", "vines", "vines"], blurb: "Grapes for the saloon's wine.",
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "near", types: ["saloon", "hotel"], p: 3 }] },
+  gristmill: { name: "Gristmill", cat: "agri", shape: "I2", n: 1, era: 2, base: 2, roof: ["#a7836a", "#86684f"],
+               roles: ["hall", "wheel"], blurb: "A water wheel grinding the harvest.",
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", types: ["farm"], p: 3 }] },
+  stables:   { name: "Stables", plural: "Stables", cat: "agri", shape: "T4", n: 1, era: 2, base: 2, roof: ["#a2603c", "#7f492c"],
+               roles: ["hall", "hall", "hall", "hay"], blurb: "Horses for hire.",
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "near", types: ["hotel", "station"], p: 2 }, { k: "near", cats: ["home"], p: -1 }] },
+  granary:   { name: "Granary", plural: "Granaries", cat: "agri", shape: "I2", n: 1, era: 3, base: 1, roof: ["#caa24e", "#a8843a"],
+               roles: ["hall", "hall"], blurb: "Stores grain from every farm in town.",
+               rules: [{ k: "town", types: ["farm", "gristmill"], p: 2 }] },
+  windmill:  { name: "Windmill", cat: "agri", shape: "I1", n: 2, era: 1, base: 1,
+               roles: ["windmill"], blurb: "Turns wherever the farms are.",
+               rules: [{ k: "near", types: ["farm"], p: 3 }] },
+
+  /* Industry */
+  sluice:    { name: "Gold Sluice", plural: "Gold Sluices", cat: "industry", shape: "I3", n: 1, era: 1, base: 2,
+               roles: ["sluice", "sluice", "sluice"], blurb: "Washes gold out of the rock.",
+               rules: [{ k: "on", t: "ore", p: 3 }, { k: "by", t: "water", p: 3, once: true }] },
+  stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 2, roof: ["#6c7480", "#525964"],
+               roles: ["big", "big", "rocks", "yard"], blurb: "Crushes ore to free the gold.",
+               rules: [{ k: "near", types: ["mine", "sluice"], p: 3 }, { k: "by", t: "water", p: 2, once: true }] },
+  brickworks:{ name: "Brickworks", plural: "Brickworks", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#b4533d", "#903f2e"],
+               roles: ["forge", "forge", "forge", "crates"], blurb: "Bricks for the grand houses.",
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "town", types: ["rowhouses", "manor"], p: 2 }] },
+  tannery:   { name: "Tannery", plural: "Tanneries", cat: "industry", shape: "I2", n: 1, era: 2, base: 3, roof: ["#8a6f4e", "#6b553b"],
+               roles: ["hall", "yard"], blurb: "Hides from the ranch. It smells.",
+               rules: [{ k: "near", types: ["ranch", "stables"], p: 3 }, { k: "near", cats: ["home"], p: -2 }] },
+  kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 1,
+               roles: ["kiln"], blurb: "Burns wood into fuel.",
+               rules: [{ k: "by", t: "forest", p: 2 }] },
+  freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"],
+               roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads the trains at the edge of town.",
+               rules: [{ k: "edge", p: 3 }, { k: "near", types: ["station"], p: 4 }] },
+
+  /* Shops */
+  bakery:    { name: "Bakery", plural: "Bakeries", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#d69a52", "#b47c3c"],
+               roles: ["house", "crates"], blurb: "Flour in, bread out.",
+               rules: [{ k: "near", types: ["gristmill", "granary"], p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
+  fishmarket:{ name: "Fish Market", cat: "shop", shape: "I3", n: 1, era: 2, base: 2, roof: ["#4f93b0", "#3d7690"],
+               roles: ["shop", "shop", "crates"], blurb: "Today's catch, straight off the dock.",
+               rules: [{ k: "near", types: ["dock"], p: 4 }, { k: "near", cats: ["home"], p: 1 }] },
+  bank:      { name: "Bank", cat: "shop", shape: "O4", n: 1, era: 3, base: 4, roof: ["#b9a26a", "#968250"], emblem: "dollar",
+               roles: ["big", "big", "big", "big"], blurb: "Wants busy shops and a sheriff close by.",
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", types: ["sheriff"], p: 3 }] },
+  tradingpost:{ name: "Trading Post", cat: "shop", shape: "V3", n: 1, era: 1, base: 2, roof: ["#9a7b55", "#7a603f"],
+               roles: ["hall", "hall", "crates"], blurb: "Trade with whoever comes in from outside.",
+               rules: [{ k: "edge", p: 3 }, { k: "by", t: "water", p: 2, once: true }] },
+  assay:     { name: "Assay Office", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8b8f96", "#6e7278"],
+               roles: ["shop", "shop"], blurb: "Weighs every nugget the town digs up.",
+               rules: [{ k: "town", types: ["mine", "sluice"], p: 3 }] },
+
+  /* Civic */
+  bridge:    { name: "Bridge", cat: "civic", shape: "I3", n: 1, era: 1, base: 2, bridge: true, tile: ["#c9a06f", "#8f6a45"],
+               roles: ["deck", "deck", "deck"], blurb: "Crosses the water. Both ends must sit on land.",
+               rules: [{ k: "on", t: "water", p: 3 }, { k: "near", any: true, p: 1 }] },
+  coveredbridge: { name: "Covered Bridge", cat: "civic", shape: "I4", n: 1, era: 1, base: 3, bridge: true, tile: ["#c9a06f", "#8f6a45"],
+               roof: ["#b0503c", "#8c3d2d"], roles: ["deck", "hall", "hall", "deck"], blurb: "A long, roofed crossing. Both ends must sit on land.",
+               rules: [{ k: "on", t: "water", p: 3 }, { k: "near", any: true, p: 1 }] },
+  library:   { name: "Library", plural: "Libraries", cat: "civic", shape: "F5", n: 1, era: 3, base: 4, roof: ["#6d8f7a", "#557260"], emblem: "book",
+               roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, and readers next door.",
+               rules: [{ k: "without", cats: ["industry"], types: ["saloon"], p: 4 }, { k: "near", types: ["school"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
+  sheriff:   { name: "Sheriff's Office", cat: "civic", shape: "V3", n: 1, era: 2, base: 3, roof: ["#8a6a4a", "#6c5238"], emblem: "star",
+               roles: ["hall", "hall", "yard"], blurb: "Keeps an eye on the saloons and the bank.",
+               rules: [{ k: "near", types: ["saloon", "bank"], p: 3 }, { k: "town", types: ["saloon", "casino"], p: 1 }] },
+  jail:      { name: "Jail", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#7b7f86", "#5f636a"], emblem: "bars",
+               roles: ["hall", "yard"], blurb: "Belongs beside the sheriff, away from families.",
+               rules: [{ k: "near", types: ["sheriff"], p: 4 }, { k: "near", cats: ["home"], p: -2 }] },
+  plaza:     { name: "Plaza", cat: "civic", shape: "O4", n: 1, era: 2, base: 1,
+               roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square, busy on every side.",
+               rules: [{ k: "near", any: true, p: 2 }] },
+  cemetery:  { name: "Cemetery", plural: "Cemeteries", cat: "civic", shape: "T4", n: 1, era: 2, base: 2,
+               roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet ground beside the church.",
+               rules: [{ k: "near", types: ["church"], p: 3 }, { k: "near", cats: ["home"], p: -1 }] },
+  doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
+               roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
+  courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 4, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
+               roles: ["hall", "hall", "hall", "yard", "flag"], blurb: "Law and order, on the main street.",
+               rules: [{ k: "near", types: ["sheriff", "jail"], p: 3 }, { k: "near", cats: ["shop"], p: 1 }] },
+
+  /* Leisure */
+  theater:   { name: "Theater", cat: "leisure", shape: "Y5", n: 1, era: 3, base: 4, roof: ["#b0445a", "#8c3447"], emblem: "mask",
+               roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "A show for the town and its visitors.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", types: ["hotel"], p: 3 }, { k: "near", cats: ["industry"], p: -2 }] },
+  bathhouse: { name: "Bathhouse", cat: "leisure", shape: "L4", n: 1, era: 2, base: 2, roof: ["#6aa3b5", "#528596"],
+               roles: ["hall", "hall", "pool", "pool"], blurb: "Hot water for tired travellers.",
+               rules: [{ k: "by", t: "water", p: 3, once: true }, { k: "near", types: ["hotel"], p: 2 }] },
+  casino:    { name: "Gambling Hall", cat: "leisure", shape: "P5", n: 1, era: 3, base: 5, roof: ["#2f6b4f", "#22523c"], emblem: "diamond",
+               roles: ["big", "big", "big", "big", "porch"], blurb: "Big money. The law and the church hate it.",
+               rules: [{ k: "near", types: ["hotel", "bank"], p: 3 }, { k: "near", types: ["church", "sheriff"], p: -3 }] },
+  racetrack: { name: "Racetrack", cat: "leisure", shape: "R6", n: 1, era: 3, base: 3,
+               roles: ["track", "track", "track", "track", "track", "track"], blurb: "Needs open grass and fast horses.",
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "near", types: ["stables"], p: 3 }] },
+  fairground:{ name: "Fairground", cat: "leisure", shape: "N5", n: 1, era: 2, base: 2,
+               roles: ["tent", "tent", "tent", "tent", "tent"], blurb: "Tents at the edge of town, near the farms.",
+               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["agri"], p: 2 }] },
+  park:      { name: "Park", cat: "leisure", shape: "Z5", n: 1, era: 2, base: 1,
+               roles: ["tree", "garden", "tree", "garden", "tree"], blurb: "Green space for the families.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "by", t: "forest", p: 1 }] },
 };
 
 /* ───────────────────────── Small tools ───────────────────────── */
@@ -454,24 +592,43 @@ function makeMap(seed) {
   return t;
 }
 
-/* The deck holds a bit less than the land can take. Homes and wells pad it out or come off it to hit the mark. */
+/*
+  Each game draws a few kinds of building from every category. A building that wants a particular partner
+  usually gets it, and any map with water to cross gets a bridge. Then the counts go up or down until the
+  deck covers a bit less than the land can take.
+*/
+const QUOTA = { home: 3, agri: 3, industry: 3, shop: 2, civic: 3, leisure: 2 };
+
 function makeDeck(seed, terrain) {
   const r = mulberry(seed ^ 0x5bd1e995);
-  const count = {};
-  for (const k in DEF) count[k] = DEF[k].n;
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const types = new Set();
+  for (const cat in QUOTA) {
+    shuffle(Object.keys(DEF).filter(k => DEF[k].cat === cat && !DEF[k].bridge)).slice(0, QUOTA[cat]).forEach(k => types.add(k));
+  }
+  for (const k of [...types]) for (const rule of DEF[k].rules) {
+    if (rule.p > 0 && rule.types && !rule.types.some(t => types.has(t)) && r() < .65) types.add(pick(rule.types, r));
+  }
+  const bridge = shuffle(Object.keys(DEF).filter(k => DEF[k].bridge)).find(k => placements(k).length);
+  if (bridge) types.add(bridge);
+
+  const chosen = [...types], count = {};
+  for (const k of chosen) count[k] = DEF[k].n;
   const size = (k) => SHAPES[DEF[k].shape].length;
-  const total = () => Object.keys(count).reduce((s, k) => s + count[k] * size(k), 0);
+  const total = () => chosen.reduce((sum, k) => sum + count[k] * size(k), 0);
   const target = Math.round(terrain.filter(t => t !== "water").length * FILL);
-  const TRIM = ["cabin", "homestead", "well", "rowhouses", "lumber", "farm", "mine"];
   while (total() > target) {
-    const k = pick(TRIM.filter(q => count[q] > 1), r);
+    const k = pick(chosen.filter(q => count[q] > 1), r) || pick(chosen.filter(q => count[q] === 1 && !DEF[q].bridge), r);
     if (!k) break;
     count[k]--;
   }
-  const PAD = ["cabin", "homestead", "well", "rowhouses"];
-  while (total() < target - 1) count[pick(PAD, r)]++;
+  const pad = chosen.filter(k => DEF[k].cat === "home" || size(k) <= 2);
+  while (total() < target - 1) {
+    const k = pick(pad.filter(q => count[q] < 4), r) || pick(chosen, r);
+    count[k]++;
+  }
   const deck = [];
-  for (const k in count) for (let c = 0; c < count[k]; c++) deck.push({ k, key: DEF[k].era + r() * 1.6 });
+  for (const k of chosen) for (let c = 0; c < count[k]; c++) deck.push({ k, key: DEF[k].era + r() * 1.6 });
   deck.sort((a, b) => a.key - b.key);
   return deck.map(d => d.k);
 }
@@ -516,9 +673,9 @@ let OWNER = null;   // for each square, the index of the building on it, or -1
 function newGame(player, pickName, seed) {
   seed = seed ?? (Math.random() * 2 ** 31) | 0;
   MAP = makeMap(seed);
+  OWNER = new Array(N).fill(-1);
   G = { v: 5, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, swaps: SWAPS, away: [], pieces: [], over: false,
         trophies: {}, streak: 0 };
-  OWNER = new Array(N).fill(-1);
   settle();
 }
 
@@ -531,7 +688,13 @@ function restore(saved) {
 
 const current = () => G.over ? null : G.deck[G.at];
 const upcoming = () => G.over ? null : G.deck[G.at + 1] || null;
-const canPlace = (cells) => !!cells && cells.every(c => MAP[c] !== "water" && OWNER[c] < 0);
+/* A building can't overlap another or sit on water. A bridge must sit on water, with both ends on land. */
+function canPlace(cells, type) {
+  if (!cells || cells.some(c => OWNER[c] >= 0)) return false;
+  if (!DEF[type].bridge) return cells.every(c => MAP[c] !== "water");
+  // A bridge's footprint is a straight line, so its first and last squares are its ends.
+  return MAP[cells[0]] !== "water" && MAP[cells[cells.length - 1]] !== "water" && cells.some(c => MAP[c] === "water");
+}
 
 function placements(type) {
   const out = [];
@@ -539,7 +702,7 @@ function placements(type) {
     const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip));
     for (let ay = 0; ay <= ROWS - h; ay++) for (let ax = 0; ax <= COLS - w; ax++) {
       const cells = cellsAt(type, { ...o, ax, ay });
-      if (canPlace(cells)) out.push({ ...o, ax, ay, cells });
+      if (canPlace(cells, type)) out.push({ ...o, ax, ay, cells });
     }
   }
   return out;
@@ -605,10 +768,10 @@ function look(cells, self = -1) {
   }
   const byCount = {};
   for (const j in by) byCount[by[j]] = (byCount[by[j]] || 0) + 1;
-  return { on, by: byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge };
+  return { on, by: byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge, self };
 }
 
-const matches = (r, type) => (r.types || []).includes(type) || (r.cats || []).includes(DEF[type].cat);
+const matches = (r, type) => !!r.any || (r.types || []).includes(type) || (r.cats || []).includes(DEF[type].cat);
 
 function evalRule(r, c) {
   if (r.k === "on") { const n = c.on[r.t] || 0; return { n, v: n * r.p }; }
@@ -619,6 +782,8 @@ function evalRule(r, c) {
   if (r.k === "near") { const hit = c.near.filter(q => matches(r, q.type)); return { n: hit.length, hit, v: hit.length * r.p }; }
   if (r.k === "edge") return { n: c.edge ? 1 : 0, v: c.edge ? r.p : 0 };
   if (r.k === "variety") { const n = new Set(c.near.map(q => DEF[q.type].cat)).size; return { n, v: n * r.p }; }
+  if (r.k === "town") { const n = G.pieces.filter((p, k) => k !== c.self && matches(r, p.type)).length; return { n, v: n * r.p }; }
+  if (r.k === "without") { const n = c.near.some(q => matches(r, q.type)) ? 0 : 1; return { n, v: n * r.p }; }
   return { n: 0, v: 0 };
 }
 
@@ -660,7 +825,7 @@ function judge(type, cells, parts, pts, gain, changed) {
 
   // The biggest stack of one bonus: 3 of a kind is a triple, 4 a quadruple, 5 or more a combo.
   let top = 0;
-  for (const q of parts) { const r = ruleOf(q); if (r && r.p > 0 && !r.once && r.k !== "edge") top = Math.max(top, q.n); }
+  for (const q of parts) { const r = ruleOf(q); if (r && r.p > 0 && !r.once && r.k !== "edge" && r.k !== "without") top = Math.max(top, q.n); }
   if (top >= 3) out.add(top >= 5 ? "combo" : top === 4 ? "quadruple" : "triple");
 
   if (cells.length >= 2 && parts.some(q => { const r = ruleOf(q); return r && r.k === "on" && r.p > 0 && q.n === cells.length; })) out.add("perfect");
@@ -685,7 +850,7 @@ const plural = (k) => DEF[k].plural || DEF[k].name + "s";
 const joinOr = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " or " + a[a.length - 1];
 const landWord = (t) => t === "water" ? "water" : TERRAIN[t].short;
 const signed = (v) => (v < 0 ? "−" : "+") + Math.abs(v);
-const nearNoun = (r, n) => joinOr(n === 1
+const nearNoun = (r, n) => r.any ? (n === 1 ? "building" : "buildings") : joinOr(n === 1
   ? [...(r.types || []).map(t => DEF[t].name), ...(r.cats || []).map(c => CATS[c].one)]
   : [...(r.types || []).map(plural), ...(r.cats || []).map(c => CATS[c].many)]);
 
@@ -696,6 +861,8 @@ function ruleText(r) {
   if (r.k === "near") return `each ${nearNoun(r, 1)} next to it`;
   if (r.k === "edge") return "if at the edge of the map";
   if (r.k === "variety") return "each kind of building next to it";
+  if (r.k === "town") return `each ${nearNoun(r, 1)} in town`;
+  if (r.k === "without") return `if no ${nearNoun(r, 2)} next to it`;
   return "";
 }
 
@@ -708,6 +875,8 @@ function partText(type, q) {
   if (r.k === "near") return `${q.n} ${nearNoun(r, q.n)} next to it`;
   if (r.k === "edge") return q.n ? "At the map edge" : "Not at the map edge";
   if (r.k === "variety") return `${q.n} ${q.n === 1 ? "kind" : "kinds"} next to it`;
+  if (r.k === "town") return `${q.n} ${nearNoun(r, q.n)} in town`;
+  if (r.k === "without") return q.n ? `No ${nearNoun(r, 2)} next to it` : `Has ${nearNoun(r, 2)} next to it`;
   return "";
 }
 
@@ -918,7 +1087,44 @@ const GROUND = {
   garden: "#b3d494", tree: "#b3d494", flag: "#b3d494", well: "#b3d494", field: "#e6c463", pasture: "#bddb95",
   yard: "#e5d6b7", crates: "#e5d6b7", logs: "#e5d6b7", produce: "#e5d6b7", rocks: "#d2c9ba", shaft: "#cfc4b1",
   plank: "#bb8c5f", porch: "#c29568", rail: "#cdc2ad", play: "#ebdaa9",
+  orchard: "#b8d98f", vines: "#cbdc9e", wheel: "#cfc4b1", windmill: "#b3d494", kiln: "#d2c9ba", sluice: "#cbbfa9",
+  deck: "#c69a6b", hay: "#e5d6b7", plaza: "#e3dac7", graves: "#b3d494", pool: "#e3dac7", track: "#bddb95", tent: "#eadcb5",
 };
+let BAKING = false;  // art is being drawn onto the baked board, so chimneys should smoke
+
+/* A small sign on a roof: a star for the sheriff, a dollar for the bank. */
+function emblem(g, kind, x, y) {
+  const S = UI.S, s = S * .15;
+  g.save(); g.translate(x, y);
+  circle(g, S * .02, S * .03, s * 1.25, "rgba(30,20,10,.25)");
+  if (kind === "star") {
+    g.beginPath();
+    for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? s * .5 : s * 1.2; g.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); }
+    g.closePath(); g.fillStyle = "#f2c94c"; g.fill();
+    g.strokeStyle = "#8a6414"; g.lineWidth = Math.max(1, S * .02); g.stroke();
+  } else {
+    circle(g, 0, 0, s * 1.15, kind === "dollar" ? "#f2c94c" : "#f7f2e6");
+    g.strokeStyle = "#3d4148"; g.lineWidth = Math.max(1.2, S * .03); g.lineCap = "round";
+    if (kind === "bars") {
+      g.beginPath(); for (const bx of [-.45, 0, .45]) { g.moveTo(bx * s, -.7 * s); g.lineTo(bx * s, .7 * s); } g.stroke();
+    } else if (kind === "clock") {
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -.7 * s); g.moveTo(0, 0); g.lineTo(.5 * s, .2 * s); g.stroke();
+    } else if (kind === "cross") {
+      g.fillStyle = "#d65a45"; g.fillRect(-.22 * s, -.7 * s, .44 * s, 1.4 * s); g.fillRect(-.7 * s, -.22 * s, 1.4 * s, .44 * s);
+    } else if (kind === "book") {
+      g.fillStyle = "#6d8f7a"; g.fillRect(-.75 * s, -.5 * s, .68 * s, s); g.fillRect(.07 * s, -.5 * s, .68 * s, s);
+    } else if (kind === "dollar") {
+      g.font = `800 ${Math.round(s * 1.5)}px system-ui, sans-serif`; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillStyle = "#6b4a08"; g.fillText("$", 0, s * .08);
+    } else if (kind === "mask") {
+      circle(g, -.4 * s, -.2 * s, .17 * s, "#3d4148"); circle(g, .4 * s, -.2 * s, .17 * s, "#3d4148");
+      g.beginPath(); g.arc(0, .05 * s, .5 * s, .15 * Math.PI, .85 * Math.PI); g.stroke();
+    } else if (kind === "diamond") {
+      g.fillStyle = "#d9434f"; g.beginPath(); g.moveTo(0, -.8 * s); g.lineTo(.6 * s, 0); g.lineTo(0, .8 * s); g.lineTo(-.6 * s, 0); g.closePath(); g.fill();
+    }
+  }
+  g.restore();
+}
 const ROOFS = new Set(["house", "rowA", "rowB", "hall", "shop", "barn", "forge", "shed", "nave", "steeple", "big"]);
 const SMOKE = [];    // chimneys on the baked board: [x, y, dark]
 
@@ -1091,6 +1297,91 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     circle(g, x + S * .7, y + S * .36, S * .09, "#7f5a3d");
     circle(g, x + S * .7, y + S * .36, S * .055, "#9c7452");
     circle(g, x + S * .32, y + S * .62, S * .08, "#7f5a3d");
+  } else if (role === "orchard") {
+    for (const [tx, ty] of [[.3, .32], [.7, .32], [.3, .72], [.7, .72]]) tree(g, x + S * tx, y + S * ty, S * .15, hash(i, tx * 10 + ty));
+  } else if (role === "vines") {
+    for (let k = 0; k < 3; k++) {
+      const t = .22 + k * .28;
+      g.fillStyle = "#6e9b4c"; g.beginPath();
+      if (horiz) rr(g, x + S * .06, y + S * (t - .06), S * .88, S * .12, S * .06); else rr(g, x + S * (t - .06), y + S * .06, S * .12, S * .88, S * .06);
+      g.fill();
+      for (let q = 0; q < 3; q++) { const u = .2 + q * .3; circle(g, horiz ? x + S * u : x + S * t, horiz ? y + S * t : y + S * u, S * .035, "#7b4a8c"); }
+    }
+  } else if (role === "wheel") {
+    g.fillStyle = "#62abc9"; g.beginPath(); rr(g, x + S * .1, y + S * .64, S * .8, S * .2, S * .08); g.fill();
+    g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1.5, S * .05);
+    g.beginPath(); g.arc(cx, cy - S * .05, S * .26, 0, Math.PI * 2); g.stroke();
+    g.lineWidth = Math.max(1, S * .03); g.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 4;
+      g.moveTo(cx - Math.cos(a) * S * .26, cy - S * .05 - Math.sin(a) * S * .26); g.lineTo(cx + Math.cos(a) * S * .26, cy - S * .05 + Math.sin(a) * S * .26);
+    }
+    g.stroke();
+  } else if (role === "windmill") {
+    circle(g, cx + S * .03, cy + S * .05, S * .2, "rgba(40,30,20,.2)");
+    circle(g, cx, cy, S * .19, "#ece5d4"); circle(g, cx, cy, S * .12, "#b9ab94");
+    g.save(); g.translate(cx, cy); g.rotate(Math.PI / 5);
+    for (let k = 0; k < 4; k++) {
+      g.rotate(Math.PI / 2);
+      g.fillStyle = "#8a6444"; g.fillRect(-S * .02, 0, S * .04, S * .4);
+      g.fillStyle = "#f7f2e6"; g.fillRect(S * .02, S * .12, S * .08, S * .26);
+    }
+    g.restore();
+    circle(g, cx, cy, S * .045, "#5b4a3c");
+  } else if (role === "kiln") {
+    ellipse(g, cx + S * .03, cy + S * .06, S * .3, S * .26, "rgba(40,30,20,.22)");
+    circle(g, cx, cy, S * .29, "#9c7f66"); circle(g, cx - S * .06, cy - S * .07, S * .17, "#b39479");
+    g.fillStyle = "#2f2622"; g.beginPath(); g.ellipse(cx, cy + S * .13, S * .1, S * .07, 0, Math.PI, 0); g.fill();
+    circle(g, cx, cy + S * .1, S * .03, "#e0743a");
+    if (BAKING) SMOKE.push([cx, cy - S * .22, true]);
+  } else if (role === "sluice") {
+    const w = S * .3;
+    g.fillStyle = "#9a7350"; g.beginPath();
+    if (horiz) rr(g, x, cy - w / 2, S, w, S * .04); else rr(g, cx - w / 2, y, w, S, S * .04);
+    g.fill();
+    g.fillStyle = "#6fb4cf";
+    if (horiz) g.fillRect(x, cy - w * .28, S, w * .56); else g.fillRect(cx - w * .28, y, w * .56, S);
+    g.fillStyle = "rgba(60,40,25,.55)";
+    for (let k = 0; k < 3; k++) { const t = .2 + k * .3; if (horiz) g.fillRect(x + S * t, cy - w * .28, S * .03, w * .56); else g.fillRect(cx - w * .28, y + S * t, w * .56, S * .03); }
+    circle(g, horiz ? x + S * .3 : x + S * .8, horiz ? y + S * .8 : y + S * .3, S * .07, "#958d82");
+    circle(g, horiz ? x + S * .66 : x + S * .2, horiz ? y + S * .2 : y + S * .68, S * .035, "#f2cf63");
+  } else if (role === "deck") {
+    g.strokeStyle = "#a57b52"; g.lineWidth = Math.max(1, S * .025); g.beginPath();
+    for (let k = 1; k < 6; k++) {
+      const t = k / 6;
+      if (horiz) { g.moveTo(x + S * t, y + S * .14); g.lineTo(x + S * t, y + S * .86); } else { g.moveTo(x + S * .14, y + S * t); g.lineTo(x + S * .86, y + S * t); }
+    }
+    g.stroke();
+    g.strokeStyle = "#6e4c2e"; g.lineWidth = Math.max(1.5, S * .05); g.beginPath();
+    if (horiz) { g.moveTo(x, y + S * .16); g.lineTo(x + S, y + S * .16); g.moveTo(x, y + S * .84); g.lineTo(x + S, y + S * .84); }
+    else { g.moveTo(x + S * .16, y); g.lineTo(x + S * .16, y + S); g.moveTo(x + S * .84, y); g.lineTo(x + S * .84, y + S); }
+    g.stroke();
+  } else if (role === "hay") {
+    for (const [hx, hy] of [[.32, .36], [.66, .44], [.42, .7]]) {
+      circle(g, x + S * hx + S * .02, y + S * hy + S * .04, S * .12, "rgba(40,30,20,.2)");
+      circle(g, x + S * hx, y + S * hy, S * .12, "#e2c15c");
+      g.strokeStyle = "#c29d3f"; g.lineWidth = Math.max(1, S * .02);
+      g.beginPath(); g.arc(x + S * hx, y + S * hy, S * .06, 0, Math.PI * 1.5); g.stroke();
+    }
+  } else if (role === "graves") {
+    for (const [gx, gy] of [[.3, .32], [.66, .3], [.34, .68], [.7, .66]]) {
+      const px = x + S * gx, py = y + S * gy;
+      g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(px - S * .04, py - S * .04, S * .12, S * .15);
+      g.fillStyle = "#cfcac1"; g.beginPath(); rr(g, px - S * .06, py - S * .08, S * .12, S * .15, S * .05); g.fill();
+    }
+    circle(g, x + S * .5, y + S * .5, S * .03, "#f2a4b3");
+  } else if (role === "pool") {
+    g.fillStyle = "#7cc3d8"; g.beginPath(); rr(g, x + S * .16, y + S * .16, S * .68, S * .68, S * .14); g.fill();
+    g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = Math.max(1, S * .025);
+    g.beginPath(); g.moveTo(x + S * .3, y + S * .42); g.lineTo(x + S * .5, y + S * .42); g.moveTo(x + S * .45, y + S * .6); g.lineTo(x + S * .68, y + S * .6); g.stroke();
+  } else if (role === "tent") {
+    circle(g, cx + S * .03, cy + S * .05, S * .3, "rgba(40,30,20,.2)");
+    const stripe = hash(i, 4) > .5 ? "#d65a45" : "#3f79b5";
+    for (let k = 0; k < 8; k++) {
+      g.fillStyle = k % 2 ? "#f7f2e6" : stripe;
+      g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, S * .3, k * Math.PI / 4, (k + 1) * Math.PI / 4); g.closePath(); g.fill();
+    }
+    circle(g, cx, cy, S * .05, "#e3a92f");
   } else if (role === "pasture" && hash(i, 11) > .35) {
     const px = x + S * (.3 + .35 * hash(i, 12)), py = y + S * (.35 + .3 * hash(i, 13));
     ellipse(g, px + S * .03, py + S * .05, S * .14, S * .08, "rgba(40,50,30,.2)");
@@ -1103,6 +1394,7 @@ function groundDetail(g, role, i, x, y, S, horiz) {
 /* Draws a building's art on top of its tile. `dy` is how far the top of the tile is raised. */
 function art(g, type, cells, dy, baking) {
   const d = DEF[type], S = UI.S, ins = S * .075;
+  BAKING = !!baking;
   const roleOf = new Map(cells.map((c, k) => [c, d.roles[k]]));
   const xs = cells.map(colOf), ys = cells.map(rowOf);
   const horiz = Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys);
@@ -1125,6 +1417,32 @@ function art(g, type, cells, dy, baking) {
       g.stroke();
       g.restore();
     }
+    const box = () => {
+      const gx = group.map(colOf), gy = group.map(rowOf), x0 = Math.min(...gx), y0 = Math.min(...gy);
+      const w = (Math.max(...gx) - x0 + 1) * S, h = (Math.max(...gy) - y0 + 1) * S;
+      return [UI.BX + x0 * S + w / 2, UI.BY + y0 * S + dy + h / 2, w, h];
+    };
+    if (role === "plaza") {
+      g.save(); union(g, group, ins + S * .045, S * .1, dy); g.clip();
+      g.strokeStyle = "rgba(120,100,70,.18)"; g.lineWidth = 1; g.beginPath();
+      for (const c of group) for (let k = 1; k < 3; k++) {
+        const x = cellX(c), y = cellY(c) + dy;
+        g.moveTo(x + S * k / 3, y); g.lineTo(x + S * k / 3, y + S); g.moveTo(x, y + S * k / 3); g.lineTo(x + S, y + S * k / 3);
+      }
+      g.stroke(); g.restore();
+      const [px, py] = box();
+      circle(g, px + S * .03, py + S * .05, S * .36, "rgba(40,30,20,.18)");
+      circle(g, px, py, S * .36, "#cfc5b0"); circle(g, px, py, S * .28, "#7cc3d8");
+      circle(g, px, py, S * .1, "#e9e2d0"); circle(g, px - S * .08, py - S * .09, S * .05, "rgba(255,255,255,.6)");
+    }
+    if (role === "track") {
+      const [px, py, w, h] = box();
+      g.strokeStyle = "#caa46c"; g.lineWidth = S * .3;
+      g.beginPath(); g.ellipse(px, py, w / 2 - S * .32, h / 2 - S * .32, 0, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = "#f7f2e6"; g.lineWidth = Math.max(1, S * .025);
+      g.beginPath(); g.ellipse(px, py, w / 2 - S * .16, h / 2 - S * .16, 0, 0, Math.PI * 2); g.stroke();
+      circle(g, px + w / 2 - S * .32, py, S * .07, "#7a5236"); circle(g, px - w / 2 + S * .32, py - S * .3, S * .07, "#3d2b1f");
+    }
     if (role === "pasture") {
       // A fence: a darker ring, then the grass again just inside it.
       union(g, group, ins + S * .075, S * .08, dy); g.fillStyle = "#9d7b56"; g.fill();
@@ -1135,6 +1453,7 @@ function art(g, type, cells, dy, baking) {
 
   // Roofs: squares with the same role that make a rectangle share one roof.
   const done = new Set(), pad = ins + S * .06;
+  let sign = null;   // the biggest roof, where the emblem goes
   for (const c of cells) {
     const role = roleOf.get(c);
     if (!ROOFS.has(role) || done.has(c)) continue;
@@ -1151,12 +1470,14 @@ function art(g, type, cells, dy, baking) {
     } else {
       for (const q of group) roofFor(g, role, d, cellX(q) + pad, cellY(q) + dy + pad, S - pad * 2, S - pad * 2, baking);
     }
+    if (!sign || group.length > sign.n) sign = { n: group.length, x: UI.BX + (x0 + gw / 2) * S, y: UI.BY + (y0 + gh / 2) * S + dy };
   }
+  if (d.emblem && sign) emblem(g, d.emblem, sign.x, sign.y);
 }
 
 /* A raised tile with a building on it. `lift` raises the whole tile off the board. */
 function drawPiece(g, type, cells, lift, baking) {
-  const d = DEF[type], S = UI.S, ins = S * .075, r = S * .16, th = S * .085, tile = TILE[d.cat];
+  const d = DEF[type], S = UI.S, ins = S * .075, r = S * .16, th = S * .085, tile = d.tile || TILE[d.cat];
   g.save();
   g.shadowColor = "rgba(18,28,24,.4)"; g.shadowBlur = S * .14 + lift * .5; g.shadowOffsetY = S * .05 + lift * .5;
   union(g, cells, ins, r, 0); g.fillStyle = tile[1]; g.fill();
@@ -1175,7 +1496,7 @@ function bake() {
   lg.clearRect(0, 0, UI.w, UI.h);
   drawLand(lg);
   const built = [];
-  for (let i = 0; i < N; i++) if (OWNER[i] >= 0) built.push(i);
+  for (let i = 0; i < N; i++) if (OWNER[i] >= 0 && MAP[i] !== "water") built.push(i);
   // Streets under the town, so gaps between buildings read as lanes.
   lg.save(); lg.beginPath(); rr(lg, UI.BX, UI.BY, COLS * UI.S, ROWS * UI.S, UI.S * .26); lg.clip();
   union(lg, built, UI.S * .01, UI.S * .2); lg.fillStyle = "#e6dcc6"; lg.fill();
@@ -1270,7 +1591,7 @@ function drawWater(g, now) {
   g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = Math.max(1, S * .03); g.lineCap = "round";
   g.beginPath();
   for (let i = 0; i < N; i++) {
-    if (MAP[i] !== "water") continue;
+    if (MAP[i] !== "water" || OWNER[i] >= 0) continue;
     for (let k = 0; k < 2; k++) {
       const ph = (now * .07 + hash(i, k + 80)) % 1;
       const x = cellX(i) + S * (.25 + .5 * ph), y = cellY(i) + S * (.3 + .4 * hash(i, k + 90));
@@ -1375,7 +1696,7 @@ function turnGhost(dRot, flip) {
 function drawGhost(g, now) {
   const cells = ghostCells();
   if (!cells) return;
-  const S = UI.S, ok = canPlace(cells), lift = S * .16;
+  const S = UI.S, type = current(), ok = canPlace(cells, type), lift = S * .16;
   const dy = -lift - S * .085, pulse = .8 + .2 * Math.sin(now * 5);
   // The squares it would land on, marked on the board below it.
   g.beginPath();
@@ -1398,7 +1719,8 @@ function drawGhost(g, now) {
   drawPiece(g, current(), cells, lift, false);
   if (!ok) {
     for (const c of cells) {
-      if (MAP[c] !== "water" && OWNER[c] < 0) continue;
+      const end = c === cells[0] || c === cells[cells.length - 1];
+      if (OWNER[c] < 0 && (MAP[c] !== "water" || (DEF[type].bridge && !end))) continue;
       const x = cellX(c), y = cellY(c) + dy;
       g.beginPath(); rr(g, x + S * .12, y + S * .12, S * .76, S * .76, S * .14); g.fillStyle = "rgba(214,72,52,.55)"; g.fill();
       g.strokeStyle = "#fff"; g.lineWidth = Math.max(2, S * .06); g.lineCap = "round";
@@ -1485,8 +1807,19 @@ function ruleIcon(r) {
   const svg = (inner) => `<svg class="ico" viewBox="0 0 20 20">${inner}</svg>`;
   if (r.k === "on") return svg(`<rect x="1" y="1" width="18" height="18" rx="4" fill="${LAND_HEX[r.t]}"/><path d="M5.5 15.5V9.8L10 5.8l4.5 4v5.7z" fill="#fff"/>`);
   if (r.k === "by") return svg(`<rect x="1" y="1" width="18" height="18" rx="4" fill="${LAND_HEX[r.t]}"/><rect x="6" y="6" width="8" height="8" rx="2" fill="#fff"/>`);
+  const catOf = () => r.any ? null : r.cats ? r.cats[0] : DEF[r.types[0]].cat;
+  if (r.k === "town") {
+    const cat = catOf();
+    return svg(`<g fill="#d8d2c5">${[0, 1, 2].map(a => [0, 1, 2].map(b => `<rect x="${1 + a * 6.3}" y="${1 + b * 6.3}" width="5" height="5" rx="1.2"/>`).join("")).join("")}</g>` +
+      `<rect x="13.6" y="1" width="5" height="5" rx="1.2" fill="${CAT_HEX[cat]}"/><rect x="1" y="13.6" width="5" height="5" rx="1.2" fill="${CAT_HEX[cat]}"/>`);
+  }
+  if (r.k === "without") {
+    const cat = catOf();
+    return svg(`<rect x="3" y="3" width="14" height="14" rx="3.5" fill="${CAT_HEX[cat]}" opacity=".45"/><path d="M3 17 17 3" stroke="#b8412f" stroke-width="2.6" stroke-linecap="round"/>`);
+  }
   if (r.k === "near") {
-    const cat = r.cats ? r.cats[0] : DEF[r.types[0]].cat;
+    const cat = catOf();
+    if (!cat) return svg(`<rect x="1.5" y="5.5" width="8" height="9" rx="2.5" fill="#fff" stroke="#c9c2b4"/><rect x="10.5" y="5" width="8.5" height="10" rx="2.5" fill="#9aa19c"/>`);
     return svg(`<rect x="1.5" y="5.5" width="8" height="9" rx="2.5" fill="#fff" stroke="#c9c2b4"/><rect x="10.5" y="5" width="8.5" height="10" rx="2.5" fill="${CAT_HEX[cat]}"/>`);
   }
   if (r.k === "edge") return svg(`<rect x="5" y="3" width="13" height="14" rx="3" fill="#fff" stroke="#c9c2b4"/><rect x="1" y="1" width="3" height="18" rx="1.5" fill="#5b645f"/>`);
@@ -1527,7 +1860,7 @@ function paintPanel() {
   $("pieceHead").onclick = toggleRules;
   $("swaps").textContent = G.swaps;
   $("bSwap").disabled = !canSwap();
-  $("bBuild").disabled = !canPlace(ghostCells());
+  $("bBuild").disabled = !canPlace(ghostCells(), current());
 }
 
 const CONTROLS = $("controls").innerHTML;
@@ -1584,7 +1917,7 @@ function paintInfo() {
     placeInfo(rowOf(i));
   } else if (i >= 0) {
     const t = MAP[i], { on, by } = caresAbout(t);
-    html += `<div class="kind">${t === "water" ? "Can't build here" : "Open land"}</div><h3>${TERRAIN[t].name}</h3>`;
+    html += `<div class="kind">${t === "water" ? "Bridges only" : "Open land"}</div><h3>${TERRAIN[t].name}</h3>`;
     if (on.length) html += `<p class="label">Build on it</p><ul class="mods">${on.map(x => rowHTML(x.r.p, `${DEF[x.k].name}, each square`, undefined, ruleIcon(x.r))).join("")}</ul>`;
     if (by.length) html += `<p class="label">Build beside it</p><ul class="mods">${by.map(x => rowHTML(x.r.p, `${DEF[x.k].name}, ${x.r.once ? "once" : "each square"}`, undefined, ruleIcon(x.r))).join("")}</ul>`;
     if (by.length && t !== "water") html += `<p style="margin-top:8px">Once a building covers it, it stops counting as beside.</p>`;
@@ -1602,7 +1935,7 @@ function paintInfo() {
 
 function doBuild() {
   const cells = ghostCells();
-  if (!G || G.over || !canPlace(cells)) return;
+  if (!G || G.over || !canPlace(cells, current())) return;
   const res = build(cells), S = UI.S;
   const middle = (cs) => [cs.reduce((sum, c) => sum + cellX(c), 0) / cs.length + S / 2, cs.reduce((sum, c) => sum + cellY(c), 0) / cs.length + S / 2];
   // Neighbours whose scores moved show it over their roofs.
@@ -1698,7 +2031,7 @@ cv.addEventListener("pointermove", (e) => {
   const before = UI.ghost.ax + "," + UI.ghost.ay;
   placeGhost({ ...UI.ghost, ax, ay });
   if (UI.ghost.ax + "," + UI.ghost.ay !== before) {
-    $("bBuild").disabled = !canPlace(ghostCells());
+    $("bBuild").disabled = !canPlace(ghostCells(), current());
     if (UI.rules) placeInfo(ghostRow());
   }
 });
@@ -1739,6 +2072,7 @@ const RULES_HTML = `<ul class="rules">
   <li><b>Build:</b> drag a building onto open land and press Build. Tap it to see how it scores.</li>
   <li><b>On</b> is the land under a building. <b>Beside</b> is open land that shares a side with it. <b>Next to</b> is a building that shares a side with it.</li>
   <li><b>Scores are live.</b> A building gains when you add what it likes next to it, and loses land you cover.</li>
+  <li><b>Bridges</b> are the only buildings that can sit on water. Both ends must be on land.</li>
   <li><b>No room</b> for a building: −${AWAY}. Fit them all: +${ALL_FIT}.</li>
   <li><b>Swap</b> trades your building for the next one, ${SWAPS} times a game.</li>
 </ul>`;

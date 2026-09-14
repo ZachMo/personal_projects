@@ -211,13 +211,23 @@ Fort Zach, St. Zach, New Zach, Port Zach, Zachville, Zachburg, Zachton or Zachfi
 with a creek or two ponds. Woods, ore veins and wild wheat grow on it in patches. You can build
 on any square that is not water.
 
-**One building at a time.** A deck of about 23 buildings comes one at a time, in 18 kinds.
-A well is one square, a cabin is two, a farm is a 2 by 2 square, a church is a plus sign and a
-train station is a straight line of five. You can see the next building. Drag the building
-onto the map, tap it or press Turn to turn it, press Flip to mirror it, then press Build.
-Homes, farms and mines come early. The church, the school, the hotel, the station and the
-town hall come late, so leave room for them. Swap trades the building in hand for the next
-one, twice a game.
+**One building at a time.** The library holds 55 kinds of building, and each game draws about
+20 of them, so no two decks are alike. The draw takes a few kinds from each category: homes,
+food, industry, shops, civic buildings and leisure. A building that wants a particular partner
+usually gets it, so a Jail tends to come with a Sheriff's Office and a Stamp Mill with a Mine
+or a Gold Sluice. The To come button shows what this game's deck holds.
+
+A deck has about 23 buildings. A well or a windmill is one square, a cabin is two, a farm is a
+2 by 2 square, a church is a plus sign, a racetrack is 2 by 3 and a train station is a straight
+line of five. You can see the next building. Drag the building onto the map, press Turn to turn
+it, press Flip to mirror it, then press Build. Small and simple buildings come early, and big
+civic buildings come late, so leave room for them. Swap trades the building in hand for the
+next one, twice a game.
+
+**Bridges.** A Bridge (three squares) and a Covered Bridge (four) are the only buildings that can
+sit on water. Both ends must be on land. They score for each square on water and for each
+building next to them. Any map with water to cross gets one of them early in the deck, so
+leave a crossing open.
 
 **Fit them all.** The deck covers 87% of the open land. A building that fits nowhere costs
 5 points. Place every building and you get 10 points. The To come button lists what is left,
@@ -226,12 +236,17 @@ how many squares it needs and how many squares you have.
 **Scoring you can count.** Every building has base points and a few modifiers. Tap the
 building in hand, on the map or in the panel, to see them. A cabin is +2 base, +2 if beside
 water, +1 for each woods square beside it and −2 for each industry building next to it. The
-game never works out a score before you build. Three words matter, and each has a small icon:
+game never works out a score before you build. Most rules use one of three words, and each has
+a small icon:
 
 - **On** is the land under a building. A farm scores for wild wheat under it.
 - **Beside** is open land that shares a side with it. A lumber mill scores for woods around it.
   Land under another building is no longer open, so covering woods takes points from the mill.
 - **Next to** is a building that shares a side with it. A grocer scores for farms next to it.
+
+Two more rules reach further. **In town** counts buildings anywhere on the map, so a Granary
+scores for every farm. **If no** gives a bonus for keeping something away, so a Library wants
+no industry and no saloon next to it.
 
 While you drag a building, or while its scoring is open, the squares beside it get a dashed
 outline. Tap an empty square to see which buildings score for building on it and building
@@ -257,15 +272,16 @@ Tap the score for every building's score, part by part. Tap a building in that l
 on the map. The summary at the end lists your trophies and your three best buildings.
 
 **How it looks.** Open land is flat grass, trees, wheat and rock, with a faint outline on every
-square you can still use. A building is a raised tile with a shadow and a roof. Streets
-appear between buildings, and people walk them. Chimneys smoke, water shimmers and ore
-glints. Everything is drawn with vector shapes on a canvas at the screen's full resolution.
-The game saves to localStorage after every move.
+square you can still use. A building is a raised tile with a shadow and a roof. Some roofs carry
+a sign: a star for the sheriff, bars for the jail, a dollar for the bank, a mask for the theater.
+Streets appear between buildings, and people walk them. Chimneys and kilns smoke, water shimmers
+and ore glints. Everything is drawn with vector shapes on a canvas at the screen's full
+resolution. The game saves to localStorage after every move.
 
-**Balance.** I tested with bots over 60 maps. A bot that weighs points against packing scores
-about 143 and fits every building about a third of the time. A bot that only packs fits every
-building 9 times in 10 but scores about 110. A bot that only chases points scores about 128
-and loses two or three buildings. A bot that plays at random scores about 52.
+**Balance.** I tested with bots over 40 maps. A bot that weighs points against packing scores
+about 145 and fits every building about two games in three. A bot that only packs scores about
+108. A bot that only chases points scores about 123 and loses about two buildings. A bot that
+plays at random scores about 60. Over 300 decks every one of the 55 buildings was drawn.
 
 ## mexico-elections.html
 

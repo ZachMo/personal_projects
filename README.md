@@ -204,8 +204,8 @@ Mashing the controls gets about 60.
 A town-building board game for a phone. It is a jigsaw puzzle: buildings come in odd shapes,
 and you fit them onto one map.
 
-You type your name and the town names itself after you: Fort Zach, St. Zach, New Zach,
-Port Zach, Zachville, Zachburg, Zachton or Zachfield. Tap the arrow to try another.
+Each new town asks for your name. When the game starts, the town takes a name made from it:
+Fort Zach, St. Zach, New Zach, Port Zach, Zachville, Zachburg, Zachton or Zachfield.
 
 **The map.** Every game has a new map, 9 squares by 12. Water crosses it as a river, a lake
 with a creek or two ponds. Woods, ore veins and wild wheat grow on it in patches. You can build
@@ -219,27 +219,34 @@ Homes, farms and mines come early. The church, the school, the hotel, the statio
 town hall come late, so leave room for them. Swap trades the building in hand for the next
 one, twice a game.
 
-**Fit them all.** The deck covers 87% of the open land, so there is room for every building
-if you pack well. A building that fits nowhere is lost for 5 points. Place every building and
-you get 10 points. The To come button lists what is left in the deck, how many squares it
-needs and how many squares you have.
+**Fit them all.** The deck covers 87% of the open land. A building that fits nowhere costs
+5 points. Place every building and you get 10 points. The To come button lists what is left,
+how many squares it needs and how many squares you have.
 
-**Put each building where it is happy.** Each building scores for three things:
+**Scoring you can count.** Every building has base points and a few modifiers, and its card
+shows them all. A cabin is +2 base, +2 if it touches water, +1 for each woods square it
+touches and −2 for each industry building next to it. Touching means sharing a side. The game
+never works out a score before you build. A score is final when you build: later buildings
+don't change it. So order matters, and a grocer that comes before the farms is worth less.
+Some rules point both ways, so industry loses a point for each home next to it, just as
+homes lose points next to industry.
 
-- the land under it: a farm on wild wheat, a mine on ore, a ranch on open grass;
-- the land beside it: a cabin by the water or the woods, a lumber mill with woods around it;
-- the buildings next to it: a grocer by farms, a store by homes, a saloon by industry.
+Tap a building to see how it scored, part by part. Tap an empty square to see which buildings
+score for that land.
 
-Some pairs are bad. Homes don't want industry next door. A church doesn't want a saloon.
-The station wants the edge of the map, and the town hall wants many kinds of building
-around it. The whole board is scored after every move, so a new farm also raises the grocer
-you built beside it before.
+**Celebration.** After each build a card pops up with the score counting up and the parts
+that made it. A score of 8 or more turns the card green, and 13 or more turns it gold with
+confetti. Trophies announce special builds:
 
-**The board teaches you without numbers.** The card for the building in hand lists what it
-likes and dislikes. Tap an empty square to see its land and which buildings care about it.
-Tap a building to see what it is happy about, what hurts it and what it still wants. Only the
-total score has a number. It counts up after you build, and a small +N rises from the new
-building. At the end, a summary shows your three best buildings.
+- Triple, Quadruple and Combo: one modifier counted 3, 4, or 5 or more times;
+- Jackpot: 13 points or more from one building;
+- Perfect ground: every square on the land the building wants;
+- Snug fit: no open land left around it;
+- On a roll: three great builds in a row;
+- Ouch, Bad neighbours and Wasted land: a score of 0 or less, two or more disliked
+  neighbours, or a building over ore or wheat it can't use.
+
+The summary at the end lists your trophies and your three best buildings.
 
 **How it looks.** Open land is flat grass, trees, wheat and rock, with a faint outline on every
 square you can still use. A building is a raised tile with a shadow and a roof. Streets
@@ -247,11 +254,10 @@ appear between buildings, and people walk them. Chimneys smoke, water shimmers a
 glints. Everything is drawn with vector shapes on a canvas at the screen's full resolution.
 The game saves to localStorage after every move.
 
-**Balance.** I tested the deck size with bots over 120 maps. A bot that only packs tightly
-fits every building 9 times in 10 but scores about 35. A bot that only chases points scores
-about 95 on its buildings but loses one or two of them, for about 88 in all. A bot that weighs
-both also scores about 88 and fits every building about a third of the time. A bot that plays
-at random loses about three buildings.
+**Balance.** I tested with bots over 100 maps. A bot that weighs points against packing scores
+about 140 and fits every building about half the time. A bot that only packs fits every
+building 9 times in 10 but scores about 105. A bot that only chases points scores about 123
+and loses two or three buildings. A bot that plays at random scores about 50.
 
 ## mexico-elections.html
 

@@ -92,21 +92,15 @@
   .next span { font-size: .58rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
   .next .mini { width: 44px; height: 44px; border-radius: 12px; }
 
-  .likes { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-  .likes li { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; padding: 4px 10px 4px 5px;
-              border-radius: 999px; background: var(--good-bg); color: var(--good); }
-  .likes li.bad { background: var(--bad-bg); color: var(--bad); }
-  .likes li i { width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: .7rem;
-                font-weight: 800; background: var(--good); color: #fff; }
-  .likes li.bad i { background: var(--bad); }
-
-  .facts { list-style: none; margin: 8px 0 0; padding: 0; }
-  .facts li { display: flex; gap: 9px; align-items: flex-start; padding: 7px 0; border-top: 1px solid var(--line); font-size: .85rem; }
-  .facts li i { flex: 0 0 auto; width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center; font-style: normal;
-                font-size: .72rem; font-weight: 800; margin-top: 1px; background: var(--good); color: #fff; }
-  .facts li.bad i { background: var(--bad); }
-  .facts li.want { color: var(--ink-2); }
-  .facts li.want i { background: var(--card-2); color: var(--muted); box-shadow: inset 0 0 0 1.5px #d5cfc2; }
+  .mods { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 5px; }
+  .mods li { display: flex; align-items: center; gap: 9px; font-size: .84rem; }
+  .mods li b { flex: 0 0 auto; min-width: 36px; text-align: center; padding: 2px 6px; border-radius: 8px; font-size: .8rem; font-weight: 800;
+               font-variant-numeric: tabular-nums; background: var(--good-bg); color: var(--good); }
+  .mods li.bad b { background: var(--bad-bg); color: var(--bad); }
+  .mods li.base b { background: var(--ink); color: #fff; }
+  .mods li.zero { color: var(--muted); }
+  .mods li.zero b { background: var(--card-2); color: var(--muted); }
+  .scored { font-size: .8rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: #fff; vertical-align: 2px; }
 
   .controls { display: flex; gap: 8px; margin-top: 12px; }
   .tool { height: 48px; padding: 0 12px; border-radius: 14px; background: var(--card-2); color: var(--ink); font-weight: 650; font-size: .85rem;
@@ -137,9 +131,9 @@
     color: var(--ink); text-align: center; -webkit-user-select: text; user-select: text; box-shadow: inset 0 0 0 1.5px transparent;
   }
   .dialog input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
-  .named { margin: 14px 0 6px; font-size: 1.45rem; font-weight: 800; letter-spacing: -.02em; min-height: 2rem;
-           display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .named button { width: 34px; height: 34px; border-radius: 10px; background: var(--card-2); font-size: 1.05rem; color: var(--ink-2); }
+  .how { margin-top: 12px; text-align: left; }
+  .how summary { cursor: pointer; list-style: none; text-align: center; font-size: .86rem; font-weight: 700; color: var(--ink-2); padding: 6px; }
+  .how summary::-webkit-details-marker { display: none; }
   .row { display: flex; gap: 8px; margin-top: 14px; }
   .row .tool { flex: 1; justify-content: center; }
   .rules { margin: 12px 0 0; padding: 0; list-style: none; text-align: left; }
@@ -164,10 +158,46 @@
   .deckrow { display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: center; background: var(--card-2); border-radius: 14px; padding: 8px 10px; }
   .deckrow .mini { width: 48px; height: 48px; background: var(--card); }
   .deckrow .name { font-size: .92rem; }
-  .deckrow .likes { margin-top: 5px; }
-  .deckrow .likes li { font-size: .72rem; padding: 2px 8px 2px 4px; }
-  .deckrow .likes li i { width: 14px; height: 14px; font-size: .6rem; }
+  .deckrow .mods { margin-top: 6px; gap: 3px; }
+  .deckrow .mods li { font-size: .76rem; }
+  .deckrow .mods li b { min-width: 30px; font-size: .72rem; padding: 1px 5px; }
   .count { font-size: .72rem; font-weight: 800; color: var(--ink-2); background: var(--card); border-radius: 999px; padding: 1px 7px; }
+
+  .label { margin: 14px 0 2px; font-size: .72rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .tchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tchip { font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #f6e7b4; color: #7a5608; }
+  .tchip.bad { background: var(--bad-bg); color: var(--bad); }
+
+  /* ── Score pop and trophies ── */
+  .pop { position: absolute; left: 12px; right: 12px; margin: 0 auto; max-width: 340px; display: grid; gap: 8px; pointer-events: none; z-index: 5;
+         transition: opacity .35s, transform .35s; }
+  .pop.top { top: 10px; } .pop.bottom { bottom: 10px; }
+  .pop.hide { opacity: 0; transform: translateY(-8px); }
+  .popcard { background: var(--card); color: var(--ink); border-radius: 22px; padding: 12px 16px 10px; text-align: center;
+             box-shadow: 0 16px 40px rgba(0,0,0,.42); animation: popIn .55s cubic-bezier(.2,1.6,.4,1) both; }
+  .popnum { font-size: 3.2rem; font-weight: 850; letter-spacing: -.04em; line-height: 1; }
+  .popcard.great .popnum { color: var(--good); }
+  .popcard.gold { background: linear-gradient(160deg, #fff7dc, #f5d472); }
+  .popcard.gold .popnum { color: #875600; }
+  .popcard.low .popnum { color: var(--bad); }
+  .popname { font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin-top: 3px; }
+  .popparts { list-style: none; margin: 8px 0 0; padding: 0; text-align: left; }
+  .popparts li { display: flex; justify-content: space-between; gap: 10px; font-size: .8rem; padding: 4px 0; border-top: 1px solid rgba(0,0,0,.08); }
+  .popparts li b { color: var(--good); font-variant-numeric: tabular-nums; }
+  .popparts li.base b { color: var(--ink); }
+  .popparts li.bad b { color: var(--bad); }
+  .trophy { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 18px; color: #f3dc98;
+            background: linear-gradient(135deg, #3a2d08, #735610); box-shadow: 0 12px 30px rgba(0,0,0,.38);
+            animation: slideIn .5s cubic-bezier(.2,1.5,.4,1) both; }
+  .trophy svg { width: 30px; height: 30px; flex: 0 0 auto; }
+  .trophy b { display: block; font-size: 1.02rem; color: #fff2c2; letter-spacing: -.01em; }
+  .trophy span { font-size: .78rem; }
+  .trophy.bad { background: linear-gradient(135deg, #3b1812, #72291d); color: #f0b3a5; }
+  .trophy.bad b { color: #ffddd4; }
+  @keyframes popIn { from { opacity: 0; transform: scale(.55); } to { opacity: 1; transform: scale(1); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(16px) scale(.9); } to { opacity: 1; transform: none; } }
+  .stat.bump b { animation: bump .55s ease; }
+  @keyframes bump { 35% { transform: scale(1.4); color: #ffd666; } }
 
   @media (min-width: 880px) {
     #app { grid-template-columns: minmax(0, 1fr) 390px; grid-template-rows: auto minmax(0, 1fr); }
@@ -192,6 +222,7 @@
     <canvas id="board"></canvas>
     <div id="toast"></div>
     <div id="info" class="card" hidden></div>
+    <div id="pop" class="pop" hidden></div>
   </main>
 
   <section id="panel" class="card" hidden>
@@ -238,12 +269,12 @@ const TERRAIN = {
 };
 
 const CATS = {
-  home:     { name: "Home",     many: "homes" },
-  agri:     { name: "Food",     many: "farms, ranches or docks" },
-  industry: { name: "Industry", many: "industry" },
-  shop:     { name: "Shop",     many: "shops" },
-  civic:    { name: "Civic",    many: "civic buildings" },
-  leisure:  { name: "Leisure",  many: "saloons or hotels" },
+  home:     { name: "Home",     one: "home",                many: "homes" },
+  agri:     { name: "Food",     one: "farm, ranch or dock", many: "farms, ranches or docks" },
+  industry: { name: "Industry", one: "industry building",   many: "industry buildings" },
+  shop:     { name: "Shop",     one: "shop",                many: "shops" },
+  civic:    { name: "Civic",    one: "civic building",      many: "civic buildings" },
+  leisure:  { name: "Leisure",  one: "saloon or hotel",     many: "saloons or hotels" },
 };
 
 /* Footprints. The order of the cells matters: each building's roles line up with it. */
@@ -266,74 +297,78 @@ const SHAPES = {
 };
 
 /*
+  A building scores once, when you build it: its base points plus its rules. The score never changes after that.
+  "Touches" and "next to" both mean sharing a side. Corners don't count.
+
   n:     how many are in a deck        era: 1 comes early, 3 comes late
   roles: what is drawn on each cell    roof: roof colours, light side then dark side
-  rules: what the building scores for
-    on      t: terrain   p: points for each of its cells on that terrain
-    by      t: terrain   p: points for each open square of that terrain touching it (once: only one counts, max: a cap)
-    near    cats / types p: points for each building of that kind touching it
+  rules:
+    on      t: terrain   p: points for each of its squares on that terrain
+    by      t: terrain   p: points for each open square of that terrain it touches (once: counts one at most)
+    near    cats / types p: points for each building of that kind next to it
     edge                 p: points if it touches the edge of the map
-    variety              p: points for each kind of building touching it
+    variety              p: points for each kind of building next to it
 */
 const DEF = {
-  well:      { name: "Town Well", plural: "Town Wells", cat: "civic", shape: "I1", n: 2, era: 1,
+  well:      { name: "Town Well", plural: "Town Wells", cat: "civic", shape: "I1", n: 2, era: 1, base: 1,
                roles: ["well"], blurb: "Fresh water for the families nearby.",
                rules: [{ k: "near", cats: ["home"], p: 1 }] },
-  cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, roof: ["#dc7b50", "#b75d3a"],
+  cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, base: 2, roof: ["#dc7b50", "#b75d3a"],
                roles: ["house", "garden"], blurb: "Two rooms and a porch with a view.",
-               rules: [{ k: "by", t: "water", p: 2, once: true }, { k: "by", t: "forest", p: 1, max: 2 },
+               rules: [{ k: "by", t: "water", p: 2, once: true }, { k: "by", t: "forest", p: 1 },
                        { k: "near", cats: ["industry"], p: -2 }] },
-  homestead: { name: "Homestead", cat: "home", shape: "V3", n: 2, era: 1, roof: ["#c86a4b", "#a45237"],
+  homestead: { name: "Homestead", cat: "home", shape: "V3", n: 2, era: 1, base: 3, roof: ["#c86a4b", "#a45237"],
                roles: ["garden", "house", "house"], blurb: "A family that likes company.",
                rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", types: ["well"], p: 2 },
                        { k: "near", cats: ["industry"], p: -2 }] },
-  rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
+  rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, base: 3, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
                roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close.",
                rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 },
                        { k: "near", cats: ["industry"], p: -2 }] },
-  farm:      { name: "Farm", cat: "agri", shape: "O4", n: 2, era: 1, roof: ["#cc5443", "#a43f31"],
+  farm:      { name: "Farm", cat: "agri", shape: "O4", n: 2, era: 1, base: 2, roof: ["#cc5443", "#a43f31"],
                roles: ["barn", "field", "field", "field"], blurb: "Grain for the whole town.",
                rules: [{ k: "on", t: "wheat", p: 3 }, { k: "by", t: "water", p: 2, once: true },
                        { k: "near", cats: ["industry"], p: -1 }] },
-  ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, roof: ["#b85a40", "#93432f"],
+  ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, base: 3, roof: ["#b85a40", "#93432f"],
                roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Cattle need room to roam.",
                rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "water", p: 2, once: true },
                        { k: "near", cats: ["home"], p: -1 }] },
-  lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, roof: ["#8e6c4f", "#6e523b"],
+  lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, base: 2, roof: ["#8e6c4f", "#6e523b"],
                roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
-               rules: [{ k: "by", t: "forest", p: 2 }] },
-  mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1,
+               rules: [{ k: "by", t: "forest", p: 2 }, { k: "near", cats: ["home"], p: -1 }] },
+  mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1, base: 1,
                roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging where the ore is.",
-               rules: [{ k: "on", t: "ore", p: 4 }] },
-  smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, roof: ["#6f7985", "#535c67"],
+               rules: [{ k: "on", t: "ore", p: 4 }, { k: "near", cats: ["home"], p: -1 }] },
+  smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, base: 3, roof: ["#6f7985", "#535c67"],
                roles: ["forge", "yard"], blurb: "Hammers out tools from fresh ore.",
-               rules: [{ k: "near", types: ["mine"], p: 4 }, { k: "by", t: "ore", p: 1 }] },
-  dock:      { name: "Fishing Dock", cat: "agri", shape: "I3", n: 1, era: 2, roof: ["#927c64", "#73614d"],
+               rules: [{ k: "near", types: ["mine"], p: 4 }, { k: "by", t: "ore", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
+  dock:      { name: "Fishing Dock", cat: "agri", shape: "I3", n: 1, era: 2, base: 1, roof: ["#927c64", "#73614d"],
                roles: ["shed", "plank", "plank"], blurb: "Nets and boats along the bank.",
                rules: [{ k: "by", t: "water", p: 2 }] },
-  store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, roof: ["#40a092", "#2f7e72"],
+  store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, base: 3, roof: ["#40a092", "#2f7e72"],
                roles: ["shop", "shop", "shop", "crates"], blurb: "A little of everything, for the families.",
                rules: [{ k: "near", cats: ["home"], p: 2 }] },
-  grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, roof: ["#5ea56b", "#468753"],
+  grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, base: 2, roof: ["#5ea56b", "#468753"],
                roles: ["shop", "shop", "produce", "produce"], blurb: "Fresh food, straight from the source.",
                rules: [{ k: "near", cats: ["agri"], p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
-  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, roof: ["#a95a90", "#864571"],
+  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 4, roof: ["#a95a90", "#864571"],
                roles: ["hall", "hall", "porch", "porch"], blurb: "Where the workers go after a shift.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 }] },
-  church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, roof: ["#8195b8", "#63779d"],
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 },
+                       { k: "near", types: ["church", "school"], p: -3 }] },
+  church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 4, roof: ["#8195b8", "#63779d"],
                roles: ["steeple", "tree", "nave", "tree", "nave"], blurb: "The heart of a quiet town.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", types: ["saloon"], p: -4 }] },
-  school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, roof: ["#cc5e4c", "#a84737"],
+  school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 4, roof: ["#cc5e4c", "#a84737"],
                roles: ["hall", "hall", "hall", "yard", "play"], blurb: "Lessons for the children next door.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["industry"], p: -2 },
                        { k: "near", types: ["saloon"], p: -3 }] },
-  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, roof: ["#9160aa", "#724489"],
+  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 4, roof: ["#9160aa", "#724489"],
                roles: ["big", "big", "big", "big", "porch"], blurb: "Travellers want a drink and a train.",
-               rules: [{ k: "near", types: ["saloon", "station"], p: 3 }, { k: "by", t: "water", p: 1, once: true }] },
-  station:   { name: "Train Station", cat: "civic", shape: "I5", n: 1, era: 3, roof: ["#5d7189", "#46586c"],
+               rules: [{ k: "near", types: ["saloon", "station"], p: 3 }, { k: "by", t: "water", p: 2, once: true }] },
+  station:   { name: "Train Station", cat: "civic", shape: "I5", n: 1, era: 3, base: 3, roof: ["#5d7189", "#46586c"],
                roles: ["rail", "hall", "hall", "hall", "rail"], blurb: "The line comes in from the edge of the map.",
                rules: [{ k: "edge", p: 4 }, { k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 }] },
-  townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, roof: ["#5580c8", "#4065a8"],
+  townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, base: 3, roof: ["#5580c8", "#4065a8"],
                roles: ["tree", "flag", "hall", "hall", "hall"], blurb: "Wants every part of town at its door.",
                rules: [{ k: "variety", p: 2 }] },
 };
@@ -488,7 +523,8 @@ let OWNER = null;   // for each square, the index of the building on it, or -1
 function newGame(player, pickName, seed) {
   seed = seed ?? (Math.random() * 2 ** 31) | 0;
   MAP = makeMap(seed);
-  G = { v: 3, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, swaps: SWAPS, away: [], pieces: [], over: false };
+  G = { v: 4, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, swaps: SWAPS, away: [], pieces: [], over: false,
+        trophies: {}, streak: 0 };
   OWNER = new Array(N).fill(-1);
   settle();
 }
@@ -521,7 +557,12 @@ const fits = (type) => placements(type).length > 0;
 function settle() {
   const events = [];
   while (!G.over) {
-    if (G.at >= G.deck.length) { G.over = true; events.push({ end: true }); break; }
+    if (G.at >= G.deck.length) {
+      G.over = true;
+      if (!G.away.length) G.trophies.allfit = 1;
+      events.push({ end: true });
+      break;
+    }
     if (fits(G.deck[G.at])) break;
     G.away.push(G.deck[G.at]); events.push({ away: G.deck[G.at] });
     G.at++;
@@ -529,13 +570,15 @@ function settle() {
   return events;
 }
 
+/* Builds the building in hand. Its score is worked out now, from what it touches now, and kept. */
 function build(cells) {
-  const before = boardScore();
-  G.pieces.push({ type: current(), cells });
+  const type = current(), parts = scoreParts(type, cells), pts = sumParts(parts);
+  const trophies = judge(type, cells, parts, pts);
+  G.pieces.push({ type, cells, pts, parts });
   cells.forEach(c => { OWNER[c] = G.pieces.length - 1; });
   G.at++;
-  const delta = boardScore() - before;
-  return { delta, events: settle() };
+  for (const t of trophies) G.trophies[t.id] = (G.trophies[t.id] || 0) + 1;
+  return { type, pts, parts, trophies, events: settle() };
 }
 
 const canSwap = () => !G.over && G.swaps > 0 && !!upcoming() && fits(upcoming());
@@ -582,68 +625,103 @@ function evalRule(r, c) {
   return { n: 0, v: 0 };
 }
 
-const scoreAt = (type, cells, self) => { const c = look(cells, self); return DEF[type].rules.reduce((s, r) => s + evalRule(r, c).v, 0); };
-const pieceScore = (k) => scoreAt(G.pieces[k].type, G.pieces[k].cells, k);
-const boardScore = () => G.pieces.reduce((s, _, k) => s + pieceScore(k), 0);
+/* A score, part by part. Base points come first, as rule -1. */
+function scoreParts(type, cells) {
+  const d = DEF[type], c = look(cells);
+  return [{ r: -1, n: 1, v: d.base }, ...d.rules.map((r, i) => { const e = evalRule(r, c); return { r: i, n: e.n, v: e.v }; })];
+}
+const sumParts = (parts) => parts.reduce((s, q) => s + q.v, 0);
+const boardScore = () => G.pieces.reduce((s, p) => s + p.pts, 0);
 const total = () => boardScore() - AWAY * G.away.length + (G.over && !G.away.length ? ALL_FIT : 0);
+
+/* ───────────────────────── Trophies ───────────────────────── */
+
+const GREAT = 8, JACKPOT = 13;    // a great spot turns the score card green and counts toward a streak
+/* In the order they are announced. */
+const TROPHIES = {
+  jackpot:    { name: "Jackpot!",           good: true },
+  combo:      { name: "Combo!",             good: true },
+  quadruple:  { name: "Quadruple!",         good: true },
+  triple:     { name: "Triple!",            good: true },
+  perfect:    { name: "Perfect ground",     good: true },
+  snug:       { name: "Snug fit",           good: true },
+  roll:       { name: "On a roll",          good: true },
+  allfit:     { name: "Every building fit", good: true },
+  ouch:       { name: "Ouch",               good: false },
+  neighbours: { name: "Bad neighbours",     good: false },
+  wasted:     { name: "Wasted land",        good: false },
+};
+
+function judge(type, cells, parts, pts) {
+  const d = DEF[type], out = [], add = (id, text) => out.push({ id, text });
+  const ruleOf = (q) => q.r < 0 ? null : d.rules[q.r];
+  if (pts >= JACKPOT) add("jackpot", `${pts} points from one building`);
+
+  // The biggest stack of one bonus: 3 of a kind is a triple, 4 a quadruple, 5 or more a combo.
+  let top = null;
+  for (const q of parts) {
+    const r = ruleOf(q);
+    if (r && r.p > 0 && !r.once && r.k !== "edge" && (!top || q.n > top.n)) top = q;
+  }
+  if (top && top.n >= 3) add(top.n >= 5 ? "combo" : top.n === 4 ? "quadruple" : "triple", `${partText(type, top)}, ${signed(top.v)}`);
+
+  if (cells.length >= 2 && parts.some(q => { const r = ruleOf(q); return r && r.k === "on" && r.p > 0 && q.n === cells.length; })) {
+    add("perfect", "Every square on the land it wants");
+  }
+  const own = new Set(cells);
+  if (!cells.some(c => around(c).some(j => !own.has(j) && OWNER[j] < 0 && MAP[j] !== "water"))) add("snug", "No open land left around it");
+
+  G.streak = pts >= GREAT ? G.streak + 1 : 0;
+  if (G.streak >= 3 && G.streak % 3 === 0) add("roll", `${G.streak} great spots in a row`);
+
+  if (pts <= 0) add("ouch", pts < 0 ? `This one cost you ${-pts} points` : "This one scored nothing");
+  const hurt = parts.filter(q => { const r = ruleOf(q); return r && r.p < 0 && q.n >= 2; });
+  if (hurt.length) add("neighbours", `${partText(type, hurt[0])}, ${signed(hurt[0].v)}`);
+  const uses = new Set(d.rules.filter(r => r.k === "on").map(r => r.t));
+  const buried = cells.filter(c => (MAP[c] === "ore" || MAP[c] === "wheat") && !uses.has(MAP[c]));
+  if (buried.length >= 2) add("wasted", `Built over ${buried.length} squares of ${TERRAIN[MAP[buried[0]]].short} it can't use`);
+  return out;
+}
 
 /* ───────────────────────── Words ───────────────────────── */
 
 const plural = (k) => DEF[k].plural || DEF[k].name + "s";
 const joinOr = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " or " + a[a.length - 1];
-const joinAnd = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
-const nearWhat = (r) => joinOr([...(r.types || []).map(t => "a " + DEF[t].name), ...(r.cats || []).map(c => CATS[c].many)]);
-const landWord = (t) => t === "water" ? "the water" : TERRAIN[t].short;
+const landWord = (t) => t === "water" ? "water" : TERRAIN[t].short;
+const signed = (v) => (v < 0 ? "−" : "+") + Math.abs(v);
+const nearNoun = (r, n) => joinOr(n === 1
+  ? [...(r.types || []).map(t => DEF[t].name), ...(r.cats || []).map(c => CATS[c].one)]
+  : [...(r.types || []).map(plural), ...(r.cats || []).map(c => CATS[c].many)]);
 
+/* A rule as the card shows it, after its points: "+2 for each woods square it touches". */
 function ruleText(r) {
-  if (r.k === "on") return `Built on ${landWord(r.t)}`;
-  if (r.k === "by") return `Beside ${landWord(r.t)}`;
-  if (r.k === "near") return `Next to ${nearWhat(r)}`;
-  if (r.k === "edge") return "At the edge of the map";
-  if (r.k === "variety") return "Next to many kinds of building";
+  if (r.k === "on") return `for each square on ${landWord(r.t)}`;
+  if (r.k === "by") return r.once ? `if it touches ${landWord(r.t)}` : `for each ${landWord(r.t)} square it touches`;
+  if (r.k === "near") return `for each ${nearNoun(r, 1)} next to it`;
+  if (r.k === "edge") return "if it touches the edge of the map";
+  if (r.k === "variety") return "for each kind of building next to it";
   return "";
 }
 
-/* Buildings grouped by name: "the Mine", "2 Cabins". */
-function nameList(hit) {
-  const byType = {};
-  for (const q of hit) byType[q.type] = (byType[q.type] || 0) + 1;
-  return joinAnd(Object.keys(byType).map(t => byType[t] > 1 ? `${byType[t]} ${plural(t)}` : `the ${DEF[t].name}`));
+/* One part of a score as it came out: "3 woods squares it touches". */
+function partText(type, q) {
+  if (q.r < 0) return "Base points";
+  const r = DEF[type].rules[q.r], some = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  if (r.k === "on") return `${some(q.n, "square")} on ${landWord(r.t)}`;
+  if (r.k === "by") return r.once ? (q.n ? `Touches ${landWord(r.t)}` : `Doesn't touch ${landWord(r.t)}`) : `${some(q.n, landWord(r.t) + " square")} it touches`;
+  if (r.k === "near") return `${q.n} ${nearNoun(r, q.n)} next to it`;
+  if (r.k === "edge") return q.n ? "Touches the map edge" : "Doesn't touch the map edge";
+  if (r.k === "variety") return `${some(q.n, "kind")} of building next to it`;
+  return "";
 }
 
-/* What a placed building is happy or unhappy about, in words. */
-function facts(k) {
-  const p = G.pieces[k], c = look(p.cells, k), out = [];
-  for (const r of DEF[p.type].rules) {
-    const e = evalRule(r, c), good = r.p > 0 ? "good" : "bad";
-    if (r.k === "on") {
-      if (e.n === p.cells.length) out.push([good, `Sits fully on ${landWord(r.t)}`]);
-      else if (e.n) out.push([good, `Sits partly on ${landWord(r.t)}`]);
-      else if (r.p > 0) out.push(["want", `Wants to sit on ${landWord(r.t)}`]);
-    } else if (r.k === "by") {
-      if (e.n >= 3 && !r.once) out.push([good, `Beside plenty of ${landWord(r.t)}`]);
-      else if (e.n) out.push([good, `Beside ${landWord(r.t)}`]);
-      else if (r.p > 0) out.push(["want", `Wants to be beside ${landWord(r.t)}`]);
-    } else if (r.k === "near") {
-      if (e.hit.length) out.push([good, `Next to ${nameList(e.hit)}`]);
-      else if (r.p > 0) out.push(["want", `Wants to be next to ${nearWhat(r)}`]);
-    } else if (r.k === "edge") {
-      out.push(e.n ? [good, "Touches the edge of the map"] : ["want", "Wants to touch the edge of the map"]);
-    } else if (r.k === "variety") {
-      if (e.n >= 3) out.push([good, "Next to many kinds of building"]);
-      else if (e.n) out.push([good, "Next to a few kinds of building"]);
-      else out.push(["want", "Wants many kinds of building next to it"]);
-    }
-  }
-  return out;
-}
-
-/* Which buildings care about a kind of land, and how. */
+/* Which buildings score for a kind of land, and how. */
 function caresAbout(t) {
   const out = [];
   for (const k in DEF) for (const r of DEF[k].rules) {
     if (r.t !== t) continue;
-    out.push([r.p > 0 ? "good" : "bad", `${DEF[k].name} likes ${r.k === "on" ? "to be built on it" : "to be beside it"}`]);
+    const how = r.k === "on" ? "for each square built on it" : r.once ? "if it touches it" : "for each one it touches";
+    out.push({ v: r.p, text: `${DEF[k].name}, ${how}` });
   }
   return out;
 }
@@ -678,7 +756,7 @@ const UI = {
   dirty: true,       // the baked board needs drawing again
   drop: null,        // { k, t } a building landing
   shown: 0,          // the score as the counter shows it
-  pick: 0, confirm: false,
+  confirm: false,
 };
 
 function layout() {
@@ -1113,7 +1191,7 @@ function bake() {
 
 /* ───────────────────────── Things that move ───────────────────────── */
 
-const FX = { walkers: [], puffs: [], dust: [], floats: [], smokeClock: 0 };
+const FX = { walkers: [], puffs: [], dust: [], floats: [], confetti: [], smokeClock: 0 };
 const SHIRTS = ["#d65a45", "#3f79b5", "#4f9a5f", "#e3a92f", "#8a5fb0", "#f4efe4", "#2f6b73", "#c2703f"];
 const SKIN = ["#f1cfae", "#d9a77f", "#a8744f", "#7a5236"];
 
@@ -1236,7 +1314,7 @@ function drawFloats(g, dt) {
   for (const f of FX.floats) {
     f.t += dt;
     const k = f.t / 1.4, a = Math.min(1, (1 - k) * 3);
-    g.font = `800 ${Math.round(S * .5)}px system-ui, -apple-system, sans-serif`;
+    g.font = `800 ${Math.round(S * (f.big ? .78 : .5))}px system-ui, -apple-system, sans-serif`;
     g.lineWidth = S * .1; g.strokeStyle = `rgba(20,28,26,${a * .8})`; g.lineJoin = "round";
     const y = f.y - k * S * .8;
     g.strokeText(f.text, f.x, y);
@@ -1244,6 +1322,26 @@ function drawFloats(g, dt) {
     g.fillText(f.text, f.x, y);
   }
   FX.floats = FX.floats.filter(f => f.t < 1.4);
+}
+
+const CONFETTI = ["#ffd45c", "#e0703f", "#5ab4d6", "#6cc07a", "#b673c9", "#ffffff"];
+function burst(x, y, n) {
+  for (let k = 0; k < n; k++) {
+    const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = UI.S * (3 + Math.random() * 6);
+    FX.confetti.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: Math.random() * 6, vr: (Math.random() - .5) * 14,
+                       c: pick(CONFETTI), s: UI.S * (.07 + Math.random() * .07), t: 0 });
+  }
+}
+function drawConfetti(g, dt) {
+  const S = UI.S;
+  for (const p of FX.confetti) {
+    p.t += dt; p.vy += S * 10 * dt; p.vx *= 1 - dt * 1.4;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+    g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.globalAlpha = Math.max(0, 1 - p.t / 1.8);
+    g.fillStyle = p.c; g.fillRect(-p.s / 2, -p.s * .3, p.s, p.s * .6);
+    g.restore();
+  }
+  FX.confetti = FX.confetti.filter(p => p.t < 1.8);
 }
 
 /* ───────────────────────── The building in hand ───────────────────────── */
@@ -1348,6 +1446,7 @@ function frame(nowMs) {
   if ($("dialogWrap").hidden) drawGhost(ctx, now);
   drawSelection(ctx, now);
   drawFloats(ctx, dt);
+  drawConfetti(ctx, dt);
   tickScore(dt);
 }
 
@@ -1372,10 +1471,10 @@ function shapeSVG(type, rot = 0, flip = false, box = 44) {
   return `<svg width="${w * s}" height="${h * s}" viewBox="0 0 ${w * s} ${h * s}">${cellsSvg}</svg>`;
 }
 
-const mark = (mood) => mood === "good" ? "✓" : mood === "bad" ? "✕" : "·";
-function likesHTML(type) {
-  return `<ul class="likes">${DEF[type].rules.map(r =>
-    `<li class="${r.p > 0 ? "" : "bad"}"><i>${r.p > 0 ? "✓" : "✕"}</i>${esc(ruleText(r))}</li>`).join("")}</ul>`;
+const rowHTML = (v, text, cls) => `<li class="${cls ?? (v < 0 ? "bad" : "")}"><b>${signed(v)}</b><span>${esc(text)}</span></li>`;
+function modsHTML(type) {
+  const d = DEF[type];
+  return `<ul class="mods">${rowHTML(d.base, "base points", "base")}${d.rules.map(r => rowHTML(r.p, ruleText(r))).join("")}</ul>`;
 }
 
 function hud() {
@@ -1392,7 +1491,7 @@ function paintPanel() {
       <div class="sub" style="flex:1">${esc(townName(G.player, G.pick))} is done. Tap any square to see how each building did.</div></div>`;
     $("controls").innerHTML = `<button class="tool" id="bSummary" style="flex:1;justify-content:center">Summary</button><button class="primary" id="bNew">New town</button>`;
     $("bSummary").onclick = showSummary;
-    $("bNew").onclick = () => startTown(G.player, G.pick);
+    $("bNew").onclick = intro;
     return;
   }
   if (!$("bTurn")) restoreControls();
@@ -1403,7 +1502,7 @@ function paintPanel() {
       <div><div class="name">${esc(d.name)} ${chip(d.cat)}</div><div class="blurb">${esc(d.blurb)}</div></div>
       <div class="next"><span>Next</span><div class="mini">${nxt ? shapeSVG(nxt, 0, false, 32) : "<span>—</span>"}</div></div>
     </div>
-    ${likesHTML(type)}`;
+    ${modsHTML(type)}`;
   $("swaps").textContent = G.swaps;
   $("bSwap").disabled = !canSwap();
   $("bBuild").disabled = !canPlace(ghostCells());
@@ -1439,16 +1538,17 @@ function paintInfo() {
   let html = `<button class="x" id="infoX" aria-label="Close">×</button>`;
   if (k >= 0) {
     const p = G.pieces[k], d = DEF[p.type];
-    const list = facts(k);
-    html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)}</h3>
-      <p>Built over ${esc(joinAnd([...new Set(p.cells.map(c => TERRAIN[MAP[c]].short))]))}.</p>
-      <ul class="facts">${list.map(([m, text]) => `<li class="${m}"><i>${mark(m)}</i><span>${esc(text)}</span></li>`).join("")}</ul>`;
+    const rows = p.parts.map(q => {
+      const r = d.rules[q.r], each = r && !r.once && r.k !== "edge" ? ` × ${signed(r.p)}` : "";
+      return rowHTML(q.v, partText(p.type, q) + each, q.r < 0 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "");
+    }).join("");
+    html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)} <span class="scored">${signed(p.pts)}</span></h3>
+      <p>Scored when it was built. The score is final.</p><ul class="mods">${rows}</ul>`;
   } else {
     const cares = caresAbout(t);
-    const status = t === "water" ? "Can't build here" : "Open land · Free to build";
-    html += `<div class="kind">${status}</div><h3>${TERRAIN[t].name}</h3><p>${esc(TERRAIN[t].blurb)}</p>`;
-    if (cares.length) html += `<ul class="facts">${cares.map(([m, text]) => `<li class="${m}"><i>${mark(m)}</i><span>${esc(text)}</span></li>`).join("")}</ul>`;
-    else html += `<p>No building cares what's under it here, so it's good for filling gaps.</p>`;
+    html += `<div class="kind">${t === "water" ? "Can't build here" : "Open land · Free to build"}</div><h3>${TERRAIN[t].name}</h3><p>${esc(TERRAIN[t].blurb)}</p>`;
+    html += cares.length ? `<ul class="mods">${cares.map(c => rowHTML(c.v, c.text)).join("")}</ul>`
+                         : `<p>No building scores for this land, so it's good for filling gaps.</p>`;
   }
   box.innerHTML = html;
   box.className = "card " + (rowOf(i) >= ROWS / 2 ? "top" : "bottom");
@@ -1461,25 +1561,58 @@ function paintInfo() {
 function doBuild() {
   const cells = ghostCells();
   if (!G || G.over || !canPlace(cells)) return;
-  const name = DEF[current()].name;
-  const { delta, events } = build(cells);
-  const S = UI.S;
+  const res = build(cells), S = UI.S;
   const cx = cells.reduce((s, c) => s + cellX(c), 0) / cells.length + S / 2, cy = cells.reduce((s, c) => s + cellY(c), 0) / cells.length;
-  FX.floats.push({ x: cx, y: cy, t: -.25, text: (delta >= 0 ? "+" : "−") + Math.abs(delta), good: delta >= 0 });
+  FX.floats.push({ x: cx, y: cy, t: -.25, text: signed(res.pts), good: res.pts > 0, big: res.pts >= GREAT });
+  if (res.trophies.some(t => TROPHIES[t.id].good)) burst(cx, cy + S * .3, res.pts >= JACKPOT ? 90 : 45);
   UI.drop = { k: G.pieces.length - 1, t: 0 };
   UI.dirty = true;
   freshGhost();
-  for (const e of events) {
-    if (e.away) toast(`No room anywhere for the ${DEF[e.away].name}. Those settlers moved on.`, 3400);
-  }
+  showPop(res, cells);
+  bumpScore();
+  for (const e of res.events) if (e.away) toast(`No room anywhere for the ${DEF[e.away].name}. You lose ${AWAY} points.`, 3400);
   save(); hud(); paintPanel();
   if (UI.sel >= 0) paintInfo();
-  if (G.over) {
-    recordBest();
-    setTimeout(showSummary, 1100);
-  } else if (!events.length && G.pieces.length === 1) {
-    toast(`The ${name} is up. Tap any square to see who likes it.`);
-  }
+  if (G.over) { recordBest(); setTimeout(showSummary, 2800); }
+}
+
+const CUP = `<svg viewBox="0 0 24 24" fill="#ffd45c"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V5h3zM6 7v1a2 2 0 0 0 1 1.7V7zm11 0v2.7A2 2 0 0 0 18 8V7z"/></svg>`;
+const DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="#ff9f8a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg>`;
+
+/* The score for the building just placed, part by part, with any trophies under it. */
+let popTimer = 0;
+function showPop(res, cells) {
+  const good = res.trophies.filter(t => TROPHIES[t.id].good).slice(0, 2);
+  const bad = res.trophies.filter(t => !TROPHIES[t.id].good).slice(0, 1);
+  const tier = res.pts >= JACKPOT ? "gold" : res.pts >= GREAT ? "great" : res.pts <= 0 ? "low" : "";
+  const rows = res.parts.filter(q => q.v).map(q =>
+    `<li class="${q.r < 0 ? "base" : q.v < 0 ? "bad" : ""}"><span>${esc(partText(res.type, q))}</span><b>${signed(q.v)}</b></li>`).join("");
+  const pop = $("pop");
+  pop.innerHTML = `<div class="popcard ${tier}"><div class="popnum num" id="popNum">+0</div>
+      <div class="popname">${esc(DEF[res.type].name)}</div><ul class="popparts">${rows}</ul></div>` +
+    [...good, ...bad].map((t, n) => `<div class="trophy${TROPHIES[t.id].good ? "" : " bad"}" style="animation-delay:${.35 + n * .2}s">
+      ${TROPHIES[t.id].good ? CUP : DOWN}<div><b>${TROPHIES[t.id].name}</b><span>${esc(t.text)}</span></div></div>`).join("");
+  const row = cells.reduce((s, c) => s + rowOf(c), 0) / cells.length;
+  pop.className = "pop " + (row >= ROWS / 2 ? "top" : "bottom");
+  pop.hidden = false;
+  const start = performance.now();
+  const count = (now) => {
+    const k = Math.min(1, (now - start) / 550), el = $("popNum");
+    if (!el) return;
+    el.textContent = signed(Math.round(res.pts * (1 - (1 - k) ** 3)));
+    if (k < 1) requestAnimationFrame(count);
+  };
+  requestAnimationFrame(count);
+  clearTimeout(popTimer);
+  popTimer = setTimeout(() => {
+    pop.classList.add("hide");
+    popTimer = setTimeout(() => { pop.hidden = true; }, 350);
+  }, 2200 + (good.length + bad.length) * 900);
+}
+function hidePop() { clearTimeout(popTimer); $("pop").hidden = true; }
+function bumpScore() {
+  const el = $("score").parentElement;
+  el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
 }
 
 function doSwap() {
@@ -1554,26 +1687,25 @@ function closeSheet() { $("sheetWrap").hidden = true; UI.confirm = false; }
 $("scrim").onclick = closeSheet;
 
 const RULES_HTML = `<ul class="rules">
-  <li><b>You get one building at a time.</b> Drag it onto open land. Tap it or press Turn to turn it. Press Build.</li>
-  <li><b>Buildings can't overlap or sit on water.</b> If one fits nowhere, those settlers move on and the town loses ${AWAY} points.</li>
-  <li><b>Every building has likes and dislikes:</b> the land under it, the land beside it and the buildings next door.</li>
-  <li><b>Tap any square</b> to learn what it is and who cares about it. Tap a building to see what it's happy about.</li>
-  <li><b>Swap</b> trades the building in hand for the next one. You get ${SWAPS}.</li>
-  <li><b>The town is done</b> when the last building is placed. Fit every one for ${ALL_FIT} extra points.</li>
+  <li><b>Build:</b> drag a building onto open land, tap it to turn it, then press Build.</li>
+  <li><b>Score:</b> base points, plus or minus points for what it touches. Touching means sharing a side.</li>
+  <li><b>Scores are final</b> when you build. Later buildings don't change them.</li>
+  <li><b>No room</b> for a building costs ${AWAY} points. Fit them all for +${ALL_FIT}.</li>
+  <li><b>Swap</b> trades your building for the next one, ${SWAPS} times a game.</li>
 </ul>`;
 
 function showMenu() {
   const inGame = G && G.player;
-  openSheet(`<h2>First Town</h2><p>A board game about fitting a town together.</p>${RULES_HTML}
+  openSheet(`<h2>How to play</h2>${RULES_HTML}
     <div class="row">
       <button class="tool" id="mClose">Close</button>
       ${inGame ? `<button class="primary dark" id="mNew">${UI.confirm ? "Yes, start over" : "New town"}</button>` : ""}
     </div>
-    ${inGame && UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">This town will be lost. Press again to start a new map.</p>` : ""}`);
+    ${inGame && UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">This town will be lost.</p>` : ""}`);
   $("mClose").onclick = closeSheet;
   if ($("mNew")) $("mNew").onclick = () => {
     if (!G.over && G.pieces.length && !UI.confirm) { UI.confirm = true; return showMenu(); }
-    closeSheet(); startTown(G.player, G.pick);
+    closeSheet(); intro();
   };
 }
 $("menuBtn").onclick = () => { UI.confirm = false; showMenu(); };
@@ -1588,9 +1720,9 @@ function showDeck() {
   let open = 0;
   for (let i = 0; i < N; i++) if (MAP[i] !== "water" && OWNER[i] < 0) open++;
   openSheet(`<h2>Still to come</h2>
-    <p>${left.length ? `${left.length} buildings need ${cells} squares. You have ${open} open squares left. The order is a surprise.` : "Nothing left to place."}</p>
+    <p>${left.length ? `${left.length} buildings need ${cells} squares. You have ${open} open squares left.` : "Nothing left to place."}</p>
     <div class="deck">${order.map(k => `<div class="deckrow"><div class="mini">${shapeSVG(k, 0, false, 36)}</div>
-      <div><div class="name">${esc(DEF[k].name)} <span class="count">×${count[k]}</span> ${chip(DEF[k].cat)}</div>${likesHTML(k)}</div></div>`).join("")}</div>
+      <div><div class="name">${esc(DEF[k].name)} <span class="count">×${count[k]}</span> ${chip(DEF[k].cat)}</div>${modsHTML(k)}</div></div>`).join("")}</div>
     <div class="row"><button class="tool" id="dClose">Close</button></div>`);
   $("dClose").onclick = closeSheet;
 }
@@ -1604,10 +1736,11 @@ function recordBest() {
 }
 
 function showSummary() {
-  const scored = G.pieces.map((p, k) => ({ k, v: pieceScore(k) })).sort((a, b) => b.v - a.v);
+  hidePop();
+  const top = G.pieces.slice().sort((a, b) => b.pts - a.pts).slice(0, 3);
+  const won = Object.keys(TROPHIES).filter(id => G.trophies[id]);
   let best = 0;
   try { best = +localStorage.getItem(BEST) || 0; } catch (e) {}
-  const stars = scored.slice(0, 3).map(s => `<li><span>${esc(DEF[G.pieces[s.k].type].name)}</span><b>${s.v}</b></li>`).join("");
   showDialog(`<div class="final">
       <h2>${esc(townName(G.player, G.pick))} is done</h2>
       <div class="big num">${total()}</div>
@@ -1618,33 +1751,37 @@ function showSummary() {
       ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>`
                       : `<li><span>Every building fit</span><b>+${ALL_FIT}</b></li>`}
     </ul>
-    <p style="margin:14px 0 2px;font-size:.72rem;font-weight:750;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Best buildings</p>
-    <ul class="tally" style="margin-top:4px">${stars}</ul>
+    ${won.length ? `<p class="label">Trophies</p><div class="tchips">${won.map(id =>
+      `<span class="tchip${TROPHIES[id].good ? "" : " bad"}">${esc(TROPHIES[id].name.replace("!", ""))}${G.trophies[id] > 1 ? ` ×${G.trophies[id]}` : ""}</span>`).join("")}</div>` : ""}
+    <p class="label">Best buildings</p>
+    <ul class="tally" style="margin-top:4px">${top.map(p => `<li><span>${esc(DEF[p.type].name)}</span><b>${signed(p.pts)}</b></li>`).join("")}</ul>
     <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="primary" id="sNew">New town</button></div>`);
   $("sLook").onclick = closeDialog;
-  $("sNew").onclick = () => { closeDialog(); startTown(G.player, G.pick); };
+  $("sNew").onclick = () => { closeDialog(); intro(); };
 }
 
 /* ───────────────────────── Saving and starting ───────────────────────── */
 
 function save() { if (!G || !G.player) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
 function load() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.v === 3 && s.player) { restore(s); return true; } } catch (e) {}
+  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.v === 4 && s.player) { restore(s); return true; } } catch (e) {}
   return false;
 }
 
 function resetScene() {
-  FX.walkers.length = 0; FX.puffs.length = 0; FX.dust.length = 0; FX.floats.length = 0;
+  FX.walkers.length = 0; FX.puffs.length = 0; FX.dust.length = 0; FX.floats.length = 0; FX.confetti.length = 0;
+  hidePop();
   UI.drop = null; UI.dirty = true; closeInfo();
 }
 
-function startTown(player, n) {
-  newGame(player, n);
+/* The town gets its name when it is founded: Fort Zach, Zachville and so on. */
+function startTown(player) {
+  newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)));
   resetScene();
   UI.shown = 0; $("score").textContent = 0;
   freshGhost(); save(); hud(); paintPanel();
   layout();
-  toast("Drag the building onto the map. Tap it to turn it.", 3200);
+  toast(`Welcome to ${townName(player, G.pick)}! Drag the building onto the map.`, 3400);
 }
 
 function showGame() {
@@ -1656,33 +1793,26 @@ function showGame() {
 }
 
 function intro() {
+  try { localStorage.removeItem(SAVE); } catch (e) {}
   newGame("", 0);
   resetScene(); UI.ghost = null;
   $("panel").hidden = true;
   hud();
-  UI.pick = Math.floor(Math.random() * (PREFIX.length + SUFFIX.length));
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
       <h1>First Town</h1>
-      <p>Buildings arrive one at a time, in odd shapes. Fit them onto the land, and put each one where it will be happy.</p>
-      <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="done" autocapitalize="words" spellcheck="false">
-      <div class="named"><span id="namePreview">&nbsp;</span><button type="button" id="reroll" aria-label="Another name" hidden>↻</button></div>
-      <div class="row"><button class="primary" id="found" type="submit" disabled>Found the town</button></div>
-      ${RULES_HTML}
+      <p>Fit odd-shaped buildings onto the map. Good spots score more.</p>
+      <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="go" autocapitalize="words" spellcheck="false">
+      <div class="row"><button class="primary" id="found" type="submit" disabled>Start</button></div>
+      <details class="how"><summary>How to play</summary>${RULES_HTML}</details>
     </form>`);
-  const changed = () => {
-    const v = $("nameIn").value.trim();
-    $("namePreview").textContent = v ? townName(v, UI.pick) : " ";
-    $("reroll").hidden = !v; $("found").disabled = !v;
-  };
-  $("nameIn").addEventListener("input", changed);
-  $("reroll").onclick = () => { UI.pick++; changed(); };
+  $("nameIn").addEventListener("input", () => { $("found").disabled = !$("nameIn").value.trim(); });
   $("introForm").onsubmit = (e) => {
     e.preventDefault();
     const v = $("nameIn").value.trim();
     if (!v) return;
     $("nameIn").blur();
     closeDialog();
-    startTown(v, UI.pick);
+    startTown(v);
   };
   layout();
 }

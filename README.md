@@ -223,30 +223,38 @@ one, twice a game.
 5 points. Place every building and you get 10 points. The To come button lists what is left,
 how many squares it needs and how many squares you have.
 
-**Scoring you can count.** Every building has base points and a few modifiers, and its card
-shows them all. A cabin is +2 base, +2 if it touches water, +1 for each woods square it
-touches and −2 for each industry building next to it. Touching means sharing a side. The game
-never works out a score before you build. A score is final when you build: later buildings
-don't change it. So order matters, and a grocer that comes before the farms is worth less.
-Some rules point both ways, so industry loses a point for each home next to it, just as
-homes lose points next to industry.
+**Scoring you can count.** Every building has base points and a few modifiers. Tap the
+building in hand, on the map or in the panel, to see them. A cabin is +2 base, +2 if beside
+water, +1 for each woods square beside it and −2 for each industry building next to it. The
+game never works out a score before you build. Three words matter, and each has a small icon:
 
-Tap a building to see how it scored, part by part. Tap an empty square to see which buildings
-score for that land.
+- **On** is the land under a building. A farm scores for wild wheat under it.
+- **Beside** is open land that shares a side with it. A lumber mill scores for woods around it.
+  Land under another building is no longer open, so covering woods takes points from the mill.
+- **Next to** is a building that shares a side with it. A grocer scores for farms next to it.
 
-**Celebration.** After each build a card pops up with the score counting up and the parts
-that made it. A score of 8 or more turns the card green, and 13 or more turns it gold with
-confetti. Trophies announce special builds:
+While you drag a building, or while its scoring is open, the squares beside it get a dashed
+outline. Tap an empty square to see which buildings score for building on it and building
+beside it.
+
+Scores are live. A grocer goes up when you later build a farm next to it, and small +N numbers
+rise from any building whose score changed.
+
+**Celebration.** After each build only the score pops up, big, over the new building. A move
+that earns 8 or more turns it green, and 13 or more turns it gold with confetti. Trophies show
+as small badges under it:
 
 - Triple, Quadruple and Combo: one modifier counted 3, 4, or 5 or more times;
-- Jackpot: 13 points or more from one building;
+- Jackpot: a move that earns 13 points or more;
 - Perfect ground: every square on the land the building wants;
+- Good neighbour: two or more buildings next door go up;
 - Snug fit: no open land left around it;
-- On a roll: three great builds in a row;
-- Ouch, Bad neighbours and Wasted land: a score of 0 or less, two or more disliked
-  neighbours, or a building over ore or wheat it can't use.
+- On a roll: three great moves in a row;
+- Ouch, Bad neighbours, Spoiler and Wasted land: a score of 0 or less, two or more disliked
+  neighbours, neighbours losing 3 points or more, or a building over ore or wheat it can't use.
 
-The summary at the end lists your trophies and your three best buildings.
+Tap the score for every building's score, part by part. Tap a building in that list to find it
+on the map. The summary at the end lists your trophies and your three best buildings.
 
 **How it looks.** Open land is flat grass, trees, wheat and rock, with a faint outline on every
 square you can still use. A building is a raised tile with a shadow and a roof. Streets
@@ -254,10 +262,10 @@ appear between buildings, and people walk them. Chimneys smoke, water shimmers a
 glints. Everything is drawn with vector shapes on a canvas at the screen's full resolution.
 The game saves to localStorage after every move.
 
-**Balance.** I tested with bots over 100 maps. A bot that weighs points against packing scores
-about 140 and fits every building about half the time. A bot that only packs fits every
-building 9 times in 10 but scores about 105. A bot that only chases points scores about 123
-and loses two or three buildings. A bot that plays at random scores about 50.
+**Balance.** I tested with bots over 60 maps. A bot that weighs points against packing scores
+about 143 and fits every building about a third of the time. A bot that only packs fits every
+building 9 times in 10 but scores about 110. A bot that only chases points scores about 128
+and loses two or three buildings. A bot that plays at random scores about 52.
 
 ## mexico-elections.html
 

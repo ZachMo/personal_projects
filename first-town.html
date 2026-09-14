@@ -82,12 +82,12 @@
     width: calc(100% - 20px); max-width: 520px; justify-self: center;
     margin: 6px calc(var(--pad-r) + 10px) calc(var(--pad-b) + 10px) calc(var(--pad-l) + 10px); padding: 14px 14px 12px;
   }
-  .head { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; }
+  .head { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; width: 100%; text-align: left; }
+  .hint { font-size: .74rem; font-weight: 650; color: var(--muted); margin-top: 2px; }
   .mini { width: 58px; height: 58px; display: grid; place-items: center; background: var(--card-2); border-radius: 14px; }
   .mini svg { display: block; }
   .name { font-weight: 750; font-size: 1.06rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
   .chip { font-size: .58rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; color: #fff; background: var(--c); }
-  .blurb { font-size: .8rem; color: var(--ink-2); margin-top: 1px; }
   .next { display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .next span { font-size: .58rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
   .next .mini { width: 44px; height: 44px; border-radius: 12px; }
@@ -100,6 +100,10 @@
   .mods li.base b { background: var(--ink); color: #fff; }
   .mods li.zero { color: var(--muted); }
   .mods li.zero b { background: var(--card-2); color: var(--muted); }
+  .mods li .ico { width: 18px; height: 18px; flex: 0 0 auto; }
+  .mods li i.sp { width: 18px; flex: 0 0 auto; }
+  .bk { cursor: pointer; }
+  .bk small { display: block; font-size: .74rem; color: var(--muted); margin-top: 1px; }
   .scored { font-size: .8rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: #fff; vertical-align: 2px; }
 
   .controls { display: flex; gap: 8px; margin-top: 12px; }
@@ -169,33 +173,22 @@
   .tchip.bad { background: var(--bad-bg); color: var(--bad); }
 
   /* ── Score pop and trophies ── */
-  .pop { position: absolute; left: 12px; right: 12px; margin: 0 auto; max-width: 340px; display: grid; gap: 8px; pointer-events: none; z-index: 5;
-         transition: opacity .35s, transform .35s; }
-  .pop.top { top: 10px; } .pop.bottom { bottom: 10px; }
-  .pop.hide { opacity: 0; transform: translateY(-8px); }
-  .popcard { background: var(--card); color: var(--ink); border-radius: 22px; padding: 12px 16px 10px; text-align: center;
-             box-shadow: 0 16px 40px rgba(0,0,0,.42); animation: popIn .55s cubic-bezier(.2,1.6,.4,1) both; }
-  .popnum { font-size: 3.2rem; font-weight: 850; letter-spacing: -.04em; line-height: 1; }
-  .popcard.great .popnum { color: var(--good); }
-  .popcard.gold { background: linear-gradient(160deg, #fff7dc, #f5d472); }
-  .popcard.gold .popnum { color: #875600; }
-  .popcard.low .popnum { color: var(--bad); }
-  .popname { font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin-top: 3px; }
-  .popparts { list-style: none; margin: 8px 0 0; padding: 0; text-align: left; }
-  .popparts li { display: flex; justify-content: space-between; gap: 10px; font-size: .8rem; padding: 4px 0; border-top: 1px solid rgba(0,0,0,.08); }
-  .popparts li b { color: var(--good); font-variant-numeric: tabular-nums; }
-  .popparts li.base b { color: var(--ink); }
-  .popparts li.bad b { color: var(--bad); }
-  .trophy { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 18px; color: #f3dc98;
-            background: linear-gradient(135deg, #3a2d08, #735610); box-shadow: 0 12px 30px rgba(0,0,0,.38);
-            animation: slideIn .5s cubic-bezier(.2,1.5,.4,1) both; }
-  .trophy svg { width: 30px; height: 30px; flex: 0 0 auto; }
-  .trophy b { display: block; font-size: 1.02rem; color: #fff2c2; letter-spacing: -.01em; }
-  .trophy span { font-size: .78rem; }
-  .trophy.bad { background: linear-gradient(135deg, #3b1812, #72291d); color: #f0b3a5; }
-  .trophy.bad b { color: #ffddd4; }
-  @keyframes popIn { from { opacity: 0; transform: scale(.55); } to { opacity: 1; transform: scale(1); } }
-  @keyframes slideIn { from { opacity: 0; transform: translateY(16px) scale(.9); } to { opacity: 1; transform: none; } }
+  .pop { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 5px;
+         pointer-events: none; z-index: 5; transition: opacity .4s, margin-top .4s; }
+  .pop.hide { opacity: 0; margin-top: -26px; }
+  .popnum { font-size: 2.7rem; font-weight: 850; letter-spacing: -.04em; line-height: 1; color: #fff;
+            text-shadow: 0 2px 0 #1b2422, 0 -2px 0 #1b2422, 2px 0 0 #1b2422, -2px 0 0 #1b2422, 0 8px 22px rgba(0,0,0,.45);
+            animation: popIn .55s cubic-bezier(.2,1.7,.4,1) both; }
+  .popnum.great { color: #a9f2b8; }
+  .popnum.gold { color: #ffd45c; font-size: 3.4rem; }
+  .popnum.low { color: #ffa38f; }
+  .tpill { display: flex; align-items: center; gap: 6px; padding: 5px 12px 5px 7px; border-radius: 999px; white-space: nowrap;
+           background: linear-gradient(135deg, #3a2d08, #735610); color: #fff2c2; font-weight: 800; font-size: .86rem;
+           box-shadow: 0 8px 20px rgba(0,0,0,.35); animation: slideIn .45s cubic-bezier(.2,1.5,.4,1) both; }
+  .tpill svg { width: 18px; height: 18px; }
+  .tpill.bad { background: linear-gradient(135deg, #3b1812, #72291d); color: #ffddd4; }
+  @keyframes popIn { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px) scale(.85); } to { opacity: 1; transform: none; } }
   .stat.bump b { animation: bump .55s ease; }
   @keyframes bump { 35% { transform: scale(1.4); color: #ffd666; } }
 
@@ -214,7 +207,7 @@
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h12"/></svg>
     </button>
     <div class="title"><b id="townName">First Town</b><span id="townSub">&nbsp;</span></div>
-    <div class="stat glass"><b id="score" class="num">0</b><span>Points</span></div>
+    <button id="scoreBtn" class="stat glass" aria-label="Score breakdown"><b id="score" class="num">0</b><span>Points</span></button>
     <button id="deckBtn" class="stat glass" aria-label="Buildings to come"><b id="left" class="num">0</b><span>To come</span></button>
   </header>
 
@@ -297,14 +290,15 @@ const SHAPES = {
 };
 
 /*
-  A building scores once, when you build it: its base points plus its rules. The score never changes after that.
-  "Touches" and "next to" both mean sharing a side. Corners don't count.
+  A building scores its base points plus its rules, and the score stays live: it goes up or down as the town grows.
+  On means the land under it. Beside means open land that shares a side with it. Next to means a building that
+  shares a side with it. Corners don't count, and land under a building is no longer open.
 
   n:     how many are in a deck        era: 1 comes early, 3 comes late
   roles: what is drawn on each cell    roof: roof colours, light side then dark side
   rules:
     on      t: terrain   p: points for each of its squares on that terrain
-    by      t: terrain   p: points for each open square of that terrain it touches (once: counts one at most)
+    by      t: terrain   p: points for each open square of that terrain beside it (once: counts one at most)
     near    cats / types p: points for each building of that kind next to it
     edge                 p: points if it touches the edge of the map
     variety              p: points for each kind of building next to it
@@ -335,13 +329,13 @@ const DEF = {
                        { k: "near", cats: ["home"], p: -1 }] },
   lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, base: 2, roof: ["#8e6c4f", "#6e523b"],
                roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
-               rules: [{ k: "by", t: "forest", p: 2 }, { k: "near", cats: ["home"], p: -1 }] },
+               rules: [{ k: "by", t: "forest", p: 2 }] },
   mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1, base: 1,
                roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging where the ore is.",
-               rules: [{ k: "on", t: "ore", p: 4 }, { k: "near", cats: ["home"], p: -1 }] },
+               rules: [{ k: "on", t: "ore", p: 4 }] },
   smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, base: 3, roof: ["#6f7985", "#535c67"],
                roles: ["forge", "yard"], blurb: "Hammers out tools from fresh ore.",
-               rules: [{ k: "near", types: ["mine"], p: 4 }, { k: "by", t: "ore", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
+               rules: [{ k: "near", types: ["mine"], p: 4 }, { k: "by", t: "ore", p: 1 }] },
   dock:      { name: "Fishing Dock", cat: "agri", shape: "I3", n: 1, era: 2, base: 1, roof: ["#927c64", "#73614d"],
                roles: ["shed", "plank", "plank"], blurb: "Nets and boats along the bank.",
                rules: [{ k: "by", t: "water", p: 2 }] },
@@ -353,8 +347,7 @@ const DEF = {
                rules: [{ k: "near", cats: ["agri"], p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
   saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 4, roof: ["#a95a90", "#864571"],
                roles: ["hall", "hall", "porch", "porch"], blurb: "Where the workers go after a shift.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 },
-                       { k: "near", types: ["church", "school"], p: -3 }] },
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 }] },
   church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 4, roof: ["#8195b8", "#63779d"],
                roles: ["steeple", "tree", "nave", "tree", "nave"], blurb: "The heart of a quiet town.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", types: ["saloon"], p: -4 }] },
@@ -523,7 +516,7 @@ let OWNER = null;   // for each square, the index of the building on it, or -1
 function newGame(player, pickName, seed) {
   seed = seed ?? (Math.random() * 2 ** 31) | 0;
   MAP = makeMap(seed);
-  G = { v: 4, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, swaps: SWAPS, away: [], pieces: [], over: false,
+  G = { v: 5, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, swaps: SWAPS, away: [], pieces: [], over: false,
         trophies: {}, streak: 0 };
   OWNER = new Array(N).fill(-1);
   settle();
@@ -570,15 +563,19 @@ function settle() {
   return events;
 }
 
-/* Builds the building in hand. Its score is worked out now, from what it touches now, and kept. */
+/* Builds the building in hand. Scores are live, so the buildings next to it can go up or down too. */
 function build(cells) {
-  const type = current(), parts = scoreParts(type, cells), pts = sumParts(parts);
-  const trophies = judge(type, cells, parts, pts);
-  G.pieces.push({ type, cells, pts, parts });
-  cells.forEach(c => { OWNER[c] = G.pieces.length - 1; });
+  const type = current(), before = G.pieces.map((_, k) => pieceScore(k));
+  G.pieces.push({ type, cells });
+  const k = G.pieces.length - 1;
+  cells.forEach(c => { OWNER[c] = k; });
   G.at++;
-  for (const t of trophies) G.trophies[t.id] = (G.trophies[t.id] || 0) + 1;
-  return { type, pts, parts, trophies, events: settle() };
+  const parts = pieceParts(k), pts = sumParts(parts);
+  const changed = before.map((b, j) => ({ k: j, d: pieceScore(j) - b })).filter(x => x.d);
+  const gain = pts + changed.reduce((sum, x) => sum + x.d, 0);
+  const trophies = judge(type, cells, parts, pts, gain, changed);
+  for (const id of trophies) G.trophies[id] = (G.trophies[id] || 0) + 1;
+  return { type, k, pts, parts, gain, changed, trophies, events: settle() };
 }
 
 const canSwap = () => !G.over && G.swaps > 0 && !!upcoming() && fits(upcoming());
@@ -625,18 +622,20 @@ function evalRule(r, c) {
   return { n: 0, v: 0 };
 }
 
-/* A score, part by part. Base points come first, as rule -1. */
-function scoreParts(type, cells) {
-  const d = DEF[type], c = look(cells);
+/* A score, part by part, from what the building sits on and touches right now. Base points come first, as rule -1. */
+function scoreParts(type, cells, self = -1) {
+  const d = DEF[type], c = look(cells, self);
   return [{ r: -1, n: 1, v: d.base }, ...d.rules.map((r, i) => { const e = evalRule(r, c); return { r: i, n: e.n, v: e.v }; })];
 }
-const sumParts = (parts) => parts.reduce((s, q) => s + q.v, 0);
-const boardScore = () => G.pieces.reduce((s, p) => s + p.pts, 0);
+const sumParts = (parts) => parts.reduce((sum, q) => sum + q.v, 0);
+const pieceParts = (k) => scoreParts(G.pieces[k].type, G.pieces[k].cells, k);
+const pieceScore = (k) => sumParts(pieceParts(k));
+const boardScore = () => G.pieces.reduce((sum, _, k) => sum + pieceScore(k), 0);
 const total = () => boardScore() - AWAY * G.away.length + (G.over && !G.away.length ? ALL_FIT : 0);
 
 /* ───────────────────────── Trophies ───────────────────────── */
 
-const GREAT = 8, JACKPOT = 13;    // a great spot turns the score card green and counts toward a streak
+const GREAT = 8, JACKPOT = 13;    // points a move must earn to count as great, or as a jackpot
 /* In the order they are announced. */
 const TROPHIES = {
   jackpot:    { name: "Jackpot!",           good: true },
@@ -644,43 +643,40 @@ const TROPHIES = {
   quadruple:  { name: "Quadruple!",         good: true },
   triple:     { name: "Triple!",            good: true },
   perfect:    { name: "Perfect ground",     good: true },
+  boost:      { name: "Good neighbour",     good: true },
   snug:       { name: "Snug fit",           good: true },
   roll:       { name: "On a roll",          good: true },
   allfit:     { name: "Every building fit", good: true },
   ouch:       { name: "Ouch",               good: false },
   neighbours: { name: "Bad neighbours",     good: false },
+  spoiler:    { name: "Spoiler",            good: false },
   wasted:     { name: "Wasted land",        good: false },
 };
 
-function judge(type, cells, parts, pts) {
-  const d = DEF[type], out = [], add = (id, text) => out.push({ id, text });
-  const ruleOf = (q) => q.r < 0 ? null : d.rules[q.r];
-  if (pts >= JACKPOT) add("jackpot", `${pts} points from one building`);
+/* `gain` is what the whole move earned: the new building's score plus every change it caused next door. */
+function judge(type, cells, parts, pts, gain, changed) {
+  const d = DEF[type], out = new Set(), ruleOf = (q) => q.r < 0 ? null : d.rules[q.r];
+  if (gain >= JACKPOT) out.add("jackpot");
 
   // The biggest stack of one bonus: 3 of a kind is a triple, 4 a quadruple, 5 or more a combo.
-  let top = null;
-  for (const q of parts) {
-    const r = ruleOf(q);
-    if (r && r.p > 0 && !r.once && r.k !== "edge" && (!top || q.n > top.n)) top = q;
-  }
-  if (top && top.n >= 3) add(top.n >= 5 ? "combo" : top.n === 4 ? "quadruple" : "triple", `${partText(type, top)}, ${signed(top.v)}`);
+  let top = 0;
+  for (const q of parts) { const r = ruleOf(q); if (r && r.p > 0 && !r.once && r.k !== "edge") top = Math.max(top, q.n); }
+  if (top >= 3) out.add(top >= 5 ? "combo" : top === 4 ? "quadruple" : "triple");
 
-  if (cells.length >= 2 && parts.some(q => { const r = ruleOf(q); return r && r.k === "on" && r.p > 0 && q.n === cells.length; })) {
-    add("perfect", "Every square on the land it wants");
-  }
+  if (cells.length >= 2 && parts.some(q => { const r = ruleOf(q); return r && r.k === "on" && r.p > 0 && q.n === cells.length; })) out.add("perfect");
+  if (changed.filter(x => x.d > 0).length >= 2) out.add("boost");
   const own = new Set(cells);
-  if (!cells.some(c => around(c).some(j => !own.has(j) && OWNER[j] < 0 && MAP[j] !== "water"))) add("snug", "No open land left around it");
+  if (!cells.some(c => around(c).some(j => !own.has(j) && OWNER[j] < 0 && MAP[j] !== "water"))) out.add("snug");
 
-  G.streak = pts >= GREAT ? G.streak + 1 : 0;
-  if (G.streak >= 3 && G.streak % 3 === 0) add("roll", `${G.streak} great spots in a row`);
+  G.streak = gain >= GREAT ? G.streak + 1 : 0;
+  if (G.streak >= 3 && G.streak % 3 === 0) out.add("roll");
 
-  if (pts <= 0) add("ouch", pts < 0 ? `This one cost you ${-pts} points` : "This one scored nothing");
-  const hurt = parts.filter(q => { const r = ruleOf(q); return r && r.p < 0 && q.n >= 2; });
-  if (hurt.length) add("neighbours", `${partText(type, hurt[0])}, ${signed(hurt[0].v)}`);
+  if (pts <= 0) out.add("ouch");
+  if (parts.some(q => { const r = ruleOf(q); return r && r.p < 0 && q.n >= 2; })) out.add("neighbours");
+  if (changed.reduce((sum, x) => sum + Math.min(0, x.d), 0) <= -3) out.add("spoiler");
   const uses = new Set(d.rules.filter(r => r.k === "on").map(r => r.t));
-  const buried = cells.filter(c => (MAP[c] === "ore" || MAP[c] === "wheat") && !uses.has(MAP[c]));
-  if (buried.length >= 2) add("wasted", `Built over ${buried.length} squares of ${TERRAIN[MAP[buried[0]]].short} it can't use`);
-  return out;
+  if (cells.filter(c => (MAP[c] === "ore" || MAP[c] === "wheat") && !uses.has(MAP[c])).length >= 2) out.add("wasted");
+  return Object.keys(TROPHIES).filter(id => out.has(id));
 }
 
 /* ───────────────────────── Words ───────────────────────── */
@@ -693,37 +689,36 @@ const nearNoun = (r, n) => joinOr(n === 1
   ? [...(r.types || []).map(t => DEF[t].name), ...(r.cats || []).map(c => CATS[c].one)]
   : [...(r.types || []).map(plural), ...(r.cats || []).map(c => CATS[c].many)]);
 
-/* A rule as the card shows it, after its points: "+2 for each woods square it touches". */
+/* A rule as the card shows it, after its points: "+2 each woods square beside it". */
 function ruleText(r) {
-  if (r.k === "on") return `for each square on ${landWord(r.t)}`;
-  if (r.k === "by") return r.once ? `if it touches ${landWord(r.t)}` : `for each ${landWord(r.t)} square it touches`;
-  if (r.k === "near") return `for each ${nearNoun(r, 1)} next to it`;
-  if (r.k === "edge") return "if it touches the edge of the map";
-  if (r.k === "variety") return "for each kind of building next to it";
+  if (r.k === "on") return `each square on ${landWord(r.t)}`;
+  if (r.k === "by") return r.once ? `if beside ${landWord(r.t)}` : `each ${landWord(r.t)} square beside it`;
+  if (r.k === "near") return `each ${nearNoun(r, 1)} next to it`;
+  if (r.k === "edge") return "if at the edge of the map";
+  if (r.k === "variety") return "each kind of building next to it";
   return "";
 }
 
-/* One part of a score as it came out: "3 woods squares it touches". */
+/* One part of a score as it stands: "3 woods beside", "4 on wild wheat". */
 function partText(type, q) {
-  if (q.r < 0) return "Base points";
-  const r = DEF[type].rules[q.r], some = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-  if (r.k === "on") return `${some(q.n, "square")} on ${landWord(r.t)}`;
-  if (r.k === "by") return r.once ? (q.n ? `Touches ${landWord(r.t)}` : `Doesn't touch ${landWord(r.t)}`) : `${some(q.n, landWord(r.t) + " square")} it touches`;
+  if (q.r < 0) return "Base";
+  const r = DEF[type].rules[q.r];
+  if (r.k === "on") return `${q.n} on ${landWord(r.t)}`;
+  if (r.k === "by") return r.once ? (q.n ? `Beside ${landWord(r.t)}` : `Not beside ${landWord(r.t)}`) : `${q.n} ${landWord(r.t)} beside`;
   if (r.k === "near") return `${q.n} ${nearNoun(r, q.n)} next to it`;
-  if (r.k === "edge") return q.n ? "Touches the map edge" : "Doesn't touch the map edge";
-  if (r.k === "variety") return `${some(q.n, "kind")} of building next to it`;
+  if (r.k === "edge") return q.n ? "At the map edge" : "Not at the map edge";
+  if (r.k === "variety") return `${q.n} ${q.n === 1 ? "kind" : "kinds"} next to it`;
   return "";
 }
 
-/* Which buildings score for a kind of land, and how. */
+/* Which buildings score for a kind of land, split into building on it and building beside it. */
 function caresAbout(t) {
-  const out = [];
+  const on = [], by = [];
   for (const k in DEF) for (const r of DEF[k].rules) {
     if (r.t !== t) continue;
-    const how = r.k === "on" ? "for each square built on it" : r.once ? "if it touches it" : "for each one it touches";
-    out.push({ v: r.p, text: `${DEF[k].name}, ${how}` });
+    (r.k === "on" ? on : by).push({ k, r });
   }
-  return out;
+  return { on, by };
 }
 </script>
 
@@ -752,6 +747,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&
 const UI = {
   dpr: 1, w: 0, h: 0, S: 40, BX: 0, BY: 0,
   ghost: null,       // { rot, flip, ax, ay } for the building in hand
+  rules: false,      // the scoring card for the building in hand is open
   sel: -1,           // the square whose info is open
   dirty: true,       // the baked board needs drawing again
   drop: null,        // { k, t } a building landing
@@ -1385,6 +1381,16 @@ function drawGhost(g, now) {
   g.beginPath();
   for (const c of cells) rr(g, cellX(c) + S * .1, cellY(c) + S * .1, S * .8, S * .8, S * .16);
   g.fillStyle = ok ? "rgba(255,255,255,.38)" : "rgba(214,72,52,.4)"; g.fill();
+  if ((press && press.moved) || UI.rules) {
+    const own = new Set(cells), ring = new Set();
+    for (const c of cells) for (const j of around(c)) if (!own.has(j)) ring.add(j);
+    g.save();
+    g.setLineDash([S * .09, S * .07]); g.lineWidth = Math.max(1.5, S * .035); g.strokeStyle = "rgba(255,255,255,.8)";
+    g.beginPath();
+    for (const j of ring) rr(g, cellX(j) + S * .14, cellY(j) + S * .14, S * .72, S * .72, S * .12);
+    g.stroke();
+    g.restore();
+  }
   // A glowing rim: a slightly bigger shape filled underneath, so only its outside edge shows.
   union(g, cells, 0, S * .22, dy + S * .04);
   g.fillStyle = ok ? `rgba(255,255,255,${pulse})` : `rgba(255,105,85,${pulse})`;
@@ -1471,10 +1477,26 @@ function shapeSVG(type, rot = 0, flip = false, box = 44) {
   return `<svg width="${w * s}" height="${h * s}" viewBox="0 0 ${w * s} ${h * s}">${cellsSvg}</svg>`;
 }
 
-const rowHTML = (v, text, cls) => `<li class="${cls ?? (v < 0 ? "bad" : "")}"><b>${signed(v)}</b><span>${esc(text)}</span></li>`;
+const CAT_HEX = { home: "#d8734a", agri: "#c9952a", industry: "#6f7d8b", shop: "#33968a", civic: "#5a7fc4", leisure: "#a8588f" };
+const LAND_HEX = { grass: "#a5c884", forest: "#5b9a58", ore: "#9a9285", wheat: "#e2bf5c", water: "#62abc9" };
+
+/* A small picture of what a rule counts: land under a building, land around it, or a building beside it. */
+function ruleIcon(r) {
+  const svg = (inner) => `<svg class="ico" viewBox="0 0 20 20">${inner}</svg>`;
+  if (r.k === "on") return svg(`<rect x="1" y="1" width="18" height="18" rx="4" fill="${LAND_HEX[r.t]}"/><path d="M5.5 15.5V9.8L10 5.8l4.5 4v5.7z" fill="#fff"/>`);
+  if (r.k === "by") return svg(`<rect x="1" y="1" width="18" height="18" rx="4" fill="${LAND_HEX[r.t]}"/><rect x="6" y="6" width="8" height="8" rx="2" fill="#fff"/>`);
+  if (r.k === "near") {
+    const cat = r.cats ? r.cats[0] : DEF[r.types[0]].cat;
+    return svg(`<rect x="1.5" y="5.5" width="8" height="9" rx="2.5" fill="#fff" stroke="#c9c2b4"/><rect x="10.5" y="5" width="8.5" height="10" rx="2.5" fill="${CAT_HEX[cat]}"/>`);
+  }
+  if (r.k === "edge") return svg(`<rect x="5" y="3" width="13" height="14" rx="3" fill="#fff" stroke="#c9c2b4"/><rect x="1" y="1" width="3" height="18" rx="1.5" fill="#5b645f"/>`);
+  return svg(`<rect x="1" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.home}"/><rect x="7.25" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.shop}"/><rect x="13.5" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.civic}"/>`);
+}
+const rowHTML = (v, text, cls, icon) =>
+  `<li class="${cls ?? (v < 0 ? "bad" : "")}"><b>${signed(v)}</b>${icon || '<i class="sp"></i>'}<span>${esc(text)}</span></li>`;
 function modsHTML(type) {
   const d = DEF[type];
-  return `<ul class="mods">${rowHTML(d.base, "base points", "base")}${d.rules.map(r => rowHTML(r.p, ruleText(r))).join("")}</ul>`;
+  return `<ul class="mods">${rowHTML(d.base, "base points", "base")}${d.rules.map(r => rowHTML(r.p, ruleText(r), undefined, ruleIcon(r))).join("")}</ul>`;
 }
 
 function hud() {
@@ -1488,7 +1510,7 @@ function paintPanel() {
   $("panel").hidden = false;
   if (G.over) {
     $("piece").innerHTML = `<div class="done"><div><div class="big num">${total()}</div><div class="sub">points</div></div>
-      <div class="sub" style="flex:1">${esc(townName(G.player, G.pick))} is done. Tap any square to see how each building did.</div></div>`;
+      <div class="sub" style="flex:1">${esc(townName(G.player, G.pick))} is done. Tap any building to see its score.</div></div>`;
     $("controls").innerHTML = `<button class="tool" id="bSummary" style="flex:1;justify-content:center">Summary</button><button class="primary" id="bNew">New town</button>`;
     $("bSummary").onclick = showSummary;
     $("bNew").onclick = intro;
@@ -1497,12 +1519,12 @@ function paintPanel() {
   if (!$("bTurn")) restoreControls();
   const type = current(), nxt = upcoming(), d = DEF[type], o = UI.ghost || { rot: 0, flip: false };
   $("piece").innerHTML = `
-    <div class="head">
+    <button class="head" id="pieceHead" aria-expanded="${UI.rules}">
       <div class="mini">${shapeSVG(type, o.rot, o.flip, 46)}</div>
-      <div><div class="name">${esc(d.name)} ${chip(d.cat)}</div><div class="blurb">${esc(d.blurb)}</div></div>
+      <div><div class="name">${esc(d.name)} ${chip(d.cat)}</div><div class="hint">${UI.rules ? "Hide scoring ▴" : "Tap for scoring ▾"}</div></div>
       <div class="next"><span>Next</span><div class="mini">${nxt ? shapeSVG(nxt, 0, false, 32) : "<span>—</span>"}</div></div>
-    </div>
-    ${modsHTML(type)}`;
+    </button>`;
+  $("pieceHead").onclick = toggleRules;
   $("swaps").textContent = G.swaps;
   $("bSwap").disabled = !canSwap();
   $("bBuild").disabled = !canPlace(ghostCells());
@@ -1526,32 +1548,52 @@ function toast(text, ms = 2600) {
 /* ───────────────────────── Info about a square ───────────────────────── */
 
 function select(i) {
-  UI.sel = i;
-  paintInfo();
+  UI.rules = false; UI.sel = i;
+  paintInfo(); paintPanel();
 }
-function closeInfo() { UI.sel = -1; $("info").hidden = true; }
+function closeInfo() {
+  const wasRules = UI.rules;
+  UI.sel = -1; UI.rules = false; $("info").hidden = true;
+  if (wasRules && G && G.player) paintPanel();
+}
+function toggleRules() {
+  if (UI.rules) return closeInfo();
+  UI.sel = -1; UI.rules = !!current();
+  paintInfo(); paintPanel();
+}
+const ghostRow = () => { const cells = ghostCells(); return cells ? cells.reduce((sum, c) => sum + rowOf(c), 0) / cells.length : 0; };
+function placeInfo(row) {
+  const cls = "card " + (row >= ROWS / 2 ? "top" : "bottom");
+  if ($("info").className !== cls) $("info").className = cls;
+}
 
 function paintInfo() {
-  const i = UI.sel;
-  if (i < 0) return closeInfo();
-  const box = $("info"), k = OWNER[i], t = MAP[i];
+  const box = $("info"), i = UI.sel;
   let html = `<button class="x" id="infoX" aria-label="Close">×</button>`;
-  if (k >= 0) {
-    const p = G.pieces[k], d = DEF[p.type];
-    const rows = p.parts.map(q => {
+  if (UI.rules && current()) {
+    const d = DEF[current()];
+    html += `<div class="kind">Scoring ${chip(d.cat)}</div><h3>${esc(d.name)}</h3><p>${esc(d.blurb)}</p>${modsHTML(current())}`;
+    placeInfo(ghostRow());
+  } else if (i >= 0 && OWNER[i] >= 0) {
+    const k = OWNER[i], p = G.pieces[k], d = DEF[p.type], parts = pieceParts(k);
+    const rows = parts.map(q => {
       const r = d.rules[q.r], each = r && !r.once && r.k !== "edge" ? ` × ${signed(r.p)}` : "";
-      return rowHTML(q.v, partText(p.type, q) + each, q.r < 0 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "");
+      return rowHTML(q.v, partText(p.type, q) + each, q.r < 0 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "", r && ruleIcon(r));
     }).join("");
-    html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)} <span class="scored">${signed(p.pts)}</span></h3>
-      <p>Scored when it was built. The score is final.</p><ul class="mods">${rows}</ul>`;
+    html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)} <span class="scored">${signed(sumParts(parts))}</span></h3><ul class="mods">${rows}</ul>`;
+    placeInfo(rowOf(i));
+  } else if (i >= 0) {
+    const t = MAP[i], { on, by } = caresAbout(t);
+    html += `<div class="kind">${t === "water" ? "Can't build here" : "Open land"}</div><h3>${TERRAIN[t].name}</h3>`;
+    if (on.length) html += `<p class="label">Build on it</p><ul class="mods">${on.map(x => rowHTML(x.r.p, `${DEF[x.k].name}, each square`, undefined, ruleIcon(x.r))).join("")}</ul>`;
+    if (by.length) html += `<p class="label">Build beside it</p><ul class="mods">${by.map(x => rowHTML(x.r.p, `${DEF[x.k].name}, ${x.r.once ? "once" : "each square"}`, undefined, ruleIcon(x.r))).join("")}</ul>`;
+    if (by.length && t !== "water") html += `<p style="margin-top:8px">Once a building covers it, it stops counting as beside.</p>`;
+    if (!on.length && !by.length) html += `<p>No building scores for this land. Use it to fill gaps.</p>`;
+    placeInfo(rowOf(i));
   } else {
-    const cares = caresAbout(t);
-    html += `<div class="kind">${t === "water" ? "Can't build here" : "Open land · Free to build"}</div><h3>${TERRAIN[t].name}</h3><p>${esc(TERRAIN[t].blurb)}</p>`;
-    html += cares.length ? `<ul class="mods">${cares.map(c => rowHTML(c.v, c.text)).join("")}</ul>`
-                         : `<p>No building scores for this land, so it's good for filling gaps.</p>`;
+    return closeInfo();
   }
   box.innerHTML = html;
-  box.className = "card " + (rowOf(i) >= ROWS / 2 ? "top" : "bottom");
   box.hidden = false;
   $("infoX").onclick = closeInfo;
 }
@@ -1562,42 +1604,46 @@ function doBuild() {
   const cells = ghostCells();
   if (!G || G.over || !canPlace(cells)) return;
   const res = build(cells), S = UI.S;
-  const cx = cells.reduce((s, c) => s + cellX(c), 0) / cells.length + S / 2, cy = cells.reduce((s, c) => s + cellY(c), 0) / cells.length;
-  FX.floats.push({ x: cx, y: cy, t: -.25, text: signed(res.pts), good: res.pts > 0, big: res.pts >= GREAT });
-  if (res.trophies.some(t => TROPHIES[t.id].good)) burst(cx, cy + S * .3, res.pts >= JACKPOT ? 90 : 45);
-  UI.drop = { k: G.pieces.length - 1, t: 0 };
+  const middle = (cs) => [cs.reduce((sum, c) => sum + cellX(c), 0) / cs.length + S / 2, cs.reduce((sum, c) => sum + cellY(c), 0) / cs.length + S / 2];
+  // Neighbours whose scores moved show it over their roofs.
+  for (const x of res.changed) {
+    const [nx, ny] = middle(G.pieces[x.k].cells);
+    FX.floats.push({ x: nx, y: ny - S * .2, t: -.35, text: signed(x.d), good: x.d > 0 });
+  }
+  const [cx, cy] = middle(cells);
+  if (res.trophies.some(id => TROPHIES[id].good)) burst(cx, cy, res.gain >= JACKPOT ? 90 : 45);
+  UI.drop = { k: res.k, t: 0 };
   UI.dirty = true;
   freshGhost();
   showPop(res, cells);
   bumpScore();
-  for (const e of res.events) if (e.away) toast(`No room anywhere for the ${DEF[e.away].name}. You lose ${AWAY} points.`, 3400);
-  save(); hud(); paintPanel();
-  if (UI.sel >= 0) paintInfo();
-  if (G.over) { recordBest(); setTimeout(showSummary, 2800); }
+  for (const e of res.events) if (e.away) toast(`No room for the ${DEF[e.away].name}. −${AWAY}`, 3000);
+  save(); hud();
+  if (G.over) closeInfo(); else if (UI.rules || UI.sel >= 0) paintInfo();
+  paintPanel();
+  if (G.over) { recordBest(); setTimeout(showSummary, 2400); }
 }
 
 const CUP = `<svg viewBox="0 0 24 24" fill="#ffd45c"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V5h3zM6 7v1a2 2 0 0 0 1 1.7V7zm11 0v2.7A2 2 0 0 0 18 8V7z"/></svg>`;
-const DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="#ff9f8a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg>`;
+const DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="#ff9f8a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg>`;
 
-/* The score for the building just placed, part by part, with any trophies under it. */
+/* The new building's score, big, over its roof, with any trophies under it. */
 let popTimer = 0;
 function showPop(res, cells) {
-  const good = res.trophies.filter(t => TROPHIES[t.id].good).slice(0, 2);
-  const bad = res.trophies.filter(t => !TROPHIES[t.id].good).slice(0, 1);
-  const tier = res.pts >= JACKPOT ? "gold" : res.pts >= GREAT ? "great" : res.pts <= 0 ? "low" : "";
-  const rows = res.parts.filter(q => q.v).map(q =>
-    `<li class="${q.r < 0 ? "base" : q.v < 0 ? "bad" : ""}"><span>${esc(partText(res.type, q))}</span><b>${signed(q.v)}</b></li>`).join("");
+  const good = res.trophies.filter(id => TROPHIES[id].good).slice(0, 2);
+  const bad = res.trophies.filter(id => !TROPHIES[id].good).slice(0, 1);
+  const tier = res.gain >= JACKPOT ? "gold" : res.gain >= GREAT ? "great" : res.pts <= 0 ? "low" : "";
   const pop = $("pop");
-  pop.innerHTML = `<div class="popcard ${tier}"><div class="popnum num" id="popNum">+0</div>
-      <div class="popname">${esc(DEF[res.type].name)}</div><ul class="popparts">${rows}</ul></div>` +
-    [...good, ...bad].map((t, n) => `<div class="trophy${TROPHIES[t.id].good ? "" : " bad"}" style="animation-delay:${.35 + n * .2}s">
-      ${TROPHIES[t.id].good ? CUP : DOWN}<div><b>${TROPHIES[t.id].name}</b><span>${esc(t.text)}</span></div></div>`).join("");
-  const row = cells.reduce((s, c) => s + rowOf(c), 0) / cells.length;
-  pop.className = "pop " + (row >= ROWS / 2 ? "top" : "bottom");
+  pop.innerHTML = `<div class="popnum num ${tier}" id="popNum">+0</div>` + [...good, ...bad].map((id, n) =>
+    `<div class="tpill${TROPHIES[id].good ? "" : " bad"}" style="animation-delay:${.25 + n * .15}s">${TROPHIES[id].good ? CUP : DOWN}${TROPHIES[id].name}</div>`).join("");
+  const S = UI.S, x = cells.reduce((sum, c) => sum + cellX(c), 0) / cells.length + S / 2, y = Math.min(...cells.map(cellY));
+  pop.className = "pop";
+  pop.style.left = clamp(x, 90, UI.w - 90) + "px";
+  pop.style.top = Math.max(60 + (good.length + bad.length) * 34, y + S * .2) + "px";
   pop.hidden = false;
   const start = performance.now();
   const count = (now) => {
-    const k = Math.min(1, (now - start) / 550), el = $("popNum");
+    const k = Math.min(1, (now - start) / 500), el = $("popNum");
     if (!el) return;
     el.textContent = signed(Math.round(res.pts * (1 - (1 - k) ** 3)));
     if (k < 1) requestAnimationFrame(count);
@@ -1606,8 +1652,8 @@ function showPop(res, cells) {
   clearTimeout(popTimer);
   popTimer = setTimeout(() => {
     pop.classList.add("hide");
-    popTimer = setTimeout(() => { pop.hidden = true; }, 350);
-  }, 2200 + (good.length + bad.length) * 900);
+    popTimer = setTimeout(() => { pop.hidden = true; }, 400);
+  }, 1300 + (good.length + bad.length) * 600);
 }
 function hidePop() { clearTimeout(popTimer); $("pop").hidden = true; }
 function bumpScore() {
@@ -1651,14 +1697,17 @@ cv.addEventListener("pointermove", (e) => {
   else { ax = Math.round(fx - w / 2); ay = Math.round(fy - (press.touch ? 1.3 : 0) - h / 2); }
   const before = UI.ghost.ax + "," + UI.ghost.ay;
   placeGhost({ ...UI.ghost, ax, ay });
-  if (UI.ghost.ax + "," + UI.ghost.ay !== before) $("bBuild").disabled = !canPlace(ghostCells());
+  if (UI.ghost.ax + "," + UI.ghost.ay !== before) {
+    $("bBuild").disabled = !canPlace(ghostCells());
+    if (UI.rules) placeInfo(ghostRow());
+  }
 });
 cv.addEventListener("pointerup", () => {
   if (!press) return;
   const p = press;
   press = null;
   if (p.moved) return;
-  if (p.onGhost && !G.over) return turnGhost(1, false);
+  if (p.onGhost && !G.over) return toggleRules();
   if (p.here < 0) return closeInfo();
   if (p.here === UI.sel) return closeInfo();
   select(p.here);
@@ -1687,10 +1736,10 @@ function closeSheet() { $("sheetWrap").hidden = true; UI.confirm = false; }
 $("scrim").onclick = closeSheet;
 
 const RULES_HTML = `<ul class="rules">
-  <li><b>Build:</b> drag a building onto open land, tap it to turn it, then press Build.</li>
-  <li><b>Score:</b> base points, plus or minus points for what it touches. Touching means sharing a side.</li>
-  <li><b>Scores are final</b> when you build. Later buildings don't change them.</li>
-  <li><b>No room</b> for a building costs ${AWAY} points. Fit them all for +${ALL_FIT}.</li>
+  <li><b>Build:</b> drag a building onto open land and press Build. Tap it to see how it scores.</li>
+  <li><b>On</b> is the land under a building. <b>Beside</b> is open land that shares a side with it. <b>Next to</b> is a building that shares a side with it.</li>
+  <li><b>Scores are live.</b> A building gains when you add what it likes next to it, and loses land you cover.</li>
+  <li><b>No room</b> for a building: −${AWAY}. Fit them all: +${ALL_FIT}.</li>
   <li><b>Swap</b> trades your building for the next one, ${SWAPS} times a game.</li>
 </ul>`;
 
@@ -1737,7 +1786,7 @@ function recordBest() {
 
 function showSummary() {
   hidePop();
-  const top = G.pieces.slice().sort((a, b) => b.pts - a.pts).slice(0, 3);
+  const top = G.pieces.map((p, k) => ({ p, v: pieceScore(k) })).sort((a, b) => b.v - a.v).slice(0, 3);
   const won = Object.keys(TROPHIES).filter(id => G.trophies[id]);
   let best = 0;
   try { best = +localStorage.getItem(BEST) || 0; } catch (e) {}
@@ -1754,17 +1803,34 @@ function showSummary() {
     ${won.length ? `<p class="label">Trophies</p><div class="tchips">${won.map(id =>
       `<span class="tchip${TROPHIES[id].good ? "" : " bad"}">${esc(TROPHIES[id].name.replace("!", ""))}${G.trophies[id] > 1 ? ` ×${G.trophies[id]}` : ""}</span>`).join("")}</div>` : ""}
     <p class="label">Best buildings</p>
-    <ul class="tally" style="margin-top:4px">${top.map(p => `<li><span>${esc(DEF[p.type].name)}</span><b>${signed(p.pts)}</b></li>`).join("")}</ul>
+    <ul class="tally" style="margin-top:4px">${top.map(x => `<li><span>${esc(DEF[x.p.type].name)}</span><b>${signed(x.v)}</b></li>`).join("")}</ul>
     <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="primary" id="sNew">New town</button></div>`);
   $("sLook").onclick = closeDialog;
   $("sNew").onclick = () => { closeDialog(); intro(); };
 }
 
+/* Every building's score as it stands, part by part. Tap one to find it on the map. */
+function showScore() {
+  if (!G || !G.player) return;
+  const rows = G.pieces.map((p, k) => { const parts = pieceParts(k); return { k, p, parts, v: sumParts(parts) }; }).sort((a, b) => b.v - a.v);
+  openSheet(`<h2>Score ${total()}</h2>
+    <ul class="tally">${rows.map(x => `<li class="bk" data-k="${x.k}"><div><span>${esc(DEF[x.p.type].name)}</span>
+        <small>${esc(x.parts.filter(q => q.v).map(q => `${partText(x.p.type, q)} ${signed(q.v)}`).join(" · "))}</small></div><b>${signed(x.v)}</b></li>`).join("")}
+      ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>` : ""}
+      ${G.over && !G.away.length ? `<li><span>Every building fit</span><b>+${ALL_FIT}</b></li>` : ""}
+    </ul>
+    ${rows.length ? "" : "<p>Nothing built yet.</p>"}
+    <div class="row"><button class="tool" id="scClose">Close</button></div>`);
+  $("scClose").onclick = closeSheet;
+  for (const li of $("sheet").querySelectorAll(".bk")) li.onclick = () => { closeSheet(); select(G.pieces[+li.dataset.k].cells[0]); };
+}
+$("scoreBtn").onclick = showScore;
+
 /* ───────────────────────── Saving and starting ───────────────────────── */
 
 function save() { if (!G || !G.player) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
 function load() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.v === 4 && s.player) { restore(s); return true; } } catch (e) {}
+  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && (s.v === 4 || s.v === 5) && s.player) { restore(s); return true; } } catch (e) {}
   return false;
 }
 
@@ -1781,7 +1847,7 @@ function startTown(player) {
   UI.shown = 0; $("score").textContent = 0;
   freshGhost(); save(); hud(); paintPanel();
   layout();
-  toast(`Welcome to ${townName(player, G.pick)}! Drag the building onto the map.`, 3400);
+  toast(`Welcome to ${townName(player, G.pick)}!`);
 }
 
 function showGame() {

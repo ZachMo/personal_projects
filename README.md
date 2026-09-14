@@ -1,6 +1,6 @@
 # personal_projects
 
-Five pages. Each one is a single HTML file with no build step, no dependencies and no
+Six pages. Each one is a single HTML file with no build step, no dependencies and no
 network calls. Open any of them in a browser.
 
 ## fall.html
@@ -198,6 +198,60 @@ faster does not make you nimbler.
 
 A bot that steers for the widest opening gets about 180 m and has reached 570.
 Mashing the controls gets about 60.
+
+## first-town.html
+
+A town-building board game for a phone. It is a jigsaw puzzle: buildings come in odd shapes,
+and you fit them onto one map.
+
+You type your name and the town names itself after you: Fort Zach, St. Zach, New Zach,
+Port Zach, Zachville, Zachburg, Zachton or Zachfield. Tap the arrow to try another.
+
+**The map.** Every game has a new map, 9 squares by 12. Water crosses it as a river, a lake
+with a creek or two ponds. Woods, ore veins and wild wheat grow on it in patches. You can build
+on any square that is not water.
+
+**One building at a time.** A deck of about 23 buildings comes one at a time, in 18 kinds.
+A well is one square, a cabin is two, a farm is a 2 by 2 square, a church is a plus sign and a
+train station is a straight line of five. You can see the next building. Drag the building
+onto the map, tap it or press Turn to turn it, press Flip to mirror it, then press Build.
+Homes, farms and mines come early. The church, the school, the hotel, the station and the
+town hall come late, so leave room for them. Swap trades the building in hand for the next
+one, twice a game.
+
+**Fit them all.** The deck covers 87% of the open land, so there is room for every building
+if you pack well. A building that fits nowhere is lost for 5 points. Place every building and
+you get 10 points. The To come button lists what is left in the deck, how many squares it
+needs and how many squares you have.
+
+**Put each building where it is happy.** Each building scores for three things:
+
+- the land under it: a farm on wild wheat, a mine on ore, a ranch on open grass;
+- the land beside it: a cabin by the water or the woods, a lumber mill with woods around it;
+- the buildings next to it: a grocer by farms, a store by homes, a saloon by industry.
+
+Some pairs are bad. Homes don't want industry next door. A church doesn't want a saloon.
+The station wants the edge of the map, and the town hall wants many kinds of building
+around it. The whole board is scored after every move, so a new farm also raises the grocer
+you built beside it before.
+
+**The board teaches you without numbers.** The card for the building in hand lists what it
+likes and dislikes. Tap an empty square to see its land and which buildings care about it.
+Tap a building to see what it is happy about, what hurts it and what it still wants. Only the
+total score has a number. It counts up after you build, and a small +N rises from the new
+building. At the end, a summary shows your three best buildings.
+
+**How it looks.** Open land is flat grass, trees, wheat and rock, with a faint outline on every
+square you can still use. A building is a raised tile with a shadow and a roof. Streets
+appear between buildings, and people walk them. Chimneys smoke, water shimmers and ore
+glints. Everything is drawn with vector shapes on a canvas at the screen's full resolution.
+The game saves to localStorage after every move.
+
+**Balance.** I tested the deck size with bots over 120 maps. A bot that only packs tightly
+fits every building 9 times in 10 but scores about 35. A bot that only chases points scores
+about 95 on its buildings but loses one or two of them, for about 88 in all. A bot that weighs
+both also scores about 88 and fits every building about a third of the time. A bot that plays
+at random loses about three buildings.
 
 ## mexico-elections.html
 

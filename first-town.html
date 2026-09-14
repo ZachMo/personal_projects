@@ -1,0 +1,1699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b2422">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>First Town</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --table: #1b2422; --table-2: #27332f;
+    --card: #fbf9f4; --card-2: #f0ece3; --line: #e6e1d6;
+    --ink: #1f2624; --ink-2: #5b645f; --muted: #8c938e;
+    --accent: #e0703f; --accent-2: #c05a2e;
+    --good: #2f8a55; --good-bg: #e4f2e8; --bad: #b8412f; --bad-bg: #f9e5e0;
+    --home: #d8734a; --agri: #c9952a; --industry: #6f7d8b; --shop: #33968a; --civic: #5a7fc4; --leisure: #a8588f;
+    --pad-t: env(safe-area-inset-top, 0px);
+    --pad-b: env(safe-area-inset-bottom, 0px);
+    --pad-l: env(safe-area-inset-left, 0px);
+    --pad-r: env(safe-area-inset-right, 0px);
+  }
+  * { box-sizing: border-box; min-width: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none;
+    background: var(--table); color: #eef1ec;
+    font: 15px/1.4 system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; -webkit-user-select: none; user-select: none;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  #app {
+    position: fixed; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+    background: radial-gradient(90% 70% at 50% 42%, #2d3a36 0%, var(--table) 75%);
+  }
+
+  /* ── Top bar ── */
+  #hud {
+    display: flex; align-items: center; gap: 8px;
+    padding: calc(var(--pad-t) + 10px) calc(var(--pad-r) + 12px) 2px calc(var(--pad-l) + 12px);
+  }
+  .glass { background: rgba(255,255,255,.07); border-radius: 14px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+  .iconbtn { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; }
+  .iconbtn svg { width: 20px; height: 20px; }
+  .iconbtn:active, .stat:active { transform: scale(.96); }
+  .title { flex: 1; padding: 0 4px; }
+  .title b { display: block; font-size: 1.02rem; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title span { display: block; font-size: .72rem; color: #9fb0a9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat { min-width: 62px; height: 44px; padding: 0 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .stat b { font-size: 1.1rem; line-height: 1.1; font-weight: 750; }
+  .stat span { font-size: .58rem; letter-spacing: .09em; text-transform: uppercase; color: #9fb0a9; font-weight: 700; }
+
+  /* ── Board ── */
+  #stage { position: relative; }
+  #board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #toast {
+    position: absolute; left: 50%; top: 10px; transform: translate(-50%, -6px); max-width: calc(100% - 32px);
+    padding: 8px 14px; border-radius: 999px; background: rgba(20,28,26,.88); color: #fff; font-size: .84rem; font-weight: 600;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: none; opacity: 0; transition: opacity .25s, transform .25s; text-align: center;
+  }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  .card { background: var(--card); color: var(--ink); border-radius: 20px; box-shadow: 0 12px 34px rgba(0,0,0,.34); }
+
+  /* ── Info about a square ── */
+  #info {
+    position: absolute; left: 12px; right: 12px; margin: 0 auto; max-width: 420px; padding: 14px 16px 12px;
+    max-height: calc(50% - 16px); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  #info.top { top: 10px; } #info.bottom { bottom: 10px; }
+  .x { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 12px; font-size: 1.3rem; line-height: 34px; color: var(--ink-2); }
+  .kind { font-size: .66rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin-right: 36px; }
+  #info h3 { margin: 2px 0 2px; font-size: 1.08rem; letter-spacing: -.01em; }
+  #info p { margin: 0 0 6px; color: var(--ink-2); font-size: .84rem; }
+
+  /* ── The piece in hand ── */
+  #panel {
+    width: calc(100% - 20px); max-width: 520px; justify-self: center;
+    margin: 6px calc(var(--pad-r) + 10px) calc(var(--pad-b) + 10px) calc(var(--pad-l) + 10px); padding: 14px 14px 12px;
+  }
+  .head { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; }
+  .mini { width: 58px; height: 58px; display: grid; place-items: center; background: var(--card-2); border-radius: 14px; }
+  .mini svg { display: block; }
+  .name { font-weight: 750; font-size: 1.06rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .chip { font-size: .58rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; color: #fff; background: var(--c); }
+  .blurb { font-size: .8rem; color: var(--ink-2); margin-top: 1px; }
+  .next { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .next span { font-size: .58rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .next .mini { width: 44px; height: 44px; border-radius: 12px; }
+
+  .likes { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .likes li { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; padding: 4px 10px 4px 5px;
+              border-radius: 999px; background: var(--good-bg); color: var(--good); }
+  .likes li.bad { background: var(--bad-bg); color: var(--bad); }
+  .likes li i { width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: .7rem;
+                font-weight: 800; background: var(--good); color: #fff; }
+  .likes li.bad i { background: var(--bad); }
+
+  .facts { list-style: none; margin: 8px 0 0; padding: 0; }
+  .facts li { display: flex; gap: 9px; align-items: flex-start; padding: 7px 0; border-top: 1px solid var(--line); font-size: .85rem; }
+  .facts li i { flex: 0 0 auto; width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center; font-style: normal;
+                font-size: .72rem; font-weight: 800; margin-top: 1px; background: var(--good); color: #fff; }
+  .facts li.bad i { background: var(--bad); }
+  .facts li.want { color: var(--ink-2); }
+  .facts li.want i { background: var(--card-2); color: var(--muted); box-shadow: inset 0 0 0 1.5px #d5cfc2; }
+
+  .controls { display: flex; gap: 8px; margin-top: 12px; }
+  .tool { height: 48px; padding: 0 12px; border-radius: 14px; background: var(--card-2); color: var(--ink); font-weight: 650; font-size: .85rem;
+          display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  .tool svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  .tool em { font-style: normal; font-size: .7rem; font-weight: 800; background: var(--ink); color: #fff; border-radius: 999px; padding: 1px 6px; }
+  .tool[disabled] { opacity: .4; pointer-events: none; }
+  .tool:active, .primary:active { transform: translateY(1px); }
+  .primary { flex: 1; height: 48px; border-radius: 14px; background: var(--accent); color: #fff; font-weight: 750; font-size: 1rem;
+             box-shadow: inset 0 -3px 0 var(--accent-2); }
+  .primary[disabled] { background: #dcd6ca; color: #8e897e; box-shadow: none; pointer-events: none; }
+  .primary.dark { background: var(--ink); box-shadow: inset 0 -3px 0 #000; }
+  @media (max-width: 440px) { .tool .lbl { display: none; } .tool { padding: 0 13px; } }
+
+  .done { display: flex; align-items: center; gap: 12px; }
+  .done .big { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .done .sub { font-size: .8rem; color: var(--ink-2); }
+
+  /* ── Sheets and dialogs ── */
+  .overlay { position: fixed; inset: 0; background: rgba(8,14,12,.55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+  .center { display: grid; place-items: center; padding: 20px; }
+  .dialog { width: 100%; max-width: 380px; padding: 24px 20px 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
+  .dialog h1 { margin: 0; font-size: 2.1rem; letter-spacing: -.035em; line-height: 1; }
+  .dialog h2 { margin: 0 0 4px; font-size: 1.3rem; letter-spacing: -.02em; }
+  .dialog p { margin: 8px 0 12px; color: var(--ink-2); font-size: .9rem; }
+  .dialog input {
+    width: 100%; font: inherit; font-size: 1.05rem; padding: 13px 14px; border-radius: 14px; border: 0; background: var(--card-2);
+    color: var(--ink); text-align: center; -webkit-user-select: text; user-select: text; box-shadow: inset 0 0 0 1.5px transparent;
+  }
+  .dialog input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+  .named { margin: 14px 0 6px; font-size: 1.45rem; font-weight: 800; letter-spacing: -.02em; min-height: 2rem;
+           display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .named button { width: 34px; height: 34px; border-radius: 10px; background: var(--card-2); font-size: 1.05rem; color: var(--ink-2); }
+  .row { display: flex; gap: 8px; margin-top: 14px; }
+  .row .tool { flex: 1; justify-content: center; }
+  .rules { margin: 12px 0 0; padding: 0; list-style: none; text-align: left; }
+  .rules li { position: relative; padding: 7px 0 7px 26px; font-size: .86rem; color: var(--ink-2); border-top: 1px solid var(--line); }
+  .rules li b { color: var(--ink); }
+  .rules li::before { content: ""; position: absolute; left: 6px; top: 13px; width: 8px; height: 8px; border-radius: 3px; background: var(--accent); }
+  .final { text-align: center; }
+  .final .big { font-size: 3.2rem; font-weight: 800; letter-spacing: -.04em; line-height: 1; margin: 8px 0 2px; }
+  .final .best { font-size: .8rem; color: var(--muted); font-weight: 650; }
+  .tally { margin: 14px 0 0; padding: 0; list-style: none; text-align: left; }
+  .tally li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .88rem; }
+  .tally li span { color: var(--ink-2); }
+  .tally li b { font-variant-numeric: tabular-nums; }
+
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 560px; max-height: 82vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch; border-radius: 22px 22px 0 0; padding: 18px 16px calc(var(--pad-b) + 18px);
+  }
+  .sheet h2 { margin: 0 0 4px; font-size: 1.2rem; letter-spacing: -.01em; }
+  .sheet > p { margin: 0 0 10px; color: var(--ink-2); font-size: .86rem; }
+  .deck { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
+  .deckrow { display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: center; background: var(--card-2); border-radius: 14px; padding: 8px 10px; }
+  .deckrow .mini { width: 48px; height: 48px; background: var(--card); }
+  .deckrow .name { font-size: .92rem; }
+  .deckrow .likes { margin-top: 5px; }
+  .deckrow .likes li { font-size: .72rem; padding: 2px 8px 2px 4px; }
+  .deckrow .likes li i { width: 14px; height: 14px; font-size: .6rem; }
+  .count { font-size: .72rem; font-weight: 800; color: var(--ink-2); background: var(--card); border-radius: 999px; padding: 1px 7px; }
+
+  @media (min-width: 880px) {
+    #app { grid-template-columns: minmax(0, 1fr) 390px; grid-template-rows: auto minmax(0, 1fr); }
+    #hud { grid-column: 1 / -1; padding-left: 20px; padding-right: 20px; }
+    #panel { grid-column: 2; grid-row: 2; align-self: center; width: auto; margin: 0 24px 24px 0; }
+    #info { max-height: calc(100% - 20px); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <button id="menuBtn" class="iconbtn glass" aria-label="Menu">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h12"/></svg>
+    </button>
+    <div class="title"><b id="townName">First Town</b><span id="townSub">&nbsp;</span></div>
+    <div class="stat glass"><b id="score" class="num">0</b><span>Points</span></div>
+    <button id="deckBtn" class="stat glass" aria-label="Buildings to come"><b id="left" class="num">0</b><span>To come</span></button>
+  </header>
+
+  <main id="stage">
+    <canvas id="board"></canvas>
+    <div id="toast"></div>
+    <div id="info" class="card" hidden></div>
+  </main>
+
+  <section id="panel" class="card" hidden>
+    <div id="piece"></div>
+    <div class="controls" id="controls">
+      <button class="tool" id="bTurn" aria-label="Turn">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 9.5A5.5 5.5 0 1 1 13 5"/><path d="M13.5 1.8 13 5l3.2.6"/></svg><span class="lbl">Turn</span>
+      </button>
+      <button class="tool" id="bFlip" aria-label="Flip">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5v15"/><path d="M7 5 2.5 14H7zM13 5l4.5 9H13z"/></svg><span class="lbl">Flip</span>
+      </button>
+      <button class="tool" id="bSwap" aria-label="Swap with next">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h12l-3-3M16 13H4l3 3"/></svg><span class="lbl">Swap</span><em id="swaps">2</em>
+      </button>
+      <button class="primary" id="bBuild">Build</button>
+    </div>
+  </section>
+
+  <div id="sheetWrap" hidden>
+    <div class="overlay" id="scrim"></div>
+    <div class="sheet card" id="sheet"></div>
+  </div>
+
+  <div id="dialogWrap" class="overlay center" hidden><div class="dialog card" id="dialog"></div></div>
+</div>
+
+<script id="logic">
+"use strict";
+
+/* ───────────────────────── Rules of the game ───────────────────────── */
+
+const COLS = 9, ROWS = 12, N = COLS * ROWS;
+const FILL = .87;        // the deck covers this share of the land you can build on
+const AWAY = 5;           // points lost for each building that fits nowhere
+const ALL_FIT = 10;       // points won when every building finds a place
+const SWAPS = 2;          // times you can trade the building in hand for the next one
+
+const TERRAIN = {
+  grass:  { name: "Open grass", short: "open grass", blurb: "Flat, easy land." },
+  forest: { name: "Woods",      short: "woods",      blurb: "Tall trees. A building put here clears them." },
+  ore:    { name: "Ore vein",   short: "ore",        blurb: "Rock with a seam of silver in it." },
+  wheat:  { name: "Wild wheat", short: "wild wheat", blurb: "Rich soil where grain grows on its own." },
+  water:  { name: "Water",      short: "water",      blurb: "Nothing can be built on water." },
+};
+
+const CATS = {
+  home:     { name: "Home",     many: "homes" },
+  agri:     { name: "Food",     many: "farms, ranches or docks" },
+  industry: { name: "Industry", many: "industry" },
+  shop:     { name: "Shop",     many: "shops" },
+  civic:    { name: "Civic",    many: "civic buildings" },
+  leisure:  { name: "Leisure",  many: "saloons or hotels" },
+};
+
+/* Footprints. The order of the cells matters: each building's roles line up with it. */
+const SHAPES = {
+  I1: [[0,0]],
+  I2: [[0,0],[1,0]],
+  I3: [[0,0],[1,0],[2,0]],
+  V3: [[0,0],[0,1],[1,1]],
+  I4: [[0,0],[1,0],[2,0],[3,0]],
+  O4: [[0,0],[1,0],[0,1],[1,1]],
+  T4: [[0,0],[1,0],[2,0],[1,1]],
+  S4: [[1,0],[2,0],[0,1],[1,1]],
+  L4: [[0,0],[0,1],[0,2],[1,2]],
+  I5: [[0,0],[1,0],[2,0],[3,0],[4,0]],
+  V5: [[0,0],[0,1],[0,2],[1,2],[2,2]],
+  X5: [[1,0],[0,1],[1,1],[2,1],[1,2]],
+  T5: [[0,0],[1,0],[2,0],[1,1],[1,2]],
+  P5: [[0,0],[1,0],[0,1],[1,1],[0,2]],
+  U5: [[0,0],[2,0],[0,1],[1,1],[2,1]],
+};
+
+/*
+  n:     how many are in a deck        era: 1 comes early, 3 comes late
+  roles: what is drawn on each cell    roof: roof colours, light side then dark side
+  rules: what the building scores for
+    on      t: terrain   p: points for each of its cells on that terrain
+    by      t: terrain   p: points for each open square of that terrain touching it (once: only one counts, max: a cap)
+    near    cats / types p: points for each building of that kind touching it
+    edge                 p: points if it touches the edge of the map
+    variety              p: points for each kind of building touching it
+*/
+const DEF = {
+  well:      { name: "Town Well", plural: "Town Wells", cat: "civic", shape: "I1", n: 2, era: 1,
+               roles: ["well"], blurb: "Fresh water for the families nearby.",
+               rules: [{ k: "near", cats: ["home"], p: 1 }] },
+  cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, roof: ["#dc7b50", "#b75d3a"],
+               roles: ["house", "garden"], blurb: "Two rooms and a porch with a view.",
+               rules: [{ k: "by", t: "water", p: 2, once: true }, { k: "by", t: "forest", p: 1, max: 2 },
+                       { k: "near", cats: ["industry"], p: -2 }] },
+  homestead: { name: "Homestead", cat: "home", shape: "V3", n: 2, era: 1, roof: ["#c86a4b", "#a45237"],
+               roles: ["garden", "house", "house"], blurb: "A family that likes company.",
+               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", types: ["well"], p: 2 },
+                       { k: "near", cats: ["industry"], p: -2 }] },
+  rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
+               roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close.",
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 },
+                       { k: "near", cats: ["industry"], p: -2 }] },
+  farm:      { name: "Farm", cat: "agri", shape: "O4", n: 2, era: 1, roof: ["#cc5443", "#a43f31"],
+               roles: ["barn", "field", "field", "field"], blurb: "Grain for the whole town.",
+               rules: [{ k: "on", t: "wheat", p: 3 }, { k: "by", t: "water", p: 2, once: true },
+                       { k: "near", cats: ["industry"], p: -1 }] },
+  ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, roof: ["#b85a40", "#93432f"],
+               roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Cattle need room to roam.",
+               rules: [{ k: "on", t: "grass", p: 1 }, { k: "by", t: "water", p: 2, once: true },
+                       { k: "near", cats: ["home"], p: -1 }] },
+  lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, roof: ["#8e6c4f", "#6e523b"],
+               roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
+               rules: [{ k: "by", t: "forest", p: 2 }] },
+  mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1,
+               roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging where the ore is.",
+               rules: [{ k: "on", t: "ore", p: 4 }] },
+  smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, roof: ["#6f7985", "#535c67"],
+               roles: ["forge", "yard"], blurb: "Hammers out tools from fresh ore.",
+               rules: [{ k: "near", types: ["mine"], p: 4 }, { k: "by", t: "ore", p: 1 }] },
+  dock:      { name: "Fishing Dock", cat: "agri", shape: "I3", n: 1, era: 2, roof: ["#927c64", "#73614d"],
+               roles: ["shed", "plank", "plank"], blurb: "Nets and boats along the bank.",
+               rules: [{ k: "by", t: "water", p: 2 }] },
+  store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, roof: ["#40a092", "#2f7e72"],
+               roles: ["shop", "shop", "shop", "crates"], blurb: "A little of everything, for the families.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }] },
+  grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, roof: ["#5ea56b", "#468753"],
+               roles: ["shop", "shop", "produce", "produce"], blurb: "Fresh food, straight from the source.",
+               rules: [{ k: "near", cats: ["agri"], p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
+  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, roof: ["#a95a90", "#864571"],
+               roles: ["hall", "hall", "porch", "porch"], blurb: "Where the workers go after a shift.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 }] },
+  church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, roof: ["#8195b8", "#63779d"],
+               roles: ["steeple", "tree", "nave", "tree", "nave"], blurb: "The heart of a quiet town.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", types: ["saloon"], p: -4 }] },
+  school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, roof: ["#cc5e4c", "#a84737"],
+               roles: ["hall", "hall", "hall", "yard", "play"], blurb: "Lessons for the children next door.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["industry"], p: -2 },
+                       { k: "near", types: ["saloon"], p: -3 }] },
+  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, roof: ["#9160aa", "#724489"],
+               roles: ["big", "big", "big", "big", "porch"], blurb: "Travellers want a drink and a train.",
+               rules: [{ k: "near", types: ["saloon", "station"], p: 3 }, { k: "by", t: "water", p: 1, once: true }] },
+  station:   { name: "Train Station", cat: "civic", shape: "I5", n: 1, era: 3, roof: ["#5d7189", "#46586c"],
+               roles: ["rail", "hall", "hall", "hall", "rail"], blurb: "The line comes in from the edge of the map.",
+               rules: [{ k: "edge", p: 4 }, { k: "near", cats: ["industry"], p: 2 }, { k: "near", types: ["hotel"], p: 2 }] },
+  townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, roof: ["#5580c8", "#4065a8"],
+               roles: ["tree", "flag", "hall", "hall", "hall"], blurb: "Wants every part of town at its door.",
+               rules: [{ k: "variety", p: 2 }] },
+};
+
+/* ───────────────────────── Small tools ───────────────────────── */
+
+function mulberry(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const pick = (a, r = Math.random) => a[Math.floor(r() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+/* A fixed hash for art, so a square draws the same way every frame. */
+function hash(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
+
+const idx = (x, y) => y * COLS + x;
+const colOf = (i) => i % COLS, rowOf = (i) => (i / COLS) | 0;
+const inside = (x, y) => x >= 0 && y >= 0 && x < COLS && y < ROWS;
+const N4 = [[1,0],[-1,0],[0,1],[0,-1]];
+function around(i) {
+  const x = colOf(i), y = rowOf(i), out = [];
+  for (const [dx, dy] of N4) if (inside(x + dx, y + dy)) out.push(idx(x + dx, y + dy));
+  return out;
+}
+
+/* ───────────────────────── The map ───────────────────────── */
+
+/* A blob that prefers to grow into squares that already touch it, so patches come out chunky. */
+function grow(t, r, start, size, kind) {
+  if (start < 0 || t[start] !== "grass") return 0;
+  const got = [start]; t[start] = kind;
+  for (let tries = 0; got.length < size && tries < 60; tries++) {
+    const cand = [];
+    for (const c of got) for (const j of around(c)) {
+      if (t[j] === "grass") cand.push([j, 1 + around(j).filter(q => t[q] === kind).length ** 2]);
+    }
+    if (!cand.length) break;
+    let s = r() * cand.reduce((a, b) => a + b[1], 0);
+    for (const [j, w] of cand) if ((s -= w) <= 0) { t[j] = kind; got.push(j); break; }
+  }
+  return got.length;
+}
+
+function makeMap(seed) {
+  const r = mulberry(seed);
+  const t = new Array(N).fill("grass");
+  const n = (a, b) => a + Math.floor(r() * (b - a + 1));
+  const style = r();
+  if (style < .5) {
+    // A river from the top edge to the bottom edge that wanders as it goes.
+    let x = n(2, COLS - 3);
+    for (let y = 0; y < ROWS; y++) {
+      t[idx(x, y)] = "water";
+      if (y > 0 && y < ROWS - 1 && r() < .3) { x = clamp(x + (r() < .5 ? -1 : 1), 1, COLS - 2); t[idx(x, y)] = "water"; }
+    }
+  } else if (style < .8) {
+    // A lake on one side, with a creek that runs out across the map.
+    const left = r() < .5, ly = n(3, ROWS - 4);
+    grow(t, r, idx(left ? 0 : COLS - 1, ly), n(6, 8), "water");
+    let y = ly + (r() < .5 ? -2 : 2);
+    for (let s = 0; s < COLS; s++) {
+      const x = left ? s : COLS - 1 - s;
+      t[idx(x, y)] = "water";
+      if (s > 1 && s < COLS - 1 && r() < .3) { y = clamp(y + (r() < .5 ? -1 : 1), 1, ROWS - 2); t[idx(x, y)] = "water"; }
+    }
+  } else {
+    // Two ponds.
+    grow(t, r, idx(n(1, 3), n(1, 4)), n(4, 6), "water");
+    grow(t, r, idx(n(5, 7), n(7, 10)), n(4, 6), "water");
+  }
+  const spot = (nearWater) => {
+    for (let tries = 0; tries < 50; tries++) {
+      const i = Math.floor(r() * N);
+      if (t[i] !== "grass") continue;
+      if (nearWater && tries < 35 && !around(i).some(j => t[j] === "water")) continue;
+      return i;
+    }
+    return -1;
+  };
+  grow(t, r, spot(false), n(5, 7), "forest");
+  grow(t, r, spot(false), n(3, 5), "forest");
+  grow(t, r, spot(false), 3, "ore");
+  grow(t, r, spot(false), 2, "ore");
+  grow(t, r, spot(true), n(4, 5), "wheat");
+  grow(t, r, spot(false), n(3, 4), "wheat");
+  return t;
+}
+
+/* The deck holds a bit less than the land can take. Homes and wells pad it out or come off it to hit the mark. */
+function makeDeck(seed, terrain) {
+  const r = mulberry(seed ^ 0x5bd1e995);
+  const count = {};
+  for (const k in DEF) count[k] = DEF[k].n;
+  const size = (k) => SHAPES[DEF[k].shape].length;
+  const total = () => Object.keys(count).reduce((s, k) => s + count[k] * size(k), 0);
+  const target = Math.round(terrain.filter(t => t !== "water").length * FILL);
+  const TRIM = ["cabin", "homestead", "well", "rowhouses", "lumber", "farm", "mine"];
+  while (total() > target) {
+    const k = pick(TRIM.filter(q => count[q] > 1), r);
+    if (!k) break;
+    count[k]--;
+  }
+  const PAD = ["cabin", "homestead", "well", "rowhouses"];
+  while (total() < target - 1) count[pick(PAD, r)]++;
+  const deck = [];
+  for (const k in count) for (let c = 0; c < count[k]; c++) deck.push({ k, key: DEF[k].era + r() * 1.6 });
+  deck.sort((a, b) => a.key - b.key);
+  return deck.map(d => d.k);
+}
+
+/* ───────────────────────── Footprints ───────────────────────── */
+
+function orient(shape, rot, flip) {
+  let s = SHAPES[shape].map(p => p.slice());
+  if (flip) s = s.map(([x, y]) => [-x, y]);
+  for (let k = 0; k < ((rot % 4) + 4) % 4; k++) s = s.map(([x, y]) => [-y, x]);
+  const mx = Math.min(...s.map(p => p[0])), my = Math.min(...s.map(p => p[1]));
+  return s.map(([x, y]) => [x - mx, y - my]);
+}
+const extent = (offs) => [Math.max(...offs.map(p => p[0])) + 1, Math.max(...offs.map(p => p[1])) + 1];
+
+function cellsAt(type, o) {
+  const out = [];
+  for (const [x, y] of orient(DEF[type].shape, o.rot, o.flip)) {
+    if (!inside(o.ax + x, o.ay + y)) return null;
+    out.push(idx(o.ax + x, o.ay + y));
+  }
+  return out;
+}
+
+/* Every distinct way to turn and flip a shape. */
+function orientations(type) {
+  const seen = new Set(), out = [];
+  for (const flip of [false, true]) for (let rot = 0; rot < 4; rot++) {
+    const offs = orient(DEF[type].shape, rot, flip);
+    const key = offs.map(p => p.join(",")).sort().join(";");
+    if (!seen.has(key)) { seen.add(key); out.push({ rot, flip }); }
+  }
+  return out;
+}
+
+/* ───────────────────────── Game state ───────────────────────── */
+
+let G = null;       // what gets saved
+let MAP = null;     // terrain, rebuilt from the seed
+let OWNER = null;   // for each square, the index of the building on it, or -1
+
+function newGame(player, pickName, seed) {
+  seed = seed ?? (Math.random() * 2 ** 31) | 0;
+  MAP = makeMap(seed);
+  G = { v: 3, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, swaps: SWAPS, away: [], pieces: [], over: false };
+  OWNER = new Array(N).fill(-1);
+  settle();
+}
+
+function restore(saved) {
+  G = saved;
+  MAP = makeMap(G.seed);
+  OWNER = new Array(N).fill(-1);
+  G.pieces.forEach((p, k) => p.cells.forEach(c => { OWNER[c] = k; }));
+}
+
+const current = () => G.over ? null : G.deck[G.at];
+const upcoming = () => G.over ? null : G.deck[G.at + 1] || null;
+const canPlace = (cells) => !!cells && cells.every(c => MAP[c] !== "water" && OWNER[c] < 0);
+
+function placements(type) {
+  const out = [];
+  for (const o of orientations(type)) {
+    const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip));
+    for (let ay = 0; ay <= ROWS - h; ay++) for (let ax = 0; ax <= COLS - w; ax++) {
+      const cells = cellsAt(type, { ...o, ax, ay });
+      if (canPlace(cells)) out.push({ ...o, ax, ay, cells });
+    }
+  }
+  return out;
+}
+const fits = (type) => placements(type).length > 0;
+
+/* Moves past buildings that fit nowhere, and ends the game when the deck runs out. */
+function settle() {
+  const events = [];
+  while (!G.over) {
+    if (G.at >= G.deck.length) { G.over = true; events.push({ end: true }); break; }
+    if (fits(G.deck[G.at])) break;
+    G.away.push(G.deck[G.at]); events.push({ away: G.deck[G.at] });
+    G.at++;
+  }
+  return events;
+}
+
+function build(cells) {
+  const before = boardScore();
+  G.pieces.push({ type: current(), cells });
+  cells.forEach(c => { OWNER[c] = G.pieces.length - 1; });
+  G.at++;
+  const delta = boardScore() - before;
+  return { delta, events: settle() };
+}
+
+const canSwap = () => !G.over && G.swaps > 0 && !!upcoming() && fits(upcoming());
+function swap() {
+  if (!canSwap()) return false;
+  [G.deck[G.at], G.deck[G.at + 1]] = [G.deck[G.at + 1], G.deck[G.at]];
+  G.swaps--;
+  return true;
+}
+
+/* ───────────────────────── Scoring ───────────────────────── */
+
+/* What a footprint sits on and touches. `self` is its own index, so it doesn't count itself. */
+function look(cells, self = -1) {
+  const own = new Set(cells), on = {}, by = {}, near = new Set();
+  let edge = false;
+  for (const c of cells) {
+    on[MAP[c]] = (on[MAP[c]] || 0) + 1;
+    const x = colOf(c), y = rowOf(c);
+    for (const [dx, dy] of N4) {
+      if (!inside(x + dx, y + dy)) { edge = true; continue; }
+      const j = idx(x + dx, y + dy);
+      if (own.has(j)) continue;
+      if (OWNER[j] >= 0 && OWNER[j] !== self) near.add(OWNER[j]);
+      else if (OWNER[j] < 0) by[j] = MAP[j];
+    }
+  }
+  const byCount = {};
+  for (const j in by) byCount[by[j]] = (byCount[by[j]] || 0) + 1;
+  return { on, by: byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge };
+}
+
+const matches = (r, type) => (r.types || []).includes(type) || (r.cats || []).includes(DEF[type].cat);
+
+function evalRule(r, c) {
+  if (r.k === "on") { const n = c.on[r.t] || 0; return { n, v: n * r.p }; }
+  if (r.k === "by") {
+    const n = c.by[r.t] || 0, m = r.once ? Math.min(n, 1) : r.max ? Math.min(n, r.max) : n;
+    return { n, v: m * r.p };
+  }
+  if (r.k === "near") { const hit = c.near.filter(q => matches(r, q.type)); return { n: hit.length, hit, v: hit.length * r.p }; }
+  if (r.k === "edge") return { n: c.edge ? 1 : 0, v: c.edge ? r.p : 0 };
+  if (r.k === "variety") { const n = new Set(c.near.map(q => DEF[q.type].cat)).size; return { n, v: n * r.p }; }
+  return { n: 0, v: 0 };
+}
+
+const scoreAt = (type, cells, self) => { const c = look(cells, self); return DEF[type].rules.reduce((s, r) => s + evalRule(r, c).v, 0); };
+const pieceScore = (k) => scoreAt(G.pieces[k].type, G.pieces[k].cells, k);
+const boardScore = () => G.pieces.reduce((s, _, k) => s + pieceScore(k), 0);
+const total = () => boardScore() - AWAY * G.away.length + (G.over && !G.away.length ? ALL_FIT : 0);
+
+/* ───────────────────────── Words ───────────────────────── */
+
+const plural = (k) => DEF[k].plural || DEF[k].name + "s";
+const joinOr = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " or " + a[a.length - 1];
+const joinAnd = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+const nearWhat = (r) => joinOr([...(r.types || []).map(t => "a " + DEF[t].name), ...(r.cats || []).map(c => CATS[c].many)]);
+const landWord = (t) => t === "water" ? "the water" : TERRAIN[t].short;
+
+function ruleText(r) {
+  if (r.k === "on") return `Built on ${landWord(r.t)}`;
+  if (r.k === "by") return `Beside ${landWord(r.t)}`;
+  if (r.k === "near") return `Next to ${nearWhat(r)}`;
+  if (r.k === "edge") return "At the edge of the map";
+  if (r.k === "variety") return "Next to many kinds of building";
+  return "";
+}
+
+/* Buildings grouped by name: "the Mine", "2 Cabins". */
+function nameList(hit) {
+  const byType = {};
+  for (const q of hit) byType[q.type] = (byType[q.type] || 0) + 1;
+  return joinAnd(Object.keys(byType).map(t => byType[t] > 1 ? `${byType[t]} ${plural(t)}` : `the ${DEF[t].name}`));
+}
+
+/* What a placed building is happy or unhappy about, in words. */
+function facts(k) {
+  const p = G.pieces[k], c = look(p.cells, k), out = [];
+  for (const r of DEF[p.type].rules) {
+    const e = evalRule(r, c), good = r.p > 0 ? "good" : "bad";
+    if (r.k === "on") {
+      if (e.n === p.cells.length) out.push([good, `Sits fully on ${landWord(r.t)}`]);
+      else if (e.n) out.push([good, `Sits partly on ${landWord(r.t)}`]);
+      else if (r.p > 0) out.push(["want", `Wants to sit on ${landWord(r.t)}`]);
+    } else if (r.k === "by") {
+      if (e.n >= 3 && !r.once) out.push([good, `Beside plenty of ${landWord(r.t)}`]);
+      else if (e.n) out.push([good, `Beside ${landWord(r.t)}`]);
+      else if (r.p > 0) out.push(["want", `Wants to be beside ${landWord(r.t)}`]);
+    } else if (r.k === "near") {
+      if (e.hit.length) out.push([good, `Next to ${nameList(e.hit)}`]);
+      else if (r.p > 0) out.push(["want", `Wants to be next to ${nearWhat(r)}`]);
+    } else if (r.k === "edge") {
+      out.push(e.n ? [good, "Touches the edge of the map"] : ["want", "Wants to touch the edge of the map"]);
+    } else if (r.k === "variety") {
+      if (e.n >= 3) out.push([good, "Next to many kinds of building"]);
+      else if (e.n) out.push([good, "Next to a few kinds of building"]);
+      else out.push(["want", "Wants many kinds of building next to it"]);
+    }
+  }
+  return out;
+}
+
+/* Which buildings care about a kind of land, and how. */
+function caresAbout(t) {
+  const out = [];
+  for (const k in DEF) for (const r of DEF[k].rules) {
+    if (r.t !== t) continue;
+    out.push([r.p > 0 ? "good" : "bad", `${DEF[k].name} likes ${r.k === "on" ? "to be built on it" : "to be beside it"}`]);
+  }
+  return out;
+}
+</script>
+
+<script>
+"use strict";
+
+/* ───────────────────────── Names ───────────────────────── */
+
+const PREFIX = ["Fort", "St.", "New", "Port"];
+const SUFFIX = ["ville", "burg", "ton", "field"];
+function townName(player, n) {
+  const first = player.trim().split(/\s+/)[0] || "Pioneer";
+  const name = first.charAt(0).toUpperCase() + first.slice(1);
+  const all = PREFIX.map(p => p + " " + name).concat(SUFFIX.map(s => name + s));
+  return all[((n % all.length) + all.length) % all.length];
+}
+
+/* ───────────────────────── Screen ───────────────────────── */
+
+const $ = (id) => document.getElementById(id);
+const cv = $("board"), ctx = cv.getContext("2d");
+const layer = document.createElement("canvas"), lg = layer.getContext("2d");
+const SAVE = "firsttown.v3", BEST = "firsttown.best";
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+const UI = {
+  dpr: 1, w: 0, h: 0, S: 40, BX: 0, BY: 0,
+  ghost: null,       // { rot, flip, ax, ay } for the building in hand
+  sel: -1,           // the square whose info is open
+  dirty: true,       // the baked board needs drawing again
+  drop: null,        // { k, t } a building landing
+  shown: 0,          // the score as the counter shows it
+  pick: 0, confirm: false,
+};
+
+function layout() {
+  const r = $("stage").getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  UI.dpr = dpr; UI.w = r.width; UI.h = r.height;
+  cv.width = layer.width = Math.max(1, Math.round(r.width * dpr));
+  cv.height = layer.height = Math.max(1, Math.round(r.height * dpr));
+  const pad = 12, frame = .34;
+  UI.S = Math.max(16, Math.floor(Math.min((r.width - pad * 2) / (COLS + frame * 2), (r.height - pad * 2) / (ROWS + frame * 2))));
+  UI.BX = Math.round((r.width - COLS * UI.S) / 2);
+  UI.BY = Math.round((r.height - ROWS * UI.S) / 2);
+  UI.dirty = true;
+}
+
+/* ───────────────────────── Drawing tools ───────────────────────── */
+
+function rr(g, x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+const cellX = (i) => UI.BX + colOf(i) * UI.S, cellY = (i) => UI.BY + rowOf(i) * UI.S;
+function circle(g, x, y, r, c) { g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
+function ellipse(g, x, y, rx, ry, c) { g.fillStyle = c; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill(); }
+
+/*
+  One path for a group of squares, as if cut from one sheet: rounded outside corners,
+  with bridges across the gaps between squares that belong together.
+*/
+function union(g, cells, inset, r, dy = 0) {
+  const set = new Set(cells), S = UI.S, span = inset * 2 + r * 2;
+  g.beginPath();
+  for (const i of cells) {
+    const x = cellX(i), y = cellY(i) + dy, right = colOf(i) < COLS - 1 && set.has(i + 1), down = set.has(i + COLS);
+    rr(g, x + inset, y + inset, S - inset * 2, S - inset * 2, r);
+    if (right) g.rect(x + S - inset - r, y + inset, span, S - inset * 2);
+    if (down) g.rect(x + inset, y + S - inset - r, S - inset * 2, span);
+    if (right && down && set.has(i + COLS + 1)) g.rect(x + S - inset - r, y + S - inset - r, span, span);
+  }
+}
+
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (v) => Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f);
+  return `rgb(${ch(n >> 16)},${ch(n >> 8 & 255)},${ch(n & 255)})`;
+}
+
+/* ───────────────────────── The land ───────────────────────── */
+
+const GRASS = ["#a5c884", "#a0c47f", "#9cc17b", "#a9cb88"];
+const TREES = ["#4f8d52", "#5b9a58", "#468449", "#62a05c"];
+
+function tree(g, x, y, r, seed) {
+  ellipse(g, x + r * .32, y + r * .42, r * 1.02, r * .82, "rgba(28,58,34,.26)");
+  circle(g, x, y, r, TREES[(seed * TREES.length) | 0]);
+  circle(g, x - r * .28, y - r * .3, r * .52, "rgba(255,255,255,.14)");
+}
+
+function drawLand(g) {
+  const S = UI.S, W = COLS * S, H = ROWS * S, m = S * .34;
+
+  g.save();
+  g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = S * .7; g.shadowOffsetY = S * .22;
+  g.beginPath(); rr(g, UI.BX - m, UI.BY - m, W + m * 2, H + m * 2, S * .55); g.fillStyle = "#3a4843"; g.fill();
+  g.restore();
+  g.beginPath(); rr(g, UI.BX - m, UI.BY - m, W + m * 2, H + m * 2, S * .55);
+  g.strokeStyle = "rgba(255,255,255,.07)"; g.lineWidth = 1; g.stroke();
+  g.beginPath(); rr(g, UI.BX - 3, UI.BY - 3, W + 6, H + 6, S * .3); g.fillStyle = "#26302d"; g.fill();
+
+  g.save();
+  g.beginPath(); rr(g, UI.BX, UI.BY, W, H, S * .26); g.clip();
+
+  for (let i = 0; i < N; i++) {
+    g.fillStyle = GRASS[(hash(i, 1) * GRASS.length) | 0];
+    g.fillRect(cellX(i), cellY(i), S + .5, S + .5);
+  }
+  // Tufts on the open grass.
+  g.strokeStyle = "rgba(70,110,50,.35)"; g.lineWidth = Math.max(1, S * .025); g.lineCap = "round";
+  g.beginPath();
+  for (let i = 0; i < N; i++) {
+    if (MAP[i] !== "grass") continue;
+    for (let k = 0; k < 3; k++) {
+      const x = cellX(i) + S * (.14 + .72 * hash(i, k * 3 + 2)), y = cellY(i) + S * (.18 + .7 * hash(i, k * 5 + 7)), s = S * .05;
+      g.moveTo(x - s, y - s); g.lineTo(x, y); g.lineTo(x + s * .8, y - s * 1.1);
+    }
+  }
+  g.stroke();
+
+  const of = (t) => { const a = []; for (let i = 0; i < N; i++) if (MAP[i] === t) a.push(i); return a; };
+
+  // Wild wheat: rows of little stalks.
+  union(g, of("wheat"), S * .03, S * .28); g.fillStyle = "#e5c66b"; g.fill();
+  for (const i of of("wheat")) {
+    const x = cellX(i), y = cellY(i);
+    for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
+      const px = x + S * (.16 + col * .22 + (row % 2) * .1), py = y + S * (.22 + row * .21);
+      if (px > x + S * .92) continue;
+      g.strokeStyle = "#c9a445"; g.lineWidth = Math.max(1, S * .035);
+      g.beginPath(); g.moveTo(px, py + S * .05); g.lineTo(px + S * .03, py - S * .06); g.stroke();
+      circle(g, px + S * .035, py - S * .07, S * .028, "#f3dc92");
+    }
+  }
+
+  // Ore: grey rock with bright flecks.
+  union(g, of("ore"), S * .04, S * .3); g.fillStyle = "#c3baa8"; g.fill();
+  for (const i of of("ore")) {
+    const x = cellX(i), y = cellY(i);
+    const rocks = [[.34, .38, .2], [.68, .6, .16], [.36, .74, .11]];
+    for (const [rx, ry, rs] of rocks) {
+      const px = x + S * (rx + (hash(i, rx * 10) - .5) * .08), py = y + S * ry, s = S * rs;
+      ellipse(g, px + s * .2, py + s * .3, s * 1.05, s * .75, "rgba(60,50,40,.22)");
+      ellipse(g, px, py, s, s * .78, "#8f887d");
+      ellipse(g, px - s * .18, py - s * .2, s * .62, s * .42, "#aaa396");
+    }
+    for (let k = 0; k < 4; k++) {
+      const px = x + S * (.2 + .6 * hash(i, k + 40)), py = y + S * (.2 + .6 * hash(i, k + 50));
+      g.fillStyle = k % 2 ? "#f2cf63" : "#e8eef2";
+      g.save(); g.translate(px, py); g.rotate(Math.PI / 4); g.fillRect(-S * .025, -S * .025, S * .05, S * .05); g.restore();
+    }
+  }
+
+  // Woods ground.
+  union(g, of("forest"), S * .02, S * .32); g.fillStyle = "#86b16b"; g.fill();
+
+  // Water: a pale bank, then deeper water in the middle.
+  const water = of("water");
+  union(g, water, 0, S * .32); g.fillStyle = "#cfe8e6"; g.fill();
+  union(g, water, S * .07, S * .26); g.fillStyle = "#62abc9"; g.fill();
+  union(g, water, S * .2, S * .2); g.fillStyle = "#559fc0"; g.fill();
+
+  // Empty lots: a faint outline where a building could go.
+  g.strokeStyle = "rgba(255,255,255,.2)"; g.lineWidth = 1;
+  g.beginPath();
+  for (let i = 0; i < N; i++) if (MAP[i] !== "water" && OWNER[i] < 0) rr(g, cellX(i) + S * .08 + .5, cellY(i) + S * .08 + .5, S * .84, S * .84, S * .14);
+  g.stroke();
+
+  // Trees, top row first so lower trees overlap the ones behind.
+  for (const i of of("forest")) {
+    const x = cellX(i), y = cellY(i);
+    const spots = [[.3, .3, .21], [.72, .38, .19], [.44, .72, .22], [.84, .82, .13]];
+    spots.forEach(([tx, ty, ts], k) => {
+      if (k === 3 && hash(i, 9) < .5) return;
+      tree(g, x + S * (tx + (hash(i, k) - .5) * .1), y + S * (ty + (hash(i, k + 20) - .5) * .1), S * ts, hash(i, k + 30));
+    });
+  }
+  g.restore();
+}
+
+/* ───────────────────────── Buildings ───────────────────────── */
+
+const TILE = {
+  home:     ["#f6e9dc", "#d9bfa9"],
+  agri:     ["#f4ecd3", "#d7c69c"],
+  industry: ["#e9e9e5", "#c3c4be"],
+  shop:     ["#e3f0eb", "#b5d0c6"],
+  civic:    ["#e7edf6", "#bccadf"],
+  leisure:  ["#f3e6ee", "#d4b9c9"],
+};
+const GROUND = {
+  garden: "#b3d494", tree: "#b3d494", flag: "#b3d494", well: "#b3d494", field: "#e6c463", pasture: "#bddb95",
+  yard: "#e5d6b7", crates: "#e5d6b7", logs: "#e5d6b7", produce: "#e5d6b7", rocks: "#d2c9ba", shaft: "#cfc4b1",
+  plank: "#bb8c5f", porch: "#c29568", rail: "#cdc2ad", play: "#ebdaa9",
+};
+const ROOFS = new Set(["house", "rowA", "rowB", "hall", "shop", "barn", "forge", "shed", "nave", "steeple", "big"]);
+const SMOKE = [];    // chimneys on the baked board: [x, y, dark]
+
+function chimney(g, x, y, dark, baking) {
+  const S = UI.S, s = S * .11;
+  g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(x + s * .3, y + s * .4, s, s);
+  g.fillStyle = "#8d827a"; g.fillRect(x, y, s, s);
+  g.fillStyle = dark ? "#e0743a" : "#4d4642"; g.fillRect(x + s * .22, y + s * .22, s * .56, s * .56);
+  if (baking) SMOKE.push([x + s / 2, y, dark]);
+}
+
+/* A roof with a ridge down its long side, lit from the top left. */
+function gable(g, x, y, w, h, c) {
+  const S = UI.S, r = S * .05, along = w >= h;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, r); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
+  g.save();
+  g.beginPath(); rr(g, x, y, w, h, r); g.clip();
+  g.fillStyle = c[0]; g.fillRect(x, y, w, h);
+  g.fillStyle = c[1];
+  if (along) g.fillRect(x, y + h / 2, w, h / 2); else g.fillRect(x + w / 2, y, w / 2, h);
+  g.strokeStyle = "rgba(0,0,0,.08)"; g.lineWidth = Math.max(1, S * .018);
+  g.beginPath();
+  const step = S * .085;
+  if (along) for (let t = y + step; t < y + h; t += step) { g.moveTo(x, t); g.lineTo(x + w, t); }
+  else for (let t = x + step; t < x + w; t += step) { g.moveTo(t, y); g.lineTo(t, y + h); }
+  g.stroke();
+  g.restore();
+  g.strokeStyle = "rgba(255,255,255,.4)"; g.lineWidth = Math.max(1, S * .028); g.lineCap = "round";
+  g.beginPath();
+  if (along) { g.moveTo(x + S * .05, y + h / 2); g.lineTo(x + w - S * .05, y + h / 2); }
+  else { g.moveTo(x + w / 2, y + S * .05); g.lineTo(x + w / 2, y + h - S * .05); }
+  g.stroke();
+}
+
+/* A roof that slopes on all four sides. */
+function hip(g, x, y, w, h, c) {
+  const S = UI.S;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .05); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
+  const cx = x + w / 2, cy = y + h / 2, k = Math.min(w, h) / 2;
+  const r1 = w >= h ? [x + k, cy] : [cx, y + k], r2 = w >= h ? [x + w - k, cy] : [cx, y + h - k];
+  const face = (pts, col) => { g.beginPath(); g.moveTo(...pts[0]); for (const p of pts.slice(1)) g.lineTo(...p); g.closePath(); g.fillStyle = col; g.fill(); };
+  const TL = [x, y], TR = [x + w, y], BR = [x + w, y + h], BL = [x, y + h];
+  if (w >= h) {
+    face([TL, TR, r2, r1], shade(c[0], .12)); face([TL, r1, BL], c[0]);
+    face([TR, BR, r2], c[1]);                 face([BL, BR, r2, r1], shade(c[1], -.1));
+  } else {
+    face([TL, TR, r1], shade(c[0], .12));     face([TL, r1, r2, BL], c[0]);
+    face([TR, BR, r2, r1], c[1]);             face([BL, BR, r2], shade(c[1], -.1));
+  }
+  g.strokeStyle = "rgba(255,255,255,.3)"; g.lineWidth = Math.max(1, S * .022);
+  g.beginPath(); g.moveTo(...TL); g.lineTo(...r1); g.lineTo(...BL); g.moveTo(...TR); g.lineTo(...r2); g.lineTo(...BR); g.moveTo(...r1); g.lineTo(...r2); g.stroke();
+}
+
+function roofFor(g, role, d, x, y, w, h, baking) {
+  const S = UI.S;
+  if (role === "big" || role === "steeple") {
+    hip(g, x, y, w, h, d.roof);
+    if (role === "steeple") { g.strokeStyle = "#f5efe2"; g.lineWidth = Math.max(1.5, S * .04); g.beginPath();
+      g.moveTo(x + w / 2 - S * .08, y + h / 2); g.lineTo(x + w / 2 + S * .08, y + h / 2); g.moveTo(x + w / 2, y + h / 2 - S * .12); g.lineTo(x + w / 2, y + h / 2 + S * .08); g.stroke(); }
+    return;
+  }
+  gable(g, x, y, w, h, role === "rowB" ? d.roof2 : d.roof);
+  if (role === "house" || role === "rowA") chimney(g, x + w * .7, y + h * .12, false, baking);
+  if (role === "forge") chimney(g, x + w * .62, y + h * .18, true, baking);
+  if (role === "shop") {
+    // A striped awning along the front.
+    const ah = S * .13, ay = y + h - ah * .6;
+    g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(x, ay + S * .05, w, ah);
+    const n = Math.max(3, Math.round(w / (S * .12)));
+    for (let k = 0; k < n; k++) { g.fillStyle = k % 2 ? "#f7f2e6" : d.roof[0]; g.fillRect(x + (w / n) * k, ay, w / n + .5, ah); }
+  }
+  if (role === "barn") {
+    g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = Math.max(1, S * .025);
+    g.beginPath(); rr(g, x + w / 2 - S * .08, y + h / 2 - S * .08, S * .16, S * .16, S * .02); g.stroke();
+  }
+  if (role === "hall" && d === DEF.townhall) {
+    hip(g, x + w / 2 - S * .16, y + h / 2 - S * .16, S * .32, S * .32, ["#e9e2d0", "#c9bfaa"]);
+    circle(g, x + w / 2, y + h / 2, S * .05, "#e3a92f");
+  }
+  if (role === "hall" && d === DEF.station) {
+    g.fillStyle = "rgba(255,255,255,.5)";
+    for (let k = 1; k < 4; k++) g.fillRect(x + (w / 4) * k - S * .02, y + h / 2 - S * .1, S * .04, S * .2);
+  }
+}
+
+function groundDetail(g, role, i, x, y, S, horiz) {
+  const cx = x + S / 2, cy = y + S / 2;
+  if (role === "garden") {
+    circle(g, x + S * .34, y + S * .38, S * .13, "#86bd6d");
+    circle(g, x + S * .64, y + S * .62, S * .11, "#79b262");
+    const fl = ["#f2a4b3", "#fff1a8", "#ffffff", "#f7b27a"];
+    for (let k = 0; k < 4; k++) circle(g, x + S * (.25 + .5 * hash(i, k + 60)), y + S * (.25 + .5 * hash(i, k + 70)), S * .03, fl[k]);
+  } else if (role === "tree") {
+    tree(g, cx, cy, S * .25, hash(i, 3));
+  } else if (role === "flag") {
+    circle(g, cx, cy, S * .22, "#9fcd84");
+    for (let k = 0; k < 6; k++) circle(g, cx + Math.cos(k) * S * .15, cy + Math.sin(k) * S * .15, S * .03, k % 2 ? "#f2a4b3" : "#fff1a8");
+    g.fillStyle = "rgba(0,0,0,.2)"; g.fillRect(cx + S * .02, cy - S * .1, S * .22, S * .03);
+    circle(g, cx, cy, S * .035, "#6d645c");
+    g.fillStyle = "#d65a45"; g.fillRect(cx, cy - S * .14, S * .2, S * .1);
+    g.fillStyle = "#f7f2e6"; g.fillRect(cx, cy - S * .14, S * .07, S * .05);
+  } else if (role === "well") {
+    circle(g, cx + S * .03, cy + S * .05, S * .26, "rgba(40,30,20,.2)");
+    circle(g, cx, cy, S * .26, "#b9afa1");
+    circle(g, cx, cy, S * .19, "#8f867a");
+    circle(g, cx, cy, S * .15, "#5aa4c4");
+    circle(g, cx - S * .05, cy - S * .05, S * .05, "rgba(255,255,255,.45)");
+    g.fillStyle = "#8a6444"; g.fillRect(cx - S * .3, cy - S * .025, S * .6, S * .05);
+  } else if (role === "yard" || role === "crates") {
+    const box = (bx, by, s) => {
+      g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(bx + s * .15, by + s * .2, s, s);
+      g.fillStyle = "#bb8f5c"; g.fillRect(bx, by, s, s);
+      g.strokeStyle = "#946b40"; g.lineWidth = Math.max(1, S * .02); g.strokeRect(bx + .5, by + .5, s - 1, s - 1);
+      g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + s, by + s); g.stroke();
+    };
+    box(x + S * .22, y + S * .24, S * .2);
+    box(x + S * .5, y + S * .3, S * .16);
+    circle(g, x + S * .38, y + S * .66, S * .1, "#8d6545");
+    circle(g, x + S * .38, y + S * .66, S * .06, "#a77c58");
+  } else if (role === "logs") {
+    for (let k = 0; k < 3; k++) {
+      const ly = y + S * (.28 + k * .17), lx = x + S * .16 + (k % 2) * S * .06, lw = S * .6;
+      g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(lx + S * .03, ly + S * .05, lw, S * .12);
+      g.fillStyle = "#a47650"; g.beginPath(); rr(g, lx, ly, lw, S * .12, S * .06); g.fill();
+      circle(g, lx + lw - S * .05, ly + S * .06, S * .055, "#dcb98c");
+    }
+  } else if (role === "produce") {
+    const fruit = ["#d9483b", "#f09b30", "#7fb24a", "#e8c43c"];
+    for (let k = 0; k < 4; k++) {
+      const bx = x + S * (.16 + (k % 2) * .36), by = y + S * (.18 + ((k / 2) | 0) * .36), s = S * .3;
+      g.fillStyle = "rgba(40,30,20,.18)"; g.fillRect(bx + S * .03, by + S * .04, s, s);
+      g.fillStyle = "#b98d5c"; g.fillRect(bx, by, s, s);
+      for (let f = 0; f < 4; f++) circle(g, bx + s * (.3 + (f % 2) * .4), by + s * (.3 + ((f / 2) | 0) * .4), s * .17, fruit[k]);
+    }
+  } else if (role === "rocks") {
+    for (const [rx, ry, rs] of [[.35, .4, .15], [.64, .58, .12], [.4, .7, .09]]) {
+      ellipse(g, x + S * rx + S * .02, y + S * ry + S * .04, S * rs, S * rs * .75, "rgba(40,30,20,.2)");
+      ellipse(g, x + S * rx, y + S * ry, S * rs, S * rs * .75, "#958d82");
+      ellipse(g, x + S * rx - S * rs * .2, y + S * ry - S * rs * .2, S * rs * .55, S * rs * .38, "#b0a89b");
+    }
+    circle(g, x + S * .7, y + S * .3, S * .035, "#f2cf63");
+  } else if (role === "shaft") {
+    ellipse(g, cx + S * .03, cy + S * .06, S * .32, S * .27, "rgba(40,30,20,.22)");
+    ellipse(g, cx, cy, S * .32, S * .27, "#8b8378");
+    ellipse(g, cx - S * .06, cy - S * .06, S * .2, S * .15, "#a39b8f");
+    g.fillStyle = "#2f2a26"; g.beginPath(); g.ellipse(cx, cy + S * .06, S * .13, S * .1, 0, Math.PI, 0); g.fill();
+    g.fillStyle = "#7a5a3c"; g.fillRect(cx - S * .15, cy + S * .05, S * .3, S * .04);
+    g.strokeStyle = "#6c5b4a"; g.lineWidth = Math.max(1, S * .025);
+    g.beginPath(); g.moveTo(cx - S * .06, cy + S * .1); g.lineTo(cx - S * .08, y + S); g.moveTo(cx + S * .06, cy + S * .1); g.lineTo(cx + S * .08, y + S); g.stroke();
+  } else if (role === "play") {
+    circle(g, cx, cy, S * .26, "#e2c98e");
+    g.strokeStyle = "#8a6444"; g.lineWidth = Math.max(1.5, S * .04);
+    g.beginPath(); g.moveTo(cx - S * .2, cy - S * .08); g.lineTo(cx + S * .2, cy - S * .08); g.stroke();
+    g.fillStyle = "#d65a45"; g.fillRect(cx - S * .12, cy - S * .02, S * .08, S * .04); g.fillRect(cx + S * .04, cy - S * .02, S * .08, S * .04);
+  } else if (role === "rail") {
+    g.strokeStyle = "#8c6c4d"; g.lineWidth = Math.max(1.5, S * .045);
+    g.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const t = .16 + k * .23;
+      if (horiz) { g.moveTo(x + S * t, y + S * .22); g.lineTo(x + S * t, y + S * .78); }
+      else { g.moveTo(x + S * .22, y + S * t); g.lineTo(x + S * .78, y + S * t); }
+    }
+    g.stroke();
+    g.strokeStyle = "#6f777e"; g.lineWidth = Math.max(1, S * .035);
+    g.beginPath();
+    if (horiz) { g.moveTo(x, y + S * .35); g.lineTo(x + S, y + S * .35); g.moveTo(x, y + S * .65); g.lineTo(x + S, y + S * .65); }
+    else { g.moveTo(x + S * .35, y); g.lineTo(x + S * .35, y + S); g.moveTo(x + S * .65, y); g.lineTo(x + S * .65, y + S); }
+    g.stroke();
+  } else if (role === "porch") {
+    circle(g, x + S * .7, y + S * .36, S * .09, "#7f5a3d");
+    circle(g, x + S * .7, y + S * .36, S * .055, "#9c7452");
+    circle(g, x + S * .32, y + S * .62, S * .08, "#7f5a3d");
+  } else if (role === "pasture" && hash(i, 11) > .35) {
+    const px = x + S * (.3 + .35 * hash(i, 12)), py = y + S * (.35 + .3 * hash(i, 13));
+    ellipse(g, px + S * .03, py + S * .05, S * .14, S * .08, "rgba(40,50,30,.2)");
+    ellipse(g, px, py, S * .14, S * .08, "#f7f3ea");
+    circle(g, px + S * .15, py, S * .05, "#5a4a3e");
+    circle(g, px - S * .03, py - S * .02, S * .035, "#5a4a3e");
+  }
+}
+
+/* Draws a building's art on top of its tile. `dy` is how far the top of the tile is raised. */
+function art(g, type, cells, dy, baking) {
+  const d = DEF[type], S = UI.S, ins = S * .075;
+  const roleOf = new Map(cells.map((c, k) => [c, d.roles[k]]));
+  const xs = cells.map(colOf), ys = cells.map(rowOf);
+  const horiz = Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys);
+
+  const roles = [...new Set(d.roles)];
+  for (const role of roles) {
+    if (ROOFS.has(role)) continue;
+    const group = cells.filter(c => roleOf.get(c) === role);
+    union(g, group, ins + S * .045, S * .1, dy); g.fillStyle = GROUND[role]; g.fill();
+    if (role === "field" || role === "plank") {
+      g.save(); union(g, group, ins + S * .045, S * .1, dy); g.clip();
+      g.strokeStyle = role === "field" ? "#cfa546" : "#9c704a"; g.lineWidth = Math.max(1, S * (role === "field" ? .05 : .025));
+      g.beginPath();
+      const step = S * (role === "field" ? .16 : .12), flat = role === "field" ? horiz : !horiz;
+      for (const c of group) {
+        const x = cellX(c), y = cellY(c) + dy;
+        if (flat) for (let t = y + step / 2; t < y + S; t += step) { g.moveTo(x, t); g.lineTo(x + S, t); }
+        else for (let t = x + step / 2; t < x + S; t += step) { g.moveTo(t, y); g.lineTo(t, y + S); }
+      }
+      g.stroke();
+      g.restore();
+    }
+    if (role === "pasture") {
+      // A fence: a darker ring, then the grass again just inside it.
+      union(g, group, ins + S * .075, S * .08, dy); g.fillStyle = "#9d7b56"; g.fill();
+      union(g, group, ins + S * .1, S * .07, dy); g.fillStyle = GROUND.pasture; g.fill();
+    }
+    for (const c of group) groundDetail(g, role, c, cellX(c), cellY(c) + dy, S, horiz);
+  }
+
+  // Roofs: squares with the same role that make a rectangle share one roof.
+  const done = new Set(), pad = ins + S * .06;
+  for (const c of cells) {
+    const role = roleOf.get(c);
+    if (!ROOFS.has(role) || done.has(c)) continue;
+    const group = [c], queue = [c];
+    done.add(c);
+    while (queue.length) {
+      const q = queue.pop();
+      for (const j of around(q)) if (!done.has(j) && roleOf.get(j) === role) { done.add(j); group.push(j); queue.push(j); }
+    }
+    const gx = group.map(colOf), gy = group.map(rowOf);
+    const x0 = Math.min(...gx), y0 = Math.min(...gy), gw = Math.max(...gx) - x0 + 1, gh = Math.max(...gy) - y0 + 1;
+    if (gw * gh === group.length) {
+      roofFor(g, role, d, UI.BX + x0 * S + pad, UI.BY + y0 * S + dy + pad, gw * S - pad * 2, gh * S - pad * 2, baking);
+    } else {
+      for (const q of group) roofFor(g, role, d, cellX(q) + pad, cellY(q) + dy + pad, S - pad * 2, S - pad * 2, baking);
+    }
+  }
+}
+
+/* A raised tile with a building on it. `lift` raises the whole tile off the board. */
+function drawPiece(g, type, cells, lift, baking) {
+  const d = DEF[type], S = UI.S, ins = S * .075, r = S * .16, th = S * .085, tile = TILE[d.cat];
+  g.save();
+  g.shadowColor = "rgba(18,28,24,.4)"; g.shadowBlur = S * .14 + lift * .5; g.shadowOffsetY = S * .05 + lift * .5;
+  union(g, cells, ins, r, 0); g.fillStyle = tile[1]; g.fill();
+  g.restore();
+  if (lift) { union(g, cells, ins, r, -lift); g.fillStyle = tile[1]; g.fill(); }
+  union(g, cells, ins, r, -lift - th - 1); g.fillStyle = "rgba(255,255,255,.7)"; g.fill();
+  union(g, cells, ins, r, -lift - th); g.fillStyle = tile[0]; g.fill();
+  art(g, type, cells, -lift - th, baking);
+}
+
+/* The board without anything that moves: land, streets and settled buildings. */
+function bake() {
+  UI.dirty = false;
+  SMOKE.length = 0;
+  lg.setTransform(UI.dpr, 0, 0, UI.dpr, 0, 0);
+  lg.clearRect(0, 0, UI.w, UI.h);
+  drawLand(lg);
+  const built = [];
+  for (let i = 0; i < N; i++) if (OWNER[i] >= 0) built.push(i);
+  // Streets under the town, so gaps between buildings read as lanes.
+  lg.save(); lg.beginPath(); rr(lg, UI.BX, UI.BY, COLS * UI.S, ROWS * UI.S, UI.S * .26); lg.clip();
+  union(lg, built, UI.S * .01, UI.S * .2); lg.fillStyle = "#e6dcc6"; lg.fill();
+  union(lg, built, UI.S * .045, UI.S * .18); lg.fillStyle = "#ddd1b8"; lg.fill();
+  lg.restore();
+  const order = G.pieces.map((p, k) => k).sort((a, b) => Math.min(...G.pieces[a].cells) - Math.min(...G.pieces[b].cells));
+  for (const k of order) if (!UI.drop || UI.drop.k !== k) drawPiece(lg, G.pieces[k].type, G.pieces[k].cells, 0, true);
+}
+
+/* ───────────────────────── Things that move ───────────────────────── */
+
+const FX = { walkers: [], puffs: [], dust: [], floats: [], smokeClock: 0 };
+const SHIRTS = ["#d65a45", "#3f79b5", "#4f9a5f", "#e3a92f", "#8a5fb0", "#f4efe4", "#2f6b73", "#c2703f"];
+const SKIN = ["#f1cfae", "#d9a77f", "#a8744f", "#7a5236"];
+
+/* A lane runs along a grid line that has a building on at least one side, and isn't inside one building. */
+function lane(ax, ay, bx, by) {
+  let a, b;
+  if (ay === by) { const x = Math.min(ax, bx); a = inside(x, ay - 1) ? OWNER[idx(x, ay - 1)] : -2; b = inside(x, ay) ? OWNER[idx(x, ay)] : -2; }
+  else { const y = Math.min(ay, by); a = inside(ax - 1, y) ? OWNER[idx(ax - 1, y)] : -2; b = inside(ax, y) ? OWNER[idx(ax, y)] : -2; }
+  return (a >= 0 || b >= 0) && !(a >= 0 && a === b);
+}
+function exits(x, y) {
+  return N4.map(([dx, dy]) => [x + dx, y + dy])
+    .filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx <= COLS && ny <= ROWS && lane(x, y, nx, ny));
+}
+
+function spawnWalker() {
+  const spots = [];
+  for (let y = 0; y <= ROWS; y++) for (let x = 0; x <= COLS; x++) if (exits(x, y).length) spots.push([x, y]);
+  if (!spots.length) return null;
+  const [x, y] = pick(spots);
+  return { ax: x, ay: y, bx: x, by: y, t: 1, speed: .55 + Math.random() * .45, wait: Math.random() * 2,
+           shirt: pick(SHIRTS), skin: pick(SKIN), phase: Math.random() * 6, fade: 0 };
+}
+
+function updateWalkers(dt) {
+  const homes = G.pieces.filter(p => DEF[p.type].cat === "home").length;
+  const want = Math.min(34, Math.round(G.pieces.length * 1.1 + homes * 1.4));
+  if (FX.walkers.length < want && Math.random() < dt * 2) { const w = spawnWalker(); if (w) FX.walkers.push(w); }
+  if (FX.walkers.length > want) FX.walkers.length = want;
+  for (let n = FX.walkers.length - 1; n >= 0; n--) {
+    const w = FX.walkers[n];
+    w.fade = Math.min(1, w.fade + dt * 2);
+    if (w.wait > 0) { w.wait -= dt; continue; }
+    w.t += dt * w.speed;
+    if (w.t < 1) continue;
+    w.ax = w.bx; w.ay = w.by; w.t = 0;
+    let next = exits(w.ax, w.ay);
+    if (!next.length) { FX.walkers.splice(n, 1); continue; }
+    if (next.length > 1) next = next.filter(([x, y]) => x !== w.px || y !== w.py) ;
+    const [nx, ny] = pick(next.length ? next : exits(w.ax, w.ay));
+    w.px = w.ax; w.py = w.ay; w.bx = nx; w.by = ny;
+    if (Math.random() < .12) w.wait = .6 + Math.random() * 1.6;
+  }
+}
+
+function drawWalkers(g, now) {
+  const S = UI.S;
+  for (const w of FX.walkers) {
+    const t = w.wait > 0 ? 0 : w.t;
+    const x = UI.BX + (w.ax + (w.bx - w.ax) * t) * S, y = UI.BY + (w.ay + (w.by - w.ay) * t) * S;
+    const bob = w.wait > 0 ? 0 : Math.abs(Math.sin(now * 9 + w.phase)) * S * .02;
+    g.globalAlpha = w.fade;
+    ellipse(g, x + S * .02, y + S * .045, S * .065, S * .035, "rgba(20,20,15,.22)");
+    circle(g, x, y - bob, S * .06, w.shirt);
+    circle(g, x, y - bob - S * .02, S * .036, w.skin);
+    g.globalAlpha = 1;
+  }
+}
+
+function updateSmoke(dt) {
+  FX.smokeClock -= dt;
+  if (FX.smokeClock <= 0 && SMOKE.length) {
+    FX.smokeClock = 1.6 / Math.max(1, SMOKE.length * .6);
+    const [x, y, dark] = pick(SMOKE);
+    FX.puffs.push({ x, y, t: 0, dark, drift: .5 + Math.random() * .5 });
+  }
+  for (const p of FX.puffs) p.t += dt;
+  FX.puffs = FX.puffs.filter(p => p.t < 2.4);
+}
+function drawSmoke(g) {
+  const S = UI.S;
+  for (const p of FX.puffs) {
+    const k = p.t / 2.4, a = (1 - k) * Math.min(1, p.t * 4) * .5;
+    circle(g, p.x + k * S * .35 * p.drift, p.y - k * S * .5, S * (.04 + k * .1), p.dark ? `rgba(90,90,95,${a})` : `rgba(255,255,255,${a})`);
+  }
+}
+
+function drawWater(g, now) {
+  const S = UI.S;
+  g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = Math.max(1, S * .03); g.lineCap = "round";
+  g.beginPath();
+  for (let i = 0; i < N; i++) {
+    if (MAP[i] !== "water") continue;
+    for (let k = 0; k < 2; k++) {
+      const ph = (now * .07 + hash(i, k + 80)) % 1;
+      const x = cellX(i) + S * (.25 + .5 * ph), y = cellY(i) + S * (.3 + .4 * hash(i, k + 90));
+      const len = S * .1 * Math.sin(ph * Math.PI);
+      g.moveTo(x - len, y); g.lineTo(x + len, y);
+    }
+  }
+  g.stroke();
+}
+
+function drawGlints(g, now) {
+  const S = UI.S;
+  for (let i = 0; i < N; i++) {
+    if (MAP[i] !== "ore" || OWNER[i] >= 0) continue;
+    const a = Math.max(0, Math.sin(now * 1.7 + hash(i, 5) * 20) - .82) / .18;
+    if (a <= 0) continue;
+    const x = cellX(i) + S * (.25 + .5 * hash(i, 6)), y = cellY(i) + S * (.25 + .5 * hash(i, 7)), s = S * .09 * a;
+    g.fillStyle = `rgba(255,248,215,${a})`;
+    g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s * .25, y); g.lineTo(x, y + s); g.lineTo(x - s * .25, y); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(x - s, y); g.lineTo(x, y + s * .25); g.lineTo(x + s, y); g.lineTo(x, y - s * .25); g.closePath(); g.fill();
+  }
+}
+
+function drawDust(g, dt) {
+  const S = UI.S;
+  for (const p of FX.dust) {
+    p.t += dt;
+    const k = p.t / .6;
+    circle(g, p.x + Math.cos(p.a) * S * .5 * k, p.y + Math.sin(p.a) * S * .25 * k, S * (.05 + k * .06), `rgba(245,236,215,${(1 - k) * .8})`);
+  }
+  FX.dust = FX.dust.filter(p => p.t < .6);
+}
+
+function drawFloats(g, dt) {
+  const S = UI.S;
+  g.textAlign = "center"; g.textBaseline = "middle";
+  for (const f of FX.floats) {
+    f.t += dt;
+    const k = f.t / 1.4, a = Math.min(1, (1 - k) * 3);
+    g.font = `800 ${Math.round(S * .5)}px system-ui, -apple-system, sans-serif`;
+    g.lineWidth = S * .1; g.strokeStyle = `rgba(20,28,26,${a * .8})`; g.lineJoin = "round";
+    const y = f.y - k * S * .8;
+    g.strokeText(f.text, f.x, y);
+    g.fillStyle = f.good ? `rgba(160,236,170,${a})` : `rgba(255,170,150,${a})`;
+    g.fillText(f.text, f.x, y);
+  }
+  FX.floats = FX.floats.filter(f => f.t < 1.4);
+}
+
+/* ───────────────────────── The building in hand ───────────────────────── */
+
+const ghostCells = () => UI.ghost && current() ? cellsAt(current(), UI.ghost) : null;
+
+function placeGhost(o) {
+  const [w, h] = extent(orient(DEF[current()].shape, o.rot, o.flip));
+  UI.ghost = { rot: o.rot, flip: o.flip, ax: clamp(o.ax, 0, COLS - w), ay: clamp(o.ay, 0, ROWS - h) };
+}
+
+/* Starts a new building in hand at the open spot nearest the middle of the map. */
+function freshGhost() {
+  const type = current();
+  if (!type) { UI.ghost = null; return; }
+  let best = null;
+  for (const p of placements(type)) {
+    const [w, h] = extent(orient(DEF[type].shape, p.rot, p.flip));
+    const d = (p.ax + w / 2 - COLS / 2) ** 2 + (p.ay + h / 2 - ROWS / 2) ** 2 + (p.rot || p.flip ? 1.5 : 0);
+    if (!best || d < best.d) best = { ...p, d };
+  }
+  UI.ghost = best && { rot: best.rot, flip: best.flip, ax: best.ax, ay: best.ay };
+}
+
+function turnGhost(dRot, flip) {
+  if (!UI.ghost) return;
+  const g = UI.ghost, type = current();
+  const [w, h] = extent(orient(DEF[type].shape, g.rot, g.flip));
+  const next = { rot: (g.rot + dRot + 4) % 4, flip: flip ? !g.flip : g.flip };
+  const [w2, h2] = extent(orient(DEF[type].shape, next.rot, next.flip));
+  placeGhost({ ...next, ax: Math.round(g.ax + w / 2 - w2 / 2), ay: Math.round(g.ay + h / 2 - h2 / 2) });
+  paintPanel();
+}
+
+function drawGhost(g, now) {
+  const cells = ghostCells();
+  if (!cells) return;
+  const S = UI.S, ok = canPlace(cells), lift = S * .16;
+  const dy = -lift - S * .085, pulse = .8 + .2 * Math.sin(now * 5);
+  // The squares it would land on, marked on the board below it.
+  g.beginPath();
+  for (const c of cells) rr(g, cellX(c) + S * .1, cellY(c) + S * .1, S * .8, S * .8, S * .16);
+  g.fillStyle = ok ? "rgba(255,255,255,.38)" : "rgba(214,72,52,.4)"; g.fill();
+  // A glowing rim: a slightly bigger shape filled underneath, so only its outside edge shows.
+  union(g, cells, 0, S * .22, dy + S * .04);
+  g.fillStyle = ok ? `rgba(255,255,255,${pulse})` : `rgba(255,105,85,${pulse})`;
+  g.fill();
+  drawPiece(g, current(), cells, lift, false);
+  if (!ok) {
+    for (const c of cells) {
+      if (MAP[c] !== "water" && OWNER[c] < 0) continue;
+      const x = cellX(c), y = cellY(c) + dy;
+      g.beginPath(); rr(g, x + S * .12, y + S * .12, S * .76, S * .76, S * .14); g.fillStyle = "rgba(214,72,52,.55)"; g.fill();
+      g.strokeStyle = "#fff"; g.lineWidth = Math.max(2, S * .06); g.lineCap = "round";
+      g.beginPath(); g.moveTo(x + S * .36, y + S * .36); g.lineTo(x + S * .64, y + S * .64); g.moveTo(x + S * .64, y + S * .36); g.lineTo(x + S * .36, y + S * .64); g.stroke();
+    }
+  }
+}
+
+function drawSelection(g, now) {
+  if (UI.sel < 0) return;
+  const S = UI.S, k = OWNER[UI.sel], a = .6 + .4 * Math.sin(now * 4);
+  if (k >= 0) {
+    if (UI.drop && UI.drop.k === k) return;
+    const p = G.pieces[k];
+    union(g, p.cells, S * .01, S * .22, -S * .04); g.fillStyle = `rgba(255,214,102,${a})`; g.fill();
+    drawPiece(g, p.type, p.cells, 0, false);
+    return;
+  }
+  g.lineWidth = Math.max(2, S * .055); g.strokeStyle = `rgba(255,214,102,${a})`;
+  g.beginPath(); rr(g, cellX(UI.sel) + S * .05, cellY(UI.sel) + S * .05, S * .9, S * .9, S * .16);
+  g.stroke();
+}
+
+/* ───────────────────────── Loop ───────────────────────── */
+
+let last = performance.now();
+function frame(nowMs) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(.1, (nowMs - last) / 1000), now = nowMs / 1000;
+  last = nowMs;
+  if (!G || !UI.w) return;
+  if (UI.dirty) bake();
+  ctx.setTransform(UI.dpr, 0, 0, UI.dpr, 0, 0);
+  ctx.clearRect(0, 0, UI.w, UI.h);
+  ctx.drawImage(layer, 0, 0, UI.w, UI.h);
+  drawWater(ctx, now);
+  drawGlints(ctx, now);
+  if (UI.drop) {
+    UI.drop.t += dt;
+    const k = Math.min(1, UI.drop.t / .32), p = G.pieces[UI.drop.k];
+    drawPiece(ctx, p.type, p.cells, UI.S * .5 * (1 - k) * (1 - k), false);
+    if (k >= 1) {
+      const S = UI.S, cx = p.cells.reduce((s, c) => s + cellX(c), 0) / p.cells.length + S / 2, cy = p.cells.reduce((s, c) => s + cellY(c), 0) / p.cells.length + S / 2;
+      for (let n = 0; n < 12; n++) FX.dust.push({ x: cx, y: cy + S * .3, a: (n / 12) * Math.PI * 2, t: 0 });
+      UI.drop = null; UI.dirty = true;
+    }
+  }
+  updateWalkers(dt); drawWalkers(ctx, now);
+  updateSmoke(dt); drawSmoke(ctx);
+  drawDust(ctx, dt);
+  if ($("dialogWrap").hidden) drawGhost(ctx, now);
+  drawSelection(ctx, now);
+  drawFloats(ctx, dt);
+  tickScore(dt);
+}
+
+function tickScore(dt) {
+  const target = total();
+  if (UI.shown === target) return;
+  const step = Math.max(1, Math.abs(target - UI.shown) * dt * 6);
+  UI.shown = UI.shown < target ? Math.min(target, UI.shown + step) : Math.max(target, UI.shown - step);
+  $("score").textContent = Math.round(UI.shown);
+}
+
+/* ───────────────────────── Words on screen ───────────────────────── */
+
+const catColor = (cat) => `var(--${cat})`;
+const chip = (cat) => `<span class="chip" style="--c:${catColor(cat)}">${CATS[cat].name}</span>`;
+
+function shapeSVG(type, rot = 0, flip = false, box = 44) {
+  const offs = orient(DEF[type].shape, rot, flip), [w, h] = extent(offs);
+  const s = Math.floor(box / Math.max(w, h, 3)), gap = Math.max(1, s * .12);
+  const color = getComputedStyle(document.documentElement).getPropertyValue(`--${DEF[type].cat}`).trim();
+  const cellsSvg = offs.map(([x, y]) => `<rect x="${x * s + gap / 2}" y="${y * s + gap / 2}" width="${s - gap}" height="${s - gap}" rx="${s * .22}" fill="${color}"/>`).join("");
+  return `<svg width="${w * s}" height="${h * s}" viewBox="0 0 ${w * s} ${h * s}">${cellsSvg}</svg>`;
+}
+
+const mark = (mood) => mood === "good" ? "✓" : mood === "bad" ? "✕" : "·";
+function likesHTML(type) {
+  return `<ul class="likes">${DEF[type].rules.map(r =>
+    `<li class="${r.p > 0 ? "" : "bad"}"><i>${r.p > 0 ? "✓" : "✕"}</i>${esc(ruleText(r))}</li>`).join("")}</ul>`;
+}
+
+function hud() {
+  $("townName").textContent = G.player ? townName(G.player, G.pick) : "First Town";
+  const placed = G.pieces.length;
+  $("townSub").textContent = G.over ? "The town is done" : `${placed} built${G.away.length ? ` · ${G.away.length} turned away` : ""}`;
+  $("left").textContent = G.over ? 0 : G.deck.length - G.at;
+}
+
+function paintPanel() {
+  $("panel").hidden = false;
+  if (G.over) {
+    $("piece").innerHTML = `<div class="done"><div><div class="big num">${total()}</div><div class="sub">points</div></div>
+      <div class="sub" style="flex:1">${esc(townName(G.player, G.pick))} is done. Tap any square to see how each building did.</div></div>`;
+    $("controls").innerHTML = `<button class="tool" id="bSummary" style="flex:1;justify-content:center">Summary</button><button class="primary" id="bNew">New town</button>`;
+    $("bSummary").onclick = showSummary;
+    $("bNew").onclick = () => startTown(G.player, G.pick);
+    return;
+  }
+  if (!$("bTurn")) restoreControls();
+  const type = current(), nxt = upcoming(), d = DEF[type], o = UI.ghost || { rot: 0, flip: false };
+  $("piece").innerHTML = `
+    <div class="head">
+      <div class="mini">${shapeSVG(type, o.rot, o.flip, 46)}</div>
+      <div><div class="name">${esc(d.name)} ${chip(d.cat)}</div><div class="blurb">${esc(d.blurb)}</div></div>
+      <div class="next"><span>Next</span><div class="mini">${nxt ? shapeSVG(nxt, 0, false, 32) : "<span>—</span>"}</div></div>
+    </div>
+    ${likesHTML(type)}`;
+  $("swaps").textContent = G.swaps;
+  $("bSwap").disabled = !canSwap();
+  $("bBuild").disabled = !canPlace(ghostCells());
+}
+
+const CONTROLS = $("controls").innerHTML;
+function restoreControls() {
+  $("controls").innerHTML = CONTROLS;
+  $("bTurn").onclick = () => turnGhost(1, false);
+  $("bFlip").onclick = () => turnGhost(0, true);
+  $("bSwap").onclick = doSwap;
+  $("bBuild").onclick = doBuild;
+}
+
+let toastTimer = 0;
+function toast(text, ms = 2600) {
+  $("toast").textContent = text; $("toast").classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.remove("on"), ms);
+}
+
+/* ───────────────────────── Info about a square ───────────────────────── */
+
+function select(i) {
+  UI.sel = i;
+  paintInfo();
+}
+function closeInfo() { UI.sel = -1; $("info").hidden = true; }
+
+function paintInfo() {
+  const i = UI.sel;
+  if (i < 0) return closeInfo();
+  const box = $("info"), k = OWNER[i], t = MAP[i];
+  let html = `<button class="x" id="infoX" aria-label="Close">×</button>`;
+  if (k >= 0) {
+    const p = G.pieces[k], d = DEF[p.type];
+    const list = facts(k);
+    html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)}</h3>
+      <p>Built over ${esc(joinAnd([...new Set(p.cells.map(c => TERRAIN[MAP[c]].short))]))}.</p>
+      <ul class="facts">${list.map(([m, text]) => `<li class="${m}"><i>${mark(m)}</i><span>${esc(text)}</span></li>`).join("")}</ul>`;
+  } else {
+    const cares = caresAbout(t);
+    const status = t === "water" ? "Can't build here" : "Open land · Free to build";
+    html += `<div class="kind">${status}</div><h3>${TERRAIN[t].name}</h3><p>${esc(TERRAIN[t].blurb)}</p>`;
+    if (cares.length) html += `<ul class="facts">${cares.map(([m, text]) => `<li class="${m}"><i>${mark(m)}</i><span>${esc(text)}</span></li>`).join("")}</ul>`;
+    else html += `<p>No building cares what's under it here, so it's good for filling gaps.</p>`;
+  }
+  box.innerHTML = html;
+  box.className = "card " + (rowOf(i) >= ROWS / 2 ? "top" : "bottom");
+  box.hidden = false;
+  $("infoX").onclick = closeInfo;
+}
+
+/* ───────────────────────── Moves ───────────────────────── */
+
+function doBuild() {
+  const cells = ghostCells();
+  if (!G || G.over || !canPlace(cells)) return;
+  const name = DEF[current()].name;
+  const { delta, events } = build(cells);
+  const S = UI.S;
+  const cx = cells.reduce((s, c) => s + cellX(c), 0) / cells.length + S / 2, cy = cells.reduce((s, c) => s + cellY(c), 0) / cells.length;
+  FX.floats.push({ x: cx, y: cy, t: -.25, text: (delta >= 0 ? "+" : "−") + Math.abs(delta), good: delta >= 0 });
+  UI.drop = { k: G.pieces.length - 1, t: 0 };
+  UI.dirty = true;
+  freshGhost();
+  for (const e of events) {
+    if (e.away) toast(`No room anywhere for the ${DEF[e.away].name}. Those settlers moved on.`, 3400);
+  }
+  save(); hud(); paintPanel();
+  if (UI.sel >= 0) paintInfo();
+  if (G.over) {
+    recordBest();
+    setTimeout(showSummary, 1100);
+  } else if (!events.length && G.pieces.length === 1) {
+    toast(`The ${name} is up. Tap any square to see who likes it.`);
+  }
+}
+
+function doSwap() {
+  if (!swap()) return;
+  freshGhost(); save(); paintPanel();
+  toast(`Swapped. ${G.swaps ? `${G.swaps} swap left.` : "No swaps left."}`);
+}
+
+/* ───────────────────────── Touch ───────────────────────── */
+
+function boardPoint(e) {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left - UI.BX) / UI.S, (e.clientY - r.top - UI.BY) / UI.S];
+}
+
+let press = null;
+cv.addEventListener("pointerdown", (e) => {
+  if (!G) return;
+  cv.setPointerCapture(e.pointerId);
+  const [fx, fy] = boardPoint(e);
+  const cells = ghostCells(), here = inside(Math.floor(fx), Math.floor(fy)) ? idx(Math.floor(fx), Math.floor(fy)) : -1;
+  // The ghost floats a little above its squares, so a press just below it still counts as grabbing it.
+  const lifted = inside(Math.floor(fx), Math.floor(fy + .25)) ? idx(Math.floor(fx), Math.floor(fy + .25)) : -1;
+  const onGhost = !!cells && (cells.includes(here) || cells.includes(lifted));
+  press = { x: e.clientX, y: e.clientY, fx, fy, here, onGhost, moved: false, touch: e.pointerType !== "mouse",
+            gx: UI.ghost ? fx - UI.ghost.ax : 0, gy: UI.ghost ? fy - UI.ghost.ay : 0 };
+});
+cv.addEventListener("pointermove", (e) => {
+  if (!press || !UI.ghost || G.over) return;
+  if (!press.moved && Math.hypot(e.clientX - press.x, e.clientY - press.y) < 7) return;
+  press.moved = true;
+  const [fx, fy] = boardPoint(e), type = current();
+  const [w, h] = extent(orient(DEF[type].shape, UI.ghost.rot, UI.ghost.flip));
+  let ax, ay;
+  if (press.onGhost) { ax = Math.round(fx - press.gx); ay = Math.round(fy - press.gy); }
+  else { ax = Math.round(fx - w / 2); ay = Math.round(fy - (press.touch ? 1.3 : 0) - h / 2); }
+  const before = UI.ghost.ax + "," + UI.ghost.ay;
+  placeGhost({ ...UI.ghost, ax, ay });
+  if (UI.ghost.ax + "," + UI.ghost.ay !== before) $("bBuild").disabled = !canPlace(ghostCells());
+});
+cv.addEventListener("pointerup", () => {
+  if (!press) return;
+  const p = press;
+  press = null;
+  if (p.moved) return;
+  if (p.onGhost && !G.over) return turnGhost(1, false);
+  if (p.here < 0) return closeInfo();
+  if (p.here === UI.sel) return closeInfo();
+  select(p.here);
+});
+cv.addEventListener("pointercancel", () => { press = null; });
+
+addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || !G) return;
+  if (e.key === "Escape") { if (!$("sheetWrap").hidden) closeSheet(); else closeInfo(); return; }
+  if (!$("sheetWrap").hidden || !$("dialogWrap").hidden || G.over || !UI.ghost) return;
+  const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  if (moves[e.key]) { e.preventDefault(); placeGhost({ ...UI.ghost, ax: UI.ghost.ax + moves[e.key][0], ay: UI.ghost.ay + moves[e.key][1] }); paintPanel(); }
+  else if (e.key === "r" || e.key === "R") turnGhost(e.shiftKey ? -1 : 1, false);
+  else if (e.key === "f" || e.key === "F") turnGhost(0, true);
+  else if (e.key === "s" || e.key === "S") doSwap();
+  else if (e.key === "Enter") doBuild();
+});
+
+/* ───────────────────────── Sheets and dialogs ───────────────────────── */
+
+function openSheet(html) {
+  $("sheet").innerHTML = html;
+  $("sheetWrap").hidden = false;
+}
+function closeSheet() { $("sheetWrap").hidden = true; UI.confirm = false; }
+$("scrim").onclick = closeSheet;
+
+const RULES_HTML = `<ul class="rules">
+  <li><b>You get one building at a time.</b> Drag it onto open land. Tap it or press Turn to turn it. Press Build.</li>
+  <li><b>Buildings can't overlap or sit on water.</b> If one fits nowhere, those settlers move on and the town loses ${AWAY} points.</li>
+  <li><b>Every building has likes and dislikes:</b> the land under it, the land beside it and the buildings next door.</li>
+  <li><b>Tap any square</b> to learn what it is and who cares about it. Tap a building to see what it's happy about.</li>
+  <li><b>Swap</b> trades the building in hand for the next one. You get ${SWAPS}.</li>
+  <li><b>The town is done</b> when the last building is placed. Fit every one for ${ALL_FIT} extra points.</li>
+</ul>`;
+
+function showMenu() {
+  const inGame = G && G.player;
+  openSheet(`<h2>First Town</h2><p>A board game about fitting a town together.</p>${RULES_HTML}
+    <div class="row">
+      <button class="tool" id="mClose">Close</button>
+      ${inGame ? `<button class="primary dark" id="mNew">${UI.confirm ? "Yes, start over" : "New town"}</button>` : ""}
+    </div>
+    ${inGame && UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">This town will be lost. Press again to start a new map.</p>` : ""}`);
+  $("mClose").onclick = closeSheet;
+  if ($("mNew")) $("mNew").onclick = () => {
+    if (!G.over && G.pieces.length && !UI.confirm) { UI.confirm = true; return showMenu(); }
+    closeSheet(); startTown(G.player, G.pick);
+  };
+}
+$("menuBtn").onclick = () => { UI.confirm = false; showMenu(); };
+
+function showDeck() {
+  if (!G || !G.player) return;
+  const left = G.over ? [] : G.deck.slice(G.at);
+  const count = {};
+  for (const k of left) count[k] = (count[k] || 0) + 1;
+  const order = Object.keys(DEF).filter(k => count[k]);
+  const cells = left.reduce((s, k) => s + SHAPES[DEF[k].shape].length, 0);
+  let open = 0;
+  for (let i = 0; i < N; i++) if (MAP[i] !== "water" && OWNER[i] < 0) open++;
+  openSheet(`<h2>Still to come</h2>
+    <p>${left.length ? `${left.length} buildings need ${cells} squares. You have ${open} open squares left. The order is a surprise.` : "Nothing left to place."}</p>
+    <div class="deck">${order.map(k => `<div class="deckrow"><div class="mini">${shapeSVG(k, 0, false, 36)}</div>
+      <div><div class="name">${esc(DEF[k].name)} <span class="count">×${count[k]}</span> ${chip(DEF[k].cat)}</div>${likesHTML(k)}</div></div>`).join("")}</div>
+    <div class="row"><button class="tool" id="dClose">Close</button></div>`);
+  $("dClose").onclick = closeSheet;
+}
+$("deckBtn").onclick = showDeck;
+
+function showDialog(html) { $("dialog").innerHTML = html; $("dialogWrap").hidden = false; }
+function closeDialog() { $("dialogWrap").hidden = true; }
+
+function recordBest() {
+  try { const best = +localStorage.getItem(BEST) || 0; if (total() > best) localStorage.setItem(BEST, total()); } catch (e) {}
+}
+
+function showSummary() {
+  const scored = G.pieces.map((p, k) => ({ k, v: pieceScore(k) })).sort((a, b) => b.v - a.v);
+  let best = 0;
+  try { best = +localStorage.getItem(BEST) || 0; } catch (e) {}
+  const stars = scored.slice(0, 3).map(s => `<li><span>${esc(DEF[G.pieces[s.k].type].name)}</span><b>${s.v}</b></li>`).join("");
+  showDialog(`<div class="final">
+      <h2>${esc(townName(G.player, G.pick))} is done</h2>
+      <div class="big num">${total()}</div>
+      <div class="best">${total() >= best ? "Your best town yet" : `Your best is ${best}`}</div>
+    </div>
+    <ul class="tally">
+      <li><span>Buildings</span><b>${boardScore()}</b></li>
+      ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>`
+                      : `<li><span>Every building fit</span><b>+${ALL_FIT}</b></li>`}
+    </ul>
+    <p style="margin:14px 0 2px;font-size:.72rem;font-weight:750;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">Best buildings</p>
+    <ul class="tally" style="margin-top:4px">${stars}</ul>
+    <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="primary" id="sNew">New town</button></div>`);
+  $("sLook").onclick = closeDialog;
+  $("sNew").onclick = () => { closeDialog(); startTown(G.player, G.pick); };
+}
+
+/* ───────────────────────── Saving and starting ───────────────────────── */
+
+function save() { if (!G || !G.player) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.v === 3 && s.player) { restore(s); return true; } } catch (e) {}
+  return false;
+}
+
+function resetScene() {
+  FX.walkers.length = 0; FX.puffs.length = 0; FX.dust.length = 0; FX.floats.length = 0;
+  UI.drop = null; UI.dirty = true; closeInfo();
+}
+
+function startTown(player, n) {
+  newGame(player, n);
+  resetScene();
+  UI.shown = 0; $("score").textContent = 0;
+  freshGhost(); save(); hud(); paintPanel();
+  layout();
+  toast("Drag the building onto the map. Tap it to turn it.", 3200);
+}
+
+function showGame() {
+  closeDialog();
+  resetScene();
+  UI.shown = total(); $("score").textContent = total();
+  freshGhost(); hud(); paintPanel();
+  layout();
+}
+
+function intro() {
+  newGame("", 0);
+  resetScene(); UI.ghost = null;
+  $("panel").hidden = true;
+  hud();
+  UI.pick = Math.floor(Math.random() * (PREFIX.length + SUFFIX.length));
+  showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
+      <h1>First Town</h1>
+      <p>Buildings arrive one at a time, in odd shapes. Fit them onto the land, and put each one where it will be happy.</p>
+      <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="done" autocapitalize="words" spellcheck="false">
+      <div class="named"><span id="namePreview">&nbsp;</span><button type="button" id="reroll" aria-label="Another name" hidden>↻</button></div>
+      <div class="row"><button class="primary" id="found" type="submit" disabled>Found the town</button></div>
+      ${RULES_HTML}
+    </form>`);
+  const changed = () => {
+    const v = $("nameIn").value.trim();
+    $("namePreview").textContent = v ? townName(v, UI.pick) : " ";
+    $("reroll").hidden = !v; $("found").disabled = !v;
+  };
+  $("nameIn").addEventListener("input", changed);
+  $("reroll").onclick = () => { UI.pick++; changed(); };
+  $("introForm").onsubmit = (e) => {
+    e.preventDefault();
+    const v = $("nameIn").value.trim();
+    if (!v) return;
+    $("nameIn").blur();
+    closeDialog();
+    startTown(v, UI.pick);
+  };
+  layout();
+}
+
+addEventListener("visibilitychange", () => { if (document.hidden) save(); });
+addEventListener("pagehide", save);
+new ResizeObserver(layout).observe($("stage"));
+
+restoreControls();
+if (load()) showGame(); else intro();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

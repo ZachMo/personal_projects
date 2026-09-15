@@ -78,6 +78,22 @@
     padding: 6px; border-radius: 10px; background: var(--plane);
   }
   .player.out { opacity: .55; }
+  .grip {
+    display: flex; align-items: center; justify-content: center; flex: none;
+    width: 26px; height: 34px; padding: 0; border: 0; background: transparent;
+    color: var(--muted); cursor: grab; touch-action: none;
+  }
+  .grip:hover { background: var(--wash); color: var(--ink); }
+  .roster.sorting .player { transition: transform .15s ease; }
+  .roster.sorting .player.dragging {
+    transition: none; position: relative; z-index: 3; opacity: 1;
+    background: var(--surface); box-shadow: 0 8px 20px rgba(0,0,0,.18), 0 0 0 1px var(--accent);
+  }
+  .roster.sorting, .roster.sorting * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
+  .bulk { font-size: .8rem; color: var(--ink-2); font-weight: 600; margin: 0 0 10px; gap: 6px 16px; }
+  .bulk .grp { display: inline-flex; align-items: center; gap: 4px; }
+  .bulk .grp > span { margin-right: 2px; }
+  .bulk button { padding: 3px 10px; font-size: .78rem; }
   .player .bat { width: 1.6em; text-align: right; font-weight: 700; color: var(--muted); font-size: .85rem; }
   .player .num { width: 3.6em; flex: none; }
   .player .name { flex: 1 1 8em; }
@@ -107,12 +123,8 @@
   .lineup-head h2 { margin: 0; font-size: 1.25rem; }
   .lineup-head .sub { color: var(--ink-2); font-size: .9rem; }
   .status { margin: 0 0 12px; padding: 9px 12px; border-radius: 10px; font-size: .88rem; }
-  .status.good { background: var(--accent-wash); color: var(--good); }
   .status.warn { background: var(--warn-wash); color: var(--warn); }
-  .status.info { background: var(--wash); color: var(--ink-2); }
   .status ul { margin: 4px 0 0; padding-left: 18px; }
-  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .8rem; color: var(--ink-2); margin: 0 0 8px; }
-  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
 
   .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
   table { border-collapse: collapse; width: 100%; }
@@ -159,8 +171,6 @@
   .bp .nm { text-align: left; font-weight: 600; }
   .bp .sit { color: var(--muted); }
   .bp .if { font-weight: 700; }
-  .bp .ok { color: var(--good); font-weight: 700; }
-  .bp .no { color: var(--warn); font-weight: 700; }
   .bp tr.out td { color: var(--muted); }
 
   .print-only { display: none; }
@@ -175,7 +185,7 @@
     }
     body { background: #fff; font-size: 11px; }
     .wrap { max-width: none; padding: 0; }
-    .no-print, .lockcol, .status, .legend { display: none !important; }
+    .no-print, .lockcol, .status { display: none !important; }
     .print-only { display: block; }
     .panel { border: 0; padding: 0; background: #fff; }
     .scroll { overflow: visible; border: 1.5px solid #000; border-radius: 0; }
@@ -217,7 +227,15 @@
         </label>
         <button id="share" type="button" style="align-self:flex-end">Copy team link</button>
       </div>
-      <p class="hint">The list is the batting order. <b>Here</b> means the player is at today's game. Turn off <b>P</b> or <b>C</b> for a player who should not pitch or catch.</p>
+      <p class="hint">The list is the batting order. Drag a player by the dots to move them. <b>Here</b> means the player is at today's game. Turn off <b>P</b> or <b>C</b> for a player who should not pitch or catch.</p>
+      <div class="bulk row" id="bulk">
+        <span class="grp"><span>Pitch</span>
+          <button type="button" data-bulk="noP" data-val="false">All</button>
+          <button type="button" data-bulk="noP" data-val="true">None</button></span>
+        <span class="grp"><span>Catch</span>
+          <button type="button" data-bulk="noC" data-val="false">All</button>
+          <button type="button" data-bulk="noC" data-val="true">None</button></span>
+      </div>
       <ol class="roster" id="roster"></ol>
       <div class="row">
         <button id="add" type="button">Add player</button>
@@ -276,11 +294,7 @@
         <button id="print" type="button">Print</button>
       </div>
     </div>
-    <div id="status" class="status info" role="status"></div>
-    <div class="legend">
-      <span><i class="swatch" style="background:var(--set);box-shadow:inset 3px 0 0 var(--set-edge)"></i>You set this. Build keeps it.</span>
-      <span>Tap a spot to pick a player. Pick the dash to let Build choose.</span>
-    </div>
+    <div id="status" class="status warn" role="status" hidden></div>
     <div class="scroll" id="chart"></div>
     <div class="batting print-only" id="batting"></div>
     <div class="players-view" id="players-view"></div>
@@ -501,14 +515,21 @@ function parseLine(line) {
 const clean = t => t.replace(/[|~]/g, '').trim();
 const newPlayer = (num = '', name = '') => ({ id: uid(), num, name, here: true, noP: false, noC: false });
 
+const GRIP = '<svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></svg>';
+
 function renderRoster() {
   const list = $('roster');
+  $('bulk').hidden = !s.players.length;
+  document.querySelectorAll('[data-bulk]').forEach(b => {
+    b.disabled = s.players.every(p => !!p[b.dataset.bulk] === (b.dataset.val === 'true'));
+  });
   if (!s.players.length) {
     list.innerHTML = '<li class="hint" style="margin:0">No players yet. Add them one at a time, or paste a list below.</li>';
     return;
   }
   list.innerHTML = s.players.map((p, i) => `
     <li class="player${p.here === false ? ' out' : ''}" data-id="${p.id}">
+      <button type="button" class="grip" aria-label="Move ${esc(label(p))}. Drag, or press the up and down arrow keys.">${GRIP}</button>
       <span class="bat">${i + 1}</span>
       <input type="text" class="num" data-f="num" value="${esc(p.num)}" placeholder="#" inputmode="numeric" aria-label="Jersey number">
       <input type="text" class="name" data-f="name" value="${esc(p.name)}" placeholder="Name" aria-label="Name">
@@ -516,8 +537,6 @@ function renderRoster() {
         <label class="chip" title="At today's game"><input type="checkbox" data-f="here" ${p.here !== false ? 'checked' : ''}><span>Here</span></label>
         <label class="chip" title="Can pitch"><input type="checkbox" data-f="canP" ${!p.noP ? 'checked' : ''}><span>P</span></label>
         <label class="chip" title="Can catch"><input type="checkbox" data-f="canC" ${!p.noC ? 'checked' : ''}><span>C</span></label>
-        <button type="button" class="icon" data-act="up" aria-label="Move up in batting order" ${i === 0 ? 'disabled' : ''}>&uarr;</button>
-        <button type="button" class="icon" data-act="down" aria-label="Move down in batting order" ${i === s.players.length - 1 ? 'disabled' : ''}>&darr;</button>
         <button type="button" class="icon" data-act="remove" aria-label="Remove player">&times;</button>
       </span>
     </li>`).join('');
@@ -541,16 +560,95 @@ $('roster').addEventListener('change', e => {
   changed(true);
 });
 $('roster').addEventListener('click', e => {
-  const btn = e.target.closest('button[data-act]');
+  const btn = e.target.closest('button[data-act="remove"]');
   if (!btn) return;
   const i = s.players.findIndex(p => p.id === btn.closest('.player').dataset.id);
-  const act = btn.dataset.act;
-  if (act === 'remove') s.players.splice(i, 1);
-  if (act === 'up' && i > 0) [s.players[i - 1], s.players[i]] = [s.players[i], s.players[i - 1]];
-  if (act === 'down' && i < s.players.length - 1) [s.players[i + 1], s.players[i]] = [s.players[i], s.players[i + 1]];
+  s.players.splice(i, 1);
   changed(true);
-  const again = document.querySelector(`.player[data-id="${btn.closest('.player')?.dataset.id}"] [data-act="${act}"]`);
-  if (again && !again.disabled) again.focus();
+});
+$('bulk').addEventListener('click', e => {
+  const b = e.target.closest('button[data-bulk]');
+  if (!b) return;
+  s.players.forEach(p => { p[b.dataset.bulk] = b.dataset.val === 'true'; });
+  changed(true);
+});
+
+// ---- Drag to reorder ----
+// Pointer events, so a mouse and a finger both work. Rows slide out of the way
+// while you drag, and the page scrolls when you hold near the top or bottom.
+let drag = null;
+$('roster').addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.grip');
+  if (!grip || e.button !== 0 || drag) return;
+  e.preventDefault();
+  const items = [...$('roster').children], li = grip.closest('.player');
+  const rects = items.map(el => {
+    const r = el.getBoundingClientRect();
+    return { top: r.top + scrollY, h: r.height };
+  });
+  const from = items.indexOf(li);
+  const gap = items.length > 1 ? rects[1].top - rects[0].top - rects[0].h : 0;
+  drag = { li, items, rects, from, to: from, step: rects[from].h + gap, startY: e.clientY + scrollY, y: e.clientY, id: e.pointerId };
+  grip.setPointerCapture(e.pointerId);
+  $('roster').classList.add('sorting');
+  li.classList.add('dragging');
+  drag.raf = requestAnimationFrame(dragTick);
+});
+$('roster').addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  drag.y = e.clientY;
+  dragLayout();
+});
+$('roster').addEventListener('pointerup', dragEnd);
+$('roster').addEventListener('pointercancel', dragEnd);
+
+// Scrolls the page while the finger holds near an edge.
+function dragTick() {
+  if (!drag) return;
+  const edge = 60;
+  let step = 0;
+  if (drag.y < edge) step = -Math.ceil((edge - drag.y) / 5);
+  else if (drag.y > innerHeight - edge) step = Math.ceil((drag.y - innerHeight + edge) / 5);
+  if (step) { scrollBy(0, step); dragLayout(); }
+  drag.raf = requestAnimationFrame(dragTick);
+}
+function dragLayout() {
+  const d = drag, r = d.rects[d.from], last = d.rects[d.rects.length - 1];
+  const dy = Math.max(d.rects[0].top - r.top, Math.min(last.top + last.h - r.top - r.h, d.y + scrollY - d.startY));
+  d.li.style.transform = `translateY(${dy}px)`;
+  const center = r.top + r.h / 2 + dy;
+  d.to = d.rects.filter((q, j) => j !== d.from && q.top + q.h / 2 < center).length;
+  d.items.forEach((el, j) => {
+    if (j === d.from) return;
+    const shift = j > d.from && j <= d.to ? -d.step : j < d.from && j >= d.to ? d.step : 0;
+    el.style.transform = shift ? `translateY(${shift}px)` : '';
+  });
+}
+function dragEnd(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  cancelAnimationFrame(drag.raf);
+  if (e.type === 'pointerup') { drag.y = e.clientY; dragLayout(); }
+  else drag.to = drag.from;
+  const { from, to, li, items } = drag;
+  drag = null;
+  items.forEach(el => { el.style.transform = ''; });
+  $('roster').classList.remove('sorting');
+  li.classList.remove('dragging');
+  if (to === from) return;
+  const [p] = s.players.splice(from, 1);
+  s.players.splice(to, 0, p);
+  changed(true);
+}
+$('roster').addEventListener('keydown', e => {
+  const grip = e.target.closest('.grip');
+  if (!grip || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+  e.preventDefault();
+  const id = grip.closest('.player').dataset.id;
+  const i = s.players.findIndex(p => p.id === id), j = i + (e.key === 'ArrowUp' ? -1 : 1);
+  if (j < 0 || j >= s.players.length) return;
+  [s.players[i], s.players[j]] = [s.players[j], s.players[i]];
+  changed(true);
+  document.querySelector(`.player[data-id="${id}"] .grip`).focus();
 });
 $('add').addEventListener('click', () => {
   const p = newPlayer();
@@ -663,7 +761,7 @@ function renderLineup() {
     $('chart').innerHTML = '';
     $('players-view').innerHTML = '';
     $('batting').innerHTML = '';
-    setStatus('info', 'Add your players to start.');
+    setStatus('');
     $('build').disabled = true;
     $('undo').disabled = !undoStack.length;
     return;
@@ -715,16 +813,16 @@ function renderLineup() {
 }
 
 function renderPlayersView(ks, where) {
-  const inn = s.innings, e = early();
+  const inn = s.innings;
   let h = `<h3>By player</h3><div class="scroll"><table class="bp"><thead><tr><th class="nm">Player</th>`;
   for (let i = 0; i < inn; i++) h += `<th>${i + 1}</th>`;
-  h += `<th>Infield</th><th>Outfield</th><th>Bench</th><th>Infield by ${e}</th></tr></thead><tbody>`;
+  h += `<th>Infield</th><th>Outfield</th><th>Bench</th></tr></thead><tbody>`;
   for (const p of s.players) {
     if (p.here === false) {
-      h += `<tr class="out"><td class="nm">${esc(label(p))}</td><td colspan="${inn + 4}">Not here today</td></tr>`;
+      h += `<tr class="out"><td class="nm">${esc(label(p))}</td><td colspan="${inn + 3}">Not here today</td></tr>`;
       continue;
     }
-    let ifc = 0, ofc = 0, sat = 0, got = false;
+    let ifc = 0, ofc = 0, sat = 0;
     let cells = '';
     for (let i = 0; i < inn; i++) {
       const k = where[i][p.id];
@@ -732,11 +830,9 @@ function renderPlayersView(ks, where) {
       if (isBenchKey(k)) { sat++; cells += '<td class="sit">Bench</td>'; continue; }
       const isIF = POS[k].kind === 'IF';
       if (isIF) ifc++; else ofc++;
-      if (i < e && countsAsInfield(k, s.pcInfield)) got = true;
       cells += `<td class="${isIF ? 'if' : ''}">${k}</td>`;
     }
-    h += `<tr><td class="nm">${esc(label(p))}</td>${cells}<td>${ifc}</td><td>${ofc}</td><td>${sat}</td>
-      <td class="${got ? 'ok' : 'no'}">${got ? 'Yes' : 'No'}</td></tr>`;
+    h += `<tr><td class="nm">${esc(label(p))}</td>${cells}<td>${ifc}</td><td>${ofc}</td><td>${sat}</td></tr>`;
   }
   h += '</tbody></table></div>';
   const pv = $('players-view');
@@ -748,7 +844,7 @@ function renderStatus(ks, where) {
   const players = here(), inn = s.innings, e = early();
   const placed = s.grid.reduce((n, row) => n + Object.keys(row).length, 0);
   if (!placed) {
-    setStatus('info', 'Set any spots you want, or none. Then press <b>Build lineup</b>.');
+    setStatus('');
     return;
   }
   const notes = [];
@@ -791,21 +887,17 @@ function renderStatus(ks, where) {
   const counts = Object.values(sat);
   if (counts.length && Math.max(...counts) - Math.min(...counts) > 1) notes.push('Bench time is not even.');
 
-  if (notes.length) {
-    setStatus('warn', `Check these:<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`);
-  } else {
-    const benchNote = ks.some(isBenchKey) ? ' Nobody sits twice before everyone sits once.' : '';
-    setStatus('good', `Every player plays infield in ${range}.${benchNote}`);
-  }
+  setStatus(notes.length ? `Check these:<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '');
 }
 function list(names) {
   if (names.length < 2) return names.join('');
   return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
 }
-function setStatus(kind, html) {
+// The bar shows only when the lineup breaks a rule.
+function setStatus(html) {
   const el = $('status');
-  el.className = 'status ' + kind;
   el.innerHTML = html;
+  el.hidden = !html;
 }
 
 $('chart').addEventListener('change', e => {

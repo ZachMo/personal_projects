@@ -396,9 +396,10 @@ A lineup builder for youth baseball coaches. The chart puts the innings across t
 the positions down the side, with a bench row for each player who sits. Print it and take it
 to the dugout.
 
-Enter the team once. The list is the batting order. A player can be marked out for the day,
-or kept off the mound or out from behind the plate. A pasted list works too, in the form
-`1. #99 Maverick`.
+Enter the team once. The list is the batting order, and a player moves by dragging the dots
+beside their name. A player can be marked out for the day, or kept off the mound or out from
+behind the plate. **All** and **None** set pitching or catching for the whole team at once. A
+pasted list works too, in the form `1. #99 Maverick`.
 
 Pick any spot by hand and it turns yellow. **Build lineup** keeps those spots and fills the
 rest, so a coach can set the first inning or two and let the tool do the others. **Keep** at
@@ -412,7 +413,9 @@ Build follows these rules, in order of weight:
 3. Infield innings spread evenly across the team.
 4. No player repeats a position if it can be avoided.
 
-It runs simulated annealing over the open spots. That takes about a tenth of a second.
+It runs simulated annealing over the open spots. That takes about a tenth of a second. The page
+stays quiet when the lineup is good. A bar appears above the chart only when a lineup breaks a
+rule, for example after a coach sets spots by hand.
 
 There is no backend. The team and the lineup live in the browser's localStorage. **Copy team
 link** puts the roster in the URL fragment, so a coach can send the team to a phone or to an

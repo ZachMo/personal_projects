@@ -23,6 +23,13 @@ If `xcode-select` points at the Command Line Tools, put
 | `FirstTown/Board` | The map: land and building art, things that move, the renderer and touch |
 | `FirstTown/UI` | The SwiftUI screens and pieces: the play screen, colours, shape icons, haptics |
 
+The rules live in a package so they build for macOS too. Their tests run in a few seconds
+without a simulator:
+
+```
+cd FirstTownCore && swift test
+```
+
 ## How the board is drawn
 
 The web version draws on a canvas, and so does the app: a SwiftUI `Canvas` inside a
@@ -42,13 +49,6 @@ known map with 12 moves made, and `-rules` opens the scoring card.
 
 ```
 xcrun simctl launch booted com.nicholeroatch.firsttown -seed 424242 -autoplay 12
-```
-
-The rules live in a package so they build for macOS too. Their tests run in a few seconds
-without a simulator:
-
-```
-cd FirstTownCore && swift test
 ```
 
 ## The rules package
@@ -86,15 +86,19 @@ regenerate the fixtures from a web version with the same rules.
 
 **Done.** The rules package, with its tests. The board: land and building art, the building in
 hand with drag, Turn, Flip and Build, the dashed squares beside it, walkers, herds, smoke, water,
-glints, confetti and score numbers over neighbours. The town bar and the slim panel. Saving, and
-haptics for turning, building and trophies.
+glints, confetti and score numbers over neighbours. The screens: the intro with a name, the town
+bar, the slim panel, the scoring card, building and land cards, the score pop-up with trophy
+pills, the score sheet, the To come sheet, the menu with How to play and New town, and the end
+summary with trophies, best buildings and the best score. Saving, and haptics for turning,
+building and trophies.
+
+More debug flags for screenshots: `-intro`, `-select <square>`, `-pop`, `-sheet score|deck|menu`
+and `-summary`.
 
 **Next**, in order:
 
-1. **The panels.** SwiftUI: the intro, the slim panel, the scoring card, the info card, the score
-   sheet, the To come list, the score pop-up, trophies and the end summary.
-2. **Game Center.** Leaderboards and a daily map that everyone plays.
-3. **The App Store.** App icon, iPad layout, privacy details and TestFlight.
+1. **Game Center.** Leaderboards and a daily map that everyone plays.
+2. **The App Store.** App icon, iPad layout, privacy details and TestFlight.
 
 ## Before the App Store
 

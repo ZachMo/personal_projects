@@ -8,9 +8,14 @@ struct BuildEffect {
     let cells: [Int]
 }
 
-/// The game in play, plus what the screen needs around it: the building in hand, the open card, the drag.
+/// The game in play, plus what the screen needs around it: the building in hand, the open card, the drag, the sheets.
 @Observable
 final class Town {
+    enum Sheet: String, Identifiable {
+        case score, deck, menu
+        var id: String { rawValue }
+    }
+
     private(set) var game: Game
     /// Where the building in hand sits.
     private(set) var ghost: Placement?
@@ -19,21 +24,36 @@ final class Town {
     /// The scoring card for the building in hand is open.
     private(set) var rulesOpen = false
     var dragging = false
+    var sheet: Sheet?
+    /// The name form for a new town is showing, with its map behind.
+    private(set) var introOpen = false
+    var summaryOpen = false
+    /// The last build, and a count that changes with every build, so the score pop-up shows each one.
     private(set) var lastBuild: BuildResult?
+    private(set) var builds = 0
+    /// The best score before this game ended.
+    private(set) var bestBefore = 0
 
     /// Builds the board has not shown yet. The renderer takes them.
     @ObservationIgnored var effects: [BuildEffect] = []
     /// Set when a new game starts, so the board clears its walkers and effects.
     @ObservationIgnored var resetScene = false
 
-    init(game: Game) {
+    init(game: Game, intro: Bool = false) {
         self.game = game
+        introOpen = intro
+        bestBefore = Self.best
         freshGhost()
     }
+
+    var name: String { Words.townName(game.player, game.namePick) }
 
     // MARK: - Starting and saving
 
     private static let saveKey = "firsttown.game.v1"
+    private static let bestKey = "firsttown.best"
+
+    static var best: Int { UserDefaults.standard.integer(forKey: bestKey) }
 
     static func launch() -> Town {
         #if DEBUG
@@ -43,34 +63,60 @@ final class Town {
             guard let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
             return Int(args[i + 1])
         }
+        if args.contains("-intro") { return Town(game: newGame(), intro: true) }
         if let seed = number("-seed") {
             let town = Town(game: Game(seed: Int32(truncatingIfNeeded: seed), player: "Zach", namePick: 4))
             for _ in 0..<(number("-autoplay") ?? 0) { town.autoplay() }
             town.effects.removeAll()
             if args.contains("-rules") { town.toggleRules() }
+            if let square = number("-select") { town.select(square) }
+            if args.contains("-pop"), let last = town.lastBuild { town.lastBuild = last; town.builds += 1 }
+            if args.contains("-summary") { while !town.game.over { town.autoplay() }; town.effects.removeAll(); town.summaryOpen = true }
+            if let sheet = args.firstIndex(of: "-sheet").flatMap({ $0 + 1 < args.count ? Sheet(rawValue: args[$0 + 1]) : nil }) { town.sheet = sheet }
             return town
         }
         #endif
-        if let data = UserDefaults.standard.data(forKey: saveKey), let game = try? JSONDecoder().decode(Game.self, from: data) {
+        if let data = UserDefaults.standard.data(forKey: saveKey), let game = try? JSONDecoder().decode(Game.self, from: data), !game.player.isEmpty {
             return Town(game: game)
         }
-        return Town(game: Game(seed: Int32.random(in: 0...Int32.max), player: "Pioneer", namePick: Int.random(in: 0..<Words.townNameCount)))
+        return Town(game: newGame(), intro: true)
+    }
+
+    private static func newGame() -> Game {
+        Game(seed: Int32.random(in: 0...Int32.max))
     }
 
     func save() {
-        guard let data = try? JSONEncoder().encode(game) else { return }
+        guard !game.player.isEmpty, let data = try? JSONEncoder().encode(game) else { return }
         UserDefaults.standard.set(data, forKey: Self.saveKey)
     }
 
-    func start(_ game: Game) {
+    /// A fresh map behind the name form. The old town stays saved until the new one starts.
+    func openIntro() {
+        summaryOpen = false
+        sheet = nil
+        start(Self.newGame())
+        introOpen = true
+    }
+
+    /// Names the town on the map behind the form, and starts playing.
+    func found(player: String) {
+        game.player = player
+        game.namePick = Int.random(in: 0..<Words.townNameCount)
+        introOpen = false
+        save()
+    }
+
+    private func start(_ game: Game) {
         self.game = game
         selection = -1
         rulesOpen = false
+        summaryOpen = false
         lastBuild = nil
         effects.removeAll()
         resetScene = true
+        bestBefore = Self.best
         freshGhost()
-        save()
     }
 
     // MARK: - The building in hand
@@ -85,7 +131,7 @@ final class Town {
         return game.canPlace(ghostCells, type)
     }
 
-    var showsGhost: Bool { !game.over }
+    var showsGhost: Bool { !game.over && !introOpen }
 
     /// Moves the building in hand, kept on the map.
     func place(_ p: Placement) {
@@ -131,7 +177,12 @@ final class Town {
         let result = game.build(cells)
         effects.append(BuildEffect(result: result, cells: cells))
         lastBuild = result
-        if game.over { rulesOpen = false }
+        builds += 1
+        if game.over {
+            rulesOpen = false
+            bestBefore = Self.best
+            if game.total > bestBefore { UserDefaults.standard.set(game.total, forKey: Self.bestKey) }
+        }
         freshGhost()
         save()
         if result.trophies.contains(where: \.good) { Haptics.celebrate() } else { Haptics.thud() }
@@ -162,5 +213,12 @@ final class Town {
     func closeInfo() {
         selection = -1
         rulesOpen = false
+    }
+
+    /// The row the open card is about, so it can sit on the other half of the map.
+    var cardRow: Double? {
+        if rulesOpen, let cells = ghostCells { return Double(cells.reduce(0) { $0 + Board.row($1) }) / Double(cells.count) }
+        if selection >= 0 { return Double(Board.row(selection)) }
+        return nil
     }
 }

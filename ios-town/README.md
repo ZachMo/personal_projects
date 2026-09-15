@@ -19,6 +19,30 @@ If `xcode-select` points at the Command Line Tools, put
 |---|---|
 | `FirstTownCore` | A Swift package with the rules and no UI: the map, the deck, placement, scoring, trophies, saving and the words on the cards |
 | `FirstTown/App` | The app entry and the root view |
+| `FirstTown/Model` | `Town`: the game in play, the building in hand, the open card, saving |
+| `FirstTown/Board` | The map: land and building art, things that move, the renderer and touch |
+| `FirstTown/UI` | The SwiftUI screens and pieces: the play screen, colours, shape icons, haptics |
+
+## How the board is drawn
+
+The web version draws on a canvas, and so does the app: a SwiftUI `Canvas` inside a
+`TimelineView`, running at 60 frames a second. `Canvas` hands over a Core Graphics context, whose
+calls match canvas almost one for one, so `LandArt` and `BuildingArt` are close translations of
+the web drawing code, and the art stays the same.
+
+Like the web version, the land, the streets and the settled buildings are drawn once into an
+image and only redrawn when a building lands. Each frame draws that image, then the things that
+move: water, glints, herds, walkers, smoke, dust, confetti, the building in hand and the selection.
+
+`BoardLayout` does the web version's sizing sums. Everything is in points with a top-left origin,
+the same as canvas.
+
+Debug builds take launch arguments for simulator screenshots: `-seed 424242 -autoplay 12` starts a
+known map with 12 moves made, and `-rules` opens the scoring card.
+
+```
+xcrun simctl launch booted com.nicholeroatch.firsttown -seed 424242 -autoplay 12
+```
 
 The rules live in a package so they build for macOS too. Their tests run in a few seconds
 without a simulator:
@@ -60,17 +84,17 @@ regenerate the fixtures from a web version with the same rules.
 
 ## State
 
-**Done.** The rules package, with its tests, and an app target that links it and builds.
+**Done.** The rules package, with its tests. The board: land and building art, the building in
+hand with drag, Turn, Flip and Build, the dashed squares beside it, walkers, herds, smoke, water,
+glints, confetti and score numbers over neighbours. The town bar and the slim panel. Saving, and
+haptics for turning, building and trophies.
 
 **Next**, in order:
 
-1. **The board.** SpriteKit: the land drawn once into a texture, raised building tiles with roofs,
-   the building in hand with drag, Turn, Flip and Build, and the dashed squares beside it.
-2. **The panels.** SwiftUI: the intro, the slim panel, the scoring card, the info card, the score
+1. **The panels.** SwiftUI: the intro, the slim panel, the scoring card, the info card, the score
    sheet, the To come list, the score pop-up, trophies and the end summary.
-3. **Life.** Walkers, grazing herds, chimney smoke, confetti and haptics.
-4. **Game Center.** Leaderboards and a daily map that everyone plays.
-5. **The App Store.** App icon, iPad layout, privacy details and TestFlight.
+2. **Game Center.** Leaderboards and a daily map that everyone plays.
+3. **The App Store.** App icon, iPad layout, privacy details and TestFlight.
 
 ## Before the App Store
 

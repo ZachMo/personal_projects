@@ -1,6 +1,6 @@
 # personal_projects
 
-Six pages. Each one is a single HTML file with no build step, no dependencies and no
+Seven pages. Each one is a single HTML file with no build step, no dependencies and no
 network calls. Open any of them in a browser.
 
 ## fall.html
@@ -389,6 +389,35 @@ Simulated over 50 seeded days: a player who takes the highest-scoring room every
 builds a manor worth 38 and gets in **0%** of the time. A player who works out that gems
 are the gate gets in 36% of the time but only scores 21. A player doing both scores 45 and
 gets in 68%.
+
+## lineup-card.html
+
+A lineup builder for youth baseball coaches. The chart puts the innings across the top and
+the positions down the side, with a bench row for each player who sits. Print it and take it
+to the dugout.
+
+Enter the team once. The list is the batting order. A player can be marked out for the day,
+or kept off the mound or out from behind the plate. A pasted list works too, in the form
+`1. #99 Maverick`.
+
+Pick any spot by hand and it turns yellow. **Build lineup** keeps those spots and fills the
+rest, so a coach can set the first inning or two and let the tool do the others. **Keep** at
+the top of an inning holds the whole inning. Press Build again for a different lineup.
+
+Build follows these rules, in order of weight:
+
+1. Every player plays an infield position in the first four innings. The inning is a setting,
+   and so is whether pitcher and catcher count as infield.
+2. Nobody sits two innings in a row, and nobody sits twice before everyone sits once.
+3. Infield innings spread evenly across the team.
+4. No player repeats a position if it can be avoided.
+
+It runs simulated annealing over the open spots. That takes about a tenth of a second.
+
+There is no backend. The team and the lineup live in the browser's localStorage. **Copy team
+link** puts the roster in the URL fragment, so a coach can send the team to a phone or to an
+assistant coach. The fragment never reaches the server, and the page removes it from the
+address bar once it loads the team.
 
 ## ios-town/
 

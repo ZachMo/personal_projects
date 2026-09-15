@@ -397,8 +397,9 @@ the positions down the side, with a bench row for each player who sits. Print it
 to the dugout.
 
 Enter the team once. The list is the batting order, and a player moves by dragging the dots
-beside their name. A player can be marked out for the day, or kept off the mound or out from
-behind the plate. **All** and **None** set pitching or catching for the whole team at once. A
+beside their name. A player can be marked out for the day, or kept off the mound, out from
+behind the plate or off the bench. **All** and **None** set pitching, catching or the bench for
+the whole team at once. Even bench time counts only the players who can sit. A
 pasted list works too, in the form `1. #99 Maverick`.
 
 Pick any spot by hand and it turns yellow. **Build lineup** keeps those spots and fills the

@@ -146,16 +146,19 @@
   .chart .full { display: block; font-size: .72rem; color: var(--muted); font-weight: 500; }
   .chart tr.bench-first > * { border-top: 2px solid var(--border); }
   .chart tr.bench td, .chart tr.bench th { background: var(--bench); }
-  .chart td { position: relative; height: 44px; }
-  .chart td.set { background: var(--set); box-shadow: inset 3px 0 0 var(--set-edge); }
+  .chart td { position: relative; height: 44px; background: var(--surface); }
+  .chart tr td.set { background: var(--set); box-shadow: inset 3px 0 0 var(--set-edge); }
+  /* The select needs a solid background. Chrome on a Mac draws the open menu with the
+     select's colors, so a transparent select gives white names on a white menu in dark mode. */
   .chart select {
-    appearance: none; -webkit-appearance: none; border: 0; background: transparent;
+    appearance: none; -webkit-appearance: none; border: 0; background-color: inherit;
     font: inherit; font-size: .88rem; color: var(--ink); width: 100%; height: 100%;
     padding: 0 8px; cursor: pointer; text-overflow: ellipsis;
   }
   .chart select.empty { color: var(--muted); }
-  .chart td:hover { background: var(--wash); }
-  .chart td.set:hover { background: var(--set); filter: brightness(.98); }
+  .chart option { color: var(--ink); background-color: var(--surface); }
+  .chart td:hover { box-shadow: inset 0 0 0 2px var(--border); }
+  .chart tr td.set:hover { box-shadow: inset 3px 0 0 var(--set-edge), inset 0 0 0 2px var(--border); }
   .print-name { display: none; }
   .lockcol {
     margin-top: 4px; padding: 2px 7px; font-size: .7rem; font-weight: 700; border-radius: 999px;
@@ -194,7 +197,7 @@
     table.chart col.lab { width: 92px; }
     .chart th, .chart td { border-color: #000; }
     .chart td { height: 30px; }
-    .chart td.set { box-shadow: none; }
+    .chart tr td.set { box-shadow: none; }
     .chart select { display: none; }
     .print-name { display: block; padding: 0 6px; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; }
     .chart .abbr { font-size: 12px; }
@@ -228,7 +231,7 @@
         </label>
         <button id="share" type="button" style="align-self:flex-end">Copy team link</button>
       </div>
-      <p class="hint">The list is the batting order. Drag a player by the dots to move them. <b>Here</b> means the player is at today's game. Turn off <b>P</b> or <b>C</b> for a player who should not pitch or catch.</p>
+      <p class="hint">The list is the batting order. Drag a player by the dots to move them. <b>Here</b> means the player is at today's game. Turn off <b>P</b>, <b>C</b> or <b>Bench</b> for a player who should not pitch, catch or sit.</p>
       <div class="bulk row" id="bulk">
         <span class="grp"><span>Pitch</span>
           <button type="button" data-bulk="noP" data-val="false">All</button>
@@ -236,6 +239,9 @@
         <span class="grp"><span>Catch</span>
           <button type="button" data-bulk="noC" data-val="false">All</button>
           <button type="button" data-bulk="noC" data-val="true">None</button></span>
+        <span class="grp"><span>Bench</span>
+          <button type="button" data-bulk="noB" data-val="false">All</button>
+          <button type="button" data-bulk="noB" data-val="true">None</button></span>
       </div>
       <ol class="roster" id="roster"></ol>
       <div class="row">
@@ -347,7 +353,7 @@ function solveLineup(o) {
   const out = slots.map(k => !!POS[k] && POS[k].kind === 'OF');
   const rule = slots.map(k => countsAsInfield(k, o.pcInfield));
   const pIdx = slots.indexOf('P'), cIdx = slots.indexOf('C');
-  const noP = players.map(p => !!p.noP), noC = players.map(p => !!p.noC);
+  const noP = players.map(p => !!p.noP), noC = players.map(p => !!p.noC), noB = players.map(p => !!p.noB);
   const index = new Map(players.map((p, i) => [p.id, i]));
 
   const A = [], free = [];
@@ -379,6 +385,7 @@ function solveLineup(o) {
         if (p < 0) { if (!out[s]) c += HARD; continue; }
         if (bench[s]) {
           sat[p]++;
+          if (noB[p]) c += HARD;
           if (lastSat[p] === i - 1) c += SIT_TWICE;
           lastSat[p] = i;
           continue;
@@ -395,6 +402,7 @@ function solveLineup(o) {
     for (let p = 0; p < n; p++) {
       if (early > 0 && !gotIF[p]) c += RULE;
       c += sat[p] * sat[p] * SIT_SQ + ifc[p] * ifc[p] * IF_SQ;
+      if (noB[p]) continue; // Even bench time counts only players who can sit.
       if (sat[p] < lo) lo = sat[p];
       if (sat[p] > hi) hi = sat[p];
     }
@@ -515,7 +523,7 @@ function parseLine(line) {
   return { num: '', name: clean(t) };
 }
 const clean = t => t.replace(/[|~]/g, '').trim();
-const newPlayer = (num = '', name = '') => ({ id: uid(), num, name, here: true, noP: false, noC: false });
+const newPlayer = (num = '', name = '') => ({ id: uid(), num, name, here: true, noP: false, noC: false, noB: false });
 
 const GRIP = '<svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="2" cy="14" r="1.5"/><circle cx="8" cy="14" r="1.5"/></svg>';
 
@@ -539,6 +547,7 @@ function renderRoster() {
         <label class="chip" title="At today's game"><input type="checkbox" data-f="here" ${p.here !== false ? 'checked' : ''}><span>Here</span></label>
         <label class="chip" title="Can pitch"><input type="checkbox" data-f="canP" ${!p.noP ? 'checked' : ''}><span>P</span></label>
         <label class="chip" title="Can catch"><input type="checkbox" data-f="canC" ${!p.noC ? 'checked' : ''}><span>C</span></label>
+        <label class="chip" title="Can sit on the bench"><input type="checkbox" data-f="canB" ${!p.noB ? 'checked' : ''}><span>Bench</span></label>
         <button type="button" class="icon" data-act="remove" aria-label="Remove player">&times;</button>
       </span>
     </li>`).join('');
@@ -559,6 +568,7 @@ $('roster').addEventListener('change', e => {
   if (f === 'here') p.here = e.target.checked;
   if (f === 'canP') p.noP = !e.target.checked;
   if (f === 'canC') p.noC = !e.target.checked;
+  if (f === 'canB') p.noB = !e.target.checked;
   changed(true);
 });
 $('roster').addEventListener('click', e => {
@@ -674,7 +684,7 @@ $('paste-add').addEventListener('click', () => pasteList(false));
 function teamLink() {
   const q = new URLSearchParams();
   if (s.team) q.set('team', s.team);
-  q.set('players', s.players.map(p => `${p.num} ${p.name}`.trim() + (p.noP ? '~noP' : '') + (p.noC ? '~noC' : '')).join('|'));
+  q.set('players', s.players.map(p => `${p.num} ${p.name}`.trim() + (p.noP ? '~noP' : '') + (p.noC ? '~noC' : '') + (p.noB ? '~noB' : '')).join('|'));
   q.set('of', s.outfield);
   q.set('inn', s.innings);
   return location.origin + location.pathname + '#' + q.toString();
@@ -690,6 +700,7 @@ function readLink() {
     const p = newPlayer(x.num, x.name);
     p.noP = flags.includes('noP');
     p.noC = flags.includes('noC');
+    p.noB = flags.includes('noB');
     return p;
   }).filter(Boolean);
   return { team: q.get('team') || '', players, outfield: q.get('of') === '3' ? 3 : 4, innings: +q.get('inn') || null };
@@ -855,6 +866,15 @@ function checkLineup() {
   if (!placed) return ['The lineup is empty.'];
   const notes = [];
   const fieldCount = fieldPositions(s.outfield).length;
+  s.players.forEach((p, i) => {
+    if (p.here !== false && !p.name && !p.num) notes.push(`Player ${i + 1} on the team list has no name or number.`);
+  });
+  // One note covers the open outfield spots a short roster leaves, instead of one per inning.
+  if (players.length < fieldCount) {
+    const open = fieldCount - players.length;
+    notes.push(`Only ${players.length} players are here for ${fieldCount} positions, so ${open === 1 ? 'an outfield spot stays' : open + ' outfield spots stay'} empty each inning.` +
+      (s.outfield === 4 && players.length >= 9 ? ' Switch to 3 outfielders to fill every spot.' : ''));
+  }
   for (let i = 0; i < inn; i++) {
     const row = s.grid[i];
     if (!Object.keys(row).length) { notes.push(`Inning ${i + 1} is empty.`); continue; }
@@ -868,6 +888,7 @@ function checkLineup() {
       const k = where[i][p.id];
       if (k === 'P' && p.noP) notes.push(`${shortName(p)} pitches in inning ${i + 1}, but P is off for ${shortName(p)}.`);
       if (k === 'C' && p.noC) notes.push(`${shortName(p)} catches in inning ${i + 1}, but C is off for ${shortName(p)}.`);
+      if (k && isBenchKey(k) && p.noB) notes.push(`${shortName(p)} sits in inning ${i + 1}, but Bench is off for ${shortName(p)}.`);
     }
   }
   const noIF = [], twice = [], sat = {};
@@ -890,7 +911,7 @@ function checkLineup() {
   if (players.length * e > e * (s.pcInfield ? 6 : 4) && noIF.length)
     notes.push(`There are more players than infield spots in ${range}. Try a later inning for the infield rule.`);
   notes.push(...twice);
-  const counts = Object.values(sat);
+  const counts = players.filter(p => !p.noB).map(p => sat[p.id]);
   if (counts.length && Math.max(...counts) - Math.min(...counts) > 1) notes.push('Bench time is not even.');
 
   return notes;

@@ -413,9 +413,9 @@ Build follows these rules, in order of weight:
 3. Infield innings spread evenly across the team.
 4. No player repeats a position if it can be avoided.
 
-It runs simulated annealing over the open spots. That takes about a tenth of a second. The page
-stays quiet when the lineup is good. A bar appears above the chart only when a lineup breaks a
-rule, for example after a coach sets spots by hand.
+It runs simulated annealing over the open spots. That takes about a tenth of a second. **Check**
+lists anything in the lineup that breaks a rule. It runs only when pressed, so setting spots
+by hand stays quiet, and the list hides again at the next edit.
 
 There is no backend. The team and the lineup live in the browser's localStorage. **Copy team
 link** puts the roster in the URL fragment, so a coach can send the team to a phone or to an

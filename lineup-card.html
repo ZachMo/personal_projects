@@ -124,6 +124,7 @@
   .lineup-head .sub { color: var(--ink-2); font-size: .9rem; }
   .status { margin: 0 0 12px; padding: 9px 12px; border-radius: 10px; font-size: .88rem; }
   .status.warn { background: var(--warn-wash); color: var(--warn); }
+  .status.good { background: var(--accent-wash); color: var(--good); }
   .status ul { margin: 4px 0 0; padding-left: 18px; }
 
   .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
@@ -289,6 +290,7 @@
       </div>
       <div class="row no-print">
         <button id="build" type="button" class="primary">Build lineup</button>
+        <button id="check" type="button">Check</button>
         <button id="undo" type="button" disabled>Undo</button>
         <button id="clear" type="button">Clear</button>
         <button id="print" type="button">Print</button>
@@ -762,18 +764,14 @@ function renderLineup() {
     $('players-view').innerHTML = '';
     $('batting').innerHTML = '';
     setStatus('');
-    $('build').disabled = true;
+    $('build').disabled = $('check').disabled = true;
     $('undo').disabled = !undoStack.length;
     return;
   }
-  $('build').disabled = false;
+  $('build').disabled = $('check').disabled = false;
   $('undo').disabled = !undoStack.length;
 
-  const where = s.grid.map(row => {
-    const m = {};
-    for (const k in row) m[row[k].pid] = k;
-    return m;
-  });
+  const where = whereMap();
 
   let h = `<table class="chart"><colgroup><col class="lab">${'<col>'.repeat(inn)}</colgroup><thead><tr><th class="corner">Position</th>`;
   for (let i = 0; i < inn; i++) {
@@ -809,7 +807,17 @@ function renderLineup() {
   $('batting').innerHTML = `<h3>Batting order</h3><ol>${players.map(p => `<li>${esc(label(p))}</li>`).join('')}</ol>`;
 
   renderPlayersView(ks, where);
-  renderStatus(ks, where);
+  // Any edit makes an open check out of date, so hide it until Check runs again.
+  setStatus('');
+}
+
+// Per inning: player id -> the slot they are in.
+function whereMap() {
+  return s.grid.map(row => {
+    const m = {};
+    for (const k in row) m[row[k].pid] = k;
+    return m;
+  });
 }
 
 function renderPlayersView(ks, where) {
@@ -840,13 +848,11 @@ function renderPlayersView(ks, where) {
   pv.classList.toggle('skip', !s.printPlayers);
 }
 
-function renderStatus(ks, where) {
-  const players = here(), inn = s.innings, e = early();
+// Returns a list of problems. An empty list means the lineup follows every rule.
+function checkLineup() {
+  const ks = slots(), where = whereMap(), players = here(), inn = s.innings, e = early();
   const placed = s.grid.reduce((n, row) => n + Object.keys(row).length, 0);
-  if (!placed) {
-    setStatus('');
-    return;
-  }
+  if (!placed) return ['The lineup is empty.'];
   const notes = [];
   const fieldCount = fieldPositions(s.outfield).length;
   for (let i = 0; i < inn; i++) {
@@ -887,18 +893,26 @@ function renderStatus(ks, where) {
   const counts = Object.values(sat);
   if (counts.length && Math.max(...counts) - Math.min(...counts) > 1) notes.push('Bench time is not even.');
 
-  setStatus(notes.length ? `Check these:<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '');
+  return notes;
 }
 function list(names) {
   if (names.length < 2) return names.join('');
   return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
 }
-// The bar shows only when the lineup breaks a rule.
-function setStatus(html) {
+// The bar shows only after Check.
+function setStatus(html, kind = 'warn') {
   const el = $('status');
+  el.className = 'status ' + kind;
   el.innerHTML = html;
   el.hidden = !html;
 }
+$('check').addEventListener('click', () => {
+  if (!s.grid.some(row => Object.keys(row).length)) return setStatus('The lineup is empty.');
+  const notes = checkLineup();
+  if (!notes.length) return setStatus('No problems found.', 'good');
+  const title = notes.length === 1 ? '1 problem:' : `${notes.length} problems:`;
+  setStatus(`${title}<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`);
+});
 
 $('chart').addEventListener('change', e => {
   const sel = e.target.closest('select[data-slot]');

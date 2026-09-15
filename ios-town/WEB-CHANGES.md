@@ -10,6 +10,18 @@ parity tests will fail.
 
 ## Waiting
 
+### Tapping land only names it
+
+Commit: "First Town: tapping land only names it", after `89a5e57`.
+
+Tapping an unbuilt square shows the card's kind ("Open land" or "Bridges only"), the land's name and
+its one-line blurb, and nothing else. The list of buildings that score for that land is gone: each
+building's own scoring card already says which land it wants.
+
+* `InfoCard.land`: show `kind`, `title(t.name)` and `t.blurb`. Drop the "Build on it" and "Build beside
+  it" sections, the note about covered land, and the "No building scores for this land" line.
+* `Words.caresAbout` is no longer used. Remove it.
+
 ### `89a5e57` — no zoom on phones, fewer copies, one land rule
 
 **One land rule instead of on and beside.** The rule kinds `on` and `by` merge into one, `land`. A
@@ -44,9 +56,7 @@ No rule scores for open grass any more.
 
 * `Words.rule`: `"each woods square on or next to it"`, or `"if on or next to water"` with `once`.
 * `Words.part`: `"3 woods on or next to it"`, `"On or next to water"`, `"Not next to water"`.
-* `Words.caresAbout` returns one list, not `on` and `by`.
-* `InfoCard.land`: one section, "Scores on it or next to it", with "each square" or "once". Drop
-  the note about covered land keeping its points.
+* The land card no longer lists buildings at all. See "Tapping land only names it" above.
 * `RuleIcon`: one land icon, the land colour with a white house. Drop the ring icon.
 * `HowToPlay`: drop the lines that explain on, beside and next to, and that land bonuses are kept.
   Add: "Land bonuses count that land under a building or next to it."

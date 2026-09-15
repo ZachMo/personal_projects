@@ -256,7 +256,7 @@ counting it. Neighbour bonuses stay live, so a grocer goes up when you later bui
 it, and small +N numbers rise from any building whose score changed.
 
 While you drag a building, or while its scoring is open, the squares next to it get a dashed
-outline. Tap an empty square to see which buildings score for that land.
+outline. Tap an empty square to see what kind of land it is.
 
 **Celebration.** After each build only the score pops up, big, over the new building. A move
 that earns 8 or more turns it green, and 13 or more turns it gold with confetti. Trophies show

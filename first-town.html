@@ -897,13 +897,6 @@ function partText(type, q) {
   if (r.k === "without") return q.n ? `No ${nearNoun(r, 2)} next to it` : `Has ${nearNoun(r, 2)} next to it`;
   return "";
 }
-
-/* Which buildings score for a kind of land. */
-function caresAbout(t) {
-  const out = [];
-  for (const k in DEF) for (const r of DEF[k].rules) if (r.t === t) out.push({ k, r });
-  return out;
-}
 </script>
 
 <script>
@@ -1956,11 +1949,9 @@ function paintInfo() {
     html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)} <span class="scored">${signed(sumParts(parts))}</span></h3><ul class="mods">${rows}</ul>`;
     placeInfo(rowOf(i));
   } else if (i >= 0) {
-    const t = MAP[i], cares = caresAbout(t);
-    html += `<div class="kind">${t === "water" ? "Bridges only" : "Open land"}</div><h3>${TERRAIN[t].name}</h3>`;
-    html += cares.length
-      ? `<p class="label">Scores on it or next to it</p><ul class="mods">${cares.map(x => rowHTML(x.r.p, `${DEF[x.k].name}, ${x.r.once ? "once" : "each square"}`, undefined, ruleIcon(x.r))).join("")}</ul>`
-      : `<p>No building scores for this land. Use it to fill gaps.</p>`;
+    // Land just says what it is. Which buildings want it is on each building's own card.
+    const t = MAP[i];
+    html += `<div class="kind">${t === "water" ? "Bridges only" : "Open land"}</div><h3>${TERRAIN[t].name}</h3><p>${esc(TERRAIN[t].blurb)}</p>`;
     placeInfo(rowOf(i));
   } else {
     return closeInfo();

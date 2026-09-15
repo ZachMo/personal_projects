@@ -213,9 +213,11 @@ patches. The cattle and sheep wander their patch until something is built on it.
 on any square that is not water.
 
 **One building at a time.** The library holds 55 kinds of building, and each game draws about
-19 of them, so no two decks are alike. The draw takes a few kinds from each category: homes,
-food, industry, shops, civic buildings and leisure. The To come button shows what this game's
-deck holds, so you can plan where the next shop or farm will pay off.
+20 of them, so no two decks are alike. The draw takes a few kinds from each category: homes,
+food, industry, shops, civic buildings and leisure. A town gets up to three of one kind of home,
+and no more of anything else than that building usually comes in, which is one for most of them.
+When the deck needs more buildings to fill the land, it adds new kinds, not copies. The To come
+button shows what this game's deck holds, so you can plan where the next shop or farm will pay off.
 
 A deck has about 24 buildings. A well or a windmill is one square, a cabin is two, a farm is a
 2 by 2 square, a church is a plus sign, a racetrack is 2 by 3 and a train station is a straight
@@ -234,47 +236,37 @@ how many squares it needs and how many squares you have.
 
 **Scoring you can count.** Every building has base points and a few modifiers. Tap the
 building in hand, on the map or in the panel, to see them. A cabin is +2 base, +1 for each woods
-square beside it, +2 for each food building next to it and −2 for each industry building next
-to it. The game never works out a score before you build.
+square on or next to it, +2 for each food building next to it and −2 for each industry building
+next to it. The game never works out a score before you build.
 
-Modifiers name a kind of building or a kind of land, never one particular building. So when a
-shop turns up, any home can use it, and most buildings have two or three ways to score. Every
-home wants food, shops or civic buildings nearby. A ranch can round up a herd or graze open
-grass. A library scores for civic neighbours, or for complete quiet.
-
-Most rules use one of three words, and each has a small icon:
-
-- **On** is the land under a building. A farm scores for wild wheat under it.
-- **Beside** is open land that shares a side with it. A lumber mill scores for woods around it.
-- **Next to** is a building that shares a side with it. A grocer scores for food buildings next
-  to it.
+A land bonus counts that land both under the building and next to it, so you can build right on
+a resource or around it. Next to means sharing a side; corners don't count. Modifiers name a kind
+of land or a kind of building, never one particular building, so when a shop turns up, any home
+can use it, and most buildings have two or three ways to score. Every building has at least one
+land bonus and one neighbour bonus: early buildings score for the land they claim, later
+buildings score for the town around them, and a well-placed early building scores twice.
 
 Two more rules reach further. **In town** counts buildings anywhere on the map, so a Granary
 scores for every food building. **If no** gives a bonus for keeping something away, so a
 Library wants no industry and no leisure building next to it.
 
-While you drag a building, or while its scoring is open, the squares beside it get a dashed
-outline. Tap an empty square to see which buildings score for building on it and building
-beside it.
+Land bonuses are set when you build. If you later build over the woods next to a lumber mill,
+the mill keeps its points. Water never runs out: a bridge over it doesn't stop new buildings from
+counting it. Neighbour bonuses stay live, so a grocer goes up when you later build a farm next to
+it, and small +N numbers rise from any building whose score changed.
 
-**Land bonuses are kept, and neighbour bonuses grow.** Land bonuses are set when you build. If
-you later build over the woods beside a lumber mill, the mill keeps its points. Water never runs
-out: a bridge over it doesn't stop new buildings from counting it. Neighbour bonuses stay live,
-so a grocer goes up when you later build a farm next to it. Small +N numbers rise from any
-building whose score changed.
-
-Every building has at least one land bonus and at least one neighbour bonus. That is the shape of
-a game: early buildings score for the land they claim, later buildings score for the town around
-them, and a well-placed early building scores twice.
+While you drag a building, or while its scoring is open, the squares next to it get a dashed
+outline. Tap an empty square to see which buildings score for that land.
 
 **Celebration.** After each build only the score pops up, big, over the new building. A move
 that earns 8 or more turns it green, and 13 or more turns it gold with confetti. Trophies show
 as small badges under it:
 
-- Triple, Quadruple and Combo: one modifier counted 3, 4, or 5 or more times;
+- Triple, Quadruple and Combo: one neighbour bonus counted 3, 4, or 5 or more times;
+- Rich land: one land bonus counting 5 squares or more;
 - Jackpot: a move that earns 13 points or more;
 - Perfect ground: every square on the land the building wants;
-- Good neighbour: two or more buildings next door go up;
+- Good neighbour: three or more buildings next door go up;
 - Snug fit: no open land left around it;
 - On a roll: three great moves in a row;
 - Ouch, Bad neighbours, Spoiler and Wasted land: a score of 0 or less, two or more disliked
@@ -297,11 +289,15 @@ and the same buildings in the same order, and gets a win or a loss at the end, w
 challenge you back. There is no server: the seed builds the same map and deck on any phone. If
 a later change to the game changes what a seed builds, the link says it may not match.
 
+**On a phone.** Taps are plain taps, so pressing Turn quickly never zooms the page, and pinch zoom
+is off. The name field uses 16px text, because Safari zooms into smaller text fields when they get
+focus.
+
 **Balance.** I tested with bots over 40 maps. A bot that weighs points against packing scores
-about 160 and fits every building about three games in four. A bot that only packs scores about
-128 and fits every building in most games. Over 20 games, later buildings raised the score of an
-earlier neighbour 234 times and lowered one 18 times. Over 300 decks every one of the 55
-buildings was drawn.
+about 167 and fits every building about four games in five. A bot that only packs scores about
+126. A bot that only chases points scores about 149 and loses about two buildings. A bot that
+plays at random scores about 76. Over 300 decks every deck got a bridge, no building went past
+its limit on copies, and the only pairs were wells, mines, farms, lumber mills and windmills.
 
 ## mexico-elections.html
 

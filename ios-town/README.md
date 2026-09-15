@@ -3,6 +3,9 @@
 A native rebuild of `../first-town.html` in Swift, for the App Store. It starts from the web
 version's rules and is free to grow its own.
 
+The browser version keeps moving. [`WEB-CHANGES.md`](WEB-CHANGES.md) lists every change made there
+that the app does not have yet.
+
 Open `FirstTown.xcodeproj`. There is no package manager step and nothing to install.
 
 ```

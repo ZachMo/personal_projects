@@ -393,3 +393,10 @@ Simulated over 50 seeded days: a player who takes the highest-scoring room every
 builds a manor worth 38 and gets in **0%** of the time. A player who works out that gems
 are the gate gets in 36% of the time but only scores 21. A player doing both scores 45 and
 gets in 68%.
+
+## ios-town/
+
+A native rebuild of `first-town.html` in Swift, for the App Store. The rules live in a Swift
+package, `FirstTownCore`, with tests that play 60 games against the web version's rules and
+require the same maps, decks, moves and scores. The app will add SpriteKit for the board,
+SwiftUI for the panels, and Game Center leaderboards with a daily map. See `ios-town/README.md`.

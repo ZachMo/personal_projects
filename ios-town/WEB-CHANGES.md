@@ -10,6 +10,80 @@ parity tests will fail.
 
 ## Waiting
 
+### Districts, coloured lots and more distinct buildings
+
+Commit: "First Town: districts, coloured lots, distinct buildings", after "Tapping land only names it".
+
+**Districts.** Buildings of one category that share a side form a district, and so do the buildings those
+touch. Bridges belong to no district. Each building scores +1 for every other building in its district, up
+to `DISTRICT_MAX = 4`. Scores stay live, so every building in a district gains when it grows.
+
+* `Game`: add `touching(cells, self)` and `districtOf(type, cells, self)` (a flood fill over same-category,
+  non-bridge buildings). `scoreParts` puts a district part right after base: `r: "district"`, `n` is the
+  district size counting itself, `v = min(n - 1, 4)`. Bridges get no district part.
+* `Words`: the card row reads "+1 each other home in its district, up to +4". A built building's row reads
+  "District of 5 homes", or "Not in a district". `HowToPlay` gets: "Districts: buildings of one kind that
+  touch share a lot. Each gains +1 for every other building on it, up to +4."
+* `RuleIcon`: a district icon, three squares in the category colour on one pale lot.
+
+**Same-category neighbour rules are gone,** because the district now rewards them:
+
+| Building | Before | Now |
+|---|---|---|
+| Lumber Mill | +1 each industry next to it | +1 each shop next to it |
+| Mine | base 1, +1 each industry next to it | base 2, rule gone |
+| Blacksmith | +2 each industry next to it | +2 each food building next to it. Blurb: "Tools for the farms, shoes for the herds." |
+| Saloon | +1 each leisure next to it | rule gone |
+| Hotel | +2 each leisure, +1 each shop | +2 each shop. Blurb: "Travellers want a view and a store." |
+| Orchard | +1 each food building | +1 each shop. Blurb: "Apples for the homes and the shops." |
+| Gristmill | +2 each food building | +2 each shop. Blurb: "A water wheel grinds flour for the shops." |
+| Windmill | base 1, +2 each food building | base 2, rule gone |
+| Gold Sluice | +1 each industry | rule gone |
+| Stamp Mill | +1 each ore square, +2 each industry | +2 each ore square, industry rule gone |
+| Charcoal Kiln | base 1, +1 each industry | base 2, rule gone |
+| Freight Yard | +2 each industry | +2 each shop. Blurb: "Loads goods for the shops at the edge of town." |
+| Bank | +2 each shop, +1 each civic | +2 each civic, +1 each home. Blurb: "Holds the town's gold. Wants the law and rich families close by." |
+| Library | +2 each civic | +1 each home. Blurb: "Needs quiet, trees and families to read." |
+| Jail | +3 each civic | +2 each leisure. Blurb: "Close to the saloons, at the edge of town." |
+| Cemetery | +2 each civic | +2 if no leisure or industry next to it. Blurb: "Quiet ground by the trees, away from the noise." |
+| Courthouse | +2 each civic, +1 each shop | +2 each shop |
+| Theater | +1 each leisure | rule gone |
+| Bathhouse | +1 each leisure | rule gone |
+| Gambling Hall | +2 each leisure or shop | +2 each shop |
+| Racetrack | +2 each leisure | +2 each food building. Blurb: "Horses from the herds and the stables." |
+
+**Trophies.**
+
+* Add `Trophy.district`, "Full district", after `.jackpot`: the new building's district has 5 or more buildings.
+* Good neighbour counts only buildings that touch the new one and gained, still 3 or more.
+* `GREAT` goes from 8 to 9 and `JACKPOT` from 13 to 15, since districts lift whole groups at once.
+
+**Looks.**
+
+* Tiles take their colour from the category: top `shade(c, .77)`, side `shade(c, .2)`, with
+  `CAT_HEX` as the base colours. Each district is drawn as one lot under its buildings, over the streets:
+  `shade(c, .25)` at inset .02, then `shade(c, .5)` at inset .05, so the lot bridges the gaps between its buildings.
+* While you hold a building, the district it would join breathes a deeper shade: the lot of that district plus
+  the building's own squares, filled with `shade(c, .15)`, with the joined buildings' tiles cut out, drawn at
+  alpha `.3 + .25 * sin(t * 2.6)`. No outline.
+* Small moving parts, drawn every frame instead of baked: windmill sails and the gristmill wheel turn, the
+  Lumber Mill saw spins, the Blacksmith's coals glow and throw sparks, the Miners' campfire flickers and sparks,
+  kiln and brick kiln mouths glow, hens wander and peck by the Farmhouse coop, rings spread on the Town Well,
+  the Plaza fountain and the Bathhouse pools, the Town Hall flag waves, and three birds circle over the Park
+  (`extra: "birds"`). Each gets its own phase from a hash, so neighbours don't move in step.
+* New roof styles (`style`): `logs` (Cabin, Log House, Trading Post), `metal` (Miners' Shacks, Lumber Mill,
+  Stamp Mill, Freight Yard), `stone` (Blacksmith, Jail), `front`, a false front with a sign (General Store,
+  Saloon, Assay Office), and `dormer` (Boarding House, Hotel).
+* New roof roles: `silo` (Granary) and `beehive` kilns (Brickworks).
+* Extras on the biggest roof (`extra`): `stack` (Stamp Mill), `cupola` (Stables), `bell` (Schoolhouse),
+  `saw` (Lumber Mill), `boxcar` (Freight Yard). New emblems: `scale` (Assay Office), `loaf` (Bakery).
+* New yard roles: woodpile (Cabin), veg (Homestead), hedge (Manor), laundry (Boarding House), coop
+  (Farmhouse), fire (Miners' Shacks), hides (Tannery), anvil (Blacksmith), cart (Stamp Mill), bricks
+  (Brickworks), bread (Bakery), fish (Fish Market), furs (Trading Post), hitch (Sheriff), pen (Jail),
+  paddock (Stables). Stamp Mill and Hotel roofs change from `big` to `hall`; General Store and Assay Office from `shop` to `hall`.
+
+**Not needed on iOS.** `LINK_VERSION` moved to 5.
+
 ### Tapping land only names it
 
 Commit: "First Town: tapping land only names it", after `89a5e57`.

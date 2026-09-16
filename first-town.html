@@ -266,6 +266,7 @@
 const COLS = 9, ROWS = 12, N = COLS * ROWS;
 const FILL = .87;        // the deck covers this share of the land you can build on
 const AWAY = 5;           // points lost for each building that fits nowhere
+const DISTRICT_MAX = 4;   // the most a building gains from its district
 const ALL_FIT = 10;       // points won when every building finds a place
 
 const TERRAIN = {
@@ -313,7 +314,9 @@ const SHAPES = {
 };
 
 /*
-  A building scores its base points plus its rules. Next to means sharing a side; corners don't count.
+  A building scores its base points, its district and its rules. Next to means sharing a side; corners don't count.
+  Buildings of one kind that touch make a district, and so do the buildings those touch. Each gains 1 point for
+  every other building in its district, up to DISTRICT_MAX. Bridges belong to no district.
   A land bonus counts that land under the building and next to it. It is set when you build, so covering
   that land later takes nothing away, and water under a bridge still counts as water. Bonuses for buildings
   stay live, so a building gains whenever a neighbour it likes arrives.
@@ -330,6 +333,8 @@ const SHAPES = {
   near and without take any: true to mean every building.
   bridge: true lets a building sit on water. Both of its ends must be on land.
   emblem: a small sign drawn on the roof.   tile: its own tile colours, instead of its category's.
+  style:  how its roofs look: logs, metal, stone, front (a false front with a sign) or dormer. Plain gables otherwise.
+  extra:  one more thing on its biggest roof: stack, cupola, bell, saw or boxcar. Or birds, which circle over it.
 
   Each game draws about 19 kinds from this library. See makeDeck.
 */
@@ -338,10 +343,10 @@ const DEF = {
                roles: ["well"], blurb: "Water for the families and the herds.",
                rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "land", t: "herd", p: 1 }] },
   cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, base: 2, roof: ["#dc7b50", "#b75d3a"],
-               roles: ["house", "garden"], blurb: "A porch by the woods, close to the food.",
+               style: "logs", roles: ["house", "woodpile"], blurb: "A porch by the woods, close to the food.",
                rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
   homestead: { name: "Homestead", cat: "home", shape: "V3", n: 2, era: 1, base: 3, roof: ["#c86a4b", "#a45237"],
-               roles: ["garden", "house", "house"], blurb: "A family that wants food and grain close by.",
+               roles: ["veg", "house", "house"], blurb: "A family that wants food and grain close by.",
                rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "wheat", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, base: 3, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
                roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close and a river view.",
@@ -352,36 +357,36 @@ const DEF = {
   ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, base: 2, roof: ["#b85a40", "#93432f"],
                roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Round up a herd and sell to the shops.",
                rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
-  lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, base: 2, roof: ["#8e6c4f", "#6e523b"],
+  lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, base: 2, roof: ["#8e6c4f", "#6e523b"], style: "metal", extra: "saw",
                roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
-               rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: 1 }] },
-  mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1, base: 1,
+               rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
+  mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1, base: 2,
                roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging where the ore is.",
-               rules: [{ k: "land", t: "ore", p: 3 }, { k: "near", cats: ["industry"], p: 1 }] },
-  smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#6f7985", "#535c67"],
-               roles: ["forge", "yard"], blurb: "Tools for the mills, shoes for the herds.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
+               rules: [{ k: "land", t: "ore", p: 3 }] },
+  smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#6f7985", "#535c67"], style: "stone",
+               roles: ["forge", "anvil"], blurb: "Tools for the farms, shoes for the herds.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
   dock:      { name: "Fishing Dock", cat: "agri", shape: "I3", n: 1, era: 2, base: 1, roof: ["#927c64", "#73614d"],
                roles: ["shed", "plank", "plank"], blurb: "Nets and boats along the bank.",
                rules: [{ k: "land", t: "water", p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
-  store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, base: 3, roof: ["#40a092", "#2f7e72"],
-               roles: ["shop", "shop", "shop", "crates"], blurb: "A little of everything, brought up the river.",
+  store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, base: 3, roof: ["#40a092", "#2f7e72"], style: "front",
+               roles: ["hall", "hall", "hall", "crates"], blurb: "A little of everything, brought up the river.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
   grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, base: 2, roof: ["#5ea56b", "#468753"],
                roles: ["shop", "shop", "produce", "produce"], blurb: "Fresh food, straight from the source.",
                rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "herd", p: 1 }] },
-  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 3, roof: ["#a95a90", "#864571"],
+  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 3, roof: ["#a95a90", "#864571"], style: "front",
                roles: ["hall", "hall", "porch", "porch"], blurb: "Where the miners and the cowhands go after a shift.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 }, { k: "land", t: "herd", p: 1 }] },
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
   church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 3, roof: ["#8195b8", "#63779d"],
                roles: ["steeple", "tree", "nave", "tree", "nave"], blurb: "The heart of a quiet town.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 1, once: true }, { k: "near", cats: ["leisure"], p: -3 }] },
-  school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#cc5e4c", "#a84737"],
+  school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#cc5e4c", "#a84737"], extra: "bell",
                roles: ["hall", "hall", "hall", "yard", "play"], blurb: "Lessons for the children next door.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
-  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 3, roof: ["#9160aa", "#724489"],
-               roles: ["big", "big", "big", "big", "porch"], blurb: "Travellers want a drink, a view and a store.",
-               rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["shop"], p: 1 }] },
+  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 3, roof: ["#9160aa", "#724489"], style: "dormer",
+               roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "Travellers want a view and a store.",
+               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["shop"], p: 2 }] },
   station:   { name: "Train Station", cat: "civic", shape: "I5", n: 1, era: 3, base: 3, roof: ["#5d7189", "#46586c"],
                roles: ["rail", "hall", "hall", "hall", "rail"], blurb: "The line comes in from the edge of the map.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry", "shop"], p: 2 }] },
@@ -391,77 +396,77 @@ const DEF = {
 
   /* Homes */
   manor:     { name: "Manor", cat: "home", shape: "O4", n: 1, era: 2, base: 4, roof: ["#7e8a9e", "#616c80"],
-               roles: ["big", "big", "garden", "tree"], blurb: "Old money wants a view and fine neighbours.",
+               roles: ["big", "big", "hedge", "tree"], blurb: "Old money wants a view and fine neighbours.",
                rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["industry"], p: -3 }] },
-  loghouse:  { name: "Log House", cat: "home", shape: "I3", n: 2, era: 1, base: 2, roof: ["#9b6a45", "#7a5234"],
+  loghouse:  { name: "Log House", cat: "home", shape: "I3", n: 2, era: 1, base: 2, roof: ["#9b6a45", "#7a5234"], style: "logs",
                roles: ["house", "house", "garden"], blurb: "Built from the trees, a walk from the store.",
                rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["shop"], p: 2 }] },
-  boarding:  { name: "Boarding House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#b07a52", "#8e5f3d"],
-               roles: ["hall", "hall", "hall", "yard"], blurb: "Cheap beds for working men.",
+  boarding:  { name: "Boarding House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#b07a52", "#8e5f3d"], style: "dormer",
+               roles: ["hall", "hall", "hall", "laundry"], blurb: "Cheap beds for working men.",
                rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "land", t: "ore", p: 1 }] },
   farmhouse: { name: "Farmhouse", cat: "home", shape: "V3", n: 2, era: 1, base: 2, roof: ["#d0885a", "#ad6a40"],
-               roles: ["house", "house", "garden"], blurb: "Wants the fields and the herds close by.",
+               roles: ["house", "house", "coop"], blurb: "Wants the fields and the herds close by.",
                rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "wheat", p: 1 }, { k: "land", t: "herd", p: 1 }] },
   miners:    { name: "Miners' Shacks", plural: "Miners' Shacks", cat: "home", shape: "S4", n: 1, era: 2, base: 1,
-               roof: ["#8c7f73", "#6d6259"], roof2: ["#a08f7c", "#7f7162"],
-               roles: ["rowA", "yard", "rowB", "rowA"], blurb: "Close to the dig, far from comfort.",
+               roof: ["#8c7f73", "#6d6259"], roof2: ["#a08f7c", "#7f7162"], style: "metal",
+               roles: ["rowA", "fire", "rowB", "rowA"], blurb: "Close to the dig, far from comfort.",
                rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "ore", p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
 
   /* Food */
   orchard:   { name: "Orchard", cat: "agri", shape: "L4", n: 1, era: 1, base: 2,
-               roles: ["orchard", "orchard", "orchard", "orchard"], blurb: "Apple trees in neat rows.",
-               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["agri"], p: 1 }] },
+               roles: ["orchard", "orchard", "orchard", "orchard"], blurb: "Apples for the homes and the shops.",
+               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
   vineyard:  { name: "Vineyard", cat: "agri", shape: "W5", n: 1, era: 2, base: 1,
                roles: ["vines", "vines", "vines", "vines", "vines"], blurb: "Grapes like rocky ground. Wine for the saloons and hotels.",
                rules: [{ k: "land", t: "ore", p: 1 }, { k: "near", cats: ["leisure"], p: 2 }] },
   gristmill: { name: "Gristmill", cat: "agri", shape: "I2", n: 1, era: 2, base: 2, roof: ["#a7836a", "#86684f"],
-               roles: ["hall", "wheel"], blurb: "A water wheel grinding the harvest.",
-               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
+               roles: ["hall", "wheel"], blurb: "A water wheel grinds flour for the shops.",
+               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
   stables:   { name: "Stables", plural: "Stables", cat: "agri", shape: "T4", n: 1, era: 2, base: 2, roof: ["#a2603c", "#7f492c"],
-               roles: ["hall", "hall", "hall", "hay"], blurb: "Horses for hire, broken from the herds.",
+               extra: "cupola", roles: ["hall", "hall", "hall", "paddock"], blurb: "Horses for hire, broken from the herds.",
                rules: [{ k: "land", t: "herd", p: 1 }, { k: "near", cats: ["leisure", "civic"], p: 1 }] },
   granary:   { name: "Granary", plural: "Granaries", cat: "agri", shape: "I2", n: 1, era: 3, base: 1, roof: ["#caa24e", "#a8843a"],
-               roles: ["hall", "hall"], blurb: "Stores grain where it grows, and the harvest of every food building.",
+               roles: ["silo", "silo"], blurb: "Stores grain where it grows, and the harvest of every food building.",
                rules: [{ k: "land", t: "wheat", p: 1 }, { k: "town", cats: ["agri"], p: 1 }] },
-  windmill:  { name: "Windmill", cat: "agri", shape: "I1", n: 2, era: 1, base: 1,
+  windmill:  { name: "Windmill", cat: "agri", shape: "I1", n: 2, era: 1, base: 2,
                roles: ["windmill"], blurb: "Turns wherever the grain grows.",
-               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "wheat", p: 2 }] },
+               rules: [{ k: "land", t: "wheat", p: 2 }] },
 
   /* Industry */
   sluice:    { name: "Gold Sluice", plural: "Gold Sluices", cat: "industry", shape: "I3", n: 1, era: 1, base: 2,
                roles: ["sluice", "sluice", "sluice"], blurb: "Washes gold out of the rock.",
-               rules: [{ k: "land", t: "ore", p: 2 }, { k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["industry"], p: 1 }] },
-  stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 2, roof: ["#6c7480", "#525964"],
-               roles: ["big", "big", "rocks", "yard"], blurb: "Crushes ore beside the diggings.",
-               rules: [{ k: "land", t: "ore", p: 1 }, { k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
+               rules: [{ k: "land", t: "ore", p: 2 }, { k: "land", t: "water", p: 3, once: true }] },
+  stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 2, roof: ["#6c7480", "#525964"], style: "metal", extra: "stack",
+               roles: ["hall", "hall", "rocks", "cart"], blurb: "Crushes ore beside the diggings.",
+               rules: [{ k: "land", t: "ore", p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
   brickworks:{ name: "Brickworks", plural: "Brickworks", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#b4533d", "#903f2e"],
-               roles: ["forge", "forge", "forge", "crates"], blurb: "Bricks for every home in town.",
+               roles: ["beehive", "beehive", "beehive", "bricks"], blurb: "Bricks for every home in town.",
                rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "town", cats: ["home"], p: 1 }] },
   tannery:   { name: "Tannery", plural: "Tanneries", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8a6f4e", "#6b553b"],
-               roles: ["hall", "yard"], blurb: "Hides from the herds. It smells.",
+               roles: ["hall", "hides"], blurb: "Hides from the herds. It smells.",
                rules: [{ k: "land", t: "herd", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
-  kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 1,
+  kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 2,
                roles: ["kiln"], blurb: "Burns wood into fuel.",
-               rules: [{ k: "land", t: "forest", p: 2 }, { k: "near", cats: ["industry"], p: 1 }] },
-  freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"],
-               roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads goods at the edge of town.",
-               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry"], p: 2 }] },
+               rules: [{ k: "land", t: "forest", p: 2 }] },
+  freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"], style: "metal", extra: "boxcar",
+               roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads goods for the shops at the edge of town.",
+               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["shop"], p: 2 }] },
 
   /* Shops */
-  bakery:    { name: "Bakery", plural: "Bakeries", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#d69a52", "#b47c3c"],
-               roles: ["house", "crates"], blurb: "Flour from the farms, bread for the homes.",
+  bakery:    { name: "Bakery", plural: "Bakeries", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#d69a52", "#b47c3c"], emblem: "loaf",
+               roles: ["house", "bread"], blurb: "Flour from the farms, bread for the homes.",
                rules: [{ k: "land", t: "wheat", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
   fishmarket:{ name: "Fish Market", cat: "shop", shape: "I3", n: 1, era: 2, base: 2, roof: ["#4f93b0", "#3d7690"],
-               roles: ["shop", "shop", "crates"], blurb: "The day's catch, from the river to the homes.",
+               roles: ["shop", "shop", "fish"], blurb: "The day's catch, from the river to the homes.",
                rules: [{ k: "land", t: "water", p: 1 }, { k: "near", cats: ["home"], p: 2 }] },
   bank:      { name: "Bank", cat: "shop", shape: "O4", n: 1, era: 3, base: 3, roof: ["#b9a26a", "#968250"], emblem: "dollar",
-               roles: ["big", "big", "big", "big"], blurb: "Holds the town's gold. Wants shops and the law close by.",
-               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }, { k: "land", t: "ore", p: 1 }] },
-  tradingpost:{ name: "Trading Post", cat: "shop", shape: "V3", n: 1, era: 1, base: 2, roof: ["#9a7b55", "#7a603f"],
-               roles: ["hall", "hall", "crates"], blurb: "Trade with whoever comes in from outside.",
+               roles: ["big", "big", "big", "big"], blurb: "Holds the town's gold. Wants the law and rich families close by.",
+               rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "ore", p: 1 }] },
+  tradingpost:{ name: "Trading Post", cat: "shop", shape: "V3", n: 1, era: 1, base: 2, roof: ["#9a7b55", "#7a603f"], style: "logs",
+               roles: ["hall", "hall", "furs"], blurb: "Trade with whoever comes in from outside.",
                rules: [{ k: "edge", p: 3 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }] },
-  assay:     { name: "Assay Office", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8b8f96", "#6e7278"],
-               roles: ["shop", "shop"], blurb: "Weighs what the diggings bring in.",
+  assay:     { name: "Assay Office", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8b8f96", "#6e7278"], style: "front", emblem: "scale",
+               roles: ["hall", "hall"], blurb: "Weighs what the diggings bring in.",
                rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "ore", p: 1 }] },
 
   /* Civic */
@@ -472,45 +477,45 @@ const DEF = {
                roof: ["#b0503c", "#8c3d2d"], roles: ["deck", "hall", "hall", "deck"], blurb: "A long, roofed crossing. Both ends must sit on land.",
                rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }] },
   library:   { name: "Library", plural: "Libraries", cat: "civic", shape: "F5", n: 1, era: 3, base: 3, roof: ["#6d8f7a", "#557260"], emblem: "book",
-               roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, trees and civic neighbours.",
-               rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "near", cats: ["civic"], p: 2 }, { k: "land", t: "forest", p: 1 }] },
+               roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, trees and families to read.",
+               rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "forest", p: 1 }] },
   sheriff:   { name: "Sheriff's Office", cat: "civic", shape: "V3", n: 1, era: 2, base: 3, roof: ["#8a6a4a", "#6c5238"], emblem: "star",
-               roles: ["hall", "hall", "yard"], blurb: "Watches the saloons, the shops and the road into town.",
+               roles: ["hall", "hall", "hitch"], blurb: "Watches the saloons, the shops and the road into town.",
                rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "edge", p: 2 }] },
-  jail:      { name: "Jail", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#7b7f86", "#5f636a"], emblem: "bars",
-               roles: ["hall", "yard"], blurb: "Belongs with the law, at the edge of town.",
-               rules: [{ k: "near", cats: ["civic"], p: 3 }, { k: "edge", p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
+  jail:      { name: "Jail", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#7b7f86", "#5f636a"], emblem: "bars", style: "stone",
+               roles: ["hall", "pen"], blurb: "Close to the saloons, at the edge of town.",
+               rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "edge", p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
   plaza:     { name: "Plaza", cat: "civic", shape: "O4", n: 1, era: 2, base: 1,
                roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square among shops and homes.",
                rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
   cemetery:  { name: "Cemetery", plural: "Cemeteries", cat: "civic", shape: "T4", n: 1, era: 2, base: 2,
-               roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet ground by the church and the trees.",
-               rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
+               roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet ground by the trees, away from the noise.",
+               rules: [{ k: "without", cats: ["leisure", "industry"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
   doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
                roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 1, once: true }, { k: "near", cats: ["industry"], p: -2 }] },
   courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
                roles: ["hall", "hall", "hall", "yard", "flag"], blurb: "Law and order, on the main street.",
-               rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
 
   /* Leisure */
   theater:   { name: "Theater", cat: "leisure", shape: "Y5", n: 1, era: 3, base: 3, roof: ["#b0445a", "#8c3447"], emblem: "mask",
                roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "A show for the town and its visitors.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["leisure"], p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
   bathhouse: { name: "Bathhouse", cat: "leisure", shape: "L4", n: 1, era: 2, base: 2, roof: ["#6aa3b5", "#528596"],
                roles: ["hall", "hall", "pool", "pool"], blurb: "Hot water for tired travellers.",
-               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["leisure"], p: 1 }] },
+               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "land", t: "forest", p: 1 }] },
   casino:    { name: "Gambling Hall", cat: "leisure", shape: "P5", n: 1, era: 3, base: 4, roof: ["#2f6b4f", "#22523c"], emblem: "diamond",
                roles: ["big", "big", "big", "big", "porch"], blurb: "A riverboat gamble. The law and the church hate it.",
-               rules: [{ k: "near", cats: ["leisure", "shop"], p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["civic"], p: -3 }] },
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["civic"], p: -3 }] },
   racetrack: { name: "Racetrack", cat: "leisure", shape: "R6", n: 1, era: 3, base: 2,
-               roles: ["track", "track", "track", "track", "track", "track"], blurb: "Horses from the herds, and a crowd from the saloons.",
-               rules: [{ k: "land", t: "herd", p: 1 }, { k: "near", cats: ["leisure"], p: 2 }] },
+               roles: ["track", "track", "track", "track", "track", "track"], blurb: "Horses from the herds and the stables.",
+               rules: [{ k: "land", t: "herd", p: 1 }, { k: "near", cats: ["agri"], p: 2 }] },
   fairground:{ name: "Fairground", cat: "leisure", shape: "N5", n: 1, era: 2, base: 2,
                roles: ["tent", "tent", "tent", "tent", "tent"], blurb: "Tents at the edge of town, near the farms.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
   park:      { name: "Park", cat: "leisure", shape: "Z5", n: 1, era: 2, base: 1,
-               roles: ["tree", "garden", "tree", "garden", "tree"], blurb: "Green space for the families.",
+               extra: "birds", roles: ["tree", "garden", "tree", "garden", "tree"], blurb: "Green space for the families.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "land", t: "water", p: 1, once: true }] },
 };
 
@@ -785,6 +790,25 @@ function look(cells, self = -1) {
   return { on, by: land || byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge, self };
 }
 
+/* The buildings a footprint shares a side with. */
+function touching(cells, self = -1) {
+  const own = new Set(cells), out = new Set();
+  for (const c of cells) for (const j of around(c)) if (!own.has(j) && OWNER[j] >= 0 && OWNER[j] !== self) out.add(OWNER[j]);
+  return out;
+}
+
+/* The buildings in the district a footprint belongs to, or would join, not counting itself. */
+function districtOf(type, cells, self = -1) {
+  if (DEF[type].bridge) return [];
+  const same = (k) => k !== self && !DEF[G.pieces[k].type].bridge && DEF[G.pieces[k].type].cat === DEF[type].cat;
+  const queue = [...touching(cells, self)].filter(same), found = new Set(queue);
+  while (queue.length) {
+    const k = queue.pop();
+    for (const j of touching(G.pieces[k].cells, k)) if (!found.has(j) && same(j)) { found.add(j); queue.push(j); }
+  }
+  return [...found];
+}
+
 const matches = (r, type) => !!r.any || (r.types || []).includes(type) || (r.cats || []).includes(DEF[type].cat);
 
 function evalRule(r, c) {
@@ -800,10 +824,14 @@ function evalRule(r, c) {
   return { n: 0, v: 0 };
 }
 
-/* A score, part by part, from what the building sits on and touches right now. Base points come first, as rule -1. */
+/*
+  A score, part by part, from what the building sits on and touches right now. Base points come first, as rule -1,
+  then the district, as rule "district", where n is the size of the district.
+*/
 function scoreParts(type, cells, self = -1) {
-  const d = DEF[type], c = look(cells, self);
-  return [{ r: -1, n: 1, v: d.base }, ...d.rules.map((r, i) => { const e = evalRule(r, c); return { r: i, n: e.n, v: e.v }; })];
+  const d = DEF[type], c = look(cells, self), parts = [{ r: -1, n: 1, v: d.base }];
+  if (!d.bridge) { const n = districtOf(type, cells, self).length + 1; parts.push({ r: "district", n, v: Math.min(n - 1, DISTRICT_MAX) }); }
+  return [...parts, ...d.rules.map((r, i) => { const e = evalRule(r, c); return { r: i, n: e.n, v: e.v }; })];
 }
 const sumParts = (parts) => parts.reduce((sum, q) => sum + q.v, 0);
 const pieceParts = (k) => scoreParts(G.pieces[k].type, G.pieces[k].cells, k);
@@ -813,10 +841,11 @@ const total = () => boardScore() - AWAY * G.away.length + (G.over && !G.away.len
 
 /* ───────────────────────── Trophies ───────────────────────── */
 
-const GREAT = 8, JACKPOT = 13;    // points a move must earn to count as great, or as a jackpot
+const GREAT = 9, JACKPOT = 15;    // points a move must earn to count as great, or as a jackpot
 /* In the order they are announced. */
 const TROPHIES = {
   jackpot:    { name: "Jackpot!",           good: true },
+  district:   { name: "Full district",      good: true },
   combo:      { name: "Combo!",             good: true },
   quadruple:  { name: "Quadruple!",         good: true },
   triple:     { name: "Triple!",            good: true },
@@ -834,8 +863,10 @@ const TROPHIES = {
 
 /* `gain` is what the whole move earned: the new building's score plus every change it caused next door. */
 function judge(type, cells, parts, pts, gain, changed) {
-  const d = DEF[type], out = new Set(), ruleOf = (q) => q.r < 0 ? null : d.rules[q.r];
+  const d = DEF[type], out = new Set(), ruleOf = (q) => d.rules[q.r];
   if (gain >= JACKPOT) out.add("jackpot");
+  // A district big enough that every building in it earns the most it can.
+  if (parts.some(q => q.r === "district" && q.n > DISTRICT_MAX)) out.add("district");
 
   // The biggest stack of one neighbour bonus: 3 of a kind is a triple, 4 a quadruple, 5 or more a combo.
   // Land bonuses count squares, which stack up much more easily, so they have their own trophy at 5.
@@ -849,7 +880,9 @@ function judge(type, cells, parts, pts, gain, changed) {
   if (land >= 5) out.add("rich");
 
   if (cells.length >= 2 && cells.every(c => d.rules.some(r => r.k === "land" && r.p > 0 && r.t === MAP[c]))) out.add("perfect");
-  if (changed.filter(x => x.d > 0).length >= 3) out.add("boost");
+  // Only buildings that touch it: a growing district lifts buildings further away too.
+  const next = touching(cells, G.pieces.length - 1);
+  if (changed.filter(x => x.d > 0 && next.has(x.k)).length >= 3) out.add("boost");
   const own = new Set(cells);
   if (!cells.some(c => around(c).some(j => !own.has(j) && OWNER[j] < 0 && MAP[j] !== "water"))) out.add("snug");
 
@@ -885,8 +918,12 @@ function ruleText(r) {
   return "";
 }
 
+/* The district row on a building's card. */
+const districtText = (type) => `each other ${CATS[DEF[type].cat].one} in its district, up to +${DISTRICT_MAX}`;
+
 /* One part of a score as it stands: "3 woods on or next to it". */
 function partText(type, q) {
+  if (q.r === "district") return q.n > 1 ? `District of ${q.n} ${CATS[DEF[type].cat].many}` : "Not in a district";
   if (q.r < 0) return "Base";
   const r = DEF[type].rules[q.r];
   if (r.k === "land") return r.once ? (q.n ? `On or next to ${landWord(r.t)}` : `Not next to ${landWord(r.t)}`) : `${q.n} ${landWord(r.t)} on or next to it`;
@@ -918,6 +955,7 @@ function townName(player, n) {
 const $ = (id) => document.getElementById(id);
 const cv = $("board"), ctx = cv.getContext("2d");
 const layer = document.createElement("canvas"), lg = layer.getContext("2d");
+const wash = document.createElement("canvas"), wg = wash.getContext("2d");   // the lot a building in hand would join
 const SAVE = "firsttown.v3", BEST = "firsttown.best";
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 
@@ -936,8 +974,8 @@ function layout() {
   const r = $("stage").getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   UI.dpr = dpr; UI.w = r.width; UI.h = r.height;
-  cv.width = layer.width = Math.max(1, Math.round(r.width * dpr));
-  cv.height = layer.height = Math.max(1, Math.round(r.height * dpr));
+  cv.width = layer.width = wash.width = Math.max(1, Math.round(r.width * dpr));
+  cv.height = layer.height = wash.height = Math.max(1, Math.round(r.height * dpr));
   const pad = 6, frame = .24;
   UI.S = Math.max(16, Math.floor(Math.min((r.width - pad * 2) / (COLS + frame * 2), (r.height - pad * 2) / (ROWS + frame * 2))));
   UI.BX = Math.round((r.width - COLS * UI.S) / 2);
@@ -1087,22 +1125,110 @@ function drawLand(g) {
 
 /* ───────────────────────── Buildings ───────────────────────── */
 
-const TILE = {
-  home:     ["#f6e9dc", "#d9bfa9"],
-  agri:     ["#f4ecd3", "#d7c69c"],
-  industry: ["#e9e9e5", "#c3c4be"],
-  shop:     ["#e3f0eb", "#b5d0c6"],
-  civic:    ["#e7edf6", "#bccadf"],
-  leisure:  ["#f3e6ee", "#d4b9c9"],
-};
+/* Each kind of building has one colour. Its tile is a pale top over a side in that colour, and its lot a soft wash of it. */
+const CAT_HEX = { home: "#d8734a", agri: "#c9952a", industry: "#6f7d8b", shop: "#33968a", civic: "#5a7fc4", leisure: "#a8588f" };
+const TILE = {}, LOT = {};
+for (const cat in CAT_HEX) {
+  TILE[cat] = [shade(CAT_HEX[cat], .77), shade(CAT_HEX[cat], .2)];
+  LOT[cat] = [shade(CAT_HEX[cat], .25), shade(CAT_HEX[cat], .5)];
+}
 const GROUND = {
   garden: "#b3d494", tree: "#b3d494", flag: "#b3d494", well: "#b3d494", field: "#e6c463", pasture: "#bddb95",
   yard: "#e5d6b7", crates: "#e5d6b7", logs: "#e5d6b7", produce: "#e5d6b7", rocks: "#d2c9ba", shaft: "#cfc4b1",
   plank: "#bb8c5f", porch: "#c29568", rail: "#cdc2ad", play: "#ebdaa9",
   orchard: "#b8d98f", vines: "#cbdc9e", wheel: "#cfc4b1", windmill: "#b3d494", kiln: "#d2c9ba", sluice: "#cbbfa9",
   deck: "#c69a6b", hay: "#e5d6b7", plaza: "#e3dac7", graves: "#b3d494", pool: "#e3dac7", track: "#bddb95", tent: "#eadcb5",
+  woodpile: "#c2d69b", veg: "#b99470", hedge: "#b3d494", laundry: "#e5d6b7", coop: "#dccfa4", fire: "#d2c9ba", hides: "#e5d6b7",
+  anvil: "#cbc3b6", cart: "#cfc4b1", bricks: "#e5d6b7", bread: "#e9dcc0", fish: "#dfe6e3", furs: "#e5d6b7", hitch: "#e5d6b7",
+  pen: "#cdc8bf", paddock: "#bddb95",
 };
 let BAKING = false;  // art is being drawn onto the baked board, so chimneys should smoke
+let NOW = 0;         // seconds, for the parts of buildings that move
+
+/*
+  Parts of buildings that move: sails, wheels, fires, hens, ripples, birds. The baked board leaves them out
+  and lists them in LIVE, so they are drawn fresh every frame. A building drawn outside the bake, like the one
+  in hand, draws them straight away. `a` sets each one apart, so neighbours don't move in step; `r` is a size.
+*/
+const LIVE = [];
+function alive(g, kind, x, y, a = 0, r = 0) { if (BAKING) LIVE.push([kind, x, y, a, r]); else live(g, kind, x, y, a, r); }
+
+function sparks(g, x, y, t, n) {
+  const S = UI.S;
+  for (let k = 0; k < n; k++) {
+    const p = (t * .8 + k / n) % 1;
+    if (p > .6) continue;
+    circle(g, x + Math.sin(k * 2.3 + Math.floor(t * .8 + k / n)) * S * .1 * p, y - p * S * .32, S * .018, `rgba(255,${200 - p * 150 | 0},90,${1 - p / .6})`);
+  }
+}
+
+function live(g, kind, x, y, a, r) {
+  const S = UI.S, t = NOW + a * 10;
+  if (kind === "sails") {
+    g.save(); g.translate(x, y); g.rotate(t * .9);
+    for (let k = 0; k < 4; k++) {
+      g.rotate(Math.PI / 2);
+      g.fillStyle = "#8a6444"; g.fillRect(-S * .02, 0, S * .04, S * .4);
+      g.fillStyle = "#f7f2e6"; g.fillRect(S * .02, S * .12, S * .08, S * .26);
+    }
+    g.restore();
+    circle(g, x, y, S * .045, "#5b4a3c");
+  } else if (kind === "wheel") {
+    g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1.5, S * .05);
+    g.beginPath(); g.arc(x, y, S * .26, 0, Math.PI * 2); g.stroke();
+    g.lineWidth = Math.max(1, S * .03); g.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const b = t * .7 + k * Math.PI / 4;
+      g.moveTo(x - Math.cos(b) * S * .26, y - Math.sin(b) * S * .26); g.lineTo(x + Math.cos(b) * S * .26, y + Math.sin(b) * S * .26);
+    }
+    g.stroke();
+  } else if (kind === "saw") {
+    g.save(); g.translate(x, y); g.rotate(t * 1.5);
+    g.beginPath();
+    for (let k = 0; k < 24; k++) { const rad = k % 2 ? S * .12 : S * .155, b = k * Math.PI / 12; g.lineTo(Math.cos(b) * rad, Math.sin(b) * rad); }
+    g.closePath(); g.fillStyle = "#d9dee2"; g.fill();
+    g.fillStyle = "#b8c0c6"; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, S * .11, 0, Math.PI / 2); g.closePath(); g.fill();
+    g.restore();
+    circle(g, x, y, S * .06, "#9aa3aa"); circle(g, x, y, S * .025, "#4d535b");
+  } else if (kind === "coals" || kind === "flame") {
+    // Coals glow and fade; a campfire flickers more and throws sparks more often.
+    const f = kind === "flame" ? 1 : .5, glow = .5 + .5 * Math.sin(t * 5) * Math.sin(t * 3.3 + 1);
+    circle(g, x, y, r, `rgb(${224 + glow * 20 | 0},${100 + glow * 40 | 0},50)`);
+    circle(g, x - r * .1, y - r * .1, r * (.45 + .15 * glow * f), "#ffd45c");
+    sparks(g, x, y, t, kind === "flame" ? 3 : 2);
+  } else if (kind === "glow") {
+    const glow = .5 + .5 * Math.sin(t * 4) * Math.sin(t * 2.7);
+    circle(g, x, y, r * (1.6 + glow * .6), `rgba(255,150,60,${.12 + glow * .15})`);
+    circle(g, x, y, r, `rgb(240,${120 + glow * 60 | 0},58)`);
+  } else if (kind === "hens") {
+    for (const [hx, hy, k] of [[.3, .7, 0], [.6, .64, 1], [.72, .82, 2], [.76, .38, 3]]) {
+      const w = Math.sin(t * .4 + k * 2), face = Math.cos(t * .4 + k * 2) >= 0 ? 1 : -1;
+      const px = x + S * hx + w * S * .05, py = y + S * hy, peck = Math.sin(t * 3 + k * 1.7) > .75 ? S * .015 : 0;
+      ellipse(g, px, py, S * .055, S * .04, "#fbf8f0");
+      circle(g, px + face * (S * .045 + peck), py - S * .01 + peck * .5, S * .02, "#d65a45");
+    }
+  } else if (kind === "ripple") {
+    // A ring spreads across still water now and then.
+    const p = (t * .35) % 1;
+    g.strokeStyle = `rgba(255,255,255,${.55 * (1 - p)})`; g.lineWidth = Math.max(1, S * .02);
+    g.beginPath(); g.arc(x, y, r * (.15 + .85 * p), 0, Math.PI * 2); g.stroke();
+  } else if (kind === "flag") {
+    g.fillStyle = "#d65a45"; g.beginPath(); g.moveTo(x, y);
+    for (let k = 0; k <= 4; k++) g.lineTo(x + S * .05 * k, y + Math.sin(t * 5 - k) * S * .015 * k / 4);
+    for (let k = 4; k >= 0; k--) g.lineTo(x + S * .05 * k, y + S * .1 + Math.sin(t * 5 - k) * S * .015 * k / 4);
+    g.closePath(); g.fill();
+    g.fillStyle = "#f7f2e6"; g.fillRect(x, y, S * .07, S * .05);
+  } else if (kind === "birds") {
+    // A few birds wheel over the trees, their shadows on the grass below.
+    for (let k = 0; k < 3; k++) {
+      const b = t * .45 - k * .32, bx = x + Math.cos(b) * S * .85, by = y + Math.sin(b) * S * .5 - S * .45;
+      const flap = Math.sin(t * 11 + k * 2) * S * .03, dir = Math.sin(b) > 0 ? -1 : 1;
+      ellipse(g, bx + S * .15, by + S * .55, S * .045, S * .018, "rgba(20,30,20,.14)");
+      g.strokeStyle = "#3d4148"; g.lineWidth = Math.max(1, S * .025); g.lineCap = "round"; g.lineJoin = "round";
+      g.beginPath(); g.moveTo(bx - S * .06, by - flap); g.lineTo(bx, by + dir * S * .01); g.lineTo(bx + S * .06, by - flap); g.stroke();
+    }
+  }
+}
 
 /* A small sign on a roof: a star for the sheriff, a dollar for the bank. */
 function emblem(g, kind, x, y) {
@@ -1131,13 +1257,24 @@ function emblem(g, kind, x, y) {
     } else if (kind === "mask") {
       circle(g, -.4 * s, -.2 * s, .17 * s, "#3d4148"); circle(g, .4 * s, -.2 * s, .17 * s, "#3d4148");
       g.beginPath(); g.arc(0, .05 * s, .5 * s, .15 * Math.PI, .85 * Math.PI); g.stroke();
+    } else if (kind === "scale") {
+      g.lineWidth = Math.max(1, S * .02);
+      g.beginPath(); g.moveTo(0, -.75 * s); g.lineTo(0, .6 * s); g.moveTo(-.7 * s, -.45 * s); g.lineTo(.7 * s, -.45 * s); g.moveTo(-.35 * s, .6 * s); g.lineTo(.35 * s, .6 * s); g.stroke();
+      g.fillStyle = "#c9a13b";
+      for (const px of [-.6, .6]) { g.beginPath(); g.arc(px * s, -.1 * s, .28 * s, 0, Math.PI); g.fill(); }
+    } else if (kind === "loaf") {
+      ellipse(g, 0, .05 * s, .78 * s, .5 * s, "#c8823f");
+      ellipse(g, -.1 * s, -.05 * s, .55 * s, .3 * s, "#e0a55c");
+      g.strokeStyle = "#8f5424"; g.lineWidth = Math.max(1, S * .018); g.beginPath();
+      for (const bx of [-.35, 0, .35]) { g.moveTo(bx * s - .1 * s, -.2 * s); g.lineTo(bx * s + .1 * s, .25 * s); }
+      g.stroke();
     } else if (kind === "diamond") {
       g.fillStyle = "#d9434f"; g.beginPath(); g.moveTo(0, -.8 * s); g.lineTo(.6 * s, 0); g.lineTo(0, .8 * s); g.lineTo(-.6 * s, 0); g.closePath(); g.fill();
     }
   }
   g.restore();
 }
-const ROOFS = new Set(["house", "rowA", "rowB", "hall", "shop", "barn", "forge", "shed", "nave", "steeple", "big"]);
+const ROOFS = new Set(["house", "rowA", "rowB", "hall", "shop", "barn", "forge", "shed", "nave", "steeple", "big", "silo", "beehive"]);
 const SMOKE = [];    // chimneys on the baked board: [x, y, dark]
 
 function chimney(g, x, y, dark, baking) {
@@ -1190,15 +1327,160 @@ function hip(g, x, y, w, h, c) {
   g.beginPath(); g.moveTo(...TL); g.lineTo(...r1); g.lineTo(...BL); g.moveTo(...TR); g.lineTo(...r2); g.lineTo(...BR); g.moveTo(...r1); g.lineTo(...r2); g.stroke();
 }
 
+/* A roof of round logs, with the log ends crossing at the corners. */
+function logRoof(g, x, y, w, h, c) {
+  const S = UI.S, along = w >= h;
+  gable(g, x, y, w, h, c);
+  g.save(); g.beginPath(); rr(g, x, y, w, h, S * .05); g.clip();
+  const step = S * .11;
+  g.lineWidth = Math.max(1, S * .03);
+  for (let t = step; t < (along ? h : w) - 1; t += step) {
+    g.strokeStyle = "rgba(40,25,10,.3)"; g.beginPath();
+    if (along) { g.moveTo(x, y + t); g.lineTo(x + w, y + t); } else { g.moveTo(x + t, y); g.lineTo(x + t, y + h); }
+    g.stroke();
+    g.strokeStyle = "rgba(255,240,215,.2)"; g.beginPath();
+    if (along) { g.moveTo(x, y + t - step * .45); g.lineTo(x + w, y + t - step * .45); } else { g.moveTo(x + t - step * .45, y); g.lineTo(x + t - step * .45, y + h); }
+    g.stroke();
+  }
+  g.restore();
+  for (const [px, py] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
+    circle(g, px, py, S * .055, "#8a6040");
+    circle(g, px, py, S * .038, "#dcb98c");
+  }
+}
+
+/* A tin roof: ribs across it and a bright cap along the ridge. */
+function metalRoof(g, x, y, w, h, c) {
+  const S = UI.S, along = w >= h;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .03); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
+  g.save(); g.beginPath(); rr(g, x, y, w, h, S * .03); g.clip();
+  g.fillStyle = shade(c[0], .12); g.fillRect(x, y, w, h);
+  g.fillStyle = c[1];
+  if (along) g.fillRect(x, y + h / 2, w, h / 2); else g.fillRect(x + w / 2, y, w / 2, h);
+  const step = S * .07;
+  g.lineWidth = Math.max(1, S * .02);
+  for (let t = step / 2; t < (along ? w : h); t += step) {
+    g.strokeStyle = "rgba(255,255,255,.28)"; g.beginPath();
+    if (along) { g.moveTo(x + t, y); g.lineTo(x + t, y + h); } else { g.moveTo(x, y + t); g.lineTo(x + w, y + t); }
+    g.stroke();
+    g.strokeStyle = "rgba(0,0,0,.14)"; g.beginPath();
+    if (along) { g.moveTo(x + t + step / 2, y); g.lineTo(x + t + step / 2, y + h); } else { g.moveTo(x, y + t + step / 2); g.lineTo(x + w, y + t + step / 2); }
+    g.stroke();
+  }
+  g.fillStyle = shade(c[0], .35);
+  if (along) g.fillRect(x, y + h / 2 - S * .035, w, S * .07); else g.fillRect(x + w / 2 - S * .035, y, S * .07, h);
+  g.restore();
+}
+
+/* A flat roof of cut stone behind a low wall. */
+function stoneRoof(g, x, y, w, h, c) {
+  const S = UI.S;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .03); g.fillStyle = "rgba(40,30,20,.22)"; g.fill();
+  g.save(); g.beginPath(); rr(g, x, y, w, h, S * .03); g.clip();
+  g.fillStyle = c[0]; g.fillRect(x, y, w, h);
+  g.strokeStyle = "rgba(0,0,0,.16)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+  const bh = S * .12, bw = S * .2;
+  for (let r = 0, t = y; t < y + h; r++, t += bh) {
+    g.moveTo(x, t); g.lineTo(x + w, t);
+    for (let u = x + (r % 2 ? bw / 2 : 0); u < x + w; u += bw) { g.moveTo(u, t); g.lineTo(u, t + bh); }
+  }
+  g.stroke();
+  g.lineWidth = S * .07; g.strokeStyle = c[1]; g.strokeRect(x, y, w, h);
+  g.restore();
+  g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = Math.max(1, S * .02);
+  g.beginPath(); rr(g, x + S * .05, y + S * .05, w - S * .1, h - S * .1, S * .02); g.stroke();
+}
+
+/* A flat roof hidden behind a tall false front with a sign, facing down the map. */
+function frontRoof(g, x, y, w, h, c) {
+  const S = UI.S, fh = Math.min(h * .4, S * .24), step = S * .07;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .03); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
+  g.beginPath(); rr(g, x, y, w, h, S * .03); g.fillStyle = shade(c[1], -.12); g.fill();
+  g.strokeStyle = "rgba(255,255,255,.1)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+  for (let t = y + step; t < y + h - fh; t += step) { g.moveTo(x + S * .04, t); g.lineTo(x + w - S * .04, t); }
+  g.stroke();
+  // The front: a board wider than the roof, stepped up in the middle.
+  const fy = y + h - fh, over = S * .04;
+  g.fillStyle = "rgba(40,30,20,.3)"; g.fillRect(x - over + S * .02, fy + S * .06, w + over * 2, fh);
+  g.fillStyle = c[0]; g.fillRect(x - over, fy, w + over * 2, fh);
+  g.fillRect(x + w * .22, fy - S * .06, w * .56, S * .07);
+  g.fillStyle = "rgba(255,255,255,.3)"; g.fillRect(x - over, fy, w + over * 2, S * .025);
+  const sw = w * .5, sh = fh * .5;
+  g.fillStyle = "#f4ecd9"; g.fillRect(x + (w - sw) / 2, fy + (fh - sh) / 2, sw, sh);
+  g.fillStyle = shade(c[1], -.2);
+  g.fillRect(x + (w - sw * .7) / 2, fy + fh / 2 - S * .02, sw * .7, S * .04);
+}
+
+/* Little windows poking out of a roof, along its top slope. */
+function dormers(g, x, y, w, h, c) {
+  const S = UI.S, along = w >= h, len = along ? w : h, n = Math.max(1, Math.round(len / (S * .5)));
+  const dw = S * .24, dd = Math.min((along ? h : w) / 2 - S * .08, S * .18);
+  for (let k = 0; k < n; k++) {
+    const t = len * (k + .5) / n;
+    // Each dormer sits on the upper or left slope, its window facing away from the ridge.
+    const bx = along ? x + t - dw / 2 : x + w / 2 - dd - S * .03, by = along ? y + h / 2 - dd - S * .03 : y + t - dw / 2;
+    const bw = along ? dw : dd, bh = along ? dd : dw;
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(bx + S * .025, by + S * .035, bw, bh);
+    g.fillStyle = "#f4ecd9"; g.fillRect(bx, by, bw, bh);
+    g.fillStyle = shade(c[0], .18); g.fillRect(along ? bx : bx + S * .045, along ? by + S * .045 : by, along ? bw : bw - S * .045, along ? bh - S * .045 : bh);
+    g.fillStyle = shade(c[1], -.05);
+    if (along) g.fillRect(bx + bw / 2, by + S * .045, bw / 2, bh - S * .045); else g.fillRect(bx + S * .045, by + bh / 2, bw - S * .045, bh / 2);
+    g.fillStyle = "#5b8fb0";
+    if (along) g.fillRect(bx + bw * .3, by + S * .01, bw * .4, S * .03); else g.fillRect(bx + S * .01, by + bh * .3, S * .03, bh * .4);
+  }
+}
+
+/* Round grain silos with cone roofs, in a row. */
+function silos(g, x, y, w, h, c) {
+  const S = UI.S, along = w >= h, n = Math.max(1, Math.round(Math.max(w, h) / (S * .8))), r = Math.min(w, h) / 2 + S * .01;
+  for (let k = 0; k < n; k++) {
+    const cx = along ? x + w * (k + .5) / n : x + w / 2, cy = along ? y + h / 2 : y + h * (k + .5) / n;
+    circle(g, cx + S * .05, cy + S * .08, r, "rgba(40,30,20,.22)");
+    circle(g, cx, cy, r, "#e3dccb");
+    circle(g, cx, cy, r * .84, c[0]);
+    g.save(); g.beginPath(); g.arc(cx, cy, r * .84, -Math.PI / 4, Math.PI * .75); g.closePath(); g.fillStyle = c[1]; g.fill(); g.restore();
+    g.strokeStyle = "rgba(0,0,0,.14)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+    for (let a = 0; a < 8; a++) { g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a * Math.PI / 4) * r * .84, cy + Math.sin(a * Math.PI / 4) * r * .84); }
+    g.stroke();
+    circle(g, cx, cy, r * .2, "#8d8a84"); circle(g, cx - r * .05, cy - r * .05, r * .09, "#c9c5bd");
+  }
+}
+
+/* Brick kilns shaped like beehives, each with a fire in its mouth. */
+function beehives(g, x, y, w, h, c, baking) {
+  const S = UI.S, along = w >= h, n = Math.max(1, Math.round(Math.max(w, h) / (S * .8))), r = Math.min(w, h) / 2;
+  for (let k = 0; k < n; k++) {
+    const cx = along ? x + w * (k + .5) / n : x + w / 2, cy = along ? y + h / 2 : y + h * (k + .5) / n;
+    circle(g, cx + S * .05, cy + S * .08, r, "rgba(40,30,20,.24)");
+    circle(g, cx, cy, r, c[1]); circle(g, cx - r * .12, cy - r * .12, r * .82, c[0]);
+    g.strokeStyle = "rgba(60,25,15,.3)"; g.lineWidth = Math.max(1, S * .015);
+    for (const f of [.35, .6]) { g.beginPath(); g.arc(cx - r * .06, cy - r * .06, r * f, 0, Math.PI * 2); g.stroke(); }
+    circle(g, cx - r * .06, cy - r * .06, r * .16, "#3a2a24");
+    g.fillStyle = "#2f2622"; g.beginPath(); g.ellipse(cx, cy + r * .72, r * .3, r * .22, 0, Math.PI, 0); g.fill();
+    alive(g, "glow", cx, cy + r * .68, k * .37 + hash(x, y), r * .1);
+    if (baking) SMOKE.push([cx - r * .06, cy - r * .06, true]);
+  }
+}
+
 function roofFor(g, role, d, x, y, w, h, baking) {
   const S = UI.S;
+  if (role === "silo") return silos(g, x, y, w, h, d.roof);
+  if (role === "beehive") return beehives(g, x, y, w, h, d.roof, baking);
+  const style = d.style, c = role === "rowB" ? d.roof2 : d.roof;
+  if (role !== "big" && role !== "steeple" && style && style !== "dormer") {
+    ({ logs: logRoof, metal: metalRoof, stone: stoneRoof, front: frontRoof })[style](g, x, y, w, h, c);
+    if (role === "house" || role === "rowA") chimney(g, x + w * .7, y + h * .12, false, baking);
+    if (role === "forge") chimney(g, x + w * .62, y + h * .18, true, baking);
+    return;
+  }
   if (role === "big" || role === "steeple") {
     hip(g, x, y, w, h, d.roof);
     if (role === "steeple") { g.strokeStyle = "#f5efe2"; g.lineWidth = Math.max(1.5, S * .04); g.beginPath();
       g.moveTo(x + w / 2 - S * .08, y + h / 2); g.lineTo(x + w / 2 + S * .08, y + h / 2); g.moveTo(x + w / 2, y + h / 2 - S * .12); g.lineTo(x + w / 2, y + h / 2 + S * .08); g.stroke(); }
     return;
   }
-  gable(g, x, y, w, h, role === "rowB" ? d.roof2 : d.roof);
+  gable(g, x, y, w, h, c);
+  if (style === "dormer") dormers(g, x, y, w, h, c);
   if (role === "house" || role === "rowA") chimney(g, x + w * .7, y + h * .12, false, baking);
   if (role === "forge") chimney(g, x + w * .62, y + h * .18, true, baking);
   if (role === "shop") {
@@ -1236,14 +1518,14 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     for (let k = 0; k < 6; k++) circle(g, cx + Math.cos(k) * S * .15, cy + Math.sin(k) * S * .15, S * .03, k % 2 ? "#f2a4b3" : "#fff1a8");
     g.fillStyle = "rgba(0,0,0,.2)"; g.fillRect(cx + S * .02, cy - S * .1, S * .22, S * .03);
     circle(g, cx, cy, S * .035, "#6d645c");
-    g.fillStyle = "#d65a45"; g.fillRect(cx, cy - S * .14, S * .2, S * .1);
-    g.fillStyle = "#f7f2e6"; g.fillRect(cx, cy - S * .14, S * .07, S * .05);
+    alive(g, "flag", cx, cy - S * .14, hash(i, 8));
   } else if (role === "well") {
     circle(g, cx + S * .03, cy + S * .05, S * .26, "rgba(40,30,20,.2)");
     circle(g, cx, cy, S * .26, "#b9afa1");
     circle(g, cx, cy, S * .19, "#8f867a");
     circle(g, cx, cy, S * .15, "#5aa4c4");
     circle(g, cx - S * .05, cy - S * .05, S * .05, "rgba(255,255,255,.45)");
+    alive(g, "ripple", cx, cy, hash(i, 8), S * .14);
     g.fillStyle = "#8a6444"; g.fillRect(cx - S * .3, cy - S * .025, S * .6, S * .05);
   } else if (role === "yard" || role === "crates") {
     const box = (bx, by, s) => {
@@ -1321,30 +1603,16 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     }
   } else if (role === "wheel") {
     g.fillStyle = "#62abc9"; g.beginPath(); rr(g, x + S * .1, y + S * .64, S * .8, S * .2, S * .08); g.fill();
-    g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1.5, S * .05);
-    g.beginPath(); g.arc(cx, cy - S * .05, S * .26, 0, Math.PI * 2); g.stroke();
-    g.lineWidth = Math.max(1, S * .03); g.beginPath();
-    for (let k = 0; k < 4; k++) {
-      const a = k * Math.PI / 4;
-      g.moveTo(cx - Math.cos(a) * S * .26, cy - S * .05 - Math.sin(a) * S * .26); g.lineTo(cx + Math.cos(a) * S * .26, cy - S * .05 + Math.sin(a) * S * .26);
-    }
-    g.stroke();
+    alive(g, "wheel", cx, cy - S * .05, hash(i, 8));
   } else if (role === "windmill") {
     circle(g, cx + S * .03, cy + S * .05, S * .2, "rgba(40,30,20,.2)");
     circle(g, cx, cy, S * .19, "#ece5d4"); circle(g, cx, cy, S * .12, "#b9ab94");
-    g.save(); g.translate(cx, cy); g.rotate(Math.PI / 5);
-    for (let k = 0; k < 4; k++) {
-      g.rotate(Math.PI / 2);
-      g.fillStyle = "#8a6444"; g.fillRect(-S * .02, 0, S * .04, S * .4);
-      g.fillStyle = "#f7f2e6"; g.fillRect(S * .02, S * .12, S * .08, S * .26);
-    }
-    g.restore();
-    circle(g, cx, cy, S * .045, "#5b4a3c");
+    alive(g, "sails", cx, cy, hash(i, 8));
   } else if (role === "kiln") {
     ellipse(g, cx + S * .03, cy + S * .06, S * .3, S * .26, "rgba(40,30,20,.22)");
     circle(g, cx, cy, S * .29, "#9c7f66"); circle(g, cx - S * .06, cy - S * .07, S * .17, "#b39479");
     g.fillStyle = "#2f2622"; g.beginPath(); g.ellipse(cx, cy + S * .13, S * .1, S * .07, 0, Math.PI, 0); g.fill();
-    circle(g, cx, cy + S * .1, S * .03, "#e0743a");
+    alive(g, "glow", cx, cy + S * .1, hash(i, 8), S * .03);
     if (BAKING) SMOKE.push([cx, cy - S * .22, true]);
   } else if (role === "sluice") {
     const w = S * .3;
@@ -1386,6 +1654,7 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     g.fillStyle = "#7cc3d8"; g.beginPath(); rr(g, x + S * .16, y + S * .16, S * .68, S * .68, S * .14); g.fill();
     g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = Math.max(1, S * .025);
     g.beginPath(); g.moveTo(x + S * .3, y + S * .42); g.lineTo(x + S * .5, y + S * .42); g.moveTo(x + S * .45, y + S * .6); g.lineTo(x + S * .68, y + S * .6); g.stroke();
+    alive(g, "ripple", cx, cy, hash(i, 8), S * .28);
   } else if (role === "tent") {
     circle(g, cx + S * .03, cy + S * .05, S * .3, "rgba(40,30,20,.2)");
     const stripe = hash(i, 4) > .5 ? "#d65a45" : "#3f79b5";
@@ -1394,12 +1663,200 @@ function groundDetail(g, role, i, x, y, S, horiz) {
       g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, S * .3, k * Math.PI / 4, (k + 1) * Math.PI / 4); g.closePath(); g.fill();
     }
     circle(g, cx, cy, S * .05, "#e3a92f");
+  } else if (role === "woodpile") {
+    for (const [row, n] of [[0, 3], [1, 2], [2, 1]]) for (let k = 0; k < n; k++) {
+      const lx = x + S * (.24 + k * .13 + row * .065), ly = y + S * (.4 - row * .1);
+      circle(g, lx, ly, S * .065, "#8a6040"); circle(g, lx, ly, S * .045, "#dcb98c");
+    }
+    circle(g, x + S * .66, y + S * .68, S * .11, "#8a6040"); circle(g, x + S * .66, y + S * .68, S * .08, "#c9a274");
+    g.strokeStyle = "#6b4a2e"; g.lineWidth = Math.max(1, S * .03); g.beginPath(); g.moveTo(x + S * .66, y + S * .66); g.lineTo(x + S * .84, y + S * .5); g.stroke();
+    g.fillStyle = "#9aa3aa"; g.fillRect(x + S * .6, y + S * .6, S * .1, S * .06);
+  } else if (role === "veg") {
+    const leaf = ["#5f9a45", "#7cb45a", "#4f8a3c"];
+    for (let r = 0; r < 3; r++) {
+      const t = .25 + r * .25;
+      g.fillStyle = "rgba(90,60,35,.35)";
+      if (horiz) g.fillRect(x + S * .14, y + S * (t - .05), S * .72, S * .1); else g.fillRect(x + S * (t - .05), y + S * .14, S * .1, S * .72);
+      for (let k = 0; k < 4; k++) {
+        const u = .22 + k * .19;
+        circle(g, horiz ? x + S * u : x + S * t, horiz ? y + S * t : y + S * u, S * .05, leaf[(r + k) % 3]);
+        if (r === 1) circle(g, horiz ? x + S * u : x + S * t, horiz ? y + S * t : y + S * u, S * .02, "#e8813a");
+      }
+    }
+  } else if (role === "hedge") {
+    g.fillStyle = "#e8dfc9"; g.fillRect(cx - S * .05, y + S * .1, S * .1, S * .8); g.fillRect(x + S * .1, cy - S * .05, S * .8, S * .1);
+    g.strokeStyle = "#5f9150"; g.lineWidth = S * .09; g.beginPath(); rr(g, x + S * .2, y + S * .2, S * .6, S * .6, S * .1); g.stroke();
+    g.fillStyle = "#e8dfc9"; g.fillRect(cx - S * .05, y + S * .72, S * .1, S * .14);
+    circle(g, cx, cy, S * .1, "#4f8544"); circle(g, cx - S * .03, cy - S * .03, S * .04, "rgba(255,255,255,.2)");
+  } else if (role === "laundry") {
+    g.strokeStyle = "#6b4a2e"; g.lineWidth = Math.max(1, S * .015);
+    g.beginPath(); g.moveTo(x + S * .15, y + S * .3); g.lineTo(x + S * .85, y + S * .3); g.moveTo(x + S * .15, y + S * .62); g.lineTo(x + S * .85, y + S * .62); g.stroke();
+    for (const px of [.15, .85]) for (const py of [.3, .62]) circle(g, x + S * px, y + S * py, S * .03, "#6b4a2e");
+    const cloth = ["#f7f2e6", "#3f79b5", "#d65a45", "#e3a92f", "#f7f2e6", "#4f9a5f"];
+    cloth.forEach((col, k) => {
+      const px = x + S * (.22 + (k % 3) * .2), py = y + S * (k < 3 ? .3 : .62);
+      g.fillStyle = "rgba(40,30,20,.15)"; g.fillRect(px + S * .02, py + S * .02, S * .13, S * .14);
+      g.fillStyle = col; g.fillRect(px, py, S * .13, S * .12 + hash(i, k) * S * .04);
+    });
+  } else if (role === "coop") {
+    g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(x + S * .2, y + S * .2, S * .36, S * .3);
+    gable(g, x + S * .16, y + S * .16, S * .36, S * .28, ["#b8704a", "#935535"]);
+    alive(g, "hens", x, y, hash(i, 8));
+  } else if (role === "fire") {
+    for (let k = 0; k < 7; k++) circle(g, cx + Math.cos(k * .9) * S * .17, cy + Math.sin(k * .9) * S * .17, S * .045, "#8f887d");
+    g.strokeStyle = "#6b4a2e"; g.lineWidth = Math.max(1.5, S * .045); g.beginPath();
+    g.moveTo(cx - S * .1, cy - S * .08); g.lineTo(cx + S * .1, cy + S * .08); g.moveTo(cx + S * .1, cy - S * .08); g.lineTo(cx - S * .1, cy + S * .08); g.stroke();
+    alive(g, "flame", cx, cy, hash(i, 8), S * .08);
+    if (BAKING) SMOKE.push([cx, cy - S * .05, false]);
+  } else if (role === "hides") {
+    for (const [fx, fy] of [[.3, .5], [.7, .5]]) {
+      const px = x + S * fx, py = y + S * fy;
+      g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1, S * .03); g.strokeRect(px - S * .15, py - S * .24, S * .3, S * .48);
+      g.fillStyle = hash(i, fx * 10) > .5 ? "#c49a6c" : "#a9784f";
+      g.beginPath(); g.moveTo(px, py - S * .19); g.lineTo(px + S * .1, py - S * .08); g.lineTo(px + S * .08, py + S * .12); g.lineTo(px, py + S * .19);
+      g.lineTo(px - S * .08, py + S * .12); g.lineTo(px - S * .1, py - S * .08); g.closePath(); g.fill();
+    }
+  } else if (role === "anvil") {
+    circle(g, x + S * .68, y + S * .32, S * .14, "#4d4642");
+    alive(g, "coals", x + S * .68, y + S * .32, hash(i, 8), S * .09);
+    const ax = x + S * .38, ay = y + S * .62;
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(ax - S * .14, ay - S * .02, S * .32, S * .14);
+    g.fillStyle = "#4d535b"; g.beginPath();
+    g.moveTo(ax - S * .2, ay - S * .08); g.lineTo(ax + S * .16, ay - S * .08); g.lineTo(ax + S * .16, ay + S * .08); g.lineTo(ax - S * .08, ay + S * .08); g.closePath(); g.fill();
+    g.fillStyle = "#7d858e"; g.fillRect(ax - S * .12, ay - S * .08, S * .28, S * .05);
+    g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1, S * .03); g.beginPath(); g.moveTo(x + S * .62, y + S * .7); g.lineTo(x + S * .82, y + S * .84); g.stroke();
+    g.fillStyle = "#3d4148"; g.fillRect(x + S * .57, y + S * .64, S * .1, S * .08);
+  } else if (role === "cart") {
+    g.strokeStyle = "#6f777e"; g.lineWidth = Math.max(1, S * .03); g.beginPath();
+    if (horiz) { g.moveTo(x, y + S * .36); g.lineTo(x + S, y + S * .36); g.moveTo(x, y + S * .64); g.lineTo(x + S, y + S * .64); }
+    else { g.moveTo(x + S * .36, y); g.lineTo(x + S * .36, y + S); g.moveTo(x + S * .64, y); g.lineTo(x + S * .64, y + S); }
+    g.stroke();
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(cx - S * .2 + S * .03, cy - S * .17 + S * .05, S * .4, S * .34);
+    g.fillStyle = "#7a5634"; g.fillRect(cx - S * .2, cy - S * .17, S * .4, S * .34);
+    g.fillStyle = "#5c4028"; g.fillRect(cx - S * .15, cy - S * .12, S * .3, S * .24);
+    for (const [ox, oy, col] of [[-.06, -.03, "#958d82"], [.06, .02, "#aaa396"], [-.02, .05, "#8f887d"], [.05, -.05, "#f2cf63"]]) circle(g, cx + S * ox, cy + S * oy, S * .05, col);
+  } else if (role === "bricks") {
+    for (const [bx, by] of [[.16, .18], [.52, .18], [.16, .54], [.52, .54]]) {
+      const px = x + S * bx, py = y + S * by, s = S * .3;
+      g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(px + S * .03, py + S * .04, s, s);
+      g.fillStyle = "#b4533d"; g.fillRect(px, py, s, s);
+      g.strokeStyle = "#e5d6b7"; g.lineWidth = Math.max(1, S * .012); g.beginPath();
+      for (let k = 1; k < 4; k++) { g.moveTo(px, py + s * k / 4); g.lineTo(px + s, py + s * k / 4); }
+      for (let k = 0; k < 4; k++) { const off = k % 2 ? s / 4 : s / 2; g.moveTo(px + off, py + s * k / 4); g.lineTo(px + off, py + s * (k + 1) / 4); }
+      g.stroke();
+    }
+  } else if (role === "bread") {
+    g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(x + S * .17, y + S * .27, S * .68, S * .5);
+    g.fillStyle = "#a47650"; g.fillRect(x + S * .14, y + S * .22, S * .68, S * .5);
+    g.fillStyle = "#f4ecd9"; g.fillRect(x + S * .18, y + S * .26, S * .6, S * .42);
+    for (const [lx, ly] of [[.32, .38], [.6, .38], [.32, .56], [.6, .56]]) {
+      ellipse(g, x + S * lx, y + S * ly, S * .1, S * .065, "#c8823f");
+      ellipse(g, x + S * lx - S * .02, y + S * ly - S * .015, S * .06, S * .03, "#e0a55c");
+    }
+  } else if (role === "fish") {
+    for (const [bx, by] of [[.3, .3], [.3, .68]]) {
+      circle(g, x + S * bx + S * .02, y + S * by + S * .04, S * .14, "rgba(40,30,20,.2)");
+      circle(g, x + S * bx, y + S * by, S * .14, "#8d6545"); circle(g, x + S * bx, y + S * by, S * .1, "#a77c58");
+      circle(g, x + S * bx, y + S * by, S * .06, "#d9eef2");
+    }
+    g.fillStyle = "#bfe0e8"; g.beginPath(); rr(g, x + S * .5, y + S * .16, S * .34, S * .68, S * .05); g.fill();
+    for (let k = 0; k < 3; k++) {
+      const fy = y + S * (.3 + k * .2), fx = x + S * .67;
+      ellipse(g, fx, fy, S * .11, S * .045, k % 2 ? "#8fa4b0" : "#b3c2c9");
+      g.fillStyle = "#7d919c"; g.beginPath(); g.moveTo(fx + S * .1, fy); g.lineTo(fx + S * .16, fy - S * .04); g.lineTo(fx + S * .16, fy + S * .04); g.closePath(); g.fill();
+    }
+  } else if (role === "furs") {
+    g.save(); g.translate(cx, cy); if (!horiz) g.rotate(Math.PI / 2);
+    ellipse(g, S * .03, S * .2, S * .38, S * .1, "rgba(40,30,20,.2)");
+    ellipse(g, 0, S * .16, S * .38, S * .1, "#a4643e"); ellipse(g, 0, S * .16, S * .3, S * .06, "#d6a574");
+    g.restore();
+    // Pelts pegged out flat to dry: a body with four legs spread.
+    for (const [px, col] of [[.3, "#7a5234"], [.66, "#a9784f"]]) {
+      const fx = x + S * px, fy = y + S * .34, u = S * .1;
+      g.fillStyle = col; g.beginPath();
+      g.moveTo(fx, fy - u * 1.3); g.lineTo(fx + u * .5, fy - u * .7); g.lineTo(fx + u * 1.2, fy - u * 1.1); g.lineTo(fx + u * .7, fy);
+      g.lineTo(fx + u * 1.2, fy + u * 1.1); g.lineTo(fx + u * .4, fy + u * .9); g.lineTo(fx, fy + u * 1.4); g.lineTo(fx - u * .4, fy + u * .9);
+      g.lineTo(fx - u * 1.2, fy + u * 1.1); g.lineTo(fx - u * .7, fy); g.lineTo(fx - u * 1.2, fy - u * 1.1); g.lineTo(fx - u * .5, fy - u * .7);
+      g.closePath(); g.fill();
+    }
+  } else if (role === "hitch") {
+    g.fillStyle = "#62abc9"; g.fillRect(x + S * .62, y + S * .16, S * .22, S * .1);
+    g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1.5, S * .035); g.beginPath(); g.moveTo(x + S * .18, y + S * .4); g.lineTo(x + S * .82, y + S * .4); g.stroke();
+    for (const px of [.18, .82]) circle(g, x + S * px, y + S * .4, S * .035, "#5c4028");
+    horse(g, x + S * .46, y + S * .64, Math.PI * .08, "#8a5a3a");
+  } else if (role === "pen") {
+    g.strokeStyle = "#4d535b"; g.lineWidth = Math.max(1, S * .03); g.beginPath(); rr(g, x + S * .16, y + S * .16, S * .68, S * .68, S * .04); g.stroke();
+    g.lineWidth = Math.max(1, S * .02); g.beginPath();
+    for (let k = 1; k < 6; k++) {
+      const t = S * (.16 + k * .68 / 6);
+      g.moveTo(x + t, y + S * .12); g.lineTo(x + t, y + S * .2); g.moveTo(x + t, y + S * .8); g.lineTo(x + t, y + S * .88);
+      g.moveTo(x + S * .12, y + t); g.lineTo(x + S * .2, y + t); g.moveTo(x + S * .8, y + t); g.lineTo(x + S * .88, y + t);
+    }
+    g.stroke();
+    circle(g, cx + S * .02, cy + S * .04, S * .07, "rgba(20,20,15,.22)");
+    circle(g, cx, cy, S * .07, "#d9d2c2"); g.fillStyle = "#3d4148"; g.fillRect(cx - S * .07, cy - S * .015, S * .14, S * .03);
+    circle(g, cx, cy - S * .03, S * .04, "#d9a77f");
+  } else if (role === "paddock") {
+    for (const [hx, hy] of [[.28, .3], [.5, .26]]) {
+      circle(g, x + S * hx + S * .02, y + S * hy + S * .04, S * .09, "rgba(40,30,20,.2)");
+      circle(g, x + S * hx, y + S * hy, S * .09, "#e2c15c");
+    }
+    horse(g, x + S * .52, y + S * .64, -Math.PI * .12, hash(i, 2) > .5 ? "#6e4a33" : "#b4875a");
   } else if (role === "pasture" && hash(i, 11) > .35) {
     const px = x + S * (.3 + .35 * hash(i, 12)), py = y + S * (.35 + .3 * hash(i, 13));
     ellipse(g, px + S * .03, py + S * .05, S * .14, S * .08, "rgba(40,50,30,.2)");
     ellipse(g, px, py, S * .14, S * .08, "#f7f3ea");
     circle(g, px + S * .15, py, S * .05, "#5a4a3e");
     circle(g, px - S * .03, py - S * .02, S * .035, "#5a4a3e");
+  }
+}
+
+/* A horse seen from above, facing `a`. */
+function horse(g, x, y, a, coat) {
+  const S = UI.S;
+  g.save(); g.translate(x, y); g.rotate(a);
+  ellipse(g, S * .02, S * .04, S * .16, S * .07, "rgba(40,30,20,.2)");
+  g.strokeStyle = shade(coat, -.35); g.lineWidth = Math.max(1, S * .03); g.lineCap = "round";
+  g.beginPath(); g.moveTo(-S * .13, 0); g.lineTo(-S * .21, S * .02); g.stroke();
+  ellipse(g, 0, 0, S * .14, S * .065, coat);
+  ellipse(g, S * .15, 0, S * .06, S * .035, coat);
+  g.fillStyle = shade(coat, -.35); g.fillRect(S * .04, -S * .012, S * .1, S * .024);
+  g.restore();
+}
+
+/* One more thing on a building's biggest roof, so it reads at a glance. */
+function extra(g, d, box, cells, dy, baking) {
+  const S = UI.S, { x, y, w, h } = box;
+  if (d.extra === "stack") {
+    // A tall brick smokestack at one end of the roof, its long shadow falling across it.
+    const k = S * .22, sx = x + w / 2 - k - S * .06, sy = y - h / 2 + S * .06;
+    ellipse(g, sx + k * .9, sy + k * 1.05, k * .75, k * .45, "rgba(40,30,20,.28)");
+    g.fillStyle = "#8f4b36"; g.fillRect(sx, sy, k, k);
+    g.fillStyle = "#b0654a"; g.fillRect(sx, sy, k, k * .45);
+    g.strokeStyle = "rgba(40,20,10,.35)"; g.lineWidth = Math.max(1, S * .012); g.beginPath();
+    g.moveTo(sx, sy + k * .45); g.lineTo(sx + k, sy + k * .45); g.moveTo(sx + k / 2, sy); g.lineTo(sx + k / 2, sy + k * .45); g.stroke();
+    g.fillStyle = "#2f2622"; g.fillRect(sx + k * .25, sy + k * .25, k * .5, k * .5);
+    if (baking) SMOKE.push([sx + k / 2, sy + k / 2, true]);
+  } else if (d.extra === "cupola" || d.extra === "bell") {
+    const k = S * (d.extra === "bell" ? .3 : .24);
+    hip(g, x - k / 2, y - k / 2, k, k, d.extra === "bell" ? ["#f2ece0", "#cfc6b4"] : [shade(d.roof[0], .25), d.roof[0]]);
+    if (d.extra === "bell") circle(g, x, y, S * .055, "#c9a13b");
+    else {
+      g.strokeStyle = "#3d4148"; g.lineWidth = Math.max(1, S * .02); g.beginPath();
+      g.moveTo(x - S * .1, y); g.lineTo(x + S * .1, y); g.moveTo(x + S * .05, y - S * .04); g.lineTo(x + S * .1, y); g.lineTo(x + S * .05, y + S * .04); g.stroke();
+    }
+  } else if (d.extra === "saw") {
+    circle(g, x + S * .03, y + S * .05, S * .15, "rgba(40,30,20,.25)");
+    alive(g, "saw", x, y, hash(x, y));
+  } else if (d.extra === "boxcar") {
+    // A freight car on the first two squares of track.
+    const a = cells[0], b = cells[1], horiz = rowOf(a) === rowOf(b);
+    const bx = Math.min(cellX(a), cellX(b)) + S * (horiz ? .12 : .22), by = Math.min(cellY(a), cellY(b)) + dy + S * (horiz ? .22 : .12);
+    const bw = horiz ? S * 1.76 : S * .56, bh = horiz ? S * .56 : S * 1.76;
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(bx + S * .04, by + S * .06, bw, bh);
+    g.fillStyle = "#a8503a"; g.fillRect(bx, by, bw, bh);
+    g.fillStyle = "#c26a4f"; if (horiz) g.fillRect(bx, by, bw, bh / 2); else g.fillRect(bx, by, bw / 2, bh);
+    g.fillStyle = "#e9dcc4"; if (horiz) g.fillRect(bx + bw / 2 - S * .02, by, S * .04, bh); else g.fillRect(bx, by + bh / 2 - S * .02, bw, S * .04);
   }
 }
 
@@ -1445,6 +1902,7 @@ function art(g, type, cells, dy, baking) {
       const [px, py] = box();
       circle(g, px + S * .03, py + S * .05, S * .36, "rgba(40,30,20,.18)");
       circle(g, px, py, S * .36, "#cfc5b0"); circle(g, px, py, S * .28, "#7cc3d8");
+      alive(g, "ripple", px, py, hash(px, py), S * .27);
       circle(g, px, py, S * .1, "#e9e2d0"); circle(g, px - S * .08, py - S * .09, S * .05, "rgba(255,255,255,.6)");
     }
     if (role === "track") {
@@ -1482,8 +1940,11 @@ function art(g, type, cells, dy, baking) {
     } else {
       for (const q of group) roofFor(g, role, d, cellX(q) + pad, cellY(q) + dy + pad, S - pad * 2, S - pad * 2, baking);
     }
-    if (!sign || group.length > sign.n) sign = { n: group.length, x: UI.BX + (x0 + gw / 2) * S, y: UI.BY + (y0 + gh / 2) * S + dy };
+    if (!sign || group.length > sign.n) sign = { n: group.length, x: UI.BX + (x0 + gw / 2) * S, y: UI.BY + (y0 + gh / 2) * S + dy, w: gw * S - pad * 2, h: gh * S - pad * 2 };
   }
+  if (d.extra === "birds") alive(g, "birds", cells.reduce((sum, c) => sum + cellX(c), 0) / cells.length + S / 2,
+                                cells.reduce((sum, c) => sum + cellY(c), 0) / cells.length + S / 2 + dy, hash(cells[0], 8));
+  else if (d.extra && sign) extra(g, d, sign, cells, dy, baking);
   if (d.emblem && sign) emblem(g, d.emblem, sign.x, sign.y);
 }
 
@@ -1503,7 +1964,7 @@ function drawPiece(g, type, cells, lift, baking) {
 /* The board without anything that moves: land, streets and settled buildings. */
 function bake() {
   UI.dirty = false;
-  SMOKE.length = 0;
+  SMOKE.length = 0; LIVE.length = 0;
   lg.setTransform(UI.dpr, 0, 0, UI.dpr, 0, 0);
   lg.clearRect(0, 0, UI.w, UI.h);
   drawLand(lg);
@@ -1513,9 +1974,28 @@ function bake() {
   lg.save(); lg.beginPath(); rr(lg, UI.BX, UI.BY, COLS * UI.S, ROWS * UI.S, UI.S * .26); lg.clip();
   union(lg, built, UI.S * .01, UI.S * .2); lg.fillStyle = "#e6dcc6"; lg.fill();
   union(lg, built, UI.S * .045, UI.S * .18); lg.fillStyle = "#ddd1b8"; lg.fill();
+  // Lots: one for each district, in its colour, so buildings of one kind that touch read as one patch.
+  for (const group of districts()) {
+    const cells = group.flatMap(k => G.pieces[k].cells).filter(c => MAP[c] !== "water");
+    const lot = LOT[DEF[G.pieces[group[0]].type].cat];
+    union(lg, cells, UI.S * .02, UI.S * .22); lg.fillStyle = lot[0]; lg.fill();
+    union(lg, cells, UI.S * .05, UI.S * .19); lg.fillStyle = lot[1]; lg.fill();
+  }
   lg.restore();
   const order = G.pieces.map((p, k) => k).sort((a, b) => Math.min(...G.pieces[a].cells) - Math.min(...G.pieces[b].cells));
   for (const k of order) if (!UI.drop || UI.drop.k !== k) drawPiece(lg, G.pieces[k].type, G.pieces[k].cells, 0, true);
+}
+
+/* Every district in town, as lists of building indexes. */
+function districts() {
+  const seen = new Set(), out = [];
+  G.pieces.forEach((p, k) => {
+    if (seen.has(k) || DEF[p.type].bridge) return;
+    const group = [k, ...districtOf(p.type, p.cells, k)];
+    group.forEach(j => seen.add(j));
+    out.push(group);
+  });
+  return out;
 }
 
 /* ───────────────────────── Things that move ───────────────────────── */
@@ -1734,6 +2214,22 @@ function drawGhost(g, now) {
   if (!cells) return;
   const S = UI.S, type = current(), ok = canPlace(cells, type), lift = S * .16;
   const dy = -lift - S * .085, pulse = .8 + .2 * Math.sin(now * 5);
+  // The district it would join: its lot breathes a deeper shade in the lanes between the buildings.
+  if (ok && !DEF[type].bridge) {
+    const joins = districtOf(type, cells);
+    if (joins.length) {
+      const th = S * .085;
+      wg.setTransform(UI.dpr, 0, 0, UI.dpr, 0, 0); wg.clearRect(0, 0, UI.w, UI.h);
+      union(wg, joins.flatMap(k => G.pieces[k].cells).concat(cells).filter(c => MAP[c] !== "water"), S * .02, S * .22);
+      wg.fillStyle = shade(CAT_HEX[DEF[type].cat], .15); wg.fill();
+      wg.globalCompositeOperation = "destination-out";
+      for (const k of joins) for (const lift of [0, th]) { union(wg, G.pieces[k].cells, S * .075, S * .16, -lift); wg.fill(); }
+      wg.globalCompositeOperation = "source-over";
+      g.globalAlpha = .3 + .25 * Math.sin(now * 2.6);
+      g.drawImage(wash, 0, 0, UI.w, UI.h);
+      g.globalAlpha = 1;
+    }
+  }
   // The squares it would land on, marked on the board below it.
   g.beginPath();
   for (const c of cells) rr(g, cellX(c) + S * .1, cellY(c) + S * .1, S * .8, S * .8, S * .16);
@@ -1788,6 +2284,7 @@ function frame(nowMs) {
   const dt = Math.min(.1, (nowMs - last) / 1000), now = nowMs / 1000;
   last = nowMs;
   if (!G || !UI.w) return;
+  NOW = now;
   if (UI.dirty) bake();
   ctx.setTransform(UI.dpr, 0, 0, UI.dpr, 0, 0);
   ctx.clearRect(0, 0, UI.w, UI.h);
@@ -1806,6 +2303,7 @@ function frame(nowMs) {
     }
   }
   updateWalkers(dt); drawWalkers(ctx, now);
+  for (const [kind, x, y, a, r] of LIVE) live(ctx, kind, x, y, a, r);
   updateSmoke(dt); drawSmoke(ctx);
   drawDust(ctx, dt);
   if ($("dialogWrap").hidden) drawGhost(ctx, now);
@@ -1836,7 +2334,6 @@ function shapeSVG(type, rot = 0, flip = false, box = 44) {
   return `<svg width="${w * s}" height="${h * s}" viewBox="0 0 ${w * s} ${h * s}">${cellsSvg}</svg>`;
 }
 
-const CAT_HEX = { home: "#d8734a", agri: "#c9952a", industry: "#6f7d8b", shop: "#33968a", civic: "#5a7fc4", leisure: "#a8588f" };
 const LAND_HEX = { grass: "#a5c884", forest: "#5b9a58", ore: "#9a9285", wheat: "#e2bf5c", herd: "#c4a37c", water: "#62abc9" };
 
 /* A small picture of what a rule counts: a kind of land, a kind of building, the map edge. */
@@ -1861,11 +2358,15 @@ function ruleIcon(r) {
   if (r.k === "edge") return svg(`<rect x="5" y="3" width="13" height="14" rx="3" fill="#fff" stroke="#c9c2b4"/><rect x="1" y="1" width="3" height="18" rx="1.5" fill="#5b645f"/>`);
   return svg(`<rect x="1" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.home}"/><rect x="7.25" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.shop}"/><rect x="13.5" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.civic}"/>`);
 }
+/* A district: three squares of one kind, joined into one lot. */
+const districtIcon = (cat) => `<svg class="ico" viewBox="0 0 20 20"><path d="M1 3.5A2.5 2.5 0 0 1 3.5 1h13A2.5 2.5 0 0 1 19 3.5v13a2.5 2.5 0 0 1-2.5 2.5h-6A2.5 2.5 0 0 1 8 16.5V12H3.5A2.5 2.5 0 0 1 1 9.5z" fill="${shade(CAT_HEX[cat], .55)}"/>` +
+  `<g fill="${CAT_HEX[cat]}"><rect x="2.5" y="2.5" width="6" height="6" rx="1.5"/><rect x="11.5" y="2.5" width="6" height="6" rx="1.5"/><rect x="11.5" y="11.5" width="6" height="6" rx="1.5"/></g></svg>`;
 const rowHTML = (v, text, cls, icon) =>
   `<li class="${cls ?? (v < 0 ? "bad" : "")}"><b>${signed(v)}</b>${icon || '<i class="sp"></i>'}<span>${esc(text)}</span></li>`;
 function modsHTML(type) {
   const d = DEF[type];
-  return `<ul class="mods">${rowHTML(d.base, "base points", "base")}${d.rules.map(r => rowHTML(r.p, ruleText(r), undefined, ruleIcon(r))).join("")}</ul>`;
+  const district = d.bridge ? "" : rowHTML(1, districtText(type), "", districtIcon(d.cat));
+  return `<ul class="mods">${rowHTML(d.base, "base points", "base")}${district}${d.rules.map(r => rowHTML(r.p, ruleText(r), undefined, ruleIcon(r))).join("")}</ul>`;
 }
 
 function hud() {
@@ -1944,7 +2445,7 @@ function paintInfo() {
     const k = OWNER[i], p = G.pieces[k], d = DEF[p.type], parts = pieceParts(k);
     const rows = parts.map(q => {
       const r = d.rules[q.r], each = r && !r.once && r.k !== "edge" ? ` × ${signed(r.p)}` : "";
-      return rowHTML(q.v, partText(p.type, q) + each, q.r < 0 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "", r && ruleIcon(r));
+      return rowHTML(q.v, partText(p.type, q) + each, q.r === -1 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "", q.r === "district" ? districtIcon(d.cat) : r && ruleIcon(r));
     }).join("");
     html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)} <span class="scored">${signed(sumParts(parts))}</span></h3><ul class="mods">${rows}</ul>`;
     placeInfo(rowOf(i));
@@ -2093,6 +2594,7 @@ $("scrim").onclick = closeSheet;
 
 const RULES_HTML = `<ul class="rules">
   <li><b>Build:</b> drag a building onto open land and press Build. Tap it to see how it scores.</li>
+  <li><b>Districts:</b> buildings of one kind that touch share a lot. Each gains +1 for every other building on it, up to +${DISTRICT_MAX}.</li>
   <li><b>Land bonuses</b> count that land under a building or next to it.</li>
   <li><b>Neighbour bonuses grow.</b> A building gains whenever you add a neighbour it likes.</li>
   <li><b>Bridges</b> are the only buildings that can sit on water. Both ends must be on land.</li>
@@ -2141,7 +2643,7 @@ function recordBest() {
 }
 
 /* Bump when a change to the map, the deck or the scoring means an old link no longer gives the same game. */
-const LINK_VERSION = 4;
+const LINK_VERSION = 5;
 
 function challengeURL() {
   const base = location.href.split(/[?#]/)[0];

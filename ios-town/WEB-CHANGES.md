@@ -10,6 +10,32 @@ parity tests will fail.
 
 ## Waiting
 
+### Trains, wagons, races, plaza benches and a saloon sign
+
+Commit: "First Town: trains, wagons, races, plaza benches, saloon sign", after "First Town: districts, coloured lots, distinct buildings".
+
+All drawn every frame, like the other moving parts, with a per-building phase from a hash.
+
+* **Trains.** The Train Station and Freight Yard run a route along their `rail` squares: the straight line
+  through them, the length of the building. A train shows only on `rail` squares, inset .09, so it slips under
+  the station hall. On a 16-second cycle it pulls in (3.5 s, slowing), waits (6.5 s), pulls out (3.5 s,
+  speeding up), and is gone for 2.5 s. The next train comes the other way. The station gets an engine and 4
+  green coaches, so the ends show at the platforms while it waits. The freight yard gets an engine and 2
+  boxcars. The engine puffs steam where it can be seen, more while moving. The static boxcar is gone
+  (`extra: "boxcar"` removed).
+* **Wagons.** Bridge and Covered Bridge run the same route along their `deck` squares. A covered wagon
+  pulled by a dark horse crosses in 6 s, then the deck is empty for 5 s, and the next one comes the other way.
+  The Covered Bridge's roof hides it in the middle.
+* **Races.** The racetrack's two dots become a checkered finish line on the right of the track. On an
+  18-second cycle, three horses with red, blue and yellow jockeys run two laps in 11 s, in lanes .1 apart,
+  easing in and out, with a small lead that changes each race and closes at the line. Dust kicks up behind them.
+  Then they rest at the line.
+* `horse()` takes a size.
+* **Plaza.** Four benches face the fountain, one on each side at .6 from its middle, with a lamp post on each
+  corner between them.
+* **Saloon sign.** `sign: "SALOON"`. A `front` roof with a sign gets a taller false front (up to .34, or .55 of
+  the roof) with a cream board and the word in dark red, `900` Rockwell or a serif, shrunk to fit. When the
+  building stands upright, the board runs up the roof and the word reads bottom to top.
 ### Districts, coloured lots and more distinct buildings
 
 Commit: "First Town: districts, coloured lots, distinct buildings", after "Tapping land only names it".

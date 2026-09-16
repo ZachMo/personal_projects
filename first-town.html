@@ -334,7 +334,9 @@ const SHAPES = {
   bridge: true lets a building sit on water. Both of its ends must be on land.
   emblem: a small sign drawn on the roof.   tile: its own tile colours, instead of its category's.
   style:  how its roofs look: logs, metal, stone, front (a false front with a sign) or dormer. Plain gables otherwise.
-  extra:  one more thing on its biggest roof: stack, cupola, bell, saw or boxcar. Or birds, which circle over it.
+  sign:   words painted on a false front.
+  extra:  one more thing on its biggest roof: stack, cupola, bell or saw. Or birds, which circle over it.
+  Trains come and go on any track (rail), wagons cross every bridge, and horses race on the racetrack.
 
   Each game draws about 19 kinds from this library. See makeDeck.
 */
@@ -375,7 +377,7 @@ const DEF = {
   grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, base: 2, roof: ["#5ea56b", "#468753"],
                roles: ["shop", "shop", "produce", "produce"], blurb: "Fresh food, straight from the source.",
                rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "herd", p: 1 }] },
-  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 3, roof: ["#a95a90", "#864571"], style: "front",
+  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 3, roof: ["#a95a90", "#864571"], style: "front", sign: "SALOON",
                roles: ["hall", "hall", "porch", "porch"], blurb: "Where the miners and the cowhands go after a shift.",
                rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
   church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 3, roof: ["#8195b8", "#63779d"],
@@ -448,7 +450,7 @@ const DEF = {
   kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 2,
                roles: ["kiln"], blurb: "Burns wood into fuel.",
                rules: [{ k: "land", t: "forest", p: 2 }] },
-  freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"], style: "metal", extra: "boxcar",
+  freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"], style: "metal",
                roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads goods for the shops at the edge of town.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["shop"], p: 2 }] },
 
@@ -1218,6 +1220,50 @@ function live(g, kind, x, y, a, r) {
     for (let k = 4; k >= 0; k--) g.lineTo(x + S * .05 * k, y + S * .1 + Math.sin(t * 5 - k) * S * .015 * k / 4);
     g.closePath(); g.fill();
     g.fillStyle = "#f7f2e6"; g.fillRect(x, y, S * .07, S * .05);
+  } else if (kind === "train" || kind === "wagon") {
+    // A train pulls in, waits and pulls out, then the next comes the other way. A wagon just drives across.
+    const train = kind === "train", cycle = train ? 16 : 11, T = ((t % (cycle * 2)) + cycle * 2) % (cycle * 2);
+    const back = T >= cycle, u = back ? T - cycle : T;
+    const span = r.n * S, cars = train ? (r.freight ? 2 : 4) : 0, len = train ? S * .8 + cars * S * (r.freight ? .8 : .85) : S * .85;
+    const stop = span / 2 + len / 2, end = span + len;
+    let head, moving = true;
+    if (!train) { if (u > 6) return; head = end * u / 6; }
+    else if (u < 3.5) head = stop * (1 - (1 - u / 3.5) ** 2);
+    else if (u < 10) { head = stop; moving = false; }
+    else if (u < 13.5) head = stop + (end - stop) * ((u - 10) / 3.5) ** 2;
+    else return;
+    const dir = r.horiz ? [1, 0] : [0, 1], sgn = back ? -1 : 1;
+    const ox = r.x - dir[0] * S / 2 + (back ? dir[0] * span : 0), oy = r.y - dir[1] * S / 2 + (back ? dir[1] * span : 0);
+    g.save();
+    g.beginPath(); for (const c of r.clips) g.rect(...c); g.clip();
+    g.translate(ox, oy); g.rotate(Math.atan2(dir[1] * sgn, dir[0] * sgn));
+    if (train) {
+      engine(g, head, S);
+      for (let k = 0; k < cars; k++) {
+        const at = head - S * .85 - k * S * (r.freight ? .8 : .85);
+        if (r.freight) car(g, at, S, S * .75, k % 2 ? "#7d6a56" : "#a8503a", "rgba(255,240,220,.25)");
+        else car(g, at, S, S * .8, "#3f6f5a", "#e9dcc4");
+      }
+    } else wagon(g, head, S);
+    g.restore();
+    // Steam from the stack, but only where the engine can be seen.
+    if (train && Math.random() < (moving ? .05 : .008)) {
+      const along = head - S * .16, sx = ox + dir[0] * sgn * along, sy = oy + dir[1] * sgn * along;
+      if (r.clips.some(([cx, cy, cw, ch]) => sx >= cx && sx <= cx + cw && sy >= cy && sy <= cy + ch)) FX.puffs.push({ x: sx, y: sy, t: 0, dark: false, drift: .5 + Math.random() * .5 });
+    }
+  } else if (kind === "race") {
+    // Three horses race two laps and finish together at the line, with the lead changing on the way; then they rest.
+    const cycle = 18, T = ((t % cycle) + cycle) % cycle, race = Math.floor(t / cycle), u = Math.min(1, T / 11);
+    const ease = u < .5 ? 2 * u * u : 1 - 2 * (1 - u) ** 2;
+    [["#d65a45", "#6e4a33"], ["#3f79b5", "#b4875a"], ["#e3a92f", "#4a382d"]].forEach(([silk, coat], i) => {
+      const lane = (i - 1) * S * .1, rx = r.rx + lane, ry = r.ry + lane;
+      const lead = (hash(race, i + a) - .5) * .2 * Math.sin(Math.PI * u) ** 2;
+      const th = -(ease + lead) * Math.PI * 4;
+      const hx = x + rx * Math.cos(th), hy = y + ry * Math.sin(th), head = Math.atan2(-ry * Math.cos(th), rx * Math.sin(th));
+      if (u < 1) circle(g, hx - Math.cos(head) * S * .16, hy - Math.sin(head) * S * .16, S * .05, "rgba(240,225,190,.5)");
+      horse(g, hx, hy, head, coat, .75);
+      circle(g, hx + Math.cos(head) * S * .02, hy + Math.sin(head) * S * .02, S * .035, silk);
+    });
   } else if (kind === "birds") {
     // A few birds wheel over the trees, their shadows on the grass below.
     for (let k = 0; k < 3; k++) {
@@ -1392,8 +1438,8 @@ function stoneRoof(g, x, y, w, h, c) {
 }
 
 /* A flat roof hidden behind a tall false front with a sign, facing down the map. */
-function frontRoof(g, x, y, w, h, c) {
-  const S = UI.S, fh = Math.min(h * .4, S * .24), step = S * .07;
+function frontRoof(g, x, y, w, h, c, words) {
+  const S = UI.S, along = w >= h, fh = Math.min(h * (words && along ? .55 : .4), S * (words && along ? .34 : .24)), step = S * .07;
   g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .03); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
   g.beginPath(); rr(g, x, y, w, h, S * .03); g.fillStyle = shade(c[1], -.12); g.fill();
   g.strokeStyle = "rgba(255,255,255,.1)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
@@ -1405,10 +1451,30 @@ function frontRoof(g, x, y, w, h, c) {
   g.fillStyle = c[0]; g.fillRect(x - over, fy, w + over * 2, fh);
   g.fillRect(x + w * .22, fy - S * .06, w * .56, S * .07);
   g.fillStyle = "rgba(255,255,255,.3)"; g.fillRect(x - over, fy, w + over * 2, S * .025);
-  const sw = w * .5, sh = fh * .5;
-  g.fillStyle = "#f4ecd9"; g.fillRect(x + (w - sw) / 2, fy + (fh - sh) / 2, sw, sh);
-  g.fillStyle = shade(c[1], -.2);
-  g.fillRect(x + (w - sw * .7) / 2, fy + fh / 2 - S * .02, sw * .7, S * .04);
+  if (!words) {
+    const sw = w * .5, sh = fh * .5;
+    g.fillStyle = "#f4ecd9"; g.fillRect(x + (w - sw) / 2, fy + (fh - sh) / 2, sw, sh);
+    g.fillStyle = shade(c[1], -.2);
+    g.fillRect(x + (w - sw * .7) / 2, fy + fh / 2 - S * .02, sw * .7, S * .04);
+    return;
+  }
+  // A painted board with the name on it: across the front when the building lies flat, up the roof when it stands.
+  g.save();
+  const bw = along ? w * .88 : h - fh - S * .12, bh = along ? fh * .72 : Math.min(w * .62, S * .3);
+  g.translate(x + w / 2, along ? fy + fh / 2 : y + (h - fh) / 2 + S * .02);
+  if (!along) {
+    g.rotate(-Math.PI / 2);
+    g.fillStyle = "rgba(40,30,20,.3)"; g.fillRect(-bw / 2 + S * .05, -bh / 2 + S * .03, bw, bh);
+  }
+  g.fillStyle = "#f4ecd9"; g.fillRect(-bw / 2, -bh / 2, bw, bh);
+  g.strokeStyle = shade(c[1], -.25); g.lineWidth = Math.max(1, S * .02); g.strokeRect(-bw / 2 + S * .025, -bh / 2 + S * .025, bw - S * .05, bh - S * .05);
+  let px = bh * .72;
+  g.font = `900 ${px}px Rockwell, "American Typewriter", Georgia, serif`;
+  const fit = (bw - S * .12) / g.measureText(words).width;
+  if (fit < 1) { px *= fit; g.font = `900 ${px}px Rockwell, "American Typewriter", Georgia, serif`; }
+  g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#6b2a22";
+  g.fillText(words, 0, bh * .04);
+  g.restore();
 }
 
 /* Little windows poking out of a roof, along its top slope. */
@@ -1468,7 +1534,7 @@ function roofFor(g, role, d, x, y, w, h, baking) {
   if (role === "beehive") return beehives(g, x, y, w, h, d.roof, baking);
   const style = d.style, c = role === "rowB" ? d.roof2 : d.roof;
   if (role !== "big" && role !== "steeple" && style && style !== "dormer") {
-    ({ logs: logRoof, metal: metalRoof, stone: stoneRoof, front: frontRoof })[style](g, x, y, w, h, c);
+    ({ logs: logRoof, metal: metalRoof, stone: stoneRoof, front: frontRoof })[style](g, x, y, w, h, c, d.sign);
     if (role === "house" || role === "rowA") chimney(g, x + w * .7, y + h * .12, false, baking);
     if (role === "forge") chimney(g, x + w * .62, y + h * .18, true, baking);
     return;
@@ -1812,9 +1878,9 @@ function groundDetail(g, role, i, x, y, S, horiz) {
 }
 
 /* A horse seen from above, facing `a`. */
-function horse(g, x, y, a, coat) {
+function horse(g, x, y, a, coat, size = 1) {
   const S = UI.S;
-  g.save(); g.translate(x, y); g.rotate(a);
+  g.save(); g.translate(x, y); g.rotate(a); g.scale(size, size);
   ellipse(g, S * .02, S * .04, S * .16, S * .07, "rgba(40,30,20,.2)");
   g.strokeStyle = shade(coat, -.35); g.lineWidth = Math.max(1, S * .03); g.lineCap = "round";
   g.beginPath(); g.moveTo(-S * .13, 0); g.lineTo(-S * .21, S * .02); g.stroke();
@@ -1848,16 +1914,56 @@ function extra(g, d, box, cells, dy, baking) {
   } else if (d.extra === "saw") {
     circle(g, x + S * .03, y + S * .05, S * .15, "rgba(40,30,20,.25)");
     alive(g, "saw", x, y, hash(x, y));
-  } else if (d.extra === "boxcar") {
-    // A freight car on the first two squares of track.
-    const a = cells[0], b = cells[1], horiz = rowOf(a) === rowOf(b);
-    const bx = Math.min(cellX(a), cellX(b)) + S * (horiz ? .12 : .22), by = Math.min(cellY(a), cellY(b)) + dy + S * (horiz ? .22 : .12);
-    const bw = horiz ? S * 1.76 : S * .56, bh = horiz ? S * .56 : S * 1.76;
-    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(bx + S * .04, by + S * .06, bw, bh);
-    g.fillStyle = "#a8503a"; g.fillRect(bx, by, bw, bh);
-    g.fillStyle = "#c26a4f"; if (horiz) g.fillRect(bx, by, bw, bh / 2); else g.fillRect(bx, by, bw / 2, bh);
-    g.fillStyle = "#e9dcc4"; if (horiz) g.fillRect(bx + bw / 2 - S * .02, by, S * .04, bh); else g.fillRect(bx, by + bh / 2 - S * .02, bw, S * .04);
   }
+}
+
+/*
+  A way through a building that things travel along: the track of a station or freight yard, or the deck of a
+  bridge. The way runs the length of the building. Travellers only show on the squares of that role, so they
+  slip under a station hall or a covered bridge's roof.
+*/
+function route(d, cells, role, dy) {
+  const S = UI.S, on = cells.filter((c, k) => d.roles[k] === role);
+  const horiz = on.every(c => rowOf(c) === rowOf(on[0]));
+  const at = (c) => horiz ? colOf(c) : rowOf(c);
+  const sorted = on.slice().sort((a, b) => at(a) - at(b)), first = sorted[0], last = sorted[sorted.length - 1];
+  const clips = [], ins = S * .09;
+  let start = first;
+  sorted.forEach((c, k) => {
+    const next = sorted[k + 1];
+    if (next !== undefined && at(next) === at(c) + 1) return;
+    const n = at(c) - at(start) + 1;
+    clips.push([cellX(start) + ins, cellY(start) + dy + ins, (horiz ? n : 1) * S - ins * 2, (horiz ? 1 : n) * S - ins * 2]);
+    start = next;
+  });
+  return { horiz, n: at(last) - at(first) + 1, x: cellX(first) + S / 2, y: cellY(first) + dy + S / 2, clips };
+}
+
+/* A little steam engine, a wagon and its horse, and the cars a train pulls. All point along +x, front at x. */
+function engine(g, x, S) {
+  const x0 = x - S * .8;
+  g.beginPath(); rr(g, x0 + S * .03, -S * .13, S * .8, S * .36, S * .06); g.fillStyle = "rgba(40,30,20,.25)"; g.fill();
+  g.fillStyle = "#8f4b36"; g.beginPath(); g.moveTo(x - S * .08, -S * .15); g.lineTo(x, 0); g.lineTo(x - S * .08, S * .15); g.closePath(); g.fill();
+  g.beginPath(); rr(g, x0 + S * .26, -S * .14, S * .48, S * .28, S * .13); g.fillStyle = "#3d4148"; g.fill();
+  g.fillStyle = "#c9a13b"; g.fillRect(x0 + S * .48, -S * .14, S * .035, S * .28);
+  g.beginPath(); rr(g, x0, -S * .18, S * .3, S * .36, S * .05); g.fillStyle = "#a8503a"; g.fill();
+  g.fillStyle = "#c26a4f"; g.fillRect(x0 + S * .04, -S * .18, S * .22, S * .1);
+  circle(g, x0 + S * .64, 0, S * .06, "#2a2d31"); circle(g, x0 + S * .64, 0, S * .035, "#111");
+}
+function car(g, x, S, len, body, top) {
+  g.beginPath(); rr(g, x - len + S * .03, -S * .12, len, S * .34, S * .05); g.fillStyle = "rgba(40,30,20,.25)"; g.fill();
+  g.beginPath(); rr(g, x - len, -S * .17, len, S * .34, S * .05); g.fillStyle = body; g.fill();
+  g.fillStyle = top; g.fillRect(x - len + S * .05, -S * .05, len - S * .1, S * .1);
+}
+function wagon(g, x, S) {
+  horse(g, x - S * .17, 0, 0, "#4a3326", 1);
+  g.fillStyle = "#3d2b1f";
+  for (const wx of [x - S * .74, x - S * .44]) for (const wy of [-S * .17, S * .13]) g.fillRect(wx, wy, S * .1, S * .04);
+  g.beginPath(); rr(g, x - S * .8 + S * .03, -S * .1, S * .48, S * .28, S * .05); g.fillStyle = "rgba(40,30,20,.25)"; g.fill();
+  g.beginPath(); rr(g, x - S * .8, -S * .15, S * .48, S * .3, S * .08); g.fillStyle = "#f1e8d4"; g.fill();
+  g.strokeStyle = "rgba(120,95,60,.4)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+  for (const rx of [.68, .56, .44]) { g.moveTo(x - S * rx, -S * .15); g.lineTo(x - S * rx, S * .15); }
+  g.stroke();
 }
 
 /* Draws a building's art on top of its tile. `dy` is how far the top of the tile is raised. */
@@ -1903,6 +2009,21 @@ function art(g, type, cells, dy, baking) {
       circle(g, px + S * .03, py + S * .05, S * .36, "rgba(40,30,20,.18)");
       circle(g, px, py, S * .36, "#cfc5b0"); circle(g, px, py, S * .28, "#7cc3d8");
       alive(g, "ripple", px, py, hash(px, py), S * .27);
+      // Benches face the fountain on four sides, with a lamp post on each corner between them.
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2, bx = px + Math.cos(a) * S * .6, by = py + Math.sin(a) * S * .6;
+        g.save(); g.translate(bx, by); g.rotate(a + Math.PI / 2);
+        g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(-S * .15 + S * .02, -S * .04 + S * .04, S * .3, S * .1);
+        g.fillStyle = "#8a6040"; g.fillRect(-S * .15, -S * .05, S * .3, S * .1);
+        g.fillStyle = "#b4875a"; g.fillRect(-S * .15, -S * .05, S * .3, S * .03); g.fillRect(-S * .15, -S * .005, S * .3, S * .03);
+        g.fillStyle = "#3d4148"; g.fillRect(-S * .17, -S * .06, S * .03, S * .12); g.fillRect(S * .14, -S * .06, S * .03, S * .12);
+        g.fillRect(-S * .15, S * .045, S * .3, S * .02);
+        g.restore();
+        const la = a + Math.PI / 4, lx = px + Math.cos(la) * S * .66, ly = py + Math.sin(la) * S * .66;
+        circle(g, lx + S * .03, ly + S * .04, S * .05, "rgba(40,30,20,.2)");
+        circle(g, lx, ly, S * .1, "rgba(255,226,150,.22)");
+        circle(g, lx, ly, S * .045, "#3d4148"); circle(g, lx, ly, S * .025, "#ffe9a8");
+      }
       circle(g, px, py, S * .1, "#e9e2d0"); circle(g, px - S * .08, py - S * .09, S * .05, "rgba(255,255,255,.6)");
     }
     if (role === "track") {
@@ -1911,7 +2032,10 @@ function art(g, type, cells, dy, baking) {
       g.beginPath(); g.ellipse(px, py, w / 2 - S * .32, h / 2 - S * .32, 0, 0, Math.PI * 2); g.stroke();
       g.strokeStyle = "#f7f2e6"; g.lineWidth = Math.max(1, S * .025);
       g.beginPath(); g.ellipse(px, py, w / 2 - S * .16, h / 2 - S * .16, 0, 0, Math.PI * 2); g.stroke();
-      circle(g, px + w / 2 - S * .32, py, S * .07, "#7a5236"); circle(g, px - w / 2 + S * .32, py - S * .3, S * .07, "#3d2b1f");
+      const fx = px + w / 2 - S * .32;
+      for (let k = 0; k < 6; k++) { g.fillStyle = k % 2 ? "#3d4148" : "#f7f2e6"; g.fillRect(fx - S * .15 + k * S * .05, py - S * .02, S * .05, S * .04); }
+      circle(g, fx + S * .19, py, S * .03, "#d65a45");
+      alive(g, "race", px, py, hash(px, py), { rx: w / 2 - S * .32, ry: h / 2 - S * .32 });
     }
     if (role === "pasture") {
       // A fence: a darker ring, then the grass again just inside it.
@@ -1942,6 +2066,8 @@ function art(g, type, cells, dy, baking) {
     }
     if (!sign || group.length > sign.n) sign = { n: group.length, x: UI.BX + (x0 + gw / 2) * S, y: UI.BY + (y0 + gh / 2) * S + dy, w: gw * S - pad * 2, h: gh * S - pad * 2 };
   }
+  const way = d.roles.includes("rail") ? "rail" : d.bridge ? "deck" : null;
+  if (way) alive(g, d.bridge ? "wagon" : "train", 0, 0, hash(cells[0], 9), { ...route(d, cells, way, dy), freight: d === DEF.freight });
   if (d.extra === "birds") alive(g, "birds", cells.reduce((sum, c) => sum + cellX(c), 0) / cells.length + S / 2,
                                 cells.reduce((sum, c) => sum + cellY(c), 0) / cells.length + S / 2 + dy, hash(cells[0], 8));
   else if (d.extra && sign) extra(g, d, sign, cells, dy, baking);

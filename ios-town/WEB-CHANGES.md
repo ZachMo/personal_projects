@@ -10,6 +10,14 @@ parity tests will fail.
 
 ## Waiting
 
+### A plainer daily card
+
+Commit: "Hügelland: the daily card shows the goals alone", after the menu change.
+
+The card during a daily game keeps its heading, the date and the three goals with their progress. The score
+so far, the streak and the line about par are gone: the score is already in the header, and par belongs to
+the summary.
+
 ### The daily map from the menu
 
 Commit: "Hügelland: reach the daily map from the menu", after the daily challenge links.

@@ -2912,15 +2912,9 @@ function goalRows() {
 
 function showDaily() {
   if (!isDaily()) return;
-  const rec = dailyRecord();
   openSheet(`<h2>Daily map</h2>
     <p>${esc(dayName(G.day))} · the same map for everyone today.</p>
     ${goalRows()}
-    <ul class="tally" style="margin-top:12px">
-      <li><span>Your town so far</span><b>${total()}</b></li>
-      ${rec && rec.streak > 1 ? `<li><span>Days in a row</span><b>${rec.streak}</b></li>` : ""}
-    </ul>
-    <p style="margin-top:10px">Par for this map waits until the town is done.</p>
     <div class="row"><button class="tool" id="dyClose">Close</button></div>`);
   $("dyClose").onclick = closeSheet;
 }

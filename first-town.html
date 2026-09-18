@@ -105,7 +105,7 @@
   .next .mini { width: 44px; height: 44px; border-radius: 12px; }
 
   .mods { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 5px; }
-  .mods li { display: flex; align-items: center; gap: 9px; font-size: .84rem; }
+  .mods li { display: flex; align-items: center; gap: 7px; font-size: .84rem; }
   .mods li b { flex: 0 0 auto; min-width: 36px; text-align: center; padding: 2px 6px; border-radius: 8px; font-size: .8rem; font-weight: 800;
                font-variant-numeric: tabular-nums; background: var(--good-bg); color: var(--good); }
   .mods li.bad b { background: var(--bad-bg); color: var(--bad); }
@@ -269,22 +269,24 @@ const AWAY = 5;           // points lost for each building that fits nowhere
 const DISTRICT_MAX = 4;   // the most a building gains from its district
 const ALL_FIT = 10;       // points won when every building finds a place
 
+/* The map's land. `short` is the word the scoring cards use. */
 const TERRAIN = {
-  grass:  { name: "Open grass", short: "open grass", blurb: "Flat, easy land." },
-  forest: { name: "Woods",      short: "woods",      blurb: "Tall trees. A building put here clears them." },
-  ore:    { name: "Ore vein",   short: "ore",        blurb: "Rock with a seam of silver in it." },
-  wheat:  { name: "Wild wheat", short: "wild wheat", blurb: "Rich soil where grain grows on its own." },
-  herd:   { name: "Grazing herd", short: "herd", on: "herd land", blurb: "Cattle and sheep on open range. A building here drives them off." },
-  water:  { name: "Water",      short: "water",      blurb: "Only a bridge can be built on water." },
+  grass:  { short: "open grass" },
+  forest: { short: "woods" },
+  ore:    { short: "ore" },
+  wheat:  { short: "wheat" },
+  herd:   { short: "herd" },
+  water:  { short: "water" },
 };
 
+/* `name` heads a card, `one` and `many` are the short words the scoring rows use. */
 const CATS = {
-  home:     { name: "Home",     one: "home",                many: "homes" },
-  agri:     { name: "Food",     one: "food building",       many: "food buildings" },
-  industry: { name: "Industry", one: "industry building",   many: "industry buildings" },
-  shop:     { name: "Shop",     one: "shop",                many: "shops" },
-  civic:    { name: "Civic",    one: "civic building",      many: "civic buildings" },
-  leisure:  { name: "Leisure",  one: "leisure building",    many: "leisure buildings" },
+  home:     { name: "Home",     one: "home",     many: "homes" },
+  agri:     { name: "Food",     one: "food",     many: "food" },
+  industry: { name: "Industry", one: "industry", many: "industry" },
+  shop:     { name: "Shop",     one: "shop",     many: "shops" },
+  civic:    { name: "Civic",    one: "civic",    many: "civic" },
+  leisure:  { name: "Leisure",  one: "leisure",  many: "leisure" },
 };
 
 /* Footprints. The order of the cells matters: each building's roles line up with it. */
@@ -334,7 +336,7 @@ const SHAPES = {
   bridge: true lets a building sit on water. Both of its ends must be on land.
   emblem: a small sign drawn on the roof.   tile: its own tile colours, instead of its category's.
   style:  how its roofs look: logs, metal, stone, front (a false front with a sign) or dormer. Plain gables otherwise.
-  sign:   words painted on a false front.
+  sign:   its name on a board: painted on a false front, or standing on the roof of any other building.
   extra:  one more thing on its biggest roof: stack, cupola, bell or saw. Or birds, which circle over it.
   Trains come and go on any track (rail), wagons cross every bridge, and horses race on the racetrack.
 
@@ -345,7 +347,7 @@ const DEF = {
                roles: ["well"], blurb: "Water for the families and the herds.",
                rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "land", t: "herd", p: 1 }] },
   cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, base: 2, roof: ["#dc7b50", "#b75d3a"],
-               style: "logs", roles: ["house", "woodpile"], blurb: "A porch by the woods, close to the food.",
+               style: "logs", roles: ["house", "woodpile"], blurb: "Timber walls and a porch, close to the food.",
                rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
   homestead: { name: "Homestead", cat: "home", shape: "V3", n: 2, era: 1, base: 3, roof: ["#c86a4b", "#a45237"],
                roles: ["veg", "house", "house"], blurb: "A family that wants food and grain close by.",
@@ -363,7 +365,7 @@ const DEF = {
                roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
                rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
   mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1, base: 2,
-               roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging where the ore is.",
+               roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging for ore.",
                rules: [{ k: "land", t: "ore", p: 3 }] },
   smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#6f7985", "#535c67"], style: "stone",
                roles: ["forge", "anvil"], blurb: "Tools for the farms, shoes for the herds.",
@@ -371,7 +373,7 @@ const DEF = {
   dock:      { name: "Fishing Dock", cat: "agri", shape: "I3", n: 1, era: 2, base: 1, roof: ["#927c64", "#73614d"],
                roles: ["shed", "plank", "plank"], blurb: "Nets and boats along the bank.",
                rules: [{ k: "land", t: "water", p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
-  store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, base: 3, roof: ["#40a092", "#2f7e72"], style: "front",
+  store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, base: 3, roof: ["#40a092", "#2f7e72"], style: "front", sign: "STORE",
                roles: ["hall", "hall", "hall", "crates"], blurb: "A little of everything, brought up the river.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
   grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, base: 2, roof: ["#5ea56b", "#468753"],
@@ -386,7 +388,7 @@ const DEF = {
   school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#cc5e4c", "#a84737"], extra: "bell",
                roles: ["hall", "hall", "hall", "yard", "play"], blurb: "Lessons for the children next door.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
-  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 3, roof: ["#9160aa", "#724489"], style: "dormer",
+  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 3, roof: ["#9160aa", "#724489"], style: "dormer", sign: "HOTEL",
                roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "Travellers want a view and a store.",
                rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["shop"], p: 2 }] },
   station:   { name: "Train Station", cat: "civic", shape: "I5", n: 1, era: 3, base: 3, roof: ["#5d7189", "#46586c"],
@@ -428,10 +430,10 @@ const DEF = {
                extra: "cupola", roles: ["hall", "hall", "hall", "paddock"], blurb: "Horses for hire, broken from the herds.",
                rules: [{ k: "land", t: "herd", p: 1 }, { k: "near", cats: ["leisure", "civic"], p: 1 }] },
   granary:   { name: "Granary", plural: "Granaries", cat: "agri", shape: "I2", n: 1, era: 3, base: 1, roof: ["#caa24e", "#a8843a"],
-               roles: ["silo", "silo"], blurb: "Stores grain where it grows, and the harvest of every food building.",
+               roles: ["silo", "silo"], blurb: "Stores wild grain and the harvest of every food building.",
                rules: [{ k: "land", t: "wheat", p: 1 }, { k: "town", cats: ["agri"], p: 1 }] },
   windmill:  { name: "Windmill", cat: "agri", shape: "I1", n: 2, era: 1, base: 2,
-               roles: ["windmill"], blurb: "Turns wherever the grain grows.",
+               roles: ["windmill"], blurb: "Grinds the wild grain.",
                rules: [{ k: "land", t: "wheat", p: 2 }] },
 
   /* Industry */
@@ -439,7 +441,7 @@ const DEF = {
                roles: ["sluice", "sluice", "sluice"], blurb: "Washes gold out of the rock.",
                rules: [{ k: "land", t: "ore", p: 2 }, { k: "land", t: "water", p: 3, once: true }] },
   stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 2, roof: ["#6c7480", "#525964"], style: "metal", extra: "stack",
-               roles: ["hall", "hall", "rocks", "cart"], blurb: "Crushes ore beside the diggings.",
+               roles: ["hall", "hall", "rocks", "cart"], blurb: "Crushes ore from the diggings.",
                rules: [{ k: "land", t: "ore", p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
   brickworks:{ name: "Brickworks", plural: "Brickworks", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#b4533d", "#903f2e"],
                roles: ["beehive", "beehive", "beehive", "bricks"], blurb: "Bricks for every home in town.",
@@ -491,7 +493,7 @@ const DEF = {
                roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square among shops and homes.",
                rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
   cemetery:  { name: "Cemetery", plural: "Cemeteries", cat: "civic", shape: "T4", n: 1, era: 2, base: 2,
-               roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet ground by the trees, away from the noise.",
+               roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet, shady ground, away from the noise.",
                rules: [{ k: "without", cats: ["leisure", "industry"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
   doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
                roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
@@ -909,31 +911,31 @@ const nearNoun = (r, n) => r.any ? (n === 1 ? "building" : "buildings") : joinOr
   ? [...(r.types || []).map(t => DEF[t].name), ...(r.cats || []).map(c => CATS[c].one)]
   : [...(r.types || []).map(plural), ...(r.cats || []).map(c => CATS[c].many)]);
 
-/* A rule as the card shows it, after its points: "+2 each woods square on or next to it". */
+/* A rule as the card shows it, after its points: "+2 each woods". The icon says whether it is land or neighbours. */
 function ruleText(r) {
-  if (r.k === "land") return r.once ? `if on or next to ${landWord(r.t)}` : `each ${landWord(r.t)} square on or next to it`;
-  if (r.k === "near") return `each ${nearNoun(r, 1)} next to it`;
-  if (r.k === "edge") return "if at the edge of the map";
-  if (r.k === "variety") return "each kind of building next to it";
+  if (r.k === "land") return r.once ? `if ${landWord(r.t)}` : `each ${landWord(r.t)}`;
+  if (r.k === "near") return `each ${nearNoun(r, 1)}`;
+  if (r.k === "edge") return "at the map edge";
+  if (r.k === "variety") return "each kind next to it";
   if (r.k === "town") return `each ${nearNoun(r, 1)} in town`;
-  if (r.k === "without") return `if no ${nearNoun(r, 2)} next to it`;
+  if (r.k === "without") return `if no ${nearNoun(r, 2)}`;
   return "";
 }
 
 /* The district row on a building's card. */
-const districtText = (type) => `each other ${CATS[DEF[type].cat].one} in its district, up to +${DISTRICT_MAX}`;
+const districtText = (type) => `each other ${CATS[DEF[type].cat].one} in its district, max +${DISTRICT_MAX}`;
 
-/* One part of a score as it stands: "3 woods on or next to it". */
+/* One part of a score as it stands, in as few words as it takes: "3 woods". */
 function partText(type, q) {
-  if (q.r === "district") return q.n > 1 ? `District of ${q.n} ${CATS[DEF[type].cat].many}` : "Not in a district";
+  if (q.r === "district") return q.n > 1 ? `District of ${q.n}` : "No district";
   if (q.r < 0) return "Base";
   const r = DEF[type].rules[q.r];
-  if (r.k === "land") return r.once ? (q.n ? `On or next to ${landWord(r.t)}` : `Not next to ${landWord(r.t)}`) : `${q.n} ${landWord(r.t)} on or next to it`;
-  if (r.k === "near") return `${q.n} ${nearNoun(r, q.n)} next to it`;
-  if (r.k === "edge") return q.n ? "At the map edge" : "Not at the map edge";
-  if (r.k === "variety") return `${q.n} ${q.n === 1 ? "kind" : "kinds"} next to it`;
+  if (r.k === "land") return r.once ? (q.n ? landWord(r.t) : `no ${landWord(r.t)}`) : `${q.n} ${landWord(r.t)}`;
+  if (r.k === "near") return `${q.n} ${nearNoun(r, q.n)}`;
+  if (r.k === "edge") return q.n ? "Map edge" : "Not at the edge";
+  if (r.k === "variety") return `${q.n} ${q.n === 1 ? "kind" : "kinds"}`;
   if (r.k === "town") return `${q.n} ${nearNoun(r, q.n)} in town`;
-  if (r.k === "without") return q.n ? `No ${nearNoun(r, 2)} next to it` : `Has ${nearNoun(r, 2)} next to it`;
+  if (r.k === "without") return q.n ? `No ${nearNoun(r, 2)}` : `Has ${nearNoun(r, 2)}`;
   return "";
 }
 </script>
@@ -1264,6 +1266,32 @@ function live(g, kind, x, y, a, r) {
       horse(g, hx, hy, head, coat, .75);
       circle(g, hx + Math.cos(head) * S * .02, hy + Math.sin(head) * S * .02, S * .035, silk);
     });
+  } else if (kind === "sluice") {
+    // Water streaks and flecks of gold wash down the trough. Every square of it runs the same way at the same
+    // time, so a fleck that leaves one square turns up in the next. `a` is 1 when the trough lies flat.
+    const along = (u, v) => a ? [x + S * u, y + S / 2 + S * v] : [x + S / 2 + S * v, y + S * u];
+    g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+    for (let k = 0; k < 3; k++) {
+      const p = (NOW * .9 + k / 3) % 1, [x1, y1] = along(p, (k - 1) * .04), [x2, y2] = along(Math.min(1, p + .1), (k - 1) * .04);
+      g.moveTo(x1, y1); g.lineTo(x2, y2);
+    }
+    g.stroke();
+    for (let k = 0; k < 4; k++) {
+      const p = (NOW * .3 + k / 4 + hash(k, 3) * .15) % 1, [fx, fy] = along(p, (hash(k, 4) - .5) * .08);
+      circle(g, fx, fy, S * .032, "#d9a82e");
+      circle(g, fx - S * .008, fy - S * .008, S * (.016 + .008 * Math.sin(NOW * 7 + k * 2)), "#fff0a8");
+    }
+  } else if (kind === "mine") {
+    // Dust drifts up out of the shaft, and a little ore cart rolls up and down its track.
+    for (let k = 0; k < 4; k++) {
+      const p = (t * .35 + k / 4) % 1, ang = -Math.PI / 2 + (hash(k, Math.floor(t * .35 + k / 4)) - .5) * 1.6;
+      circle(g, x + Math.cos(ang) * S * .2 * p, y + S * .05 + Math.sin(ang) * S * .2 * p, S * (.03 + .06 * p), `rgba(214,198,170,${.55 * (1 - p)})`);
+    }
+    const p = (1 - Math.cos(t * .9)) / 2, cy = y + S * (.24 + .18 * p), k = S * 1.25;
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(x - k * .08 + S * .02, cy - k * .06 + S * .03, k * .16, k * .12);
+    g.fillStyle = "#5c4028"; g.fillRect(x - k * .08, cy - k * .06, k * .16, k * .12);
+    circle(g, x - k * .03, cy - k * .01, k * .035, "#958d82"); circle(g, x + k * .03, cy + k * .01, k * .03, "#aaa396");
+    circle(g, x + k * .01, cy - k * .03, k * .022, "#f2cf63");
   } else if (kind === "birds") {
     // A few birds wheel over the trees, their shadows on the grass below.
     for (let k = 0; k < 3; k++) {
@@ -1458,13 +1486,20 @@ function frontRoof(g, x, y, w, h, c, words) {
     g.fillRect(x + (w - sw * .7) / 2, fy + fh / 2 - S * .02, sw * .7, S * .04);
     return;
   }
-  // A painted board with the name on it: across the front when the building lies flat, up the roof when it stands.
+  // The name across the front when the building lies flat, up the roof when it stands.
+  if (along) signBoard(g, x + w / 2, fy + fh / 2, w * .88, fh * .72, words, c, false, false);
+  else signBoard(g, x + w / 2, y + (h - fh) / 2 + S * .02, h - fh - S * .12, Math.min(w * .62, S * .3), words, c, true, true);
+}
+
+/* A cream board with a building's name painted on it, centred on (x, y). `upright` turns it to read bottom to top. */
+function signBoard(g, x, y, bw, bh, words, c, upright, raised) {
+  const S = UI.S;
   g.save();
-  const bw = along ? w * .88 : h - fh - S * .12, bh = along ? fh * .72 : Math.min(w * .62, S * .3);
-  g.translate(x + w / 2, along ? fy + fh / 2 : y + (h - fh) / 2 + S * .02);
-  if (!along) {
-    g.rotate(-Math.PI / 2);
-    g.fillStyle = "rgba(40,30,20,.3)"; g.fillRect(-bw / 2 + S * .05, -bh / 2 + S * .03, bw, bh);
+  g.translate(x, y);
+  if (upright) g.rotate(-Math.PI / 2);
+  if (raised) {
+    const sx = upright ? S * .05 : S * .03, sy = upright ? S * .03 : S * .05;
+    g.fillStyle = "rgba(40,30,20,.3)"; g.fillRect(-bw / 2 + sx, -bh / 2 + sy, bw, bh);
   }
   g.fillStyle = "#f4ecd9"; g.fillRect(-bw / 2, -bh / 2, bw, bh);
   g.strokeStyle = shade(c[1], -.25); g.lineWidth = Math.max(1, S * .02); g.strokeRect(-bw / 2 + S * .025, -bh / 2 + S * .025, bw - S * .05, bh - S * .05);
@@ -1634,6 +1669,7 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     g.fillStyle = "#7a5a3c"; g.fillRect(cx - S * .15, cy + S * .05, S * .3, S * .04);
     g.strokeStyle = "#6c5b4a"; g.lineWidth = Math.max(1, S * .025);
     g.beginPath(); g.moveTo(cx - S * .06, cy + S * .1); g.lineTo(cx - S * .08, y + S); g.moveTo(cx + S * .06, cy + S * .1); g.lineTo(cx + S * .08, y + S); g.stroke();
+    alive(g, "mine", cx, cy, hash(i, 8));
   } else if (role === "play") {
     circle(g, cx, cy, S * .26, "#e2c98e");
     g.strokeStyle = "#8a6444"; g.lineWidth = Math.max(1.5, S * .04);
@@ -1691,6 +1727,7 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     for (let k = 0; k < 3; k++) { const t = .2 + k * .3; if (horiz) g.fillRect(x + S * t, cy - w * .28, S * .03, w * .56); else g.fillRect(cx - w * .28, y + S * t, w * .56, S * .03); }
     circle(g, horiz ? x + S * .3 : x + S * .8, horiz ? y + S * .8 : y + S * .3, S * .07, "#958d82");
     circle(g, horiz ? x + S * .66 : x + S * .2, horiz ? y + S * .2 : y + S * .68, S * .035, "#f2cf63");
+    alive(g, "sluice", x, y, horiz ? 1 : 0);
   } else if (role === "deck") {
     g.strokeStyle = "#a57b52"; g.lineWidth = Math.max(1, S * .025); g.beginPath();
     for (let k = 1; k < 6; k++) {
@@ -2071,6 +2108,11 @@ function art(g, type, cells, dy, baking) {
   if (d.extra === "birds") alive(g, "birds", cells.reduce((sum, c) => sum + cellX(c), 0) / cells.length + S / 2,
                                 cells.reduce((sum, c) => sum + cellY(c), 0) / cells.length + S / 2 + dy, hash(cells[0], 8));
   else if (d.extra && sign) extra(g, d, sign, cells, dy, baking);
+  // A name board standing on the lower slope of the biggest roof. False fronts paint theirs on instead.
+  if (d.sign && d.style !== "front" && sign) {
+    if (sign.w >= sign.h) signBoard(g, sign.x, sign.y + sign.h * .22, sign.w * .78, Math.min(sign.h * .3, S * .3), d.sign, d.roof, false, true);
+    else signBoard(g, sign.x + sign.w * .22, sign.y, sign.h * .78, Math.min(sign.w * .3, S * .3), d.sign, d.roof, true, true);
+  }
   if (d.emblem && sign) emblem(g, d.emblem, sign.x, sign.y);
 }
 
@@ -2395,11 +2437,7 @@ function drawSelection(g, now) {
     const p = G.pieces[k];
     union(g, p.cells, S * .01, S * .22, -S * .04); g.fillStyle = `rgba(255,214,102,${a})`; g.fill();
     drawPiece(g, p.type, p.cells, 0, false);
-    return;
   }
-  g.lineWidth = Math.max(2, S * .055); g.strokeStyle = `rgba(255,214,102,${a})`;
-  g.beginPath(); rr(g, cellX(UI.sel) + S * .05, cellY(UI.sel) + S * .05, S * .9, S * .9, S * .16);
-  g.stroke();
 }
 
 /* ───────────────────────── Loop ───────────────────────── */
@@ -2492,7 +2530,7 @@ const rowHTML = (v, text, cls, icon) =>
 function modsHTML(type) {
   const d = DEF[type];
   const district = d.bridge ? "" : rowHTML(1, districtText(type), "", districtIcon(d.cat));
-  return `<ul class="mods">${rowHTML(d.base, "base points", "base")}${district}${d.rules.map(r => rowHTML(r.p, ruleText(r), undefined, ruleIcon(r))).join("")}</ul>`;
+  return `<ul class="mods">${rowHTML(d.base, "Base", "base")}${district}${d.rules.map(r => rowHTML(r.p, ruleText(r), undefined, ruleIcon(r))).join("")}</ul>`;
 }
 
 function hud() {
@@ -2570,15 +2608,10 @@ function paintInfo() {
   } else if (i >= 0 && OWNER[i] >= 0) {
     const k = OWNER[i], p = G.pieces[k], d = DEF[p.type], parts = pieceParts(k);
     const rows = parts.map(q => {
-      const r = d.rules[q.r], each = r && !r.once && r.k !== "edge" ? ` × ${signed(r.p)}` : "";
-      return rowHTML(q.v, partText(p.type, q) + each, q.r === -1 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "", q.r === "district" ? districtIcon(d.cat) : r && ruleIcon(r));
+      const r = d.rules[q.r];
+      return rowHTML(q.v, partText(p.type, q), q.r === -1 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "", q.r === "district" ? districtIcon(d.cat) : r && ruleIcon(r));
     }).join("");
     html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)} <span class="scored">${signed(sumParts(parts))}</span></h3><ul class="mods">${rows}</ul>`;
-    placeInfo(rowOf(i));
-  } else if (i >= 0) {
-    // Land just says what it is. Which buildings want it is on each building's own card.
-    const t = MAP[i];
-    html += `<div class="kind">${t === "water" ? "Bridges only" : "Open land"}</div><h3>${TERRAIN[t].name}</h3><p>${esc(TERRAIN[t].blurb)}</p>`;
     placeInfo(rowOf(i));
   } else {
     return closeInfo();
@@ -2692,8 +2725,8 @@ cv.addEventListener("pointerup", () => {
   press = null;
   if (p.moved) return;
   if (p.onGhost && !G.over) return toggleRules();
-  if (p.here < 0) return closeInfo();
-  if (p.here === UI.sel) return closeInfo();
+  // Only buildings have anything to say.
+  if (p.here < 0 || OWNER[p.here] < 0 || p.here === UI.sel) return closeInfo();
   select(p.here);
 });
 cv.addEventListener("pointercancel", () => { press = null; });

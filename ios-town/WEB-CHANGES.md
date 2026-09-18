@@ -10,6 +10,38 @@ parity tests will fail.
 
 ## Waiting
 
+### Less text: no card for land, shorter scoring rows
+
+Commit: "First Town: less text on the cards", after the signs and sluice change.
+
+* **Tapping land does nothing.** Only a built building opens a card. `InfoCard` drops the land case, and the
+  yellow ring that marked a chosen land square goes with it. `TERRAIN` keeps only `short`, the word the
+  scoring rows use; its `name`, `on` and `blurb` are gone.
+* **Shorter rows.** The icon already says whether a rule is land, a neighbour, the town, the edge or a
+  district, so the words carry only what it counts. `Words.rule`: "each woods", "if water", "each home",
+  "at the map edge", "each kind next to it", "each shop in town", "if no industry or leisure". `Words.part`:
+  "3 woods", "no water", "2 homes", "Map edge", "Not at the edge", "2 kinds", "District of 6", "No district".
+  A built building's rows no longer repeat the points as "× +1". The base row reads "Base".
+* `CATS` short words: home/homes, food/food, industry/industry, shop/shops, civic/civic, leisure/leisure.
+* The district row reads "each other home in its district, max +4".
+
+### Signs on the Hotel and Store, gold in the sluice, a busy mine, land words
+
+Not committed yet. Comes after "First Town: trains, wagons, races, plaza benches, saloon sign".
+
+* **Signs.** General Store gets `sign: "STORE"` on its false front. Hotel gets `sign: "HOTEL"`: a building
+  with a sign that is not a false front gets a raised board on the lower slope of its biggest roof,
+  .78 of the roof long and up to .3 deep, turned to read bottom to top when the roof stands upright. The board
+  drawing moves into one `signBoard(x, y, w, h, words, colours, upright, raised)`.
+* **Gold Sluice.** Each trough square draws three white water streaks and four gold flecks running along it.
+  Every square uses the same time, so flecks pass from one square to the next.
+* **Land words.** A one-time land bonus that misses reads "Not on or next to water", not "Not next to
+  water". Blurbs no longer hint at on or beside: Cabin "Timber walls and a porch, close to the food.", Mine
+  "Only worth digging for ore.", Stamp Mill "Crushes ore from the diggings.", Windmill "Grinds the wild
+  grain.", Granary "Stores wild grain and the harvest of every food building.", Cemetery "Quiet, shady
+  ground, away from the noise."
+* **Mine.** Tan dust drifts up out of the shaft, and a small ore cart with a gold nugget rolls up and down
+  the track below it.
 ### Trains, wagons, races, plaza benches and a saloon sign
 
 Commit: "First Town: trains, wagons, races, plaza benches, saloon sign", after "First Town: districts, coloured lots, distinct buildings".

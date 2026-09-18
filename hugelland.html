@@ -1,0 +1,2974 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b2422">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Hügelland</title>
+<meta name="apple-mobile-web-app-title" content="Hügelland">
+<meta name="description" content="Fit odd-shaped buildings onto the map and grow a town in the hills.">
+<link rel="icon" href="hugelland-icon.svg" type="image/svg+xml">
+<link rel="icon" href="hugelland-icon-180.png" sizes="180x180" type="image/png">
+<link rel="icon" href="hugelland-icon-512.png" sizes="512x512" type="image/png">
+<link rel="apple-touch-icon" href="hugelland-icon-180.png">
+<style>
+  :root {
+    color-scheme: dark;
+    --table: #1b2422; --table-2: #27332f;
+    --card: #fbf9f4; --card-2: #f0ece3; --line: #e6e1d6;
+    --ink: #1f2624; --ink-2: #5b645f; --muted: #8c938e;
+    --accent: #e0703f; --accent-2: #c05a2e;
+    --good: #2f8a55; --good-bg: #e4f2e8; --bad: #b8412f; --bad-bg: #f9e5e0;
+    --home: #d8734a; --agri: #c9952a; --industry: #6f7d8b; --shop: #33968a; --civic: #5a7fc4; --leisure: #a8588f;
+    --pad-t: env(safe-area-inset-top, 0px);
+    --pad-b: env(safe-area-inset-bottom, 0px);
+    --pad-l: env(safe-area-inset-left, 0px);
+    --pad-r: env(safe-area-inset-right, 0px);
+  }
+  * { box-sizing: border-box; min-width: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none;
+    /* Taps are taps: no double-tap zoom when Turn is pressed quickly. */
+    touch-action: manipulation; -webkit-text-size-adjust: 100%;
+    background: var(--table); color: #eef1ec;
+    font: 15px/1.4 system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; -webkit-user-select: none; user-select: none;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; touch-action: manipulation; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  #app {
+    position: fixed; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+    background: radial-gradient(90% 70% at 50% 42%, #2d3a36 0%, var(--table) 75%);
+  }
+
+  /* ── Top bar ── */
+  #hud {
+    display: flex; align-items: center; gap: 8px;
+    padding: calc(var(--pad-t) + 10px) calc(var(--pad-r) + 12px) 2px calc(var(--pad-l) + 12px);
+  }
+  .glass { background: rgba(255,255,255,.07); border-radius: 14px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+  .iconbtn { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; }
+  .iconbtn svg { width: 20px; height: 20px; }
+  .iconbtn:active, .stat:active { transform: scale(.96); }
+  .title { flex: 1; padding: 0 4px; }
+  .title b { display: block; font-size: 1.02rem; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title span { display: block; font-size: .72rem; color: #9fb0a9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat { min-width: 62px; height: 44px; padding: 0 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .stat b { font-size: 1.1rem; line-height: 1.1; font-weight: 750; }
+  .stat span { font-size: .58rem; letter-spacing: .09em; text-transform: uppercase; color: #9fb0a9; font-weight: 700; }
+
+  /* ── Board ── */
+  #stage { position: relative; }
+  #board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #toast {
+    position: absolute; left: 50%; top: 10px; transform: translate(-50%, -6px); max-width: calc(100% - 32px);
+    padding: 8px 14px; border-radius: 999px; background: rgba(20,28,26,.88); color: #fff; font-size: .84rem; font-weight: 600;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: none; opacity: 0; transition: opacity .25s, transform .25s; text-align: center;
+  }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  .card { background: var(--card); color: var(--ink); border-radius: 20px; box-shadow: 0 12px 34px rgba(0,0,0,.34); }
+
+  /* ── Info about a square ── */
+  #info {
+    position: absolute; left: 12px; right: 12px; margin: 0 auto; max-width: 420px; padding: 14px 16px 12px;
+    max-height: calc(50% - 16px); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  #info.top { top: 10px; } #info.bottom { bottom: 10px; }
+  .x { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 12px; font-size: 1.3rem; line-height: 34px; color: var(--ink-2); }
+  .kind { font-size: .66rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin-right: 36px; }
+  #info h3 { margin: 2px 0 2px; font-size: 1.08rem; letter-spacing: -.01em; }
+  #info p { margin: 0 0 6px; color: var(--ink-2); font-size: .84rem; }
+
+  /* ── The piece in hand ── */
+  #panel {
+    width: calc(100% - 16px); max-width: 520px; justify-self: center; display: flex; align-items: center; gap: 8px;
+    margin: 4px calc(var(--pad-r) + 8px) calc(var(--pad-b) + 8px) calc(var(--pad-l) + 8px); padding: 8px; border-radius: 18px;
+  }
+  #piece { flex: 1; min-width: 0; }
+  #piece .head { grid-template-columns: 44px 1fr; gap: 10px; }
+  #piece .mini { width: 44px; height: 44px; border-radius: 12px; }
+  #piece .name { display: block; font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nx { display: inline-flex; align-items: center; gap: 4px; }
+  .nx svg { display: block; }
+  #controls { flex: 0 0 auto; margin-top: 0; }
+  #controls .tool { height: 44px; }
+  #bTurn, #bFlip { width: 44px; padding: 0; justify-content: center; }
+  #controls .primary { flex: 0 0 auto; height: 44px; padding: 0 20px; }
+  .head { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; width: 100%; text-align: left; }
+  .hint { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-size: .74rem; font-weight: 650; color: var(--muted); margin-top: 2px; }
+  .mini { width: 58px; height: 58px; display: grid; place-items: center; background: var(--card-2); border-radius: 14px; }
+  .mini svg { display: block; }
+  .name { font-weight: 750; font-size: 1.06rem; letter-spacing: -.01em; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .chip { font-size: .58rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; color: #fff; background: var(--c); }
+  .next { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .next span { font-size: .58rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .next .mini { width: 44px; height: 44px; border-radius: 12px; }
+
+  .mods { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 5px; }
+  .mods li { display: flex; align-items: center; gap: 7px; font-size: .84rem; }
+  .mods li b { flex: 0 0 auto; min-width: 36px; text-align: center; padding: 2px 6px; border-radius: 8px; font-size: .8rem; font-weight: 800;
+               font-variant-numeric: tabular-nums; background: var(--good-bg); color: var(--good); }
+  .mods li.bad b { background: var(--bad-bg); color: var(--bad); }
+  .mods li.base b { background: var(--ink); color: #fff; }
+  .mods li.zero { color: var(--muted); }
+  .mods li.zero b { background: var(--card-2); color: var(--muted); }
+  .mods li .ico { width: 18px; height: 18px; flex: 0 0 auto; }
+  .mods li i.sp { width: 18px; flex: 0 0 auto; }
+  .bk { cursor: pointer; }
+  .bk small { display: block; font-size: .74rem; color: var(--muted); margin-top: 1px; }
+  .scored { font-size: .8rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: #fff; vertical-align: 2px; }
+
+  .controls { display: flex; gap: 8px; margin-top: 12px; }
+  .tool { height: 48px; padding: 0 12px; border-radius: 14px; background: var(--card-2); color: var(--ink); font-weight: 650; font-size: .85rem;
+          display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  .tool svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  .tool em { font-style: normal; font-size: .7rem; font-weight: 800; background: var(--ink); color: #fff; border-radius: 999px; padding: 1px 6px; }
+  .tool[disabled] { opacity: .4; pointer-events: none; }
+  .tool:active, .primary:active { transform: translateY(1px); }
+  .primary { flex: 1; height: 48px; border-radius: 14px; background: var(--accent); color: #fff; font-weight: 750; font-size: 1rem;
+             box-shadow: inset 0 -3px 0 var(--accent-2); }
+  .primary[disabled] { background: #dcd6ca; color: #8e897e; box-shadow: none; pointer-events: none; }
+  .primary.dark { background: var(--ink); box-shadow: inset 0 -3px 0 #000; }
+
+  .done { display: flex; align-items: baseline; gap: 6px; padding-left: 6px; }
+  .done .big { font-size: 1.7rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .done .sub { font-size: .8rem; color: var(--ink-2); }
+
+  /* ── Sheets and dialogs ── */
+  .overlay { position: fixed; inset: 0; background: rgba(8,14,12,.55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+  .center { display: grid; place-items: center; padding: 20px; }
+  .dialog { width: 100%; max-width: 380px; padding: 24px 20px 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
+  .dialog h1 { margin: 0; font-size: 2.1rem; letter-spacing: -.035em; line-height: 1; }
+  .dialog h2 { margin: 0 0 4px; font-size: 1.3rem; letter-spacing: -.02em; }
+  .dialog p { margin: 8px 0 12px; color: var(--ink-2); font-size: .9rem; }
+  .dialog input {
+    width: 100%; font: inherit; font-size: 16px; padding: 13px 14px; border-radius: 14px; border: 0; background: var(--card-2);
+    color: var(--ink); text-align: center; -webkit-user-select: text; user-select: text; box-shadow: inset 0 0 0 1.5px transparent;
+  }
+  .dialog input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+  .how { margin-top: 12px; text-align: left; }
+  .how summary { cursor: pointer; list-style: none; text-align: center; font-size: .86rem; font-weight: 700; color: var(--ink-2); padding: 6px; }
+  .how summary::-webkit-details-marker { display: none; }
+  .row { display: flex; gap: 8px; margin-top: 14px; }
+  .row .tool { flex: 1; justify-content: center; }
+  .rules { margin: 12px 0 0; padding: 0; list-style: none; text-align: left; }
+  .rules li { position: relative; padding: 7px 0 7px 26px; font-size: .86rem; color: var(--ink-2); border-top: 1px solid var(--line); }
+  .rules li b { color: var(--ink); }
+  .rules li::before { content: ""; position: absolute; left: 6px; top: 13px; width: 8px; height: 8px; border-radius: 3px; background: var(--accent); }
+  .final { text-align: center; }
+  .final .big { font-size: 3.2rem; font-weight: 800; letter-spacing: -.04em; line-height: 1; margin: 8px 0 2px; }
+  .final .best { font-size: .8rem; color: var(--muted); font-weight: 650; }
+  .tally { margin: 14px 0 0; padding: 0; list-style: none; text-align: left; }
+  .tally li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .88rem; }
+  .tally li span { color: var(--ink-2); }
+  .tally li b { font-variant-numeric: tabular-nums; }
+
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 560px; max-height: 82vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch; border-radius: 22px 22px 0 0; padding: 18px 16px calc(var(--pad-b) + 18px);
+  }
+  .sheet h2 { margin: 0 0 4px; font-size: 1.2rem; letter-spacing: -.01em; }
+  .sheet > p { margin: 0 0 10px; color: var(--ink-2); font-size: .86rem; }
+  .deck { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
+  .deckrow { display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: center; background: var(--card-2); border-radius: 14px; padding: 8px 10px; }
+  .deckrow .mini { width: 48px; height: 48px; background: var(--card); }
+  .deckrow .name { font-size: .92rem; }
+  .deckrow .mods { margin-top: 6px; gap: 3px; }
+  .deckrow .mods li { font-size: .76rem; }
+  .deckrow .mods li b { min-width: 30px; font-size: .72rem; padding: 1px 5px; }
+  .count { font-size: .72rem; font-weight: 800; color: var(--ink-2); background: var(--card); border-radius: 999px; padding: 1px 7px; }
+
+  .versus { margin: 12px 0 4px; padding: 12px 14px; border-radius: 16px; background: #f6e7b4; color: #6b4a08;
+            font-weight: 750; font-size: 1rem; text-align: center; }
+  .versus span { display: block; font-size: .8rem; font-weight: 600; margin-top: 3px; }
+  .versus.win { background: var(--good-bg); color: var(--good); }
+  .versus.lose { background: var(--bad-bg); color: var(--bad); }
+  .wide { width: 100%; margin-top: 10px; }
+  .linkbtn { display: block; margin: 10px auto 0; padding: 6px; font-size: .84rem; font-weight: 700; color: var(--ink-2); }
+  .sharebox input { margin-top: 8px; font-size: .8rem; }
+  .label { margin: 14px 0 2px; font-size: .72rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .tchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tchip { font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #f6e7b4; color: #7a5608; }
+  .tchip.bad { background: var(--bad-bg); color: var(--bad); }
+
+  /* ── Score pop and trophies ── */
+  .pop { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 5px;
+         pointer-events: none; z-index: 5; transition: opacity .4s, margin-top .4s; }
+  .pop.hide { opacity: 0; margin-top: -26px; }
+  .popnum { font-size: 2.7rem; font-weight: 850; letter-spacing: -.04em; line-height: 1; color: #fff;
+            text-shadow: 0 2px 0 #1b2422, 0 -2px 0 #1b2422, 2px 0 0 #1b2422, -2px 0 0 #1b2422, 0 8px 22px rgba(0,0,0,.45);
+            animation: popIn .55s cubic-bezier(.2,1.7,.4,1) both; }
+  .popnum.great { color: #a9f2b8; }
+  .popnum.gold { color: #ffd45c; font-size: 3.4rem; }
+  .popnum.low { color: #ffa38f; }
+  .tpill { display: flex; align-items: center; gap: 6px; padding: 5px 12px 5px 7px; border-radius: 999px; white-space: nowrap;
+           background: linear-gradient(135deg, #3a2d08, #735610); color: #fff2c2; font-weight: 800; font-size: .86rem;
+           box-shadow: 0 8px 20px rgba(0,0,0,.35); animation: slideIn .45s cubic-bezier(.2,1.5,.4,1) both; }
+  .tpill svg { width: 18px; height: 18px; }
+  .tpill.bad { background: linear-gradient(135deg, #3b1812, #72291d); color: #ffddd4; }
+  @keyframes popIn { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px) scale(.85); } to { opacity: 1; transform: none; } }
+  .stat.bump b { animation: bump .55s ease; }
+  @keyframes bump { 35% { transform: scale(1.4); color: #ffd666; } }
+
+  @media (min-width: 880px) {
+    #app { grid-template-columns: minmax(0, 1fr) 390px; grid-template-rows: auto minmax(0, 1fr); }
+    #hud { grid-column: 1 / -1; padding-left: 20px; padding-right: 20px; }
+    #panel { grid-column: 2; grid-row: 2; align-self: center; width: auto; margin: 0 24px 24px 0; }
+    #info { max-height: calc(100% - 20px); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <button id="menuBtn" class="iconbtn glass" aria-label="Menu">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h12"/></svg>
+    </button>
+    <div class="title"><b id="townName">Hügelland</b><span id="townSub">&nbsp;</span></div>
+    <button id="scoreBtn" class="stat glass" aria-label="Score breakdown"><b id="score" class="num">0</b><span>Points</span></button>
+    <button id="deckBtn" class="stat glass" aria-label="Buildings to come"><b id="left" class="num">0</b><span>To come</span></button>
+  </header>
+
+  <main id="stage">
+    <canvas id="board"></canvas>
+    <div id="toast"></div>
+    <div id="info" class="card" hidden></div>
+    <div id="pop" class="pop" hidden></div>
+  </main>
+
+  <section id="panel" class="card" hidden>
+    <div id="piece"></div>
+    <div class="controls" id="controls">
+      <button class="tool" id="bTurn" aria-label="Turn">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 9.5A5.5 5.5 0 1 1 13 5"/><path d="M13.5 1.8 13 5l3.2.6"/></svg>
+      </button>
+      <button class="tool" id="bFlip" aria-label="Flip">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5v15"/><path d="M7 5 2.5 14H7zM13 5l4.5 9H13z"/></svg>
+      </button>
+      <button class="primary" id="bBuild">Build</button>
+    </div>
+  </section>
+
+  <div id="sheetWrap" hidden>
+    <div class="overlay" id="scrim"></div>
+    <div class="sheet card" id="sheet"></div>
+  </div>
+
+  <div id="dialogWrap" class="overlay center" hidden><div class="dialog card" id="dialog"></div></div>
+</div>
+
+<script id="logic">
+"use strict";
+
+/* ───────────────────────── Rules of the game ───────────────────────── */
+
+const COLS = 9, ROWS = 12, N = COLS * ROWS;
+const FILL = .87;        // the deck covers this share of the land you can build on
+const AWAY = 5;           // points lost for each building that fits nowhere
+const DISTRICT_MAX = 4;   // the most a building gains from its district
+const ALL_FIT = 10;       // points won when every building finds a place
+
+/* The map's land. `short` is the word the scoring cards use. */
+const TERRAIN = {
+  grass:  { short: "open grass" },
+  forest: { short: "woods" },
+  ore:    { short: "ore" },
+  wheat:  { short: "wheat" },
+  herd:   { short: "herd" },
+  water:  { short: "water" },
+};
+
+/* `name` heads a card, `one` and `many` are the short words the scoring rows use. */
+const CATS = {
+  home:     { name: "Home",     one: "home",     many: "homes" },
+  agri:     { name: "Food",     one: "food",     many: "food" },
+  industry: { name: "Industry", one: "industry", many: "industry" },
+  shop:     { name: "Shop",     one: "shop",     many: "shops" },
+  civic:    { name: "Civic",    one: "civic",    many: "civic" },
+  leisure:  { name: "Leisure",  one: "leisure",  many: "leisure" },
+};
+
+/* Footprints. The order of the cells matters: each building's roles line up with it. */
+const SHAPES = {
+  I1: [[0,0]],
+  I2: [[0,0],[1,0]],
+  I3: [[0,0],[1,0],[2,0]],
+  V3: [[0,0],[0,1],[1,1]],
+  I4: [[0,0],[1,0],[2,0],[3,0]],
+  O4: [[0,0],[1,0],[0,1],[1,1]],
+  T4: [[0,0],[1,0],[2,0],[1,1]],
+  S4: [[1,0],[2,0],[0,1],[1,1]],
+  L4: [[0,0],[0,1],[0,2],[1,2]],
+  I5: [[0,0],[1,0],[2,0],[3,0],[4,0]],
+  V5: [[0,0],[0,1],[0,2],[1,2],[2,2]],
+  X5: [[1,0],[0,1],[1,1],[2,1],[1,2]],
+  T5: [[0,0],[1,0],[2,0],[1,1],[1,2]],
+  P5: [[0,0],[1,0],[0,1],[1,1],[0,2]],
+  U5: [[0,0],[2,0],[0,1],[1,1],[2,1]],
+  L5: [[0,0],[0,1],[0,2],[0,3],[1,3]],
+  N5: [[0,0],[1,0],[2,0],[2,1],[3,1]],
+  Y5: [[0,0],[1,0],[2,0],[3,0],[1,1]],
+  W5: [[0,0],[0,1],[1,1],[1,2],[2,2]],
+  Z5: [[0,0],[1,0],[1,1],[1,2],[2,2]],
+  F5: [[1,0],[2,0],[0,1],[1,1],[1,2]],
+  R6: [[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]],
+};
+
+/*
+  A building scores its base points, its district and its rules. Next to means sharing a side; corners don't count.
+  Buildings of one kind that touch make a district, and so do the buildings those touch. Each gains 1 point for
+  every other building in its district, up to DISTRICT_MAX. Bridges belong to no district.
+  A land bonus counts that land under the building and next to it. It is set when you build, so covering
+  that land later takes nothing away, and water under a bridge still counts as water. Bonuses for buildings
+  stay live, so a building gains whenever a neighbour it likes arrives.
+
+  n:     how many are in a deck        era: 1 comes early, 3 comes late
+  roles: what is drawn on each cell    roof: roof colours, light side then dark side
+  rules:
+    land    t: terrain   p: points for each square of that terrain under it or next to it (once: counts one at most)
+    near    cats / types p: points for each building of that kind next to it
+    edge                 p: points if it touches the edge of the map
+    variety              p: points for each kind of building next to it
+    town    cats / types p: points for each building of that kind anywhere in town
+    without cats / types p: points if no building of that kind is next to it
+  near and without take any: true to mean every building.
+  bridge: true lets a building sit on water. Both of its ends must be on land.
+  emblem: a small sign drawn on the roof.   tile: its own tile colours, instead of its category's.
+  style:  how its roofs look: logs, metal, stone, front (a false front with a sign) or dormer. Plain gables otherwise.
+  sign:   its name on a board: painted on a false front, or standing on the roof of any other building.
+  extra:  one more thing on its biggest roof: stack, cupola, bell or saw. Or birds, which circle over it.
+  Trains come and go on any track (rail), wagons cross every bridge, and horses race on the racetrack.
+
+  Each game draws about 19 kinds from this library. See makeDeck.
+*/
+const DEF = {
+  well:      { name: "Town Well", plural: "Town Wells", cat: "civic", shape: "I1", n: 2, era: 1, base: 1,
+               roles: ["well"], blurb: "Water for the families and the fields.",
+               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["agri"], p: 1 }] },
+  cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, base: 2, roof: ["#dc7b50", "#b75d3a"],
+               style: "logs", roles: ["house", "woodpile"], blurb: "Timber walls and a porch, close to the food.",
+               rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
+  homestead: { name: "Homestead", cat: "home", shape: "V3", n: 2, era: 1, base: 3, roof: ["#c86a4b", "#a45237"],
+               roles: ["veg", "house", "house"], blurb: "A family that wants food and grain close by.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "wheat", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+  rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, base: 3, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
+               roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close and a river view.",
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+  farm:      { name: "Farm", cat: "agri", shape: "O4", n: 2, era: 1, base: 2, roof: ["#cc5443", "#a43f31"],
+               roles: ["barn", "field", "field", "field"], blurb: "Grain for the families next door.",
+               rules: [{ k: "land", t: "wheat", p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }] },
+  ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, base: 2, roof: ["#b85a40", "#93432f"],
+               roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Round up a herd and sell to the shops.",
+               rules: [{ k: "land", t: "herd", p: 3 }, { k: "near", cats: ["shop"], p: 1 }] },
+  lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, base: 2, roof: ["#8e6c4f", "#6e523b"], style: "metal", extra: "saw",
+               roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
+               rules: [{ k: "land", t: "forest", p: 2 }] },
+  mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1, base: 2,
+               roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging for ore.",
+               rules: [{ k: "land", t: "ore", p: 3 }] },
+  smithy:    { name: "Blacksmith", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#6f7985", "#535c67"], style: "stone",
+               roles: ["forge", "anvil"], blurb: "Tools for the farms, shoes for the herds.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
+  dock:      { name: "Fishing Dock", cat: "agri", shape: "I3", n: 1, era: 2, base: 1, roof: ["#927c64", "#73614d"],
+               roles: ["shed", "plank", "plank"], blurb: "Nets and boats along the bank.",
+               rules: [{ k: "land", t: "water", p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
+  store:     { name: "General Store", cat: "shop", shape: "T4", n: 1, era: 2, base: 3, roof: ["#40a092", "#2f7e72"], style: "front", sign: "STORE",
+               roles: ["hall", "hall", "hall", "crates"], blurb: "A little of everything, brought up the river.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
+  grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, base: 2, roof: ["#5ea56b", "#468753"],
+               roles: ["shop", "shop", "produce", "produce"], blurb: "Fresh food, straight from the source.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
+  saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 3, roof: ["#a95a90", "#864571"], style: "front", sign: "SALOON",
+               roles: ["hall", "hall", "porch", "porch"], blurb: "Whiskey for the miners after a shift.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
+  church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 3, roof: ["#8195b8", "#63779d"],
+               roles: ["steeple", "tree", "nave", "tree", "nave"], blurb: "The heart of a quiet town.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["leisure"], p: -3 }] },
+  school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#cc5e4c", "#a84737"], extra: "bell",
+               roles: ["hall", "hall", "hall", "yard", "play"], blurb: "Lessons for the children next door.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+  hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 3, roof: ["#9160aa", "#724489"], style: "dormer", sign: "HOTEL",
+               roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "Travellers want a view and a store.",
+               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }] },
+  station:   { name: "Train Station", cat: "civic", shape: "I5", n: 1, era: 3, base: 3, roof: ["#5d7189", "#46586c"],
+               roles: ["rail", "hall", "hall", "hall", "rail"], blurb: "The line comes in from the edge of the map.",
+               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry", "shop"], p: 2 }] },
+  townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, base: 4, roof: ["#5580c8", "#4065a8"],
+               roles: ["tree", "flag", "hall", "hall", "hall"], blurb: "Wants every part of town at its door.",
+               rules: [{ k: "variety", p: 2 }] },
+
+  /* Homes */
+  manor:     { name: "Manor", cat: "home", shape: "O4", n: 1, era: 2, base: 4, roof: ["#7e8a9e", "#616c80"],
+               roles: ["big", "big", "hedge", "tree"], blurb: "Old money wants a view and fine neighbours.",
+               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["industry"], p: -3 }] },
+  loghouse:  { name: "Log House", cat: "home", shape: "I3", n: 2, era: 1, base: 2, roof: ["#9b6a45", "#7a5234"], style: "logs",
+               roles: ["house", "house", "garden"], blurb: "Built from the trees, a walk from the store.",
+               rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["shop"], p: 2 }] },
+  boarding:  { name: "Boarding House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#b07a52", "#8e5f3d"], style: "dormer",
+               roles: ["hall", "hall", "hall", "laundry"], blurb: "Cheap beds for working men.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "land", t: "ore", p: 1 }] },
+  farmhouse: { name: "Farmhouse", cat: "home", shape: "V3", n: 2, era: 1, base: 2, roof: ["#d0885a", "#ad6a40"],
+               roles: ["house", "house", "coop"], blurb: "Wants the fields and the herds close by.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "wheat", p: 1 }, { k: "land", t: "herd", p: 1 }] },
+  miners:    { name: "Miners' Shacks", plural: "Miners' Shacks", cat: "home", shape: "S4", n: 1, era: 2, base: 1,
+               roof: ["#8c7f73", "#6d6259"], roof2: ["#a08f7c", "#7f7162"], style: "metal",
+               roles: ["rowA", "fire", "rowB", "rowA"], blurb: "Close to the dig, far from comfort.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "ore", p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
+
+  /* Food */
+  orchard:   { name: "Orchard", cat: "agri", shape: "L4", n: 1, era: 1, base: 2,
+               roles: ["orchard", "orchard", "orchard", "orchard"], blurb: "Apples for the families next door.",
+               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 2 }] },
+  vineyard:  { name: "Vineyard", cat: "agri", shape: "W5", n: 1, era: 2, base: 1,
+               roles: ["vines", "vines", "vines", "vines", "vines"], blurb: "Grapes like rocky ground. Wine for the saloons and hotels.",
+               rules: [{ k: "land", t: "ore", p: 1 }, { k: "near", cats: ["leisure"], p: 2 }] },
+  gristmill: { name: "Gristmill", cat: "agri", shape: "I2", n: 1, era: 2, base: 2, roof: ["#a7836a", "#86684f"],
+               roles: ["hall", "wheel"], blurb: "A water wheel grinds flour for the families.",
+               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["home"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
+  stables:   { name: "Stables", plural: "Stables", cat: "agri", shape: "T4", n: 1, era: 2, base: 2, roof: ["#a2603c", "#7f492c"],
+               extra: "cupola", roles: ["hall", "hall", "hall", "paddock"], blurb: "Horses for hire, broken from the herds.",
+               rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["leisure", "civic"], p: 1 }] },
+  granary:   { name: "Granary", plural: "Granaries", cat: "agri", shape: "I2", n: 1, era: 3, base: 1, roof: ["#caa24e", "#a8843a"],
+               roles: ["silo", "silo"], blurb: "Stores wild grain and the harvest of every food building.",
+               rules: [{ k: "land", t: "wheat", p: 1 }, { k: "town", cats: ["agri"], p: 1 }] },
+  windmill:  { name: "Windmill", cat: "agri", shape: "I1", n: 2, era: 1, base: 2,
+               roles: ["windmill"], blurb: "Grinds the wild grain.",
+               rules: [{ k: "land", t: "wheat", p: 2 }] },
+
+  /* Industry */
+  sluice:    { name: "Gold Sluice", plural: "Gold Sluices", cat: "industry", shape: "I3", n: 1, era: 1, base: 2,
+               roles: ["sluice", "sluice", "sluice"], blurb: "Washes gold out of the rock.",
+               rules: [{ k: "land", t: "ore", p: 2 }, { k: "land", t: "water", p: 3, once: true }] },
+  stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 3, roof: ["#6c7480", "#525964"], style: "metal", extra: "stack",
+               roles: ["hall", "hall", "rocks", "cart"], blurb: "Crushes ore from the diggings.",
+               rules: [{ k: "land", t: "ore", p: 2 }] },
+  brickworks:{ name: "Brickworks", plural: "Brickworks", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#b4533d", "#903f2e"],
+               roles: ["beehive", "beehive", "beehive", "bricks"], blurb: "Bricks for every home in town.",
+               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "town", cats: ["home"], p: 1 }] },
+  tannery:   { name: "Tannery", plural: "Tanneries", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8a6f4e", "#6b553b"],
+               roles: ["hall", "hides"], blurb: "Hides from the herds. It smells.",
+               rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
+  kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 2,
+               roles: ["kiln"], blurb: "Burns wood into fuel.",
+               rules: [{ k: "land", t: "forest", p: 2 }] },
+  freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"], style: "metal",
+               roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads what every mill in town makes.",
+               rules: [{ k: "edge", p: 3 }, { k: "town", cats: ["industry"], p: 1 }] },
+
+  /* Shops */
+  bakery:    { name: "Bakery", plural: "Bakeries", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#d69a52", "#b47c3c"], emblem: "loaf",
+               roles: ["house", "bread"], blurb: "Flour from the farms, bread for the homes.",
+               rules: [{ k: "land", t: "wheat", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
+  fishmarket:{ name: "Fish Market", cat: "shop", shape: "I3", n: 1, era: 2, base: 2, roof: ["#4f93b0", "#3d7690"],
+               roles: ["shop", "shop", "fish"], blurb: "The day's catch, from the river to the homes.",
+               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", cats: ["home"], p: 2 }] },
+  bank:      { name: "Bank", cat: "shop", shape: "O4", n: 1, era: 3, base: 3, roof: ["#b9a26a", "#968250"], emblem: "dollar",
+               roles: ["big", "big", "big", "big"], blurb: "Holds the town's gold. Wants the law and rich families close by.",
+               rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "ore", p: 1 }] },
+  tradingpost:{ name: "Trading Post", cat: "shop", shape: "V3", n: 1, era: 1, base: 2, roof: ["#9a7b55", "#7a603f"], style: "logs",
+               roles: ["hall", "hall", "furs"], blurb: "Trade with whoever comes in from outside.",
+               rules: [{ k: "edge", p: 3 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }] },
+  assay:     { name: "Assay Office", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8b8f96", "#6e7278"], style: "front", emblem: "scale",
+               roles: ["hall", "hall"], blurb: "Weighs what the diggings bring in.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "ore", p: 1 }] },
+
+  /* Civic */
+  bridge:    { name: "Bridge", cat: "civic", shape: "I3", n: 1, era: 1, base: 2, bridge: true, tile: ["#c9a06f", "#8f6a45"],
+               roles: ["deck", "deck", "deck"], blurb: "Crosses the water. Both ends must sit on land.",
+               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }] },
+  coveredbridge: { name: "Covered Bridge", cat: "civic", shape: "I4", n: 1, era: 1, base: 3, bridge: true, tile: ["#c9a06f", "#8f6a45"],
+               roof: ["#b0503c", "#8c3d2d"], roles: ["deck", "hall", "hall", "deck"], blurb: "A long, roofed crossing. Both ends must sit on land.",
+               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }] },
+  library:   { name: "Library", plural: "Libraries", cat: "civic", shape: "F5", n: 1, era: 3, base: 3, roof: ["#6d8f7a", "#557260"], emblem: "book",
+               roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, trees and families to read.",
+               rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "forest", p: 1 }] },
+  sheriff:   { name: "Sheriff's Office", cat: "civic", shape: "V3", n: 1, era: 2, base: 3, roof: ["#8a6a4a", "#6c5238"], emblem: "star",
+               roles: ["hall", "hall", "hitch"], blurb: "Watches the saloons, the shops and the road into town.",
+               rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "edge", p: 2 }] },
+  jail:      { name: "Jail", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#7b7f86", "#5f636a"], emblem: "bars", style: "stone",
+               roles: ["hall", "pen"], blurb: "Close to the saloons, at the edge of town.",
+               rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "edge", p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
+  plaza:     { name: "Plaza", cat: "civic", shape: "O4", n: 1, era: 2, base: 2,
+               roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square among shops and homes.",
+               rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
+  cemetery:  { name: "Cemetery", plural: "Cemeteries", cat: "civic", shape: "T4", n: 1, era: 2, base: 2,
+               roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet, shady ground, away from the noise.",
+               rules: [{ k: "without", cats: ["leisure", "industry"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
+  doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
+               roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+  courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
+               roles: ["hall", "hall", "hall", "yard", "flag"], blurb: "Law and order, on the main street.",
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
+
+  /* Leisure */
+  theater:   { name: "Theater", cat: "leisure", shape: "Y5", n: 1, era: 3, base: 3, roof: ["#b0445a", "#8c3447"], emblem: "mask",
+               roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "A show for the town and its visitors.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
+  bathhouse: { name: "Bathhouse", cat: "leisure", shape: "L4", n: 1, era: 2, base: 2, roof: ["#6aa3b5", "#528596"],
+               roles: ["hall", "hall", "pool", "pool"], blurb: "Hot water for tired travellers.",
+               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "land", t: "forest", p: 1 }] },
+  casino:    { name: "Gambling Hall", cat: "leisure", shape: "P5", n: 1, era: 3, base: 4, roof: ["#2f6b4f", "#22523c"], emblem: "diamond",
+               roles: ["big", "big", "big", "big", "porch"], blurb: "A riverboat gamble. The law and the church hate it.",
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["civic"], p: -3 }] },
+  racetrack: { name: "Racetrack", cat: "leisure", shape: "R6", n: 1, era: 3, base: 2,
+               roles: ["track", "track", "track", "track", "track", "track"], blurb: "Horses from the herds and the stables.",
+               rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["agri"], p: 2 }] },
+  fairground:{ name: "Fairground", cat: "leisure", shape: "N5", n: 1, era: 2, base: 2,
+               roles: ["tent", "tent", "tent", "tent", "tent"], blurb: "Tents at the edge of town, near the farms.",
+               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
+  park:      { name: "Park", cat: "leisure", shape: "Z5", n: 1, era: 2, base: 2,
+               extra: "birds", roles: ["tree", "garden", "tree", "garden", "tree"], blurb: "Green space for the families.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }] },
+};
+
+/* ───────────────────────── Small tools ───────────────────────── */
+
+function mulberry(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const pick = (a, r = Math.random) => a[Math.floor(r() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+/* A fixed hash for art, so a square draws the same way every frame. */
+function hash(a, b) { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); }
+
+const idx = (x, y) => y * COLS + x;
+const colOf = (i) => i % COLS, rowOf = (i) => (i / COLS) | 0;
+const inside = (x, y) => x >= 0 && y >= 0 && x < COLS && y < ROWS;
+const N4 = [[1,0],[-1,0],[0,1],[0,-1]];
+function around(i) {
+  const x = colOf(i), y = rowOf(i), out = [];
+  for (const [dx, dy] of N4) if (inside(x + dx, y + dy)) out.push(idx(x + dx, y + dy));
+  return out;
+}
+
+/* ───────────────────────── The map ───────────────────────── */
+
+/* A blob that prefers to grow into squares that already touch it, so patches come out chunky. */
+function grow(t, r, start, size, kind) {
+  if (start < 0 || t[start] !== "grass") return 0;
+  const got = [start]; t[start] = kind;
+  for (let tries = 0; got.length < size && tries < 60; tries++) {
+    const cand = [];
+    for (const c of got) for (const j of around(c)) {
+      if (t[j] === "grass") cand.push([j, 1 + around(j).filter(q => t[q] === kind).length ** 2]);
+    }
+    if (!cand.length) break;
+    let s = r() * cand.reduce((a, b) => a + b[1], 0);
+    for (const [j, w] of cand) if ((s -= w) <= 0) { t[j] = kind; got.push(j); break; }
+  }
+  return got.length;
+}
+
+function makeMap(seed) {
+  const r = mulberry(seed);
+  const t = new Array(N).fill("grass");
+  const n = (a, b) => a + Math.floor(r() * (b - a + 1));
+  const style = r();
+  if (style < .5) {
+    // A river from the top edge to the bottom edge that wanders as it goes.
+    let x = n(2, COLS - 3);
+    for (let y = 0; y < ROWS; y++) {
+      t[idx(x, y)] = "water";
+      if (y > 0 && y < ROWS - 1 && r() < .3) { x = clamp(x + (r() < .5 ? -1 : 1), 1, COLS - 2); t[idx(x, y)] = "water"; }
+    }
+  } else if (style < .8) {
+    // A lake on one side, with a creek that runs out across the map.
+    const left = r() < .5, ly = n(3, ROWS - 4);
+    grow(t, r, idx(left ? 0 : COLS - 1, ly), n(6, 8), "water");
+    let y = ly + (r() < .5 ? -2 : 2);
+    for (let s = 0; s < COLS; s++) {
+      const x = left ? s : COLS - 1 - s;
+      t[idx(x, y)] = "water";
+      if (s > 1 && s < COLS - 1 && r() < .3) { y = clamp(y + (r() < .5 ? -1 : 1), 1, ROWS - 2); t[idx(x, y)] = "water"; }
+    }
+  } else {
+    // Two ponds.
+    grow(t, r, idx(n(1, 3), n(1, 4)), n(4, 6), "water");
+    grow(t, r, idx(n(5, 7), n(7, 10)), n(4, 6), "water");
+  }
+  const spot = (nearWater) => {
+    for (let tries = 0; tries < 50; tries++) {
+      const i = Math.floor(r() * N);
+      if (t[i] !== "grass") continue;
+      if (nearWater && tries < 35 && !around(i).some(j => t[j] === "water")) continue;
+      return i;
+    }
+    return -1;
+  };
+  grow(t, r, spot(false), n(5, 7), "forest");
+  grow(t, r, spot(false), n(3, 5), "forest");
+  grow(t, r, spot(false), 3, "ore");
+  grow(t, r, spot(false), 2, "ore");
+  grow(t, r, spot(true), n(4, 5), "wheat");
+  grow(t, r, spot(false), n(3, 4), "wheat");
+  grow(t, r, spot(false), n(4, 5), "herd");
+  grow(t, r, spot(false), n(2, 3), "herd");
+  return t;
+}
+
+/*
+  Each game draws a few kinds of building from every category, and any map with water to cross gets a bridge. Then the counts go up or down until the
+  deck covers a bit less than the land can take.
+*/
+const QUOTA = { home: 4, agri: 3, industry: 3, shop: 3, civic: 3, leisure: 2 };
+
+function makeDeck(seed, terrain) {
+  const r = mulberry(seed ^ 0x5bd1e995);
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const types = new Set();
+  for (const cat in QUOTA) {
+    shuffle(Object.keys(DEF).filter(k => DEF[k].cat === cat && !DEF[k].bridge)).slice(0, QUOTA[cat]).forEach(k => types.add(k));
+  }
+  const bridge = shuffle(Object.keys(DEF).filter(k => DEF[k].bridge)).find(k => placements(k).length);
+  if (bridge) types.add(bridge);
+
+  const chosen = [...types], count = {};
+  for (const k of chosen) count[k] = DEF[k].n;
+  const size = (k) => SHAPES[DEF[k].shape].length;
+  const total = () => chosen.reduce((sum, k) => sum + count[k] * size(k), 0);
+  const target = Math.round(terrain.filter(t => t !== "water").length * FILL);
+  while (total() > target) {
+    const k = pick(chosen.filter(q => count[q] > 1), r) || pick(chosen.filter(q => count[q] === 1 && !DEF[q].bridge), r);
+    if (!k) break;
+    count[k]--;
+  }
+  // Up to three of a kind of home, and no more than its usual count of anything else. To fill the deck,
+  // the town gets new kinds of building instead of piling up copies.
+  const cap = (k) => DEF[k].cat === "home" ? 3 : DEF[k].n;
+  while (total() < target - 1) {
+    const gap = target - total();
+    const more = chosen.filter(q => count[q] < cap(q));
+    const fresh = Object.keys(DEF).filter(q => !DEF[q].bridge && !types.has(q) && size(q) <= gap + 1);
+    const k = (more.length && r() < .4 ? pick(more, r) : pick(fresh, r)) || pick(more, r);
+    if (!k) break;
+    if (!types.has(k)) { types.add(k); chosen.push(k); count[k] = 0; }
+    count[k]++;
+  }
+  const deck = [];
+  for (const k of chosen) for (let c = 0; c < count[k]; c++) deck.push({ k, key: DEF[k].era + r() * 1.6 });
+  deck.sort((a, b) => a.key - b.key);
+  return deck.map(d => d.k);
+}
+
+/* ───────────────────────── Footprints ───────────────────────── */
+
+function orient(shape, rot, flip) {
+  let s = SHAPES[shape].map(p => p.slice());
+  if (flip) s = s.map(([x, y]) => [-x, y]);
+  for (let k = 0; k < ((rot % 4) + 4) % 4; k++) s = s.map(([x, y]) => [-y, x]);
+  const mx = Math.min(...s.map(p => p[0])), my = Math.min(...s.map(p => p[1]));
+  return s.map(([x, y]) => [x - mx, y - my]);
+}
+const extent = (offs) => [Math.max(...offs.map(p => p[0])) + 1, Math.max(...offs.map(p => p[1])) + 1];
+
+function cellsAt(type, o) {
+  const out = [];
+  for (const [x, y] of orient(DEF[type].shape, o.rot, o.flip)) {
+    if (!inside(o.ax + x, o.ay + y)) return null;
+    out.push(idx(o.ax + x, o.ay + y));
+  }
+  return out;
+}
+
+/* Every distinct way to turn and flip a shape. */
+function orientations(type) {
+  const seen = new Set(), out = [];
+  for (const flip of [false, true]) for (let rot = 0; rot < 4; rot++) {
+    const offs = orient(DEF[type].shape, rot, flip);
+    const key = offs.map(p => p.join(",")).sort().join(";");
+    if (!seen.has(key)) { seen.add(key); out.push({ rot, flip }); }
+  }
+  return out;
+}
+
+/* ───────────────────────── Game state ───────────────────────── */
+
+let G = null;       // what gets saved
+let MAP = null;     // terrain, rebuilt from the seed
+let OWNER = null;   // for each square, the index of the building on it, or -1
+
+function newGame(player, pickName, seed) {
+  seed = seed ?? (Math.random() * 2 ** 31) | 0;
+  MAP = makeMap(seed);
+  OWNER = new Array(N).fill(-1);
+  G = { v: 6, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, away: [], pieces: [], over: false,
+        trophies: {}, streak: 0, challenge: null };
+  settle();
+}
+
+function restore(saved) {
+  G = saved;
+  MAP = makeMap(G.seed);
+  OWNER = new Array(N).fill(-1);
+  G.pieces.forEach((p, k) => {
+    // Saves from before land was kept: work it out again, in the order the buildings went up.
+    if (!p.land) p.land = look(p.cells).by;
+    p.cells.forEach(c => { OWNER[c] = k; });
+  });
+}
+
+const current = () => G.over ? null : G.deck[G.at];
+const upcoming = () => G.over ? null : G.deck[G.at + 1] || null;
+/* A building can't overlap another or sit on water. A bridge must sit on water, with both ends on land. */
+function canPlace(cells, type) {
+  if (!cells || cells.some(c => OWNER[c] >= 0)) return false;
+  if (!DEF[type].bridge) return cells.every(c => MAP[c] !== "water");
+  // A bridge's footprint is a straight line, so its first and last squares are its ends.
+  return MAP[cells[0]] !== "water" && MAP[cells[cells.length - 1]] !== "water" && cells.some(c => MAP[c] === "water");
+}
+
+function placements(type) {
+  const out = [];
+  for (const o of orientations(type)) {
+    const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip));
+    for (let ay = 0; ay <= ROWS - h; ay++) for (let ax = 0; ax <= COLS - w; ax++) {
+      const cells = cellsAt(type, { ...o, ax, ay });
+      if (canPlace(cells, type)) out.push({ ...o, ax, ay, cells });
+    }
+  }
+  return out;
+}
+const fits = (type) => placements(type).length > 0;
+
+/* Moves past buildings that fit nowhere, and ends the game when the deck runs out. */
+function settle() {
+  const events = [];
+  while (!G.over) {
+    if (G.at >= G.deck.length) {
+      G.over = true;
+      if (!G.away.length) G.trophies.allfit = 1;
+      events.push({ end: true });
+      break;
+    }
+    if (fits(G.deck[G.at])) break;
+    G.away.push(G.deck[G.at]); events.push({ away: G.deck[G.at] });
+    G.at++;
+  }
+  return events;
+}
+
+/* Builds the building in hand. Scores are live, so the buildings next to it can go up or down too. */
+function build(cells) {
+  const type = current(), before = G.pieces.map((_, k) => pieceScore(k));
+  G.pieces.push({ type, cells, land: look(cells).by });
+  const k = G.pieces.length - 1;
+  cells.forEach(c => { OWNER[c] = k; });
+  G.at++;
+  const parts = pieceParts(k), pts = sumParts(parts);
+  const changed = before.map((b, j) => ({ k: j, d: pieceScore(j) - b })).filter(x => x.d);
+  const gain = pts + changed.reduce((sum, x) => sum + x.d, 0);
+  const trophies = judge(type, cells, parts, pts, gain, changed);
+  for (const id of trophies) G.trophies[id] = (G.trophies[id] || 0) + 1;
+  return { type, k, pts, parts, gain, changed, trophies, events: settle() };
+}
+
+/* ───────────────────────── Scoring ───────────────────────── */
+
+/* What a footprint sits on and touches. `self` is its own index, so it doesn't count itself. */
+function look(cells, self = -1) {
+  const own = new Set(cells), on = {}, by = {}, near = new Set();
+  let edge = false;
+  for (const c of cells) {
+    on[MAP[c]] = (on[MAP[c]] || 0) + 1;
+    const x = colOf(c), y = rowOf(c);
+    for (const [dx, dy] of N4) {
+      if (!inside(x + dx, y + dy)) { edge = true; continue; }
+      const j = idx(x + dx, y + dy);
+      if (own.has(j)) continue;
+      if (OWNER[j] >= 0 && OWNER[j] !== self) near.add(OWNER[j]);
+      // Water never runs out: a bridge over it doesn't stop it counting.
+      if (OWNER[j] < 0 || MAP[j] === "water") by[j] = MAP[j];
+    }
+  }
+  const byCount = {};
+  for (const j in by) byCount[by[j]] = (byCount[by[j]] || 0) + 1;
+  // A placed building keeps the land it had beside it when it was built.
+  const land = self >= 0 && G.pieces[self].land;
+  return { on, by: land || byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge, self };
+}
+
+/* The buildings a footprint shares a side with. */
+function touching(cells, self = -1) {
+  const own = new Set(cells), out = new Set();
+  for (const c of cells) for (const j of around(c)) if (!own.has(j) && OWNER[j] >= 0 && OWNER[j] !== self) out.add(OWNER[j]);
+  return out;
+}
+
+/* The buildings in the district a footprint belongs to, or would join, not counting itself. */
+function districtOf(type, cells, self = -1) {
+  if (DEF[type].bridge) return [];
+  const same = (k) => k !== self && !DEF[G.pieces[k].type].bridge && DEF[G.pieces[k].type].cat === DEF[type].cat;
+  const queue = [...touching(cells, self)].filter(same), found = new Set(queue);
+  while (queue.length) {
+    const k = queue.pop();
+    for (const j of touching(G.pieces[k].cells, k)) if (!found.has(j) && same(j)) { found.add(j); queue.push(j); }
+  }
+  return [...found];
+}
+
+const matches = (r, type) => !!r.any || (r.types || []).includes(type) || (r.cats || []).includes(DEF[type].cat);
+
+function evalRule(r, c) {
+  if (r.k === "land") {
+    const n = (c.on[r.t] || 0) + (c.by[r.t] || 0);
+    return { n, v: (r.once ? Math.min(n, 1) : n) * r.p };
+  }
+  if (r.k === "near") { const hit = c.near.filter(q => matches(r, q.type)); return { n: hit.length, hit, v: hit.length * r.p }; }
+  if (r.k === "edge") return { n: c.edge ? 1 : 0, v: c.edge ? r.p : 0 };
+  if (r.k === "variety") { const n = new Set(c.near.map(q => DEF[q.type].cat)).size; return { n, v: n * r.p }; }
+  if (r.k === "town") { const n = G.pieces.filter((p, k) => k !== c.self && matches(r, p.type)).length; return { n, v: n * r.p }; }
+  if (r.k === "without") { const n = c.near.some(q => matches(r, q.type)) ? 0 : 1; return { n, v: n * r.p }; }
+  return { n: 0, v: 0 };
+}
+
+/*
+  A score, part by part, from what the building sits on and touches right now. Base points come first, as rule -1,
+  then the district, as rule "district", where n is the size of the district.
+*/
+function scoreParts(type, cells, self = -1) {
+  const d = DEF[type], c = look(cells, self), parts = [{ r: -1, n: 1, v: d.base }];
+  if (!d.bridge) { const n = districtOf(type, cells, self).length + 1; parts.push({ r: "district", n, v: Math.min(n - 1, DISTRICT_MAX) }); }
+  return [...parts, ...d.rules.map((r, i) => { const e = evalRule(r, c); return { r: i, n: e.n, v: e.v }; })];
+}
+const sumParts = (parts) => parts.reduce((sum, q) => sum + q.v, 0);
+const pieceParts = (k) => scoreParts(G.pieces[k].type, G.pieces[k].cells, k);
+const pieceScore = (k) => sumParts(pieceParts(k));
+const boardScore = () => G.pieces.reduce((sum, _, k) => sum + pieceScore(k), 0);
+const total = () => boardScore() - AWAY * G.away.length + (G.over && !G.away.length ? ALL_FIT : 0);
+
+/* ───────────────────────── Trophies ───────────────────────── */
+
+const GREAT = 9, JACKPOT = 15;    // points a move must earn to count as great, or as a jackpot
+/* In the order they are announced. */
+const TROPHIES = {
+  jackpot:    { name: "Jackpot!",           good: true },
+  district:   { name: "Full district",      good: true },
+  combo:      { name: "Combo!",             good: true },
+  quadruple:  { name: "Quadruple!",         good: true },
+  triple:     { name: "Triple!",            good: true },
+  perfect:    { name: "Perfect ground",     good: true },
+  rich:       { name: "Rich land",          good: true },
+  boost:      { name: "Good neighbour",     good: true },
+  snug:       { name: "Snug fit",           good: true },
+  roll:       { name: "On a roll",          good: true },
+  allfit:     { name: "Every building fit", good: true },
+  ouch:       { name: "Ouch",               good: false },
+  neighbours: { name: "Bad neighbours",     good: false },
+  spoiler:    { name: "Spoiler",            good: false },
+  wasted:     { name: "Wasted land",        good: false },
+};
+
+/* `gain` is what the whole move earned: the new building's score plus every change it caused next door. */
+function judge(type, cells, parts, pts, gain, changed) {
+  const d = DEF[type], out = new Set(), ruleOf = (q) => d.rules[q.r];
+  if (gain >= JACKPOT) out.add("jackpot");
+  // A district big enough that every building in it earns the most it can.
+  if (parts.some(q => q.r === "district" && q.n > DISTRICT_MAX)) out.add("district");
+
+  // The biggest stack of one neighbour bonus: 3 of a kind is a triple, 4 a quadruple, 5 or more a combo.
+  // Land bonuses count squares, which stack up much more easily, so they have their own trophy at 5.
+  let top = 0, land = 0;
+  for (const q of parts) {
+    const r = ruleOf(q);
+    if (!r || r.p <= 0 || r.once || r.k === "edge" || r.k === "without") continue;
+    if (r.k === "land") land = Math.max(land, q.n); else top = Math.max(top, q.n);
+  }
+  if (top >= 3) out.add(top >= 5 ? "combo" : top === 4 ? "quadruple" : "triple");
+  if (land >= 5) out.add("rich");
+
+  if (cells.length >= 2 && cells.every(c => d.rules.some(r => r.k === "land" && r.p > 0 && r.t === MAP[c]))) out.add("perfect");
+  // Only buildings that touch it: a growing district lifts buildings further away too.
+  const next = touching(cells, G.pieces.length - 1);
+  if (changed.filter(x => x.d > 0 && next.has(x.k)).length >= 3) out.add("boost");
+  const own = new Set(cells);
+  if (!cells.some(c => around(c).some(j => !own.has(j) && OWNER[j] < 0 && MAP[j] !== "water"))) out.add("snug");
+
+  G.streak = gain >= GREAT ? G.streak + 1 : 0;
+  if (G.streak >= 3 && G.streak % 3 === 0) out.add("roll");
+
+  if (pts <= 0) out.add("ouch");
+  if (parts.some(q => { const r = ruleOf(q); return r && r.p < 0 && q.n >= 2; })) out.add("neighbours");
+  if (changed.reduce((sum, x) => sum + Math.min(0, x.d), 0) <= -3) out.add("spoiler");
+  const uses = new Set(d.rules.filter(r => r.k === "land").map(r => r.t));
+  if (cells.filter(c => ["ore", "wheat", "herd"].includes(MAP[c]) && !uses.has(MAP[c])).length >= 2) out.add("wasted");
+  return Object.keys(TROPHIES).filter(id => out.has(id));
+}
+
+/* ───────────────────────── Words ───────────────────────── */
+
+const plural = (k) => DEF[k].plural || DEF[k].name + "s";
+const joinOr = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " or " + a[a.length - 1];
+const landWord = (t) => TERRAIN[t].short;
+const signed = (v) => (v < 0 ? "−" : "+") + Math.abs(v);
+const nearNoun = (r, n) => r.any ? (n === 1 ? "building" : "buildings") : joinOr(n === 1
+  ? [...(r.types || []).map(t => DEF[t].name), ...(r.cats || []).map(c => CATS[c].one)]
+  : [...(r.types || []).map(plural), ...(r.cats || []).map(c => CATS[c].many)]);
+
+/* A rule as the card shows it, after its points: "+2 each woods". The icon says whether it is land or neighbours. */
+function ruleText(r) {
+  if (r.k === "land") return r.once ? `if ${landWord(r.t)}` : `each ${landWord(r.t)}`;
+  if (r.k === "near") return `each ${nearNoun(r, 1)}`;
+  if (r.k === "edge") return "at the map edge";
+  if (r.k === "variety") return "each kind next to it";
+  if (r.k === "town") return `each ${nearNoun(r, 1)} in town`;
+  if (r.k === "without") return `if no ${nearNoun(r, 2)}`;
+  return "";
+}
+
+/* The district row on a building's card. */
+const districtText = (type) => `each other ${CATS[DEF[type].cat].one} in its district, max +${DISTRICT_MAX}`;
+
+/* One part of a score as it stands, in as few words as it takes: "3 woods". */
+function partText(type, q) {
+  if (q.r === "district") return q.n > 1 ? `District of ${q.n}` : "No district";
+  if (q.r < 0) return "Base";
+  const r = DEF[type].rules[q.r];
+  if (r.k === "land") return r.once ? (q.n ? landWord(r.t) : `no ${landWord(r.t)}`) : `${q.n} ${landWord(r.t)}`;
+  if (r.k === "near") return `${q.n} ${nearNoun(r, q.n)}`;
+  if (r.k === "edge") return q.n ? "Map edge" : "Not at the edge";
+  if (r.k === "variety") return `${q.n} ${q.n === 1 ? "kind" : "kinds"}`;
+  if (r.k === "town") return `${q.n} ${nearNoun(r, q.n)} in town`;
+  if (r.k === "without") return q.n ? `No ${nearNoun(r, 2)}` : `Has ${nearNoun(r, 2)}`;
+  return "";
+}
+</script>
+
+<script>
+"use strict";
+
+/* ───────────────────────── Names ───────────────────────── */
+
+const GAME = "Hügelland";   // the game's name, on the header and on a shared link
+
+const PREFIX = ["Fort", "St.", "New", "Port"];
+const SUFFIX = ["ville", "burg", "ton", "field"];
+function townName(player, n) {
+  const first = player.trim().split(/\s+/)[0] || "Pioneer";
+  const name = first.charAt(0).toUpperCase() + first.slice(1);
+  const all = PREFIX.map(p => p + " " + name).concat(SUFFIX.map(s => name + s));
+  return all[((n % all.length) + all.length) % all.length];
+}
+
+/* ───────────────────────── Screen ───────────────────────── */
+
+const $ = (id) => document.getElementById(id);
+const cv = $("board"), ctx = cv.getContext("2d");
+const layer = document.createElement("canvas"), lg = layer.getContext("2d");
+const wash = document.createElement("canvas"), wg = wash.getContext("2d");   // the lot a building in hand would join
+const SAVE = "firsttown.v3", BEST = "firsttown.best";
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+const UI = {
+  dpr: 1, w: 0, h: 0, S: 40, BX: 0, BY: 0,
+  ghost: null,       // { rot, flip, ax, ay } for the building in hand
+  rules: false,      // the scoring card for the building in hand is open
+  sel: -1,           // the square whose info is open
+  dirty: true,       // the baked board needs drawing again
+  drop: null,        // { k, t } a building landing
+  shown: 0,          // the score as the counter shows it
+  confirm: false,
+};
+
+function layout() {
+  const r = $("stage").getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  UI.dpr = dpr; UI.w = r.width; UI.h = r.height;
+  cv.width = layer.width = wash.width = Math.max(1, Math.round(r.width * dpr));
+  cv.height = layer.height = wash.height = Math.max(1, Math.round(r.height * dpr));
+  const pad = 6, frame = .24;
+  UI.S = Math.max(16, Math.floor(Math.min((r.width - pad * 2) / (COLS + frame * 2), (r.height - pad * 2) / (ROWS + frame * 2))));
+  UI.BX = Math.round((r.width - COLS * UI.S) / 2);
+  UI.BY = Math.round((r.height - ROWS * UI.S) / 2);
+  UI.dirty = true;
+}
+
+/* ───────────────────────── Drawing tools ───────────────────────── */
+
+function rr(g, x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+const cellX = (i) => UI.BX + colOf(i) * UI.S, cellY = (i) => UI.BY + rowOf(i) * UI.S;
+function circle(g, x, y, r, c) { g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
+function ellipse(g, x, y, rx, ry, c) { g.fillStyle = c; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill(); }
+
+/*
+  One path for a group of squares, as if cut from one sheet: rounded outside corners,
+  with bridges across the gaps between squares that belong together.
+*/
+function union(g, cells, inset, r, dy = 0) {
+  const set = new Set(cells), S = UI.S, span = inset * 2 + r * 2;
+  g.beginPath();
+  for (const i of cells) {
+    const x = cellX(i), y = cellY(i) + dy, right = colOf(i) < COLS - 1 && set.has(i + 1), down = set.has(i + COLS);
+    rr(g, x + inset, y + inset, S - inset * 2, S - inset * 2, r);
+    if (right) g.rect(x + S - inset - r, y + inset, span, S - inset * 2);
+    if (down) g.rect(x + inset, y + S - inset - r, S - inset * 2, span);
+    if (right && down && set.has(i + COLS + 1)) g.rect(x + S - inset - r, y + S - inset - r, span, span);
+  }
+}
+
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (v) => Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f);
+  return `rgb(${ch(n >> 16)},${ch(n >> 8 & 255)},${ch(n & 255)})`;
+}
+
+/* ───────────────────────── The land ───────────────────────── */
+
+const GRASS = ["#a5c884", "#a0c47f", "#9cc17b", "#a9cb88"];
+const TREES = ["#4f8d52", "#5b9a58", "#468449", "#62a05c"];
+
+function tree(g, x, y, r, seed) {
+  ellipse(g, x + r * .32, y + r * .42, r * 1.02, r * .82, "rgba(28,58,34,.26)");
+  circle(g, x, y, r, TREES[(seed * TREES.length) | 0]);
+  circle(g, x - r * .28, y - r * .3, r * .52, "rgba(255,255,255,.14)");
+}
+
+function drawLand(g) {
+  const S = UI.S, W = COLS * S, H = ROWS * S, m = S * .24;
+
+  g.save();
+  g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = S * .7; g.shadowOffsetY = S * .22;
+  g.beginPath(); rr(g, UI.BX - m, UI.BY - m, W + m * 2, H + m * 2, S * .55); g.fillStyle = "#3a4843"; g.fill();
+  g.restore();
+  g.beginPath(); rr(g, UI.BX - m, UI.BY - m, W + m * 2, H + m * 2, S * .55);
+  g.strokeStyle = "rgba(255,255,255,.07)"; g.lineWidth = 1; g.stroke();
+  g.beginPath(); rr(g, UI.BX - 3, UI.BY - 3, W + 6, H + 6, S * .3); g.fillStyle = "#26302d"; g.fill();
+
+  g.save();
+  g.beginPath(); rr(g, UI.BX, UI.BY, W, H, S * .26); g.clip();
+
+  for (let i = 0; i < N; i++) {
+    g.fillStyle = GRASS[(hash(i, 1) * GRASS.length) | 0];
+    g.fillRect(cellX(i), cellY(i), S + .5, S + .5);
+  }
+  // Tufts on the open grass.
+  g.strokeStyle = "rgba(70,110,50,.35)"; g.lineWidth = Math.max(1, S * .025); g.lineCap = "round";
+  g.beginPath();
+  for (let i = 0; i < N; i++) {
+    if (MAP[i] !== "grass") continue;
+    for (let k = 0; k < 3; k++) {
+      const x = cellX(i) + S * (.14 + .72 * hash(i, k * 3 + 2)), y = cellY(i) + S * (.18 + .7 * hash(i, k * 5 + 7)), s = S * .05;
+      g.moveTo(x - s, y - s); g.lineTo(x, y); g.lineTo(x + s * .8, y - s * 1.1);
+    }
+  }
+  g.stroke();
+
+  const of = (t) => { const a = []; for (let i = 0; i < N; i++) if (MAP[i] === t) a.push(i); return a; };
+
+  // Wild wheat: rows of little stalks.
+  union(g, of("wheat"), S * .03, S * .28); g.fillStyle = "#e5c66b"; g.fill();
+  for (const i of of("wheat")) {
+    const x = cellX(i), y = cellY(i);
+    for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
+      const px = x + S * (.16 + col * .22 + (row % 2) * .1), py = y + S * (.22 + row * .21);
+      if (px > x + S * .92) continue;
+      g.strokeStyle = "#c9a445"; g.lineWidth = Math.max(1, S * .035);
+      g.beginPath(); g.moveTo(px, py + S * .05); g.lineTo(px + S * .03, py - S * .06); g.stroke();
+      circle(g, px + S * .035, py - S * .07, S * .028, "#f3dc92");
+    }
+  }
+
+  // Grazing herds: lush grass. The animals move, so they are drawn every frame.
+  union(g, of("herd"), S * .03, S * .3); g.fillStyle = "#c9de8f"; g.fill();
+  union(g, of("herd"), S * .1, S * .24); g.fillStyle = "#d2e39a"; g.fill();
+
+  // Ore: grey rock with bright flecks.
+  union(g, of("ore"), S * .04, S * .3); g.fillStyle = "#c3baa8"; g.fill();
+  for (const i of of("ore")) {
+    const x = cellX(i), y = cellY(i);
+    const rocks = [[.34, .38, .2], [.68, .6, .16], [.36, .74, .11]];
+    for (const [rx, ry, rs] of rocks) {
+      const px = x + S * (rx + (hash(i, rx * 10) - .5) * .08), py = y + S * ry, s = S * rs;
+      ellipse(g, px + s * .2, py + s * .3, s * 1.05, s * .75, "rgba(60,50,40,.22)");
+      ellipse(g, px, py, s, s * .78, "#8f887d");
+      ellipse(g, px - s * .18, py - s * .2, s * .62, s * .42, "#aaa396");
+    }
+    for (let k = 0; k < 4; k++) {
+      const px = x + S * (.2 + .6 * hash(i, k + 40)), py = y + S * (.2 + .6 * hash(i, k + 50));
+      g.fillStyle = k % 2 ? "#f2cf63" : "#e8eef2";
+      g.save(); g.translate(px, py); g.rotate(Math.PI / 4); g.fillRect(-S * .025, -S * .025, S * .05, S * .05); g.restore();
+    }
+  }
+
+  // Woods ground.
+  union(g, of("forest"), S * .02, S * .32); g.fillStyle = "#86b16b"; g.fill();
+
+  // Water: a pale bank, then deeper water in the middle.
+  const water = of("water");
+  union(g, water, 0, S * .32); g.fillStyle = "#cfe8e6"; g.fill();
+  union(g, water, S * .07, S * .26); g.fillStyle = "#62abc9"; g.fill();
+  union(g, water, S * .2, S * .2); g.fillStyle = "#559fc0"; g.fill();
+
+  // Empty lots: a faint outline where a building could go.
+  g.strokeStyle = "rgba(255,255,255,.2)"; g.lineWidth = 1;
+  g.beginPath();
+  for (let i = 0; i < N; i++) if (MAP[i] !== "water" && OWNER[i] < 0) rr(g, cellX(i) + S * .08 + .5, cellY(i) + S * .08 + .5, S * .84, S * .84, S * .14);
+  g.stroke();
+
+  // Trees, top row first so lower trees overlap the ones behind.
+  for (const i of of("forest")) {
+    const x = cellX(i), y = cellY(i);
+    const spots = [[.3, .3, .21], [.72, .38, .19], [.44, .72, .22], [.84, .82, .13]];
+    spots.forEach(([tx, ty, ts], k) => {
+      if (k === 3 && hash(i, 9) < .5) return;
+      tree(g, x + S * (tx + (hash(i, k) - .5) * .1), y + S * (ty + (hash(i, k + 20) - .5) * .1), S * ts, hash(i, k + 30));
+    });
+  }
+  g.restore();
+}
+
+/* ───────────────────────── Buildings ───────────────────────── */
+
+/* Each kind of building has one colour. Its tile is a pale top over a side in that colour, and its lot a soft wash of it. */
+const CAT_HEX = { home: "#d8734a", agri: "#c9952a", industry: "#6f7d8b", shop: "#33968a", civic: "#5a7fc4", leisure: "#a8588f" };
+const TILE = {}, LOT = {};
+for (const cat in CAT_HEX) {
+  TILE[cat] = [shade(CAT_HEX[cat], .77), shade(CAT_HEX[cat], .2)];
+  LOT[cat] = [shade(CAT_HEX[cat], .25), shade(CAT_HEX[cat], .5)];
+}
+const GROUND = {
+  garden: "#b3d494", tree: "#b3d494", flag: "#b3d494", well: "#b3d494", field: "#e6c463", pasture: "#bddb95",
+  yard: "#e5d6b7", crates: "#e5d6b7", logs: "#e5d6b7", produce: "#e5d6b7", rocks: "#d2c9ba", shaft: "#cfc4b1",
+  plank: "#bb8c5f", porch: "#c29568", rail: "#cdc2ad", play: "#ebdaa9",
+  orchard: "#b8d98f", vines: "#cbdc9e", wheel: "#cfc4b1", windmill: "#b3d494", kiln: "#d2c9ba", sluice: "#cbbfa9",
+  deck: "#c69a6b", hay: "#e5d6b7", plaza: "#e3dac7", graves: "#b3d494", pool: "#e3dac7", track: "#bddb95", tent: "#eadcb5",
+  woodpile: "#c2d69b", veg: "#b99470", hedge: "#b3d494", laundry: "#e5d6b7", coop: "#dccfa4", fire: "#d2c9ba", hides: "#e5d6b7",
+  anvil: "#cbc3b6", cart: "#cfc4b1", bricks: "#e5d6b7", bread: "#e9dcc0", fish: "#dfe6e3", furs: "#e5d6b7", hitch: "#e5d6b7",
+  pen: "#cdc8bf", paddock: "#bddb95",
+};
+let BAKING = false;  // art is being drawn onto the baked board, so chimneys should smoke
+let NOW = 0;         // seconds, for the parts of buildings that move
+
+/*
+  Parts of buildings that move: sails, wheels, fires, hens, ripples, birds. The baked board leaves them out
+  and lists them in LIVE, so they are drawn fresh every frame. A building drawn outside the bake, like the one
+  in hand, draws them straight away. `a` sets each one apart, so neighbours don't move in step; `r` is a size.
+*/
+const LIVE = [];
+function alive(g, kind, x, y, a = 0, r = 0) { if (BAKING) LIVE.push([kind, x, y, a, r]); else live(g, kind, x, y, a, r); }
+
+function sparks(g, x, y, t, n) {
+  const S = UI.S;
+  for (let k = 0; k < n; k++) {
+    const p = (t * .8 + k / n) % 1;
+    if (p > .6) continue;
+    circle(g, x + Math.sin(k * 2.3 + Math.floor(t * .8 + k / n)) * S * .1 * p, y - p * S * .32, S * .018, `rgba(255,${200 - p * 150 | 0},90,${1 - p / .6})`);
+  }
+}
+
+function live(g, kind, x, y, a, r) {
+  const S = UI.S, t = NOW + a * 10;
+  if (kind === "sails") {
+    g.save(); g.translate(x, y); g.rotate(t * .9);
+    for (let k = 0; k < 4; k++) {
+      g.rotate(Math.PI / 2);
+      g.fillStyle = "#8a6444"; g.fillRect(-S * .02, 0, S * .04, S * .4);
+      g.fillStyle = "#f7f2e6"; g.fillRect(S * .02, S * .12, S * .08, S * .26);
+    }
+    g.restore();
+    circle(g, x, y, S * .045, "#5b4a3c");
+  } else if (kind === "wheel") {
+    g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1.5, S * .05);
+    g.beginPath(); g.arc(x, y, S * .26, 0, Math.PI * 2); g.stroke();
+    g.lineWidth = Math.max(1, S * .03); g.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const b = t * .7 + k * Math.PI / 4;
+      g.moveTo(x - Math.cos(b) * S * .26, y - Math.sin(b) * S * .26); g.lineTo(x + Math.cos(b) * S * .26, y + Math.sin(b) * S * .26);
+    }
+    g.stroke();
+  } else if (kind === "saw") {
+    g.save(); g.translate(x, y); g.rotate(t * 1.5);
+    g.beginPath();
+    for (let k = 0; k < 24; k++) { const rad = k % 2 ? S * .12 : S * .155, b = k * Math.PI / 12; g.lineTo(Math.cos(b) * rad, Math.sin(b) * rad); }
+    g.closePath(); g.fillStyle = "#d9dee2"; g.fill();
+    g.fillStyle = "#b8c0c6"; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, S * .11, 0, Math.PI / 2); g.closePath(); g.fill();
+    g.restore();
+    circle(g, x, y, S * .06, "#9aa3aa"); circle(g, x, y, S * .025, "#4d535b");
+  } else if (kind === "coals" || kind === "flame") {
+    // Coals glow and fade; a campfire flickers more and throws sparks more often.
+    const f = kind === "flame" ? 1 : .5, glow = .5 + .5 * Math.sin(t * 5) * Math.sin(t * 3.3 + 1);
+    circle(g, x, y, r, `rgb(${224 + glow * 20 | 0},${100 + glow * 40 | 0},50)`);
+    circle(g, x - r * .1, y - r * .1, r * (.45 + .15 * glow * f), "#ffd45c");
+    sparks(g, x, y, t, kind === "flame" ? 3 : 2);
+  } else if (kind === "glow") {
+    const glow = .5 + .5 * Math.sin(t * 4) * Math.sin(t * 2.7);
+    circle(g, x, y, r * (1.6 + glow * .6), `rgba(255,150,60,${.12 + glow * .15})`);
+    circle(g, x, y, r, `rgb(240,${120 + glow * 60 | 0},58)`);
+  } else if (kind === "hens") {
+    for (const [hx, hy, k] of [[.3, .7, 0], [.6, .64, 1], [.72, .82, 2], [.76, .38, 3]]) {
+      const w = Math.sin(t * .4 + k * 2), face = Math.cos(t * .4 + k * 2) >= 0 ? 1 : -1;
+      const px = x + S * hx + w * S * .05, py = y + S * hy, peck = Math.sin(t * 3 + k * 1.7) > .75 ? S * .015 : 0;
+      ellipse(g, px, py, S * .055, S * .04, "#fbf8f0");
+      circle(g, px + face * (S * .045 + peck), py - S * .01 + peck * .5, S * .02, "#d65a45");
+    }
+  } else if (kind === "ripple") {
+    // A ring spreads across still water now and then.
+    const p = (t * .35) % 1;
+    g.strokeStyle = `rgba(255,255,255,${.55 * (1 - p)})`; g.lineWidth = Math.max(1, S * .02);
+    g.beginPath(); g.arc(x, y, r * (.15 + .85 * p), 0, Math.PI * 2); g.stroke();
+  } else if (kind === "flag") {
+    g.fillStyle = "#d65a45"; g.beginPath(); g.moveTo(x, y);
+    for (let k = 0; k <= 4; k++) g.lineTo(x + S * .05 * k, y + Math.sin(t * 5 - k) * S * .015 * k / 4);
+    for (let k = 4; k >= 0; k--) g.lineTo(x + S * .05 * k, y + S * .1 + Math.sin(t * 5 - k) * S * .015 * k / 4);
+    g.closePath(); g.fill();
+    g.fillStyle = "#f7f2e6"; g.fillRect(x, y, S * .07, S * .05);
+  } else if (kind === "train" || kind === "wagon") {
+    // A train pulls in, waits and pulls out, then the next comes the other way. A wagon just drives across.
+    const train = kind === "train", cycle = train ? 16 : 11, T = ((t % (cycle * 2)) + cycle * 2) % (cycle * 2);
+    const back = T >= cycle, u = back ? T - cycle : T;
+    const span = r.n * S, cars = train ? (r.freight ? 2 : 4) : 0, len = train ? S * .8 + cars * S * (r.freight ? .8 : .85) : S * .85;
+    const stop = span / 2 + len / 2, end = span + len;
+    let head, moving = true;
+    if (!train) { if (u > 6) return; head = end * u / 6; }
+    else if (u < 3.5) head = stop * (1 - (1 - u / 3.5) ** 2);
+    else if (u < 10) { head = stop; moving = false; }
+    else if (u < 13.5) head = stop + (end - stop) * ((u - 10) / 3.5) ** 2;
+    else return;
+    const dir = r.horiz ? [1, 0] : [0, 1], sgn = back ? -1 : 1;
+    const ox = r.x - dir[0] * S / 2 + (back ? dir[0] * span : 0), oy = r.y - dir[1] * S / 2 + (back ? dir[1] * span : 0);
+    g.save();
+    g.beginPath(); for (const c of r.clips) g.rect(...c); g.clip();
+    g.translate(ox, oy); g.rotate(Math.atan2(dir[1] * sgn, dir[0] * sgn));
+    if (train) {
+      engine(g, head, S);
+      for (let k = 0; k < cars; k++) {
+        const at = head - S * .85 - k * S * (r.freight ? .8 : .85);
+        if (r.freight) car(g, at, S, S * .75, k % 2 ? "#7d6a56" : "#a8503a", "rgba(255,240,220,.25)");
+        else car(g, at, S, S * .8, "#3f6f5a", "#e9dcc4");
+      }
+    } else wagon(g, head, S);
+    g.restore();
+    // Steam from the stack, but only where the engine can be seen.
+    if (train && Math.random() < (moving ? .05 : .008)) {
+      const along = head - S * .16, sx = ox + dir[0] * sgn * along, sy = oy + dir[1] * sgn * along;
+      if (r.clips.some(([cx, cy, cw, ch]) => sx >= cx && sx <= cx + cw && sy >= cy && sy <= cy + ch)) FX.puffs.push({ x: sx, y: sy, t: 0, dark: false, drift: .5 + Math.random() * .5 });
+    }
+  } else if (kind === "race") {
+    // Three horses race two laps and finish together at the line, with the lead changing on the way; then they rest.
+    const cycle = 18, T = ((t % cycle) + cycle) % cycle, race = Math.floor(t / cycle), u = Math.min(1, T / 11);
+    const ease = u < .5 ? 2 * u * u : 1 - 2 * (1 - u) ** 2;
+    [["#d65a45", "#6e4a33"], ["#3f79b5", "#b4875a"], ["#e3a92f", "#4a382d"]].forEach(([silk, coat], i) => {
+      const lane = (i - 1) * S * .1, rx = r.rx + lane, ry = r.ry + lane;
+      const lead = (hash(race, i + a) - .5) * .2 * Math.sin(Math.PI * u) ** 2;
+      const th = -(ease + lead) * Math.PI * 4;
+      const hx = x + rx * Math.cos(th), hy = y + ry * Math.sin(th), head = Math.atan2(-ry * Math.cos(th), rx * Math.sin(th));
+      if (u < 1) circle(g, hx - Math.cos(head) * S * .16, hy - Math.sin(head) * S * .16, S * .05, "rgba(240,225,190,.5)");
+      horse(g, hx, hy, head, coat, .75);
+      circle(g, hx + Math.cos(head) * S * .02, hy + Math.sin(head) * S * .02, S * .035, silk);
+    });
+  } else if (kind === "sluice") {
+    // Water streaks and flecks of gold wash down the trough. Every square of it runs the same way at the same
+    // time, so a fleck that leaves one square turns up in the next. `a` is 1 when the trough lies flat.
+    const along = (u, v) => a ? [x + S * u, y + S / 2 + S * v] : [x + S / 2 + S * v, y + S * u];
+    g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+    for (let k = 0; k < 3; k++) {
+      const p = (NOW * .9 + k / 3) % 1, [x1, y1] = along(p, (k - 1) * .04), [x2, y2] = along(Math.min(1, p + .1), (k - 1) * .04);
+      g.moveTo(x1, y1); g.lineTo(x2, y2);
+    }
+    g.stroke();
+    for (let k = 0; k < 4; k++) {
+      const p = (NOW * .3 + k / 4 + hash(k, 3) * .15) % 1, [fx, fy] = along(p, (hash(k, 4) - .5) * .08);
+      circle(g, fx, fy, S * .032, "#d9a82e");
+      circle(g, fx - S * .008, fy - S * .008, S * (.016 + .008 * Math.sin(NOW * 7 + k * 2)), "#fff0a8");
+    }
+  } else if (kind === "mine") {
+    // Dust drifts up out of the shaft, and a little ore cart rolls up and down its track.
+    for (let k = 0; k < 4; k++) {
+      const p = (t * .35 + k / 4) % 1, ang = -Math.PI / 2 + (hash(k, Math.floor(t * .35 + k / 4)) - .5) * 1.6;
+      circle(g, x + Math.cos(ang) * S * .2 * p, y + S * .05 + Math.sin(ang) * S * .2 * p, S * (.03 + .06 * p), `rgba(214,198,170,${.55 * (1 - p)})`);
+    }
+    const p = (1 - Math.cos(t * .9)) / 2, cy = y + S * (.24 + .18 * p), k = S * 1.25;
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(x - k * .08 + S * .02, cy - k * .06 + S * .03, k * .16, k * .12);
+    g.fillStyle = "#5c4028"; g.fillRect(x - k * .08, cy - k * .06, k * .16, k * .12);
+    circle(g, x - k * .03, cy - k * .01, k * .035, "#958d82"); circle(g, x + k * .03, cy + k * .01, k * .03, "#aaa396");
+    circle(g, x + k * .01, cy - k * .03, k * .022, "#f2cf63");
+  } else if (kind === "birds") {
+    // A few birds wheel over the trees, their shadows on the grass below.
+    for (let k = 0; k < 3; k++) {
+      const b = t * .45 - k * .32, bx = x + Math.cos(b) * S * .85, by = y + Math.sin(b) * S * .5 - S * .45;
+      const flap = Math.sin(t * 11 + k * 2) * S * .03, dir = Math.sin(b) > 0 ? -1 : 1;
+      ellipse(g, bx + S * .15, by + S * .55, S * .045, S * .018, "rgba(20,30,20,.14)");
+      g.strokeStyle = "#3d4148"; g.lineWidth = Math.max(1, S * .025); g.lineCap = "round"; g.lineJoin = "round";
+      g.beginPath(); g.moveTo(bx - S * .06, by - flap); g.lineTo(bx, by + dir * S * .01); g.lineTo(bx + S * .06, by - flap); g.stroke();
+    }
+  }
+}
+
+/* A small sign on a roof: a star for the sheriff, a dollar for the bank. */
+function emblem(g, kind, x, y) {
+  const S = UI.S, s = S * .15;
+  g.save(); g.translate(x, y);
+  circle(g, S * .02, S * .03, s * 1.25, "rgba(30,20,10,.25)");
+  if (kind === "star") {
+    g.beginPath();
+    for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? s * .5 : s * 1.2; g.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); }
+    g.closePath(); g.fillStyle = "#f2c94c"; g.fill();
+    g.strokeStyle = "#8a6414"; g.lineWidth = Math.max(1, S * .02); g.stroke();
+  } else {
+    circle(g, 0, 0, s * 1.15, kind === "dollar" ? "#f2c94c" : "#f7f2e6");
+    g.strokeStyle = "#3d4148"; g.lineWidth = Math.max(1.2, S * .03); g.lineCap = "round";
+    if (kind === "bars") {
+      g.beginPath(); for (const bx of [-.45, 0, .45]) { g.moveTo(bx * s, -.7 * s); g.lineTo(bx * s, .7 * s); } g.stroke();
+    } else if (kind === "clock") {
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -.7 * s); g.moveTo(0, 0); g.lineTo(.5 * s, .2 * s); g.stroke();
+    } else if (kind === "cross") {
+      g.fillStyle = "#d65a45"; g.fillRect(-.22 * s, -.7 * s, .44 * s, 1.4 * s); g.fillRect(-.7 * s, -.22 * s, 1.4 * s, .44 * s);
+    } else if (kind === "book") {
+      g.fillStyle = "#6d8f7a"; g.fillRect(-.75 * s, -.5 * s, .68 * s, s); g.fillRect(.07 * s, -.5 * s, .68 * s, s);
+    } else if (kind === "dollar") {
+      g.font = `800 ${Math.round(s * 1.5)}px system-ui, sans-serif`; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillStyle = "#6b4a08"; g.fillText("$", 0, s * .08);
+    } else if (kind === "mask") {
+      circle(g, -.4 * s, -.2 * s, .17 * s, "#3d4148"); circle(g, .4 * s, -.2 * s, .17 * s, "#3d4148");
+      g.beginPath(); g.arc(0, .05 * s, .5 * s, .15 * Math.PI, .85 * Math.PI); g.stroke();
+    } else if (kind === "scale") {
+      g.lineWidth = Math.max(1, S * .02);
+      g.beginPath(); g.moveTo(0, -.75 * s); g.lineTo(0, .6 * s); g.moveTo(-.7 * s, -.45 * s); g.lineTo(.7 * s, -.45 * s); g.moveTo(-.35 * s, .6 * s); g.lineTo(.35 * s, .6 * s); g.stroke();
+      g.fillStyle = "#c9a13b";
+      for (const px of [-.6, .6]) { g.beginPath(); g.arc(px * s, -.1 * s, .28 * s, 0, Math.PI); g.fill(); }
+    } else if (kind === "loaf") {
+      ellipse(g, 0, .05 * s, .78 * s, .5 * s, "#c8823f");
+      ellipse(g, -.1 * s, -.05 * s, .55 * s, .3 * s, "#e0a55c");
+      g.strokeStyle = "#8f5424"; g.lineWidth = Math.max(1, S * .018); g.beginPath();
+      for (const bx of [-.35, 0, .35]) { g.moveTo(bx * s - .1 * s, -.2 * s); g.lineTo(bx * s + .1 * s, .25 * s); }
+      g.stroke();
+    } else if (kind === "diamond") {
+      g.fillStyle = "#d9434f"; g.beginPath(); g.moveTo(0, -.8 * s); g.lineTo(.6 * s, 0); g.lineTo(0, .8 * s); g.lineTo(-.6 * s, 0); g.closePath(); g.fill();
+    }
+  }
+  g.restore();
+}
+const ROOFS = new Set(["house", "rowA", "rowB", "hall", "shop", "barn", "forge", "shed", "nave", "steeple", "big", "silo", "beehive"]);
+const SMOKE = [];    // chimneys on the baked board: [x, y, dark]
+
+function chimney(g, x, y, dark, baking) {
+  const S = UI.S, s = S * .11;
+  g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(x + s * .3, y + s * .4, s, s);
+  g.fillStyle = "#8d827a"; g.fillRect(x, y, s, s);
+  g.fillStyle = dark ? "#e0743a" : "#4d4642"; g.fillRect(x + s * .22, y + s * .22, s * .56, s * .56);
+  if (baking) SMOKE.push([x + s / 2, y, dark]);
+}
+
+/* A roof with a ridge down its long side, lit from the top left. */
+function gable(g, x, y, w, h, c) {
+  const S = UI.S, r = S * .05, along = w >= h;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, r); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
+  g.save();
+  g.beginPath(); rr(g, x, y, w, h, r); g.clip();
+  g.fillStyle = c[0]; g.fillRect(x, y, w, h);
+  g.fillStyle = c[1];
+  if (along) g.fillRect(x, y + h / 2, w, h / 2); else g.fillRect(x + w / 2, y, w / 2, h);
+  g.strokeStyle = "rgba(0,0,0,.08)"; g.lineWidth = Math.max(1, S * .018);
+  g.beginPath();
+  const step = S * .085;
+  if (along) for (let t = y + step; t < y + h; t += step) { g.moveTo(x, t); g.lineTo(x + w, t); }
+  else for (let t = x + step; t < x + w; t += step) { g.moveTo(t, y); g.lineTo(t, y + h); }
+  g.stroke();
+  g.restore();
+  g.strokeStyle = "rgba(255,255,255,.4)"; g.lineWidth = Math.max(1, S * .028); g.lineCap = "round";
+  g.beginPath();
+  if (along) { g.moveTo(x + S * .05, y + h / 2); g.lineTo(x + w - S * .05, y + h / 2); }
+  else { g.moveTo(x + w / 2, y + S * .05); g.lineTo(x + w / 2, y + h - S * .05); }
+  g.stroke();
+}
+
+/* A roof that slopes on all four sides. */
+function hip(g, x, y, w, h, c) {
+  const S = UI.S;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .05); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
+  const cx = x + w / 2, cy = y + h / 2, k = Math.min(w, h) / 2;
+  const r1 = w >= h ? [x + k, cy] : [cx, y + k], r2 = w >= h ? [x + w - k, cy] : [cx, y + h - k];
+  const face = (pts, col) => { g.beginPath(); g.moveTo(...pts[0]); for (const p of pts.slice(1)) g.lineTo(...p); g.closePath(); g.fillStyle = col; g.fill(); };
+  const TL = [x, y], TR = [x + w, y], BR = [x + w, y + h], BL = [x, y + h];
+  if (w >= h) {
+    face([TL, TR, r2, r1], shade(c[0], .12)); face([TL, r1, BL], c[0]);
+    face([TR, BR, r2], c[1]);                 face([BL, BR, r2, r1], shade(c[1], -.1));
+  } else {
+    face([TL, TR, r1], shade(c[0], .12));     face([TL, r1, r2, BL], c[0]);
+    face([TR, BR, r2, r1], c[1]);             face([BL, BR, r2], shade(c[1], -.1));
+  }
+  g.strokeStyle = "rgba(255,255,255,.3)"; g.lineWidth = Math.max(1, S * .022);
+  g.beginPath(); g.moveTo(...TL); g.lineTo(...r1); g.lineTo(...BL); g.moveTo(...TR); g.lineTo(...r2); g.lineTo(...BR); g.moveTo(...r1); g.lineTo(...r2); g.stroke();
+}
+
+/* A roof of round logs, with the log ends crossing at the corners. */
+function logRoof(g, x, y, w, h, c) {
+  const S = UI.S, along = w >= h;
+  gable(g, x, y, w, h, c);
+  g.save(); g.beginPath(); rr(g, x, y, w, h, S * .05); g.clip();
+  const step = S * .11;
+  g.lineWidth = Math.max(1, S * .03);
+  for (let t = step; t < (along ? h : w) - 1; t += step) {
+    g.strokeStyle = "rgba(40,25,10,.3)"; g.beginPath();
+    if (along) { g.moveTo(x, y + t); g.lineTo(x + w, y + t); } else { g.moveTo(x + t, y); g.lineTo(x + t, y + h); }
+    g.stroke();
+    g.strokeStyle = "rgba(255,240,215,.2)"; g.beginPath();
+    if (along) { g.moveTo(x, y + t - step * .45); g.lineTo(x + w, y + t - step * .45); } else { g.moveTo(x + t - step * .45, y); g.lineTo(x + t - step * .45, y + h); }
+    g.stroke();
+  }
+  g.restore();
+  for (const [px, py] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
+    circle(g, px, py, S * .055, "#8a6040");
+    circle(g, px, py, S * .038, "#dcb98c");
+  }
+}
+
+/* A tin roof: ribs across it and a bright cap along the ridge. */
+function metalRoof(g, x, y, w, h, c) {
+  const S = UI.S, along = w >= h;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .03); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
+  g.save(); g.beginPath(); rr(g, x, y, w, h, S * .03); g.clip();
+  g.fillStyle = shade(c[0], .12); g.fillRect(x, y, w, h);
+  g.fillStyle = c[1];
+  if (along) g.fillRect(x, y + h / 2, w, h / 2); else g.fillRect(x + w / 2, y, w / 2, h);
+  const step = S * .07;
+  g.lineWidth = Math.max(1, S * .02);
+  for (let t = step / 2; t < (along ? w : h); t += step) {
+    g.strokeStyle = "rgba(255,255,255,.28)"; g.beginPath();
+    if (along) { g.moveTo(x + t, y); g.lineTo(x + t, y + h); } else { g.moveTo(x, y + t); g.lineTo(x + w, y + t); }
+    g.stroke();
+    g.strokeStyle = "rgba(0,0,0,.14)"; g.beginPath();
+    if (along) { g.moveTo(x + t + step / 2, y); g.lineTo(x + t + step / 2, y + h); } else { g.moveTo(x, y + t + step / 2); g.lineTo(x + w, y + t + step / 2); }
+    g.stroke();
+  }
+  g.fillStyle = shade(c[0], .35);
+  if (along) g.fillRect(x, y + h / 2 - S * .035, w, S * .07); else g.fillRect(x + w / 2 - S * .035, y, S * .07, h);
+  g.restore();
+}
+
+/* A flat roof of cut stone behind a low wall. */
+function stoneRoof(g, x, y, w, h, c) {
+  const S = UI.S;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .03); g.fillStyle = "rgba(40,30,20,.22)"; g.fill();
+  g.save(); g.beginPath(); rr(g, x, y, w, h, S * .03); g.clip();
+  g.fillStyle = c[0]; g.fillRect(x, y, w, h);
+  g.strokeStyle = "rgba(0,0,0,.16)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+  const bh = S * .12, bw = S * .2;
+  for (let r = 0, t = y; t < y + h; r++, t += bh) {
+    g.moveTo(x, t); g.lineTo(x + w, t);
+    for (let u = x + (r % 2 ? bw / 2 : 0); u < x + w; u += bw) { g.moveTo(u, t); g.lineTo(u, t + bh); }
+  }
+  g.stroke();
+  g.lineWidth = S * .07; g.strokeStyle = c[1]; g.strokeRect(x, y, w, h);
+  g.restore();
+  g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = Math.max(1, S * .02);
+  g.beginPath(); rr(g, x + S * .05, y + S * .05, w - S * .1, h - S * .1, S * .02); g.stroke();
+}
+
+/* A flat roof hidden behind a tall false front with a sign, facing down the map. */
+function frontRoof(g, x, y, w, h, c, words) {
+  const S = UI.S, along = w >= h, fh = Math.min(h * (words && along ? .55 : .4), S * (words && along ? .34 : .24)), step = S * .07;
+  g.beginPath(); rr(g, x + S * .03, y + S * .06, w, h, S * .03); g.fillStyle = "rgba(40,30,20,.2)"; g.fill();
+  g.beginPath(); rr(g, x, y, w, h, S * .03); g.fillStyle = shade(c[1], -.12); g.fill();
+  g.strokeStyle = "rgba(255,255,255,.1)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+  for (let t = y + step; t < y + h - fh; t += step) { g.moveTo(x + S * .04, t); g.lineTo(x + w - S * .04, t); }
+  g.stroke();
+  // The front: a board wider than the roof, stepped up in the middle.
+  const fy = y + h - fh, over = S * .04;
+  g.fillStyle = "rgba(40,30,20,.3)"; g.fillRect(x - over + S * .02, fy + S * .06, w + over * 2, fh);
+  g.fillStyle = c[0]; g.fillRect(x - over, fy, w + over * 2, fh);
+  g.fillRect(x + w * .22, fy - S * .06, w * .56, S * .07);
+  g.fillStyle = "rgba(255,255,255,.3)"; g.fillRect(x - over, fy, w + over * 2, S * .025);
+  if (!words) {
+    const sw = w * .5, sh = fh * .5;
+    g.fillStyle = "#f4ecd9"; g.fillRect(x + (w - sw) / 2, fy + (fh - sh) / 2, sw, sh);
+    g.fillStyle = shade(c[1], -.2);
+    g.fillRect(x + (w - sw * .7) / 2, fy + fh / 2 - S * .02, sw * .7, S * .04);
+    return;
+  }
+  // The name across the front when the building lies flat, up the roof when it stands.
+  if (along) signBoard(g, x + w / 2, fy + fh / 2, w * .88, fh * .72, words, c, false, false);
+  else signBoard(g, x + w / 2, y + (h - fh) / 2 + S * .02, h - fh - S * .12, Math.min(w * .62, S * .3), words, c, true, true);
+}
+
+/* A cream board with a building's name painted on it, centred on (x, y). `upright` turns it to read bottom to top. */
+function signBoard(g, x, y, bw, bh, words, c, upright, raised) {
+  const S = UI.S;
+  g.save();
+  g.translate(x, y);
+  if (upright) g.rotate(-Math.PI / 2);
+  if (raised) {
+    const sx = upright ? S * .05 : S * .03, sy = upright ? S * .03 : S * .05;
+    g.fillStyle = "rgba(40,30,20,.3)"; g.fillRect(-bw / 2 + sx, -bh / 2 + sy, bw, bh);
+  }
+  g.fillStyle = "#f4ecd9"; g.fillRect(-bw / 2, -bh / 2, bw, bh);
+  g.strokeStyle = shade(c[1], -.25); g.lineWidth = Math.max(1, S * .02); g.strokeRect(-bw / 2 + S * .025, -bh / 2 + S * .025, bw - S * .05, bh - S * .05);
+  let px = bh * .72;
+  g.font = `900 ${px}px Rockwell, "American Typewriter", Georgia, serif`;
+  const fit = (bw - S * .12) / g.measureText(words).width;
+  if (fit < 1) { px *= fit; g.font = `900 ${px}px Rockwell, "American Typewriter", Georgia, serif`; }
+  g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#6b2a22";
+  g.fillText(words, 0, bh * .04);
+  g.restore();
+}
+
+/* Little windows poking out of a roof, along its top slope. */
+function dormers(g, x, y, w, h, c) {
+  const S = UI.S, along = w >= h, len = along ? w : h, n = Math.max(1, Math.round(len / (S * .5)));
+  const dw = S * .24, dd = Math.min((along ? h : w) / 2 - S * .08, S * .18);
+  for (let k = 0; k < n; k++) {
+    const t = len * (k + .5) / n;
+    // Each dormer sits on the upper or left slope, its window facing away from the ridge.
+    const bx = along ? x + t - dw / 2 : x + w / 2 - dd - S * .03, by = along ? y + h / 2 - dd - S * .03 : y + t - dw / 2;
+    const bw = along ? dw : dd, bh = along ? dd : dw;
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(bx + S * .025, by + S * .035, bw, bh);
+    g.fillStyle = "#f4ecd9"; g.fillRect(bx, by, bw, bh);
+    g.fillStyle = shade(c[0], .18); g.fillRect(along ? bx : bx + S * .045, along ? by + S * .045 : by, along ? bw : bw - S * .045, along ? bh - S * .045 : bh);
+    g.fillStyle = shade(c[1], -.05);
+    if (along) g.fillRect(bx + bw / 2, by + S * .045, bw / 2, bh - S * .045); else g.fillRect(bx + S * .045, by + bh / 2, bw - S * .045, bh / 2);
+    g.fillStyle = "#5b8fb0";
+    if (along) g.fillRect(bx + bw * .3, by + S * .01, bw * .4, S * .03); else g.fillRect(bx + S * .01, by + bh * .3, S * .03, bh * .4);
+  }
+}
+
+/* Round grain silos with cone roofs, in a row. */
+function silos(g, x, y, w, h, c) {
+  const S = UI.S, along = w >= h, n = Math.max(1, Math.round(Math.max(w, h) / (S * .8))), r = Math.min(w, h) / 2 + S * .01;
+  for (let k = 0; k < n; k++) {
+    const cx = along ? x + w * (k + .5) / n : x + w / 2, cy = along ? y + h / 2 : y + h * (k + .5) / n;
+    circle(g, cx + S * .05, cy + S * .08, r, "rgba(40,30,20,.22)");
+    circle(g, cx, cy, r, "#e3dccb");
+    circle(g, cx, cy, r * .84, c[0]);
+    g.save(); g.beginPath(); g.arc(cx, cy, r * .84, -Math.PI / 4, Math.PI * .75); g.closePath(); g.fillStyle = c[1]; g.fill(); g.restore();
+    g.strokeStyle = "rgba(0,0,0,.14)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+    for (let a = 0; a < 8; a++) { g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a * Math.PI / 4) * r * .84, cy + Math.sin(a * Math.PI / 4) * r * .84); }
+    g.stroke();
+    circle(g, cx, cy, r * .2, "#8d8a84"); circle(g, cx - r * .05, cy - r * .05, r * .09, "#c9c5bd");
+  }
+}
+
+/* Brick kilns shaped like beehives, each with a fire in its mouth. */
+function beehives(g, x, y, w, h, c, baking) {
+  const S = UI.S, along = w >= h, n = Math.max(1, Math.round(Math.max(w, h) / (S * .8))), r = Math.min(w, h) / 2;
+  for (let k = 0; k < n; k++) {
+    const cx = along ? x + w * (k + .5) / n : x + w / 2, cy = along ? y + h / 2 : y + h * (k + .5) / n;
+    circle(g, cx + S * .05, cy + S * .08, r, "rgba(40,30,20,.24)");
+    circle(g, cx, cy, r, c[1]); circle(g, cx - r * .12, cy - r * .12, r * .82, c[0]);
+    g.strokeStyle = "rgba(60,25,15,.3)"; g.lineWidth = Math.max(1, S * .015);
+    for (const f of [.35, .6]) { g.beginPath(); g.arc(cx - r * .06, cy - r * .06, r * f, 0, Math.PI * 2); g.stroke(); }
+    circle(g, cx - r * .06, cy - r * .06, r * .16, "#3a2a24");
+    g.fillStyle = "#2f2622"; g.beginPath(); g.ellipse(cx, cy + r * .72, r * .3, r * .22, 0, Math.PI, 0); g.fill();
+    alive(g, "glow", cx, cy + r * .68, k * .37 + hash(x, y), r * .1);
+    if (baking) SMOKE.push([cx - r * .06, cy - r * .06, true]);
+  }
+}
+
+function roofFor(g, role, d, x, y, w, h, baking) {
+  const S = UI.S;
+  if (role === "silo") return silos(g, x, y, w, h, d.roof);
+  if (role === "beehive") return beehives(g, x, y, w, h, d.roof, baking);
+  const style = d.style, c = role === "rowB" ? d.roof2 : d.roof;
+  if (role !== "big" && role !== "steeple" && style && style !== "dormer") {
+    ({ logs: logRoof, metal: metalRoof, stone: stoneRoof, front: frontRoof })[style](g, x, y, w, h, c, d.sign);
+    if (role === "house" || role === "rowA") chimney(g, x + w * .7, y + h * .12, false, baking);
+    if (role === "forge") chimney(g, x + w * .62, y + h * .18, true, baking);
+    return;
+  }
+  if (role === "big" || role === "steeple") {
+    hip(g, x, y, w, h, d.roof);
+    if (role === "steeple") { g.strokeStyle = "#f5efe2"; g.lineWidth = Math.max(1.5, S * .04); g.beginPath();
+      g.moveTo(x + w / 2 - S * .08, y + h / 2); g.lineTo(x + w / 2 + S * .08, y + h / 2); g.moveTo(x + w / 2, y + h / 2 - S * .12); g.lineTo(x + w / 2, y + h / 2 + S * .08); g.stroke(); }
+    return;
+  }
+  gable(g, x, y, w, h, c);
+  if (style === "dormer") dormers(g, x, y, w, h, c);
+  if (role === "house" || role === "rowA") chimney(g, x + w * .7, y + h * .12, false, baking);
+  if (role === "forge") chimney(g, x + w * .62, y + h * .18, true, baking);
+  if (role === "shop") {
+    // A striped awning along the front.
+    const ah = S * .13, ay = y + h - ah * .6;
+    g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(x, ay + S * .05, w, ah);
+    const n = Math.max(3, Math.round(w / (S * .12)));
+    for (let k = 0; k < n; k++) { g.fillStyle = k % 2 ? "#f7f2e6" : d.roof[0]; g.fillRect(x + (w / n) * k, ay, w / n + .5, ah); }
+  }
+  if (role === "barn") {
+    g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = Math.max(1, S * .025);
+    g.beginPath(); rr(g, x + w / 2 - S * .08, y + h / 2 - S * .08, S * .16, S * .16, S * .02); g.stroke();
+  }
+  if (role === "hall" && d === DEF.townhall) {
+    hip(g, x + w / 2 - S * .16, y + h / 2 - S * .16, S * .32, S * .32, ["#e9e2d0", "#c9bfaa"]);
+    circle(g, x + w / 2, y + h / 2, S * .05, "#e3a92f");
+  }
+  if (role === "hall" && d === DEF.station) {
+    g.fillStyle = "rgba(255,255,255,.5)";
+    for (let k = 1; k < 4; k++) g.fillRect(x + (w / 4) * k - S * .02, y + h / 2 - S * .1, S * .04, S * .2);
+  }
+}
+
+function groundDetail(g, role, i, x, y, S, horiz) {
+  const cx = x + S / 2, cy = y + S / 2;
+  if (role === "garden") {
+    circle(g, x + S * .34, y + S * .38, S * .13, "#86bd6d");
+    circle(g, x + S * .64, y + S * .62, S * .11, "#79b262");
+    const fl = ["#f2a4b3", "#fff1a8", "#ffffff", "#f7b27a"];
+    for (let k = 0; k < 4; k++) circle(g, x + S * (.25 + .5 * hash(i, k + 60)), y + S * (.25 + .5 * hash(i, k + 70)), S * .03, fl[k]);
+  } else if (role === "tree") {
+    tree(g, cx, cy, S * .25, hash(i, 3));
+  } else if (role === "flag") {
+    circle(g, cx, cy, S * .22, "#9fcd84");
+    for (let k = 0; k < 6; k++) circle(g, cx + Math.cos(k) * S * .15, cy + Math.sin(k) * S * .15, S * .03, k % 2 ? "#f2a4b3" : "#fff1a8");
+    g.fillStyle = "rgba(0,0,0,.2)"; g.fillRect(cx + S * .02, cy - S * .1, S * .22, S * .03);
+    circle(g, cx, cy, S * .035, "#6d645c");
+    alive(g, "flag", cx, cy - S * .14, hash(i, 8));
+  } else if (role === "well") {
+    circle(g, cx + S * .03, cy + S * .05, S * .26, "rgba(40,30,20,.2)");
+    circle(g, cx, cy, S * .26, "#b9afa1");
+    circle(g, cx, cy, S * .19, "#8f867a");
+    circle(g, cx, cy, S * .15, "#5aa4c4");
+    circle(g, cx - S * .05, cy - S * .05, S * .05, "rgba(255,255,255,.45)");
+    alive(g, "ripple", cx, cy, hash(i, 8), S * .14);
+    g.fillStyle = "#8a6444"; g.fillRect(cx - S * .3, cy - S * .025, S * .6, S * .05);
+  } else if (role === "yard" || role === "crates") {
+    const box = (bx, by, s) => {
+      g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(bx + s * .15, by + s * .2, s, s);
+      g.fillStyle = "#bb8f5c"; g.fillRect(bx, by, s, s);
+      g.strokeStyle = "#946b40"; g.lineWidth = Math.max(1, S * .02); g.strokeRect(bx + .5, by + .5, s - 1, s - 1);
+      g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + s, by + s); g.stroke();
+    };
+    box(x + S * .22, y + S * .24, S * .2);
+    box(x + S * .5, y + S * .3, S * .16);
+    circle(g, x + S * .38, y + S * .66, S * .1, "#8d6545");
+    circle(g, x + S * .38, y + S * .66, S * .06, "#a77c58");
+  } else if (role === "logs") {
+    for (let k = 0; k < 3; k++) {
+      const ly = y + S * (.28 + k * .17), lx = x + S * .16 + (k % 2) * S * .06, lw = S * .6;
+      g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(lx + S * .03, ly + S * .05, lw, S * .12);
+      g.fillStyle = "#a47650"; g.beginPath(); rr(g, lx, ly, lw, S * .12, S * .06); g.fill();
+      circle(g, lx + lw - S * .05, ly + S * .06, S * .055, "#dcb98c");
+    }
+  } else if (role === "produce") {
+    const fruit = ["#d9483b", "#f09b30", "#7fb24a", "#e8c43c"];
+    for (let k = 0; k < 4; k++) {
+      const bx = x + S * (.16 + (k % 2) * .36), by = y + S * (.18 + ((k / 2) | 0) * .36), s = S * .3;
+      g.fillStyle = "rgba(40,30,20,.18)"; g.fillRect(bx + S * .03, by + S * .04, s, s);
+      g.fillStyle = "#b98d5c"; g.fillRect(bx, by, s, s);
+      for (let f = 0; f < 4; f++) circle(g, bx + s * (.3 + (f % 2) * .4), by + s * (.3 + ((f / 2) | 0) * .4), s * .17, fruit[k]);
+    }
+  } else if (role === "rocks") {
+    for (const [rx, ry, rs] of [[.35, .4, .15], [.64, .58, .12], [.4, .7, .09]]) {
+      ellipse(g, x + S * rx + S * .02, y + S * ry + S * .04, S * rs, S * rs * .75, "rgba(40,30,20,.2)");
+      ellipse(g, x + S * rx, y + S * ry, S * rs, S * rs * .75, "#958d82");
+      ellipse(g, x + S * rx - S * rs * .2, y + S * ry - S * rs * .2, S * rs * .55, S * rs * .38, "#b0a89b");
+    }
+    circle(g, x + S * .7, y + S * .3, S * .035, "#f2cf63");
+  } else if (role === "shaft") {
+    ellipse(g, cx + S * .03, cy + S * .06, S * .32, S * .27, "rgba(40,30,20,.22)");
+    ellipse(g, cx, cy, S * .32, S * .27, "#8b8378");
+    ellipse(g, cx - S * .06, cy - S * .06, S * .2, S * .15, "#a39b8f");
+    g.fillStyle = "#2f2a26"; g.beginPath(); g.ellipse(cx, cy + S * .06, S * .13, S * .1, 0, Math.PI, 0); g.fill();
+    g.fillStyle = "#7a5a3c"; g.fillRect(cx - S * .15, cy + S * .05, S * .3, S * .04);
+    g.strokeStyle = "#6c5b4a"; g.lineWidth = Math.max(1, S * .025);
+    g.beginPath(); g.moveTo(cx - S * .06, cy + S * .1); g.lineTo(cx - S * .08, y + S); g.moveTo(cx + S * .06, cy + S * .1); g.lineTo(cx + S * .08, y + S); g.stroke();
+    alive(g, "mine", cx, cy, hash(i, 8));
+  } else if (role === "play") {
+    circle(g, cx, cy, S * .26, "#e2c98e");
+    g.strokeStyle = "#8a6444"; g.lineWidth = Math.max(1.5, S * .04);
+    g.beginPath(); g.moveTo(cx - S * .2, cy - S * .08); g.lineTo(cx + S * .2, cy - S * .08); g.stroke();
+    g.fillStyle = "#d65a45"; g.fillRect(cx - S * .12, cy - S * .02, S * .08, S * .04); g.fillRect(cx + S * .04, cy - S * .02, S * .08, S * .04);
+  } else if (role === "rail") {
+    g.strokeStyle = "#8c6c4d"; g.lineWidth = Math.max(1.5, S * .045);
+    g.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const t = .16 + k * .23;
+      if (horiz) { g.moveTo(x + S * t, y + S * .22); g.lineTo(x + S * t, y + S * .78); }
+      else { g.moveTo(x + S * .22, y + S * t); g.lineTo(x + S * .78, y + S * t); }
+    }
+    g.stroke();
+    g.strokeStyle = "#6f777e"; g.lineWidth = Math.max(1, S * .035);
+    g.beginPath();
+    if (horiz) { g.moveTo(x, y + S * .35); g.lineTo(x + S, y + S * .35); g.moveTo(x, y + S * .65); g.lineTo(x + S, y + S * .65); }
+    else { g.moveTo(x + S * .35, y); g.lineTo(x + S * .35, y + S); g.moveTo(x + S * .65, y); g.lineTo(x + S * .65, y + S); }
+    g.stroke();
+  } else if (role === "porch") {
+    circle(g, x + S * .7, y + S * .36, S * .09, "#7f5a3d");
+    circle(g, x + S * .7, y + S * .36, S * .055, "#9c7452");
+    circle(g, x + S * .32, y + S * .62, S * .08, "#7f5a3d");
+  } else if (role === "orchard") {
+    for (const [tx, ty] of [[.3, .32], [.7, .32], [.3, .72], [.7, .72]]) tree(g, x + S * tx, y + S * ty, S * .15, hash(i, tx * 10 + ty));
+  } else if (role === "vines") {
+    for (let k = 0; k < 3; k++) {
+      const t = .22 + k * .28;
+      g.fillStyle = "#6e9b4c"; g.beginPath();
+      if (horiz) rr(g, x + S * .06, y + S * (t - .06), S * .88, S * .12, S * .06); else rr(g, x + S * (t - .06), y + S * .06, S * .12, S * .88, S * .06);
+      g.fill();
+      for (let q = 0; q < 3; q++) { const u = .2 + q * .3; circle(g, horiz ? x + S * u : x + S * t, horiz ? y + S * t : y + S * u, S * .035, "#7b4a8c"); }
+    }
+  } else if (role === "wheel") {
+    g.fillStyle = "#62abc9"; g.beginPath(); rr(g, x + S * .1, y + S * .64, S * .8, S * .2, S * .08); g.fill();
+    alive(g, "wheel", cx, cy - S * .05, hash(i, 8));
+  } else if (role === "windmill") {
+    circle(g, cx + S * .03, cy + S * .05, S * .2, "rgba(40,30,20,.2)");
+    circle(g, cx, cy, S * .19, "#ece5d4"); circle(g, cx, cy, S * .12, "#b9ab94");
+    alive(g, "sails", cx, cy, hash(i, 8));
+  } else if (role === "kiln") {
+    ellipse(g, cx + S * .03, cy + S * .06, S * .3, S * .26, "rgba(40,30,20,.22)");
+    circle(g, cx, cy, S * .29, "#9c7f66"); circle(g, cx - S * .06, cy - S * .07, S * .17, "#b39479");
+    g.fillStyle = "#2f2622"; g.beginPath(); g.ellipse(cx, cy + S * .13, S * .1, S * .07, 0, Math.PI, 0); g.fill();
+    alive(g, "glow", cx, cy + S * .1, hash(i, 8), S * .03);
+    if (BAKING) SMOKE.push([cx, cy - S * .22, true]);
+  } else if (role === "sluice") {
+    const w = S * .3;
+    g.fillStyle = "#9a7350"; g.beginPath();
+    if (horiz) rr(g, x, cy - w / 2, S, w, S * .04); else rr(g, cx - w / 2, y, w, S, S * .04);
+    g.fill();
+    g.fillStyle = "#6fb4cf";
+    if (horiz) g.fillRect(x, cy - w * .28, S, w * .56); else g.fillRect(cx - w * .28, y, w * .56, S);
+    g.fillStyle = "rgba(60,40,25,.55)";
+    for (let k = 0; k < 3; k++) { const t = .2 + k * .3; if (horiz) g.fillRect(x + S * t, cy - w * .28, S * .03, w * .56); else g.fillRect(cx - w * .28, y + S * t, w * .56, S * .03); }
+    circle(g, horiz ? x + S * .3 : x + S * .8, horiz ? y + S * .8 : y + S * .3, S * .07, "#958d82");
+    circle(g, horiz ? x + S * .66 : x + S * .2, horiz ? y + S * .2 : y + S * .68, S * .035, "#f2cf63");
+    alive(g, "sluice", x, y, horiz ? 1 : 0);
+  } else if (role === "deck") {
+    g.strokeStyle = "#a57b52"; g.lineWidth = Math.max(1, S * .025); g.beginPath();
+    for (let k = 1; k < 6; k++) {
+      const t = k / 6;
+      if (horiz) { g.moveTo(x + S * t, y + S * .14); g.lineTo(x + S * t, y + S * .86); } else { g.moveTo(x + S * .14, y + S * t); g.lineTo(x + S * .86, y + S * t); }
+    }
+    g.stroke();
+    g.strokeStyle = "#6e4c2e"; g.lineWidth = Math.max(1.5, S * .05); g.beginPath();
+    if (horiz) { g.moveTo(x, y + S * .16); g.lineTo(x + S, y + S * .16); g.moveTo(x, y + S * .84); g.lineTo(x + S, y + S * .84); }
+    else { g.moveTo(x + S * .16, y); g.lineTo(x + S * .16, y + S); g.moveTo(x + S * .84, y); g.lineTo(x + S * .84, y + S); }
+    g.stroke();
+  } else if (role === "hay") {
+    for (const [hx, hy] of [[.32, .36], [.66, .44], [.42, .7]]) {
+      circle(g, x + S * hx + S * .02, y + S * hy + S * .04, S * .12, "rgba(40,30,20,.2)");
+      circle(g, x + S * hx, y + S * hy, S * .12, "#e2c15c");
+      g.strokeStyle = "#c29d3f"; g.lineWidth = Math.max(1, S * .02);
+      g.beginPath(); g.arc(x + S * hx, y + S * hy, S * .06, 0, Math.PI * 1.5); g.stroke();
+    }
+  } else if (role === "graves") {
+    for (const [gx, gy] of [[.3, .32], [.66, .3], [.34, .68], [.7, .66]]) {
+      const px = x + S * gx, py = y + S * gy;
+      g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(px - S * .04, py - S * .04, S * .12, S * .15);
+      g.fillStyle = "#cfcac1"; g.beginPath(); rr(g, px - S * .06, py - S * .08, S * .12, S * .15, S * .05); g.fill();
+    }
+    circle(g, x + S * .5, y + S * .5, S * .03, "#f2a4b3");
+  } else if (role === "pool") {
+    g.fillStyle = "#7cc3d8"; g.beginPath(); rr(g, x + S * .16, y + S * .16, S * .68, S * .68, S * .14); g.fill();
+    g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = Math.max(1, S * .025);
+    g.beginPath(); g.moveTo(x + S * .3, y + S * .42); g.lineTo(x + S * .5, y + S * .42); g.moveTo(x + S * .45, y + S * .6); g.lineTo(x + S * .68, y + S * .6); g.stroke();
+    alive(g, "ripple", cx, cy, hash(i, 8), S * .28);
+  } else if (role === "tent") {
+    circle(g, cx + S * .03, cy + S * .05, S * .3, "rgba(40,30,20,.2)");
+    const stripe = hash(i, 4) > .5 ? "#d65a45" : "#3f79b5";
+    for (let k = 0; k < 8; k++) {
+      g.fillStyle = k % 2 ? "#f7f2e6" : stripe;
+      g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, S * .3, k * Math.PI / 4, (k + 1) * Math.PI / 4); g.closePath(); g.fill();
+    }
+    circle(g, cx, cy, S * .05, "#e3a92f");
+  } else if (role === "woodpile") {
+    for (const [row, n] of [[0, 3], [1, 2], [2, 1]]) for (let k = 0; k < n; k++) {
+      const lx = x + S * (.24 + k * .13 + row * .065), ly = y + S * (.4 - row * .1);
+      circle(g, lx, ly, S * .065, "#8a6040"); circle(g, lx, ly, S * .045, "#dcb98c");
+    }
+    circle(g, x + S * .66, y + S * .68, S * .11, "#8a6040"); circle(g, x + S * .66, y + S * .68, S * .08, "#c9a274");
+    g.strokeStyle = "#6b4a2e"; g.lineWidth = Math.max(1, S * .03); g.beginPath(); g.moveTo(x + S * .66, y + S * .66); g.lineTo(x + S * .84, y + S * .5); g.stroke();
+    g.fillStyle = "#9aa3aa"; g.fillRect(x + S * .6, y + S * .6, S * .1, S * .06);
+  } else if (role === "veg") {
+    const leaf = ["#5f9a45", "#7cb45a", "#4f8a3c"];
+    for (let r = 0; r < 3; r++) {
+      const t = .25 + r * .25;
+      g.fillStyle = "rgba(90,60,35,.35)";
+      if (horiz) g.fillRect(x + S * .14, y + S * (t - .05), S * .72, S * .1); else g.fillRect(x + S * (t - .05), y + S * .14, S * .1, S * .72);
+      for (let k = 0; k < 4; k++) {
+        const u = .22 + k * .19;
+        circle(g, horiz ? x + S * u : x + S * t, horiz ? y + S * t : y + S * u, S * .05, leaf[(r + k) % 3]);
+        if (r === 1) circle(g, horiz ? x + S * u : x + S * t, horiz ? y + S * t : y + S * u, S * .02, "#e8813a");
+      }
+    }
+  } else if (role === "hedge") {
+    g.fillStyle = "#e8dfc9"; g.fillRect(cx - S * .05, y + S * .1, S * .1, S * .8); g.fillRect(x + S * .1, cy - S * .05, S * .8, S * .1);
+    g.strokeStyle = "#5f9150"; g.lineWidth = S * .09; g.beginPath(); rr(g, x + S * .2, y + S * .2, S * .6, S * .6, S * .1); g.stroke();
+    g.fillStyle = "#e8dfc9"; g.fillRect(cx - S * .05, y + S * .72, S * .1, S * .14);
+    circle(g, cx, cy, S * .1, "#4f8544"); circle(g, cx - S * .03, cy - S * .03, S * .04, "rgba(255,255,255,.2)");
+  } else if (role === "laundry") {
+    g.strokeStyle = "#6b4a2e"; g.lineWidth = Math.max(1, S * .015);
+    g.beginPath(); g.moveTo(x + S * .15, y + S * .3); g.lineTo(x + S * .85, y + S * .3); g.moveTo(x + S * .15, y + S * .62); g.lineTo(x + S * .85, y + S * .62); g.stroke();
+    for (const px of [.15, .85]) for (const py of [.3, .62]) circle(g, x + S * px, y + S * py, S * .03, "#6b4a2e");
+    const cloth = ["#f7f2e6", "#3f79b5", "#d65a45", "#e3a92f", "#f7f2e6", "#4f9a5f"];
+    cloth.forEach((col, k) => {
+      const px = x + S * (.22 + (k % 3) * .2), py = y + S * (k < 3 ? .3 : .62);
+      g.fillStyle = "rgba(40,30,20,.15)"; g.fillRect(px + S * .02, py + S * .02, S * .13, S * .14);
+      g.fillStyle = col; g.fillRect(px, py, S * .13, S * .12 + hash(i, k) * S * .04);
+    });
+  } else if (role === "coop") {
+    g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(x + S * .2, y + S * .2, S * .36, S * .3);
+    gable(g, x + S * .16, y + S * .16, S * .36, S * .28, ["#b8704a", "#935535"]);
+    alive(g, "hens", x, y, hash(i, 8));
+  } else if (role === "fire") {
+    for (let k = 0; k < 7; k++) circle(g, cx + Math.cos(k * .9) * S * .17, cy + Math.sin(k * .9) * S * .17, S * .045, "#8f887d");
+    g.strokeStyle = "#6b4a2e"; g.lineWidth = Math.max(1.5, S * .045); g.beginPath();
+    g.moveTo(cx - S * .1, cy - S * .08); g.lineTo(cx + S * .1, cy + S * .08); g.moveTo(cx + S * .1, cy - S * .08); g.lineTo(cx - S * .1, cy + S * .08); g.stroke();
+    alive(g, "flame", cx, cy, hash(i, 8), S * .08);
+    if (BAKING) SMOKE.push([cx, cy - S * .05, false]);
+  } else if (role === "hides") {
+    for (const [fx, fy] of [[.3, .5], [.7, .5]]) {
+      const px = x + S * fx, py = y + S * fy;
+      g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1, S * .03); g.strokeRect(px - S * .15, py - S * .24, S * .3, S * .48);
+      g.fillStyle = hash(i, fx * 10) > .5 ? "#c49a6c" : "#a9784f";
+      g.beginPath(); g.moveTo(px, py - S * .19); g.lineTo(px + S * .1, py - S * .08); g.lineTo(px + S * .08, py + S * .12); g.lineTo(px, py + S * .19);
+      g.lineTo(px - S * .08, py + S * .12); g.lineTo(px - S * .1, py - S * .08); g.closePath(); g.fill();
+    }
+  } else if (role === "anvil") {
+    circle(g, x + S * .68, y + S * .32, S * .14, "#4d4642");
+    alive(g, "coals", x + S * .68, y + S * .32, hash(i, 8), S * .09);
+    const ax = x + S * .38, ay = y + S * .62;
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(ax - S * .14, ay - S * .02, S * .32, S * .14);
+    g.fillStyle = "#4d535b"; g.beginPath();
+    g.moveTo(ax - S * .2, ay - S * .08); g.lineTo(ax + S * .16, ay - S * .08); g.lineTo(ax + S * .16, ay + S * .08); g.lineTo(ax - S * .08, ay + S * .08); g.closePath(); g.fill();
+    g.fillStyle = "#7d858e"; g.fillRect(ax - S * .12, ay - S * .08, S * .28, S * .05);
+    g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1, S * .03); g.beginPath(); g.moveTo(x + S * .62, y + S * .7); g.lineTo(x + S * .82, y + S * .84); g.stroke();
+    g.fillStyle = "#3d4148"; g.fillRect(x + S * .57, y + S * .64, S * .1, S * .08);
+  } else if (role === "cart") {
+    g.strokeStyle = "#6f777e"; g.lineWidth = Math.max(1, S * .03); g.beginPath();
+    if (horiz) { g.moveTo(x, y + S * .36); g.lineTo(x + S, y + S * .36); g.moveTo(x, y + S * .64); g.lineTo(x + S, y + S * .64); }
+    else { g.moveTo(x + S * .36, y); g.lineTo(x + S * .36, y + S); g.moveTo(x + S * .64, y); g.lineTo(x + S * .64, y + S); }
+    g.stroke();
+    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(cx - S * .2 + S * .03, cy - S * .17 + S * .05, S * .4, S * .34);
+    g.fillStyle = "#7a5634"; g.fillRect(cx - S * .2, cy - S * .17, S * .4, S * .34);
+    g.fillStyle = "#5c4028"; g.fillRect(cx - S * .15, cy - S * .12, S * .3, S * .24);
+    for (const [ox, oy, col] of [[-.06, -.03, "#958d82"], [.06, .02, "#aaa396"], [-.02, .05, "#8f887d"], [.05, -.05, "#f2cf63"]]) circle(g, cx + S * ox, cy + S * oy, S * .05, col);
+  } else if (role === "bricks") {
+    for (const [bx, by] of [[.16, .18], [.52, .18], [.16, .54], [.52, .54]]) {
+      const px = x + S * bx, py = y + S * by, s = S * .3;
+      g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(px + S * .03, py + S * .04, s, s);
+      g.fillStyle = "#b4533d"; g.fillRect(px, py, s, s);
+      g.strokeStyle = "#e5d6b7"; g.lineWidth = Math.max(1, S * .012); g.beginPath();
+      for (let k = 1; k < 4; k++) { g.moveTo(px, py + s * k / 4); g.lineTo(px + s, py + s * k / 4); }
+      for (let k = 0; k < 4; k++) { const off = k % 2 ? s / 4 : s / 2; g.moveTo(px + off, py + s * k / 4); g.lineTo(px + off, py + s * (k + 1) / 4); }
+      g.stroke();
+    }
+  } else if (role === "bread") {
+    g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(x + S * .17, y + S * .27, S * .68, S * .5);
+    g.fillStyle = "#a47650"; g.fillRect(x + S * .14, y + S * .22, S * .68, S * .5);
+    g.fillStyle = "#f4ecd9"; g.fillRect(x + S * .18, y + S * .26, S * .6, S * .42);
+    for (const [lx, ly] of [[.32, .38], [.6, .38], [.32, .56], [.6, .56]]) {
+      ellipse(g, x + S * lx, y + S * ly, S * .1, S * .065, "#c8823f");
+      ellipse(g, x + S * lx - S * .02, y + S * ly - S * .015, S * .06, S * .03, "#e0a55c");
+    }
+  } else if (role === "fish") {
+    for (const [bx, by] of [[.3, .3], [.3, .68]]) {
+      circle(g, x + S * bx + S * .02, y + S * by + S * .04, S * .14, "rgba(40,30,20,.2)");
+      circle(g, x + S * bx, y + S * by, S * .14, "#8d6545"); circle(g, x + S * bx, y + S * by, S * .1, "#a77c58");
+      circle(g, x + S * bx, y + S * by, S * .06, "#d9eef2");
+    }
+    g.fillStyle = "#bfe0e8"; g.beginPath(); rr(g, x + S * .5, y + S * .16, S * .34, S * .68, S * .05); g.fill();
+    for (let k = 0; k < 3; k++) {
+      const fy = y + S * (.3 + k * .2), fx = x + S * .67;
+      ellipse(g, fx, fy, S * .11, S * .045, k % 2 ? "#8fa4b0" : "#b3c2c9");
+      g.fillStyle = "#7d919c"; g.beginPath(); g.moveTo(fx + S * .1, fy); g.lineTo(fx + S * .16, fy - S * .04); g.lineTo(fx + S * .16, fy + S * .04); g.closePath(); g.fill();
+    }
+  } else if (role === "furs") {
+    g.save(); g.translate(cx, cy); if (!horiz) g.rotate(Math.PI / 2);
+    ellipse(g, S * .03, S * .2, S * .38, S * .1, "rgba(40,30,20,.2)");
+    ellipse(g, 0, S * .16, S * .38, S * .1, "#a4643e"); ellipse(g, 0, S * .16, S * .3, S * .06, "#d6a574");
+    g.restore();
+    // Pelts pegged out flat to dry: a body with four legs spread.
+    for (const [px, col] of [[.3, "#7a5234"], [.66, "#a9784f"]]) {
+      const fx = x + S * px, fy = y + S * .34, u = S * .1;
+      g.fillStyle = col; g.beginPath();
+      g.moveTo(fx, fy - u * 1.3); g.lineTo(fx + u * .5, fy - u * .7); g.lineTo(fx + u * 1.2, fy - u * 1.1); g.lineTo(fx + u * .7, fy);
+      g.lineTo(fx + u * 1.2, fy + u * 1.1); g.lineTo(fx + u * .4, fy + u * .9); g.lineTo(fx, fy + u * 1.4); g.lineTo(fx - u * .4, fy + u * .9);
+      g.lineTo(fx - u * 1.2, fy + u * 1.1); g.lineTo(fx - u * .7, fy); g.lineTo(fx - u * 1.2, fy - u * 1.1); g.lineTo(fx - u * .5, fy - u * .7);
+      g.closePath(); g.fill();
+    }
+  } else if (role === "hitch") {
+    g.fillStyle = "#62abc9"; g.fillRect(x + S * .62, y + S * .16, S * .22, S * .1);
+    g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1.5, S * .035); g.beginPath(); g.moveTo(x + S * .18, y + S * .4); g.lineTo(x + S * .82, y + S * .4); g.stroke();
+    for (const px of [.18, .82]) circle(g, x + S * px, y + S * .4, S * .035, "#5c4028");
+    horse(g, x + S * .46, y + S * .64, Math.PI * .08, "#8a5a3a");
+  } else if (role === "pen") {
+    g.strokeStyle = "#4d535b"; g.lineWidth = Math.max(1, S * .03); g.beginPath(); rr(g, x + S * .16, y + S * .16, S * .68, S * .68, S * .04); g.stroke();
+    g.lineWidth = Math.max(1, S * .02); g.beginPath();
+    for (let k = 1; k < 6; k++) {
+      const t = S * (.16 + k * .68 / 6);
+      g.moveTo(x + t, y + S * .12); g.lineTo(x + t, y + S * .2); g.moveTo(x + t, y + S * .8); g.lineTo(x + t, y + S * .88);
+      g.moveTo(x + S * .12, y + t); g.lineTo(x + S * .2, y + t); g.moveTo(x + S * .8, y + t); g.lineTo(x + S * .88, y + t);
+    }
+    g.stroke();
+    circle(g, cx + S * .02, cy + S * .04, S * .07, "rgba(20,20,15,.22)");
+    circle(g, cx, cy, S * .07, "#d9d2c2"); g.fillStyle = "#3d4148"; g.fillRect(cx - S * .07, cy - S * .015, S * .14, S * .03);
+    circle(g, cx, cy - S * .03, S * .04, "#d9a77f");
+  } else if (role === "paddock") {
+    for (const [hx, hy] of [[.28, .3], [.5, .26]]) {
+      circle(g, x + S * hx + S * .02, y + S * hy + S * .04, S * .09, "rgba(40,30,20,.2)");
+      circle(g, x + S * hx, y + S * hy, S * .09, "#e2c15c");
+    }
+    horse(g, x + S * .52, y + S * .64, -Math.PI * .12, hash(i, 2) > .5 ? "#6e4a33" : "#b4875a");
+  } else if (role === "pasture" && hash(i, 11) > .35) {
+    const px = x + S * (.3 + .35 * hash(i, 12)), py = y + S * (.35 + .3 * hash(i, 13));
+    ellipse(g, px + S * .03, py + S * .05, S * .14, S * .08, "rgba(40,50,30,.2)");
+    ellipse(g, px, py, S * .14, S * .08, "#f7f3ea");
+    circle(g, px + S * .15, py, S * .05, "#5a4a3e");
+    circle(g, px - S * .03, py - S * .02, S * .035, "#5a4a3e");
+  }
+}
+
+/* A horse seen from above, facing `a`. */
+function horse(g, x, y, a, coat, size = 1) {
+  const S = UI.S;
+  g.save(); g.translate(x, y); g.rotate(a); g.scale(size, size);
+  ellipse(g, S * .02, S * .04, S * .16, S * .07, "rgba(40,30,20,.2)");
+  g.strokeStyle = shade(coat, -.35); g.lineWidth = Math.max(1, S * .03); g.lineCap = "round";
+  g.beginPath(); g.moveTo(-S * .13, 0); g.lineTo(-S * .21, S * .02); g.stroke();
+  ellipse(g, 0, 0, S * .14, S * .065, coat);
+  ellipse(g, S * .15, 0, S * .06, S * .035, coat);
+  g.fillStyle = shade(coat, -.35); g.fillRect(S * .04, -S * .012, S * .1, S * .024);
+  g.restore();
+}
+
+/* One more thing on a building's biggest roof, so it reads at a glance. */
+function extra(g, d, box, cells, dy, baking) {
+  const S = UI.S, { x, y, w, h } = box;
+  if (d.extra === "stack") {
+    // A tall brick smokestack at one end of the roof, its long shadow falling across it.
+    const k = S * .22, sx = x + w / 2 - k - S * .06, sy = y - h / 2 + S * .06;
+    ellipse(g, sx + k * .9, sy + k * 1.05, k * .75, k * .45, "rgba(40,30,20,.28)");
+    g.fillStyle = "#8f4b36"; g.fillRect(sx, sy, k, k);
+    g.fillStyle = "#b0654a"; g.fillRect(sx, sy, k, k * .45);
+    g.strokeStyle = "rgba(40,20,10,.35)"; g.lineWidth = Math.max(1, S * .012); g.beginPath();
+    g.moveTo(sx, sy + k * .45); g.lineTo(sx + k, sy + k * .45); g.moveTo(sx + k / 2, sy); g.lineTo(sx + k / 2, sy + k * .45); g.stroke();
+    g.fillStyle = "#2f2622"; g.fillRect(sx + k * .25, sy + k * .25, k * .5, k * .5);
+    if (baking) SMOKE.push([sx + k / 2, sy + k / 2, true]);
+  } else if (d.extra === "cupola" || d.extra === "bell") {
+    const k = S * (d.extra === "bell" ? .3 : .24);
+    hip(g, x - k / 2, y - k / 2, k, k, d.extra === "bell" ? ["#f2ece0", "#cfc6b4"] : [shade(d.roof[0], .25), d.roof[0]]);
+    if (d.extra === "bell") circle(g, x, y, S * .055, "#c9a13b");
+    else {
+      g.strokeStyle = "#3d4148"; g.lineWidth = Math.max(1, S * .02); g.beginPath();
+      g.moveTo(x - S * .1, y); g.lineTo(x + S * .1, y); g.moveTo(x + S * .05, y - S * .04); g.lineTo(x + S * .1, y); g.lineTo(x + S * .05, y + S * .04); g.stroke();
+    }
+  } else if (d.extra === "saw") {
+    circle(g, x + S * .03, y + S * .05, S * .15, "rgba(40,30,20,.25)");
+    alive(g, "saw", x, y, hash(x, y));
+  }
+}
+
+/*
+  A way through a building that things travel along: the track of a station or freight yard, or the deck of a
+  bridge. The way runs the length of the building. Travellers only show on the squares of that role, so they
+  slip under a station hall or a covered bridge's roof.
+*/
+function route(d, cells, role, dy) {
+  const S = UI.S, on = cells.filter((c, k) => d.roles[k] === role);
+  const horiz = on.every(c => rowOf(c) === rowOf(on[0]));
+  const at = (c) => horiz ? colOf(c) : rowOf(c);
+  const sorted = on.slice().sort((a, b) => at(a) - at(b)), first = sorted[0], last = sorted[sorted.length - 1];
+  const clips = [], ins = S * .09;
+  let start = first;
+  sorted.forEach((c, k) => {
+    const next = sorted[k + 1];
+    if (next !== undefined && at(next) === at(c) + 1) return;
+    const n = at(c) - at(start) + 1;
+    clips.push([cellX(start) + ins, cellY(start) + dy + ins, (horiz ? n : 1) * S - ins * 2, (horiz ? 1 : n) * S - ins * 2]);
+    start = next;
+  });
+  return { horiz, n: at(last) - at(first) + 1, x: cellX(first) + S / 2, y: cellY(first) + dy + S / 2, clips };
+}
+
+/* A little steam engine, a wagon and its horse, and the cars a train pulls. All point along +x, front at x. */
+function engine(g, x, S) {
+  const x0 = x - S * .8;
+  g.beginPath(); rr(g, x0 + S * .03, -S * .13, S * .8, S * .36, S * .06); g.fillStyle = "rgba(40,30,20,.25)"; g.fill();
+  g.fillStyle = "#8f4b36"; g.beginPath(); g.moveTo(x - S * .08, -S * .15); g.lineTo(x, 0); g.lineTo(x - S * .08, S * .15); g.closePath(); g.fill();
+  g.beginPath(); rr(g, x0 + S * .26, -S * .14, S * .48, S * .28, S * .13); g.fillStyle = "#3d4148"; g.fill();
+  g.fillStyle = "#c9a13b"; g.fillRect(x0 + S * .48, -S * .14, S * .035, S * .28);
+  g.beginPath(); rr(g, x0, -S * .18, S * .3, S * .36, S * .05); g.fillStyle = "#a8503a"; g.fill();
+  g.fillStyle = "#c26a4f"; g.fillRect(x0 + S * .04, -S * .18, S * .22, S * .1);
+  circle(g, x0 + S * .64, 0, S * .06, "#2a2d31"); circle(g, x0 + S * .64, 0, S * .035, "#111");
+}
+function car(g, x, S, len, body, top) {
+  g.beginPath(); rr(g, x - len + S * .03, -S * .12, len, S * .34, S * .05); g.fillStyle = "rgba(40,30,20,.25)"; g.fill();
+  g.beginPath(); rr(g, x - len, -S * .17, len, S * .34, S * .05); g.fillStyle = body; g.fill();
+  g.fillStyle = top; g.fillRect(x - len + S * .05, -S * .05, len - S * .1, S * .1);
+}
+function wagon(g, x, S) {
+  horse(g, x - S * .17, 0, 0, "#4a3326", 1);
+  g.fillStyle = "#3d2b1f";
+  for (const wx of [x - S * .74, x - S * .44]) for (const wy of [-S * .17, S * .13]) g.fillRect(wx, wy, S * .1, S * .04);
+  g.beginPath(); rr(g, x - S * .8 + S * .03, -S * .1, S * .48, S * .28, S * .05); g.fillStyle = "rgba(40,30,20,.25)"; g.fill();
+  g.beginPath(); rr(g, x - S * .8, -S * .15, S * .48, S * .3, S * .08); g.fillStyle = "#f1e8d4"; g.fill();
+  g.strokeStyle = "rgba(120,95,60,.4)"; g.lineWidth = Math.max(1, S * .015); g.beginPath();
+  for (const rx of [.68, .56, .44]) { g.moveTo(x - S * rx, -S * .15); g.lineTo(x - S * rx, S * .15); }
+  g.stroke();
+}
+
+/* Draws a building's art on top of its tile. `dy` is how far the top of the tile is raised. */
+function art(g, type, cells, dy, baking) {
+  const d = DEF[type], S = UI.S, ins = S * .075;
+  BAKING = !!baking;
+  const roleOf = new Map(cells.map((c, k) => [c, d.roles[k]]));
+  const xs = cells.map(colOf), ys = cells.map(rowOf);
+  const horiz = Math.max(...xs) - Math.min(...xs) >= Math.max(...ys) - Math.min(...ys);
+
+  const roles = [...new Set(d.roles)];
+  for (const role of roles) {
+    if (ROOFS.has(role)) continue;
+    const group = cells.filter(c => roleOf.get(c) === role);
+    union(g, group, ins + S * .045, S * .1, dy); g.fillStyle = GROUND[role]; g.fill();
+    if (role === "field" || role === "plank") {
+      g.save(); union(g, group, ins + S * .045, S * .1, dy); g.clip();
+      g.strokeStyle = role === "field" ? "#cfa546" : "#9c704a"; g.lineWidth = Math.max(1, S * (role === "field" ? .05 : .025));
+      g.beginPath();
+      const step = S * (role === "field" ? .16 : .12), flat = role === "field" ? horiz : !horiz;
+      for (const c of group) {
+        const x = cellX(c), y = cellY(c) + dy;
+        if (flat) for (let t = y + step / 2; t < y + S; t += step) { g.moveTo(x, t); g.lineTo(x + S, t); }
+        else for (let t = x + step / 2; t < x + S; t += step) { g.moveTo(t, y); g.lineTo(t, y + S); }
+      }
+      g.stroke();
+      g.restore();
+    }
+    const box = () => {
+      const gx = group.map(colOf), gy = group.map(rowOf), x0 = Math.min(...gx), y0 = Math.min(...gy);
+      const w = (Math.max(...gx) - x0 + 1) * S, h = (Math.max(...gy) - y0 + 1) * S;
+      return [UI.BX + x0 * S + w / 2, UI.BY + y0 * S + dy + h / 2, w, h];
+    };
+    if (role === "plaza") {
+      g.save(); union(g, group, ins + S * .045, S * .1, dy); g.clip();
+      g.strokeStyle = "rgba(120,100,70,.18)"; g.lineWidth = 1; g.beginPath();
+      for (const c of group) for (let k = 1; k < 3; k++) {
+        const x = cellX(c), y = cellY(c) + dy;
+        g.moveTo(x + S * k / 3, y); g.lineTo(x + S * k / 3, y + S); g.moveTo(x, y + S * k / 3); g.lineTo(x + S, y + S * k / 3);
+      }
+      g.stroke(); g.restore();
+      const [px, py] = box();
+      circle(g, px + S * .03, py + S * .05, S * .36, "rgba(40,30,20,.18)");
+      circle(g, px, py, S * .36, "#cfc5b0"); circle(g, px, py, S * .28, "#7cc3d8");
+      alive(g, "ripple", px, py, hash(px, py), S * .27);
+      // Benches face the fountain on four sides, with a lamp post on each corner between them.
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2, bx = px + Math.cos(a) * S * .6, by = py + Math.sin(a) * S * .6;
+        g.save(); g.translate(bx, by); g.rotate(a + Math.PI / 2);
+        g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(-S * .15 + S * .02, -S * .04 + S * .04, S * .3, S * .1);
+        g.fillStyle = "#8a6040"; g.fillRect(-S * .15, -S * .05, S * .3, S * .1);
+        g.fillStyle = "#b4875a"; g.fillRect(-S * .15, -S * .05, S * .3, S * .03); g.fillRect(-S * .15, -S * .005, S * .3, S * .03);
+        g.fillStyle = "#3d4148"; g.fillRect(-S * .17, -S * .06, S * .03, S * .12); g.fillRect(S * .14, -S * .06, S * .03, S * .12);
+        g.fillRect(-S * .15, S * .045, S * .3, S * .02);
+        g.restore();
+        const la = a + Math.PI / 4, lx = px + Math.cos(la) * S * .66, ly = py + Math.sin(la) * S * .66;
+        circle(g, lx + S * .03, ly + S * .04, S * .05, "rgba(40,30,20,.2)");
+        circle(g, lx, ly, S * .1, "rgba(255,226,150,.22)");
+        circle(g, lx, ly, S * .045, "#3d4148"); circle(g, lx, ly, S * .025, "#ffe9a8");
+      }
+      circle(g, px, py, S * .1, "#e9e2d0"); circle(g, px - S * .08, py - S * .09, S * .05, "rgba(255,255,255,.6)");
+    }
+    if (role === "track") {
+      const [px, py, w, h] = box();
+      g.strokeStyle = "#caa46c"; g.lineWidth = S * .3;
+      g.beginPath(); g.ellipse(px, py, w / 2 - S * .32, h / 2 - S * .32, 0, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = "#f7f2e6"; g.lineWidth = Math.max(1, S * .025);
+      g.beginPath(); g.ellipse(px, py, w / 2 - S * .16, h / 2 - S * .16, 0, 0, Math.PI * 2); g.stroke();
+      const fx = px + w / 2 - S * .32;
+      for (let k = 0; k < 6; k++) { g.fillStyle = k % 2 ? "#3d4148" : "#f7f2e6"; g.fillRect(fx - S * .15 + k * S * .05, py - S * .02, S * .05, S * .04); }
+      circle(g, fx + S * .19, py, S * .03, "#d65a45");
+      alive(g, "race", px, py, hash(px, py), { rx: w / 2 - S * .32, ry: h / 2 - S * .32 });
+    }
+    if (role === "pasture") {
+      // A fence: a darker ring, then the grass again just inside it.
+      union(g, group, ins + S * .075, S * .08, dy); g.fillStyle = "#9d7b56"; g.fill();
+      union(g, group, ins + S * .1, S * .07, dy); g.fillStyle = GROUND.pasture; g.fill();
+    }
+    for (const c of group) groundDetail(g, role, c, cellX(c), cellY(c) + dy, S, horiz);
+  }
+
+  // Roofs: squares with the same role that make a rectangle share one roof.
+  const done = new Set(), pad = ins + S * .06;
+  let sign = null;   // the biggest roof, where the emblem goes
+  for (const c of cells) {
+    const role = roleOf.get(c);
+    if (!ROOFS.has(role) || done.has(c)) continue;
+    const group = [c], queue = [c];
+    done.add(c);
+    while (queue.length) {
+      const q = queue.pop();
+      for (const j of around(q)) if (!done.has(j) && roleOf.get(j) === role) { done.add(j); group.push(j); queue.push(j); }
+    }
+    const gx = group.map(colOf), gy = group.map(rowOf);
+    const x0 = Math.min(...gx), y0 = Math.min(...gy), gw = Math.max(...gx) - x0 + 1, gh = Math.max(...gy) - y0 + 1;
+    if (gw * gh === group.length) {
+      roofFor(g, role, d, UI.BX + x0 * S + pad, UI.BY + y0 * S + dy + pad, gw * S - pad * 2, gh * S - pad * 2, baking);
+    } else {
+      for (const q of group) roofFor(g, role, d, cellX(q) + pad, cellY(q) + dy + pad, S - pad * 2, S - pad * 2, baking);
+    }
+    if (!sign || group.length > sign.n) sign = { n: group.length, x: UI.BX + (x0 + gw / 2) * S, y: UI.BY + (y0 + gh / 2) * S + dy, w: gw * S - pad * 2, h: gh * S - pad * 2 };
+  }
+  const way = d.roles.includes("rail") ? "rail" : d.bridge ? "deck" : null;
+  if (way) alive(g, d.bridge ? "wagon" : "train", 0, 0, hash(cells[0], 9), { ...route(d, cells, way, dy), freight: d === DEF.freight });
+  if (d.extra === "birds") alive(g, "birds", cells.reduce((sum, c) => sum + cellX(c), 0) / cells.length + S / 2,
+                                cells.reduce((sum, c) => sum + cellY(c), 0) / cells.length + S / 2 + dy, hash(cells[0], 8));
+  else if (d.extra && sign) extra(g, d, sign, cells, dy, baking);
+  // A name board standing on the lower slope of the biggest roof. False fronts paint theirs on instead.
+  if (d.sign && d.style !== "front" && sign) {
+    if (sign.w >= sign.h) signBoard(g, sign.x, sign.y + sign.h * .22, sign.w * .78, Math.min(sign.h * .3, S * .3), d.sign, d.roof, false, true);
+    else signBoard(g, sign.x + sign.w * .22, sign.y, sign.h * .78, Math.min(sign.w * .3, S * .3), d.sign, d.roof, true, true);
+  }
+  if (d.emblem && sign) emblem(g, d.emblem, sign.x, sign.y);
+}
+
+/* A raised tile with a building on it. `lift` raises the whole tile off the board. */
+function drawPiece(g, type, cells, lift, baking) {
+  const d = DEF[type], S = UI.S, ins = S * .075, r = S * .16, th = S * .085, tile = d.tile || TILE[d.cat];
+  g.save();
+  g.shadowColor = "rgba(18,28,24,.4)"; g.shadowBlur = S * .14 + lift * .5; g.shadowOffsetY = S * .05 + lift * .5;
+  union(g, cells, ins, r, 0); g.fillStyle = tile[1]; g.fill();
+  g.restore();
+  if (lift) { union(g, cells, ins, r, -lift); g.fillStyle = tile[1]; g.fill(); }
+  union(g, cells, ins, r, -lift - th - 1); g.fillStyle = "rgba(255,255,255,.7)"; g.fill();
+  union(g, cells, ins, r, -lift - th); g.fillStyle = tile[0]; g.fill();
+  art(g, type, cells, -lift - th, baking);
+}
+
+/* The board without anything that moves: land, streets and settled buildings. */
+function bake() {
+  UI.dirty = false;
+  SMOKE.length = 0; LIVE.length = 0;
+  lg.setTransform(UI.dpr, 0, 0, UI.dpr, 0, 0);
+  lg.clearRect(0, 0, UI.w, UI.h);
+  drawLand(lg);
+  const built = [];
+  for (let i = 0; i < N; i++) if (OWNER[i] >= 0 && MAP[i] !== "water") built.push(i);
+  // Streets under the town, so gaps between buildings read as lanes.
+  lg.save(); lg.beginPath(); rr(lg, UI.BX, UI.BY, COLS * UI.S, ROWS * UI.S, UI.S * .26); lg.clip();
+  union(lg, built, UI.S * .01, UI.S * .2); lg.fillStyle = "#e6dcc6"; lg.fill();
+  union(lg, built, UI.S * .045, UI.S * .18); lg.fillStyle = "#ddd1b8"; lg.fill();
+  // Lots: one for each district, in its colour, so buildings of one kind that touch read as one patch.
+  for (const group of districts()) {
+    const cells = group.flatMap(k => G.pieces[k].cells).filter(c => MAP[c] !== "water");
+    const lot = LOT[DEF[G.pieces[group[0]].type].cat];
+    union(lg, cells, UI.S * .02, UI.S * .22); lg.fillStyle = lot[0]; lg.fill();
+    union(lg, cells, UI.S * .05, UI.S * .19); lg.fillStyle = lot[1]; lg.fill();
+  }
+  lg.restore();
+  const order = G.pieces.map((p, k) => k).sort((a, b) => Math.min(...G.pieces[a].cells) - Math.min(...G.pieces[b].cells));
+  for (const k of order) if (!UI.drop || UI.drop.k !== k) drawPiece(lg, G.pieces[k].type, G.pieces[k].cells, 0, true);
+}
+
+/* Every district in town, as lists of building indexes. */
+function districts() {
+  const seen = new Set(), out = [];
+  G.pieces.forEach((p, k) => {
+    if (seen.has(k) || DEF[p.type].bridge) return;
+    const group = [k, ...districtOf(p.type, p.cells, k)];
+    group.forEach(j => seen.add(j));
+    out.push(group);
+  });
+  return out;
+}
+
+/* ───────────────────────── Things that move ───────────────────────── */
+
+const FX = { walkers: [], puffs: [], dust: [], floats: [], confetti: [], smokeClock: 0 };
+const SHIRTS = ["#d65a45", "#3f79b5", "#4f9a5f", "#e3a92f", "#8a5fb0", "#f4efe4", "#2f6b73", "#c2703f"];
+const SKIN = ["#f1cfae", "#d9a77f", "#a8744f", "#7a5236"];
+
+/* A lane runs along a grid line that has a building on at least one side, and isn't inside one building. */
+function lane(ax, ay, bx, by) {
+  let a, b;
+  if (ay === by) { const x = Math.min(ax, bx); a = inside(x, ay - 1) ? OWNER[idx(x, ay - 1)] : -2; b = inside(x, ay) ? OWNER[idx(x, ay)] : -2; }
+  else { const y = Math.min(ay, by); a = inside(ax - 1, y) ? OWNER[idx(ax - 1, y)] : -2; b = inside(ax, y) ? OWNER[idx(ax, y)] : -2; }
+  return (a >= 0 || b >= 0) && !(a >= 0 && a === b);
+}
+function exits(x, y) {
+  return N4.map(([dx, dy]) => [x + dx, y + dy])
+    .filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx <= COLS && ny <= ROWS && lane(x, y, nx, ny));
+}
+
+function spawnWalker() {
+  const spots = [];
+  for (let y = 0; y <= ROWS; y++) for (let x = 0; x <= COLS; x++) if (exits(x, y).length) spots.push([x, y]);
+  if (!spots.length) return null;
+  const [x, y] = pick(spots);
+  return { ax: x, ay: y, bx: x, by: y, t: 1, speed: .55 + Math.random() * .45, wait: Math.random() * 2,
+           shirt: pick(SHIRTS), skin: pick(SKIN), phase: Math.random() * 6, fade: 0 };
+}
+
+function updateWalkers(dt) {
+  const homes = G.pieces.filter(p => DEF[p.type].cat === "home").length;
+  const want = Math.min(34, Math.round(G.pieces.length * 1.1 + homes * 1.4));
+  if (FX.walkers.length < want && Math.random() < dt * 2) { const w = spawnWalker(); if (w) FX.walkers.push(w); }
+  if (FX.walkers.length > want) FX.walkers.length = want;
+  for (let n = FX.walkers.length - 1; n >= 0; n--) {
+    const w = FX.walkers[n];
+    w.fade = Math.min(1, w.fade + dt * 2);
+    if (w.wait > 0) { w.wait -= dt; continue; }
+    w.t += dt * w.speed;
+    if (w.t < 1) continue;
+    w.ax = w.bx; w.ay = w.by; w.t = 0;
+    let next = exits(w.ax, w.ay);
+    if (!next.length) { FX.walkers.splice(n, 1); continue; }
+    if (next.length > 1) next = next.filter(([x, y]) => x !== w.px || y !== w.py) ;
+    const [nx, ny] = pick(next.length ? next : exits(w.ax, w.ay));
+    w.px = w.ax; w.py = w.ay; w.bx = nx; w.by = ny;
+    if (Math.random() < .12) w.wait = .6 + Math.random() * 1.6;
+  }
+}
+
+function drawWalkers(g, now) {
+  const S = UI.S;
+  for (const w of FX.walkers) {
+    const t = w.wait > 0 ? 0 : w.t;
+    const x = UI.BX + (w.ax + (w.bx - w.ax) * t) * S, y = UI.BY + (w.ay + (w.by - w.ay) * t) * S;
+    const bob = w.wait > 0 ? 0 : Math.abs(Math.sin(now * 9 + w.phase)) * S * .02;
+    g.globalAlpha = w.fade;
+    ellipse(g, x + S * .02, y + S * .045, S * .065, S * .035, "rgba(20,20,15,.22)");
+    circle(g, x, y - bob, S * .06, w.shirt);
+    circle(g, x, y - bob - S * .02, S * .036, w.skin);
+    g.globalAlpha = 1;
+  }
+}
+
+function updateSmoke(dt) {
+  FX.smokeClock -= dt;
+  if (FX.smokeClock <= 0 && SMOKE.length) {
+    FX.smokeClock = 1.6 / Math.max(1, SMOKE.length * .6);
+    const [x, y, dark] = pick(SMOKE);
+    FX.puffs.push({ x, y, t: 0, dark, drift: .5 + Math.random() * .5 });
+  }
+  for (const p of FX.puffs) p.t += dt;
+  FX.puffs = FX.puffs.filter(p => p.t < 2.4);
+}
+function drawSmoke(g) {
+  const S = UI.S;
+  for (const p of FX.puffs) {
+    const k = p.t / 2.4, a = (1 - k) * Math.min(1, p.t * 4) * .5;
+    circle(g, p.x + k * S * .35 * p.drift, p.y - k * S * .5, S * (.04 + k * .1), p.dark ? `rgba(90,90,95,${a})` : `rgba(255,255,255,${a})`);
+  }
+}
+
+function drawWater(g, now) {
+  const S = UI.S;
+  g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = Math.max(1, S * .03); g.lineCap = "round";
+  g.beginPath();
+  for (let i = 0; i < N; i++) {
+    if (MAP[i] !== "water" || OWNER[i] >= 0) continue;
+    for (let k = 0; k < 2; k++) {
+      const ph = (now * .07 + hash(i, k + 80)) % 1;
+      const x = cellX(i) + S * (.25 + .5 * ph), y = cellY(i) + S * (.3 + .4 * hash(i, k + 90));
+      const len = S * .1 * Math.sin(ph * Math.PI);
+      g.moveTo(x - len, y); g.lineTo(x + len, y);
+    }
+  }
+  g.stroke();
+}
+
+/* Cattle and sheep that drift around their patch until something is built on it. */
+function drawHerds(g, now) {
+  const S = UI.S;
+  for (let i = 0; i < N; i++) {
+    if (MAP[i] !== "herd" || OWNER[i] >= 0) continue;
+    for (let k = 0; k < 2; k++) {
+      const ph = hash(i, k + 120) * 6, t = now * .25 + ph;
+      const x = cellX(i) + S * (.3 + .4 * hash(i, k + 130)) + Math.sin(t) * S * .06;
+      const y = cellY(i) + S * (.28 + .44 * hash(i, k + 140)) + Math.cos(t * .8) * S * .03;
+      const face = Math.cos(t) >= 0 ? 1 : -1, z = S * 1.35;
+      ellipse(g, x + z * .02, y + z * .07, z * .13, z * .05, "rgba(30,50,20,.25)");
+      if (hash(i, k + 150) < .45) {
+        for (const [dx, dy] of [[-.05, 0], [.04, -.02], [.03, .03], [-.02, -.03], [0, 0]]) circle(g, x + z * dx, y + z * dy, z * .055, "#fbf8f0");
+        circle(g, x + face * z * .1, y - z * .01, z * .038, "#3f3a36");
+      } else {
+        ellipse(g, x, y, z * .11, z * .065, "#f7f3ea");
+        circle(g, x - face * z * .03, y - z * .02, z * .032, "#4a382d");
+        circle(g, x + face * z * .045, y + z * .02, z * .026, "#4a382d");
+        circle(g, x + face * z * .12, y - z * .005, z * .042, "#6e5140");
+      }
+    }
+  }
+}
+
+function drawGlints(g, now) {
+  const S = UI.S;
+  for (let i = 0; i < N; i++) {
+    if (MAP[i] !== "ore" || OWNER[i] >= 0) continue;
+    const a = Math.max(0, Math.sin(now * 1.7 + hash(i, 5) * 20) - .82) / .18;
+    if (a <= 0) continue;
+    const x = cellX(i) + S * (.25 + .5 * hash(i, 6)), y = cellY(i) + S * (.25 + .5 * hash(i, 7)), s = S * .09 * a;
+    g.fillStyle = `rgba(255,248,215,${a})`;
+    g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s * .25, y); g.lineTo(x, y + s); g.lineTo(x - s * .25, y); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(x - s, y); g.lineTo(x, y + s * .25); g.lineTo(x + s, y); g.lineTo(x, y - s * .25); g.closePath(); g.fill();
+  }
+}
+
+function drawDust(g, dt) {
+  const S = UI.S;
+  for (const p of FX.dust) {
+    p.t += dt;
+    const k = p.t / .6;
+    circle(g, p.x + Math.cos(p.a) * S * .5 * k, p.y + Math.sin(p.a) * S * .25 * k, S * (.05 + k * .06), `rgba(245,236,215,${(1 - k) * .8})`);
+  }
+  FX.dust = FX.dust.filter(p => p.t < .6);
+}
+
+function drawFloats(g, dt) {
+  const S = UI.S;
+  g.textAlign = "center"; g.textBaseline = "middle";
+  for (const f of FX.floats) {
+    f.t += dt;
+    const k = f.t / 1.4, a = Math.min(1, (1 - k) * 3);
+    g.font = `800 ${Math.round(S * (f.big ? .78 : .5))}px system-ui, -apple-system, sans-serif`;
+    g.lineWidth = S * .1; g.strokeStyle = `rgba(20,28,26,${a * .8})`; g.lineJoin = "round";
+    const y = f.y - k * S * .8;
+    g.strokeText(f.text, f.x, y);
+    g.fillStyle = f.good ? `rgba(160,236,170,${a})` : `rgba(255,170,150,${a})`;
+    g.fillText(f.text, f.x, y);
+  }
+  FX.floats = FX.floats.filter(f => f.t < 1.4);
+}
+
+const CONFETTI = ["#ffd45c", "#e0703f", "#5ab4d6", "#6cc07a", "#b673c9", "#ffffff"];
+function burst(x, y, n) {
+  for (let k = 0; k < n; k++) {
+    const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = UI.S * (3 + Math.random() * 6);
+    FX.confetti.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: Math.random() * 6, vr: (Math.random() - .5) * 14,
+                       c: pick(CONFETTI), s: UI.S * (.07 + Math.random() * .07), t: 0 });
+  }
+}
+function drawConfetti(g, dt) {
+  const S = UI.S;
+  for (const p of FX.confetti) {
+    p.t += dt; p.vy += S * 10 * dt; p.vx *= 1 - dt * 1.4;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+    g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.globalAlpha = Math.max(0, 1 - p.t / 1.8);
+    g.fillStyle = p.c; g.fillRect(-p.s / 2, -p.s * .3, p.s, p.s * .6);
+    g.restore();
+  }
+  FX.confetti = FX.confetti.filter(p => p.t < 1.8);
+}
+
+/* ───────────────────────── The building in hand ───────────────────────── */
+
+const ghostCells = () => UI.ghost && current() ? cellsAt(current(), UI.ghost) : null;
+
+function placeGhost(o) {
+  const [w, h] = extent(orient(DEF[current()].shape, o.rot, o.flip));
+  UI.ghost = { rot: o.rot, flip: o.flip, ax: clamp(o.ax, 0, COLS - w), ay: clamp(o.ay, 0, ROWS - h) };
+}
+
+/* Starts a new building in hand at the open spot nearest the middle of the map. */
+function freshGhost() {
+  const type = current();
+  if (!type) { UI.ghost = null; return; }
+  let best = null;
+  for (const p of placements(type)) {
+    const [w, h] = extent(orient(DEF[type].shape, p.rot, p.flip));
+    const d = (p.ax + w / 2 - COLS / 2) ** 2 + (p.ay + h / 2 - ROWS / 2) ** 2 + (p.rot || p.flip ? 1.5 : 0);
+    if (!best || d < best.d) best = { ...p, d };
+  }
+  UI.ghost = best && { rot: best.rot, flip: best.flip, ax: best.ax, ay: best.ay };
+}
+
+function turnGhost(dRot, flip) {
+  if (!UI.ghost) return;
+  const g = UI.ghost, type = current();
+  const [w, h] = extent(orient(DEF[type].shape, g.rot, g.flip));
+  const next = { rot: (g.rot + dRot + 4) % 4, flip: flip ? !g.flip : g.flip };
+  const [w2, h2] = extent(orient(DEF[type].shape, next.rot, next.flip));
+  placeGhost({ ...next, ax: Math.round(g.ax + w / 2 - w2 / 2), ay: Math.round(g.ay + h / 2 - h2 / 2) });
+  paintPanel();
+}
+
+function drawGhost(g, now) {
+  const cells = ghostCells();
+  if (!cells) return;
+  const S = UI.S, type = current(), ok = canPlace(cells, type), lift = S * .16;
+  const dy = -lift - S * .085, pulse = .8 + .2 * Math.sin(now * 5);
+  // The district it would join: its lot breathes a deeper shade in the lanes between the buildings.
+  if (ok && !DEF[type].bridge) {
+    const joins = districtOf(type, cells);
+    if (joins.length) {
+      const th = S * .085;
+      wg.setTransform(UI.dpr, 0, 0, UI.dpr, 0, 0); wg.clearRect(0, 0, UI.w, UI.h);
+      union(wg, joins.flatMap(k => G.pieces[k].cells).concat(cells).filter(c => MAP[c] !== "water"), S * .02, S * .22);
+      wg.fillStyle = shade(CAT_HEX[DEF[type].cat], .15); wg.fill();
+      wg.globalCompositeOperation = "destination-out";
+      for (const k of joins) for (const lift of [0, th]) { union(wg, G.pieces[k].cells, S * .075, S * .16, -lift); wg.fill(); }
+      wg.globalCompositeOperation = "source-over";
+      g.globalAlpha = .3 + .25 * Math.sin(now * 2.6);
+      g.drawImage(wash, 0, 0, UI.w, UI.h);
+      g.globalAlpha = 1;
+    }
+  }
+  // The squares it would land on, marked on the board below it.
+  g.beginPath();
+  for (const c of cells) rr(g, cellX(c) + S * .1, cellY(c) + S * .1, S * .8, S * .8, S * .16);
+  g.fillStyle = ok ? "rgba(255,255,255,.38)" : "rgba(214,72,52,.4)"; g.fill();
+  if ((press && press.moved) || UI.rules) {
+    const own = new Set(cells), ring = new Set();
+    for (const c of cells) for (const j of around(c)) if (!own.has(j)) ring.add(j);
+    g.save();
+    g.setLineDash([S * .09, S * .07]); g.lineWidth = Math.max(1.5, S * .035); g.strokeStyle = "rgba(255,255,255,.8)";
+    g.beginPath();
+    for (const j of ring) rr(g, cellX(j) + S * .14, cellY(j) + S * .14, S * .72, S * .72, S * .12);
+    g.stroke();
+    g.restore();
+  }
+  // A glowing rim: a slightly bigger shape filled underneath, so only its outside edge shows.
+  union(g, cells, 0, S * .22, dy + S * .04);
+  g.fillStyle = ok ? `rgba(255,255,255,${pulse})` : `rgba(255,105,85,${pulse})`;
+  g.fill();
+  drawPiece(g, current(), cells, lift, false);
+  if (!ok) {
+    for (const c of cells) {
+      const end = c === cells[0] || c === cells[cells.length - 1];
+      if (OWNER[c] < 0 && (MAP[c] !== "water" || (DEF[type].bridge && !end))) continue;
+      const x = cellX(c), y = cellY(c) + dy;
+      g.beginPath(); rr(g, x + S * .12, y + S * .12, S * .76, S * .76, S * .14); g.fillStyle = "rgba(214,72,52,.55)"; g.fill();
+      g.strokeStyle = "#fff"; g.lineWidth = Math.max(2, S * .06); g.lineCap = "round";
+      g.beginPath(); g.moveTo(x + S * .36, y + S * .36); g.lineTo(x + S * .64, y + S * .64); g.moveTo(x + S * .64, y + S * .36); g.lineTo(x + S * .36, y + S * .64); g.stroke();
+    }
+  }
+}
+
+function drawSelection(g, now) {
+  if (UI.sel < 0) return;
+  const S = UI.S, k = OWNER[UI.sel], a = .6 + .4 * Math.sin(now * 4);
+  if (k >= 0) {
+    if (UI.drop && UI.drop.k === k) return;
+    const p = G.pieces[k];
+    union(g, p.cells, S * .01, S * .22, -S * .04); g.fillStyle = `rgba(255,214,102,${a})`; g.fill();
+    drawPiece(g, p.type, p.cells, 0, false);
+  }
+}
+
+/* ───────────────────────── Loop ───────────────────────── */
+
+let last = performance.now();
+function frame(nowMs) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(.1, (nowMs - last) / 1000), now = nowMs / 1000;
+  last = nowMs;
+  if (!G || !UI.w) return;
+  NOW = now;
+  if (UI.dirty) bake();
+  ctx.setTransform(UI.dpr, 0, 0, UI.dpr, 0, 0);
+  ctx.clearRect(0, 0, UI.w, UI.h);
+  ctx.drawImage(layer, 0, 0, UI.w, UI.h);
+  drawWater(ctx, now);
+  drawGlints(ctx, now);
+  drawHerds(ctx, now);
+  if (UI.drop) {
+    UI.drop.t += dt;
+    const k = Math.min(1, UI.drop.t / .32), p = G.pieces[UI.drop.k];
+    drawPiece(ctx, p.type, p.cells, UI.S * .5 * (1 - k) * (1 - k), false);
+    if (k >= 1) {
+      const S = UI.S, cx = p.cells.reduce((s, c) => s + cellX(c), 0) / p.cells.length + S / 2, cy = p.cells.reduce((s, c) => s + cellY(c), 0) / p.cells.length + S / 2;
+      for (let n = 0; n < 12; n++) FX.dust.push({ x: cx, y: cy + S * .3, a: (n / 12) * Math.PI * 2, t: 0 });
+      UI.drop = null; UI.dirty = true;
+    }
+  }
+  updateWalkers(dt); drawWalkers(ctx, now);
+  for (const [kind, x, y, a, r] of LIVE) live(ctx, kind, x, y, a, r);
+  updateSmoke(dt); drawSmoke(ctx);
+  drawDust(ctx, dt);
+  if ($("dialogWrap").hidden) drawGhost(ctx, now);
+  drawSelection(ctx, now);
+  drawFloats(ctx, dt);
+  drawConfetti(ctx, dt);
+  tickScore(dt);
+}
+
+function tickScore(dt) {
+  const target = total();
+  if (UI.shown === target) return;
+  const step = Math.max(1, Math.abs(target - UI.shown) * dt * 6);
+  UI.shown = UI.shown < target ? Math.min(target, UI.shown + step) : Math.max(target, UI.shown - step);
+  $("score").textContent = Math.round(UI.shown);
+}
+
+/* ───────────────────────── Words on screen ───────────────────────── */
+
+const catColor = (cat) => `var(--${cat})`;
+const chip = (cat) => `<span class="chip" style="--c:${catColor(cat)}">${CATS[cat].name}</span>`;
+
+function shapeSVG(type, rot = 0, flip = false, box = 44) {
+  const offs = orient(DEF[type].shape, rot, flip), [w, h] = extent(offs);
+  const s = Math.floor(box / Math.max(w, h, 3)), gap = Math.max(1, s * .12);
+  const color = getComputedStyle(document.documentElement).getPropertyValue(`--${DEF[type].cat}`).trim();
+  const cellsSvg = offs.map(([x, y]) => `<rect x="${x * s + gap / 2}" y="${y * s + gap / 2}" width="${s - gap}" height="${s - gap}" rx="${s * .22}" fill="${color}"/>`).join("");
+  return `<svg width="${w * s}" height="${h * s}" viewBox="0 0 ${w * s} ${h * s}">${cellsSvg}</svg>`;
+}
+
+const LAND_HEX = { grass: "#a5c884", forest: "#5b9a58", ore: "#9a9285", wheat: "#e2bf5c", herd: "#c4a37c", water: "#62abc9" };
+
+/* A small picture of what a rule counts: a kind of land, a kind of building, the map edge. */
+function ruleIcon(r) {
+  const svg = (inner) => `<svg class="ico" viewBox="0 0 20 20">${inner}</svg>`;
+  if (r.k === "land") return svg(`<rect x="1" y="1" width="18" height="18" rx="4" fill="${LAND_HEX[r.t]}"/><path d="M5.5 15.5V9.8L10 5.8l4.5 4v5.7z" fill="#fff"/>`);
+  const catOf = () => r.any ? null : r.cats ? r.cats[0] : DEF[r.types[0]].cat;
+  if (r.k === "town") {
+    const cat = catOf();
+    return svg(`<g fill="#d8d2c5">${[0, 1, 2].map(a => [0, 1, 2].map(b => `<rect x="${1 + a * 6.3}" y="${1 + b * 6.3}" width="5" height="5" rx="1.2"/>`).join("")).join("")}</g>` +
+      `<rect x="13.6" y="1" width="5" height="5" rx="1.2" fill="${CAT_HEX[cat]}"/><rect x="1" y="13.6" width="5" height="5" rx="1.2" fill="${CAT_HEX[cat]}"/>`);
+  }
+  if (r.k === "without") {
+    const cat = catOf();
+    return svg(`<rect x="3" y="3" width="14" height="14" rx="3.5" fill="${CAT_HEX[cat]}" opacity=".45"/><path d="M3 17 17 3" stroke="#b8412f" stroke-width="2.6" stroke-linecap="round"/>`);
+  }
+  if (r.k === "near") {
+    const cat = catOf();
+    if (!cat) return svg(`<rect x="1.5" y="5.5" width="8" height="9" rx="2.5" fill="#fff" stroke="#c9c2b4"/><rect x="10.5" y="5" width="8.5" height="10" rx="2.5" fill="#9aa19c"/>`);
+    return svg(`<rect x="1.5" y="5.5" width="8" height="9" rx="2.5" fill="#fff" stroke="#c9c2b4"/><rect x="10.5" y="5" width="8.5" height="10" rx="2.5" fill="${CAT_HEX[cat]}"/>`);
+  }
+  if (r.k === "edge") return svg(`<rect x="5" y="3" width="13" height="14" rx="3" fill="#fff" stroke="#c9c2b4"/><rect x="1" y="1" width="3" height="18" rx="1.5" fill="#5b645f"/>`);
+  return svg(`<rect x="1" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.home}"/><rect x="7.25" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.shop}"/><rect x="13.5" y="6" width="5.5" height="8" rx="1.5" fill="${CAT_HEX.civic}"/>`);
+}
+/* A district: three squares of one kind, joined into one lot. */
+const districtIcon = (cat) => `<svg class="ico" viewBox="0 0 20 20"><path d="M1 3.5A2.5 2.5 0 0 1 3.5 1h13A2.5 2.5 0 0 1 19 3.5v13a2.5 2.5 0 0 1-2.5 2.5h-6A2.5 2.5 0 0 1 8 16.5V12H3.5A2.5 2.5 0 0 1 1 9.5z" fill="${shade(CAT_HEX[cat], .55)}"/>` +
+  `<g fill="${CAT_HEX[cat]}"><rect x="2.5" y="2.5" width="6" height="6" rx="1.5"/><rect x="11.5" y="2.5" width="6" height="6" rx="1.5"/><rect x="11.5" y="11.5" width="6" height="6" rx="1.5"/></g></svg>`;
+const rowHTML = (v, text, cls, icon) =>
+  `<li class="${cls ?? (v < 0 ? "bad" : "")}"><b>${signed(v)}</b>${icon || '<i class="sp"></i>'}<span>${esc(text)}</span></li>`;
+function modsHTML(type) {
+  const d = DEF[type];
+  const district = d.bridge ? "" : rowHTML(1, districtText(type), "", districtIcon(d.cat));
+  return `<ul class="mods">${rowHTML(d.base, "Base", "base")}${district}${d.rules.map(r => rowHTML(r.p, ruleText(r), undefined, ruleIcon(r))).join("")}</ul>`;
+}
+
+function hud() {
+  $("townName").textContent = G.player ? townName(G.player, G.pick) : GAME;
+  const placed = G.pieces.length;
+  // The game's name sits under the town's, so it is on screen the whole game.
+  $("townSub").textContent = G.over ? `${GAME} · the town is done`
+    : `${GAME} · ${placed} built${G.away.length ? ` · ${G.away.length} turned away` : ""}${G.challenge ? ` · Beat ${G.challenge.score}` : ""}`;
+  $("left").textContent = G.over ? 0 : G.deck.length - G.at;
+}
+
+function paintPanel() {
+  $("panel").hidden = false;
+  if (G.over) {
+    $("piece").innerHTML = `<div class="done"><div class="big num">${total()}</div><div class="sub">points</div></div>`;
+    $("controls").innerHTML = `<button class="tool" id="bSummary">Summary</button><button class="primary" id="bNew">New town</button>`;
+    $("bSummary").onclick = showSummary;
+    $("bNew").onclick = () => intro();
+    return;
+  }
+  if (!$("bTurn")) restoreControls();
+  const type = current(), nxt = upcoming(), o = UI.ghost || { rot: 0, flip: false };
+  $("piece").innerHTML = `
+    <button class="head" id="pieceHead" aria-expanded="${UI.rules}">
+      <div class="mini">${shapeSVG(type, o.rot, o.flip, 34)}</div>
+      <div><div class="name">${esc(DEF[type].name)}</div>
+        <div class="hint"><span>${UI.rules ? "Scoring ▴" : "Scoring ▾"}</span>${nxt ? `<span class="nx">Next ${shapeSVG(nxt, 0, false, 15)}</span>` : ""}</div></div>
+    </button>`;
+  $("pieceHead").onclick = toggleRules;
+  $("bBuild").disabled = !canPlace(ghostCells(), current());
+}
+
+const CONTROLS = $("controls").innerHTML;
+function restoreControls() {
+  $("controls").innerHTML = CONTROLS;
+  $("bTurn").onclick = () => turnGhost(1, false);
+  $("bFlip").onclick = () => turnGhost(0, true);
+  $("bBuild").onclick = doBuild;
+}
+
+let toastTimer = 0;
+function toast(text, ms = 2600) {
+  $("toast").textContent = text; $("toast").classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.remove("on"), ms);
+}
+
+/* ───────────────────────── Info about a square ───────────────────────── */
+
+function select(i) {
+  UI.rules = false; UI.sel = i;
+  paintInfo(); paintPanel();
+}
+function closeInfo() {
+  const wasRules = UI.rules;
+  UI.sel = -1; UI.rules = false; $("info").hidden = true;
+  if (wasRules && G && G.player) paintPanel();
+}
+function toggleRules() {
+  if (UI.rules) return closeInfo();
+  UI.sel = -1; UI.rules = !!current();
+  paintInfo(); paintPanel();
+}
+const ghostRow = () => { const cells = ghostCells(); return cells ? cells.reduce((sum, c) => sum + rowOf(c), 0) / cells.length : 0; };
+function placeInfo(row) {
+  const cls = "card " + (row >= ROWS / 2 ? "top" : "bottom");
+  if ($("info").className !== cls) $("info").className = cls;
+}
+
+function paintInfo() {
+  const box = $("info"), i = UI.sel;
+  let html = `<button class="x" id="infoX" aria-label="Close">×</button>`;
+  if (UI.rules && current()) {
+    const d = DEF[current()];
+    html += `<div class="kind">Scoring ${chip(d.cat)}</div><h3>${esc(d.name)}</h3><p>${esc(d.blurb)}</p>${modsHTML(current())}`;
+    placeInfo(ghostRow());
+  } else if (i >= 0 && OWNER[i] >= 0) {
+    const k = OWNER[i], p = G.pieces[k], d = DEF[p.type], parts = pieceParts(k);
+    const rows = parts.map(q => {
+      const r = d.rules[q.r];
+      return rowHTML(q.v, partText(p.type, q), q.r === -1 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "", q.r === "district" ? districtIcon(d.cat) : r && ruleIcon(r));
+    }).join("");
+    html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)} <span class="scored">${signed(sumParts(parts))}</span></h3><ul class="mods">${rows}</ul>`;
+    placeInfo(rowOf(i));
+  } else {
+    return closeInfo();
+  }
+  box.innerHTML = html;
+  box.hidden = false;
+  $("infoX").onclick = closeInfo;
+}
+
+/* ───────────────────────── Moves ───────────────────────── */
+
+function doBuild() {
+  const cells = ghostCells();
+  if (!G || G.over || !canPlace(cells, current())) return;
+  const res = build(cells), S = UI.S;
+  const middle = (cs) => [cs.reduce((sum, c) => sum + cellX(c), 0) / cs.length + S / 2, cs.reduce((sum, c) => sum + cellY(c), 0) / cs.length + S / 2];
+  // Neighbours whose scores moved show it over their roofs.
+  for (const x of res.changed) {
+    const [nx, ny] = middle(G.pieces[x.k].cells);
+    FX.floats.push({ x: nx, y: ny - S * .2, t: -.35, text: signed(x.d), good: x.d > 0 });
+  }
+  const [cx, cy] = middle(cells);
+  if (res.trophies.some(id => TROPHIES[id].good)) burst(cx, cy, res.gain >= JACKPOT ? 90 : 45);
+  UI.drop = { k: res.k, t: 0 };
+  UI.dirty = true;
+  freshGhost();
+  showPop(res, cells);
+  bumpScore();
+  for (const e of res.events) if (e.away) toast(`No room for the ${DEF[e.away].name}. −${AWAY}`, 3000);
+  save(); hud();
+  if (G.over) closeInfo(); else if (UI.rules || UI.sel >= 0) paintInfo();
+  paintPanel();
+  if (G.over) { recordBest(); setTimeout(showSummary, 2400); }
+}
+
+const CUP = `<svg viewBox="0 0 24 24" fill="#ffd45c"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V5h3zM6 7v1a2 2 0 0 0 1 1.7V7zm11 0v2.7A2 2 0 0 0 18 8V7z"/></svg>`;
+const DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="#ff9f8a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg>`;
+
+/* The new building's score, big, over its roof, with any trophies under it. */
+let popTimer = 0;
+function showPop(res, cells) {
+  const good = res.trophies.filter(id => TROPHIES[id].good).slice(0, 2);
+  const bad = res.trophies.filter(id => !TROPHIES[id].good).slice(0, 1);
+  const tier = res.gain >= JACKPOT ? "gold" : res.gain >= GREAT ? "great" : res.pts <= 0 ? "low" : "";
+  const pop = $("pop");
+  pop.innerHTML = `<div class="popnum num ${tier}" id="popNum">+0</div>` + [...good, ...bad].map((id, n) =>
+    `<div class="tpill${TROPHIES[id].good ? "" : " bad"}" style="animation-delay:${.25 + n * .15}s">${TROPHIES[id].good ? CUP : DOWN}${TROPHIES[id].name}</div>`).join("");
+  const S = UI.S, x = cells.reduce((sum, c) => sum + cellX(c), 0) / cells.length + S / 2, y = Math.min(...cells.map(cellY));
+  pop.className = "pop";
+  pop.style.left = clamp(x, 90, UI.w - 90) + "px";
+  pop.style.top = Math.max(60 + (good.length + bad.length) * 34, y + S * .2) + "px";
+  pop.hidden = false;
+  const start = performance.now();
+  const count = (now) => {
+    const k = Math.min(1, (now - start) / 500), el = $("popNum");
+    if (!el) return;
+    el.textContent = signed(Math.round(res.pts * (1 - (1 - k) ** 3)));
+    if (k < 1) requestAnimationFrame(count);
+  };
+  requestAnimationFrame(count);
+  clearTimeout(popTimer);
+  popTimer = setTimeout(() => {
+    pop.classList.add("hide");
+    popTimer = setTimeout(() => { pop.hidden = true; }, 400);
+  }, 1300 + (good.length + bad.length) * 600);
+}
+function hidePop() { clearTimeout(popTimer); $("pop").hidden = true; }
+function bumpScore() {
+  const el = $("score").parentElement;
+  el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+}
+
+/* ───────────────────────── Touch ───────────────────────── */
+
+function boardPoint(e) {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left - UI.BX) / UI.S, (e.clientY - r.top - UI.BY) / UI.S];
+}
+
+let press = null;
+cv.addEventListener("pointerdown", (e) => {
+  if (!G) return;
+  cv.setPointerCapture(e.pointerId);
+  const [fx, fy] = boardPoint(e);
+  const cells = ghostCells(), here = inside(Math.floor(fx), Math.floor(fy)) ? idx(Math.floor(fx), Math.floor(fy)) : -1;
+  // The ghost floats a little above its squares, so a press just below it still counts as grabbing it.
+  const lifted = inside(Math.floor(fx), Math.floor(fy + .25)) ? idx(Math.floor(fx), Math.floor(fy + .25)) : -1;
+  const onGhost = !!cells && (cells.includes(here) || cells.includes(lifted));
+  press = { x: e.clientX, y: e.clientY, fx, fy, here, onGhost, moved: false, touch: e.pointerType !== "mouse",
+            gx: UI.ghost ? fx - UI.ghost.ax : 0, gy: UI.ghost ? fy - UI.ghost.ay : 0 };
+});
+cv.addEventListener("pointermove", (e) => {
+  if (!press || !UI.ghost || G.over) return;
+  if (!press.moved && Math.hypot(e.clientX - press.x, e.clientY - press.y) < 7) return;
+  press.moved = true;
+  const [fx, fy] = boardPoint(e), type = current();
+  const [w, h] = extent(orient(DEF[type].shape, UI.ghost.rot, UI.ghost.flip));
+  let ax, ay;
+  if (press.onGhost) { ax = Math.round(fx - press.gx); ay = Math.round(fy - press.gy); }
+  else { ax = Math.round(fx - w / 2); ay = Math.round(fy - (press.touch ? 1.3 : 0) - h / 2); }
+  const before = UI.ghost.ax + "," + UI.ghost.ay;
+  placeGhost({ ...UI.ghost, ax, ay });
+  if (UI.ghost.ax + "," + UI.ghost.ay !== before) {
+    $("bBuild").disabled = !canPlace(ghostCells(), current());
+    if (UI.rules) placeInfo(ghostRow());
+  }
+});
+cv.addEventListener("pointerup", () => {
+  if (!press) return;
+  const p = press;
+  press = null;
+  if (p.moved) return;
+  if (p.onGhost && !G.over) return toggleRules();
+  // Only buildings have anything to say.
+  if (p.here < 0 || OWNER[p.here] < 0 || p.here === UI.sel) return closeInfo();
+  select(p.here);
+});
+cv.addEventListener("pointercancel", () => { press = null; });
+
+addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || !G) return;
+  if (e.key === "Escape") { if (!$("sheetWrap").hidden) closeSheet(); else closeInfo(); return; }
+  if (!$("sheetWrap").hidden || !$("dialogWrap").hidden || G.over || !UI.ghost) return;
+  const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  if (moves[e.key]) { e.preventDefault(); placeGhost({ ...UI.ghost, ax: UI.ghost.ax + moves[e.key][0], ay: UI.ghost.ay + moves[e.key][1] }); paintPanel(); }
+  else if (e.key === "r" || e.key === "R") turnGhost(e.shiftKey ? -1 : 1, false);
+  else if (e.key === "f" || e.key === "F") turnGhost(0, true);
+  else if (e.key === "Enter") doBuild();
+});
+
+/* ───────────────────────── Sheets and dialogs ───────────────────────── */
+
+function openSheet(html) {
+  $("sheet").innerHTML = html;
+  $("sheetWrap").hidden = false;
+}
+function closeSheet() { $("sheetWrap").hidden = true; UI.confirm = false; }
+$("scrim").onclick = closeSheet;
+
+const RULES_HTML = `<ul class="rules">
+  <li><b>Build:</b> drag a building onto open land and press Build. Tap it to see how it scores.</li>
+  <li><b>Districts:</b> buildings of one kind that touch share a lot. Each gains +1 for every other building on it, up to +${DISTRICT_MAX}.</li>
+  <li><b>Land bonuses</b> count that land under a building or next to it.</li>
+  <li><b>Neighbour bonuses grow.</b> A building gains whenever you add a neighbour it likes.</li>
+  <li><b>Bridges</b> are the only buildings that can sit on water. Both ends must be on land.</li>
+  <li><b>No room</b> for a building: −${AWAY}. Fit them all: +${ALL_FIT}.</li>
+</ul>`;
+
+function showMenu() {
+  const inGame = G && G.player;
+  openSheet(`<h2>How to play</h2>${RULES_HTML}
+    <div class="row">
+      <button class="tool" id="mClose">Close</button>
+      ${inGame ? `<button class="primary dark" id="mNew">${UI.confirm ? "Yes, start over" : "New town"}</button>` : ""}
+    </div>
+    ${inGame && UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">This town will be lost.</p>` : ""}`);
+  $("mClose").onclick = closeSheet;
+  if ($("mNew")) $("mNew").onclick = () => {
+    if (!G.over && G.pieces.length && !UI.confirm) { UI.confirm = true; return showMenu(); }
+    closeSheet(); intro();
+  };
+}
+$("menuBtn").onclick = () => { UI.confirm = false; showMenu(); };
+
+function showDeck() {
+  if (!G || !G.player) return;
+  const left = G.over ? [] : G.deck.slice(G.at);
+  const count = {};
+  for (const k of left) count[k] = (count[k] || 0) + 1;
+  const order = Object.keys(DEF).filter(k => count[k]);
+  const cells = left.reduce((s, k) => s + SHAPES[DEF[k].shape].length, 0);
+  let open = 0;
+  for (let i = 0; i < N; i++) if (MAP[i] !== "water" && OWNER[i] < 0) open++;
+  openSheet(`<h2>Still to come</h2>
+    <p>${left.length ? `${left.length} buildings need ${cells} squares. You have ${open} open squares left.` : "Nothing left to place."}</p>
+    <div class="deck">${order.map(k => `<div class="deckrow"><div class="mini">${shapeSVG(k, 0, false, 36)}</div>
+      <div><div class="name">${esc(DEF[k].name)} <span class="count">×${count[k]}</span> ${chip(DEF[k].cat)}</div>${modsHTML(k)}</div></div>`).join("")}</div>
+    <div class="row"><button class="tool" id="dClose">Close</button></div>`);
+  $("dClose").onclick = closeSheet;
+}
+$("deckBtn").onclick = showDeck;
+
+function showDialog(html) { $("dialog").innerHTML = html; $("dialogWrap").hidden = false; }
+function closeDialog() { $("dialogWrap").hidden = true; }
+
+function recordBest() {
+  try { const best = +localStorage.getItem(BEST) || 0; if (total() > best) localStorage.setItem(BEST, total()); } catch (e) {}
+}
+
+/* Bump when a change to the map, the deck or the scoring means an old link no longer gives the same game. */
+const LINK_VERSION = 6;
+
+function challengeURL() {
+  const base = location.href.split(/[?#]/)[0];
+  return `${base}?seed=${G.seed}&score=${total()}&from=${encodeURIComponent(G.player)}&v=${LINK_VERSION}`;
+}
+
+/* The phone's share sheet where there is one; otherwise copy the link, or show it to copy by hand. */
+async function shareChallenge() {
+  const url = challengeURL(), button = $("sShare");
+  if (navigator.share) {
+    try { await navigator.share({ title: GAME, text: `I scored ${total()} in ${GAME}. Beat me on the same map!`, url }); return; }
+    catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    if (button) button.textContent = "Link copied ✓";
+  } catch (e) {
+    const box = $("shareBox");
+    if (!box) return;
+    box.innerHTML = `<input readonly value="${esc(url)}">`;
+    box.querySelector("input").select();
+  }
+}
+
+function showSummary() {
+  hidePop();
+  const me = total(), c = G.challenge;
+  const top = G.pieces.map((p, k) => ({ p, v: pieceScore(k) })).sort((a, b) => b.v - a.v).slice(0, 3);
+  const won = Object.keys(TROPHIES).filter(id => G.trophies[id]);
+  let best = 0;
+  try { best = +localStorage.getItem(BEST) || 0; } catch (e) {}
+  let versus = "";
+  if (c) {
+    const who = esc(c.from);
+    const line = me > c.score ? `You beat ${who} by ${me - c.score}!` : me < c.score ? `${who} wins by ${c.score - me}` : `A tie with ${who}!`;
+    versus = `<div class="versus ${me > c.score ? "win" : me < c.score ? "lose" : ""}">${line}<span>You ${me} · ${who} ${c.score}</span></div>`;
+  }
+  showDialog(`<div class="final">
+      <h2>${esc(townName(G.player, G.pick))} is done</h2>
+      <div class="big num">${me}</div>
+      <div class="best">${me >= best ? "Your best town yet" : `Your best is ${best}`}</div>
+    </div>
+    ${versus}
+    <button class="primary wide" id="sShare">${c ? `Challenge ${esc(c.from)} back` : "Challenge a friend"}</button>
+    <div id="shareBox" class="sharebox"></div>
+    <ul class="tally">
+      <li><span>Buildings</span><b>${boardScore()}</b></li>
+      ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>`
+                      : `<li><span>Every building fit</span><b>+${ALL_FIT}</b></li>`}
+    </ul>
+    ${won.length ? `<p class="label">Trophies</p><div class="tchips">${won.map(id =>
+      `<span class="tchip${TROPHIES[id].good ? "" : " bad"}">${esc(TROPHIES[id].name.replace("!", ""))}${G.trophies[id] > 1 ? ` ×${G.trophies[id]}` : ""}</span>`).join("")}</div>` : ""}
+    <p class="label">Best buildings</p>
+    <ul class="tally" style="margin-top:4px">${top.map(x => `<li><span>${esc(DEF[x.p.type].name)}</span><b>${signed(x.v)}</b></li>`).join("")}</ul>
+    <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button></div>`);
+  $("sShare").onclick = shareChallenge;
+  $("sLook").onclick = closeDialog;
+  $("sNew").onclick = () => { closeDialog(); intro(); };
+}
+
+/* Every building's score as it stands, part by part. Tap one to find it on the map. */
+function showScore() {
+  if (!G || !G.player) return;
+  const rows = G.pieces.map((p, k) => { const parts = pieceParts(k); return { k, p, parts, v: sumParts(parts) }; }).sort((a, b) => b.v - a.v);
+  openSheet(`<h2>Score ${total()}</h2>
+    <ul class="tally">${rows.map(x => `<li class="bk" data-k="${x.k}"><div><span>${esc(DEF[x.p.type].name)}</span>
+        <small>${esc(x.parts.filter(q => q.v).map(q => `${partText(x.p.type, q)} ${signed(q.v)}`).join(" · "))}</small></div><b>${signed(x.v)}</b></li>`).join("")}
+      ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>` : ""}
+      ${G.over && !G.away.length ? `<li><span>Every building fit</span><b>+${ALL_FIT}</b></li>` : ""}
+    </ul>
+    ${rows.length ? "" : "<p>Nothing built yet.</p>"}
+    <div class="row"><button class="tool" id="scClose">Close</button></div>`);
+  $("scClose").onclick = closeSheet;
+  for (const li of $("sheet").querySelectorAll(".bk")) li.onclick = () => { closeSheet(); select(G.pieces[+li.dataset.k].cells[0]); };
+}
+$("scoreBtn").onclick = showScore;
+
+/* ───────────────────────── Saving and starting ───────────────────────── */
+
+function save() { if (!G || !G.player) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.v === 6 && s.player) { restore(s); return true; } } catch (e) {}
+  return false;
+}
+
+function resetScene() {
+  FX.walkers.length = 0; FX.puffs.length = 0; FX.dust.length = 0; FX.floats.length = 0; FX.confetti.length = 0;
+  hidePop();
+  UI.drop = null; UI.dirty = true; closeInfo();
+}
+
+/* The town gets its name when it is founded: Fort Zach, Zachville and so on. It keeps the map shown behind the intro. */
+function startTown(player, challenge = null) {
+  newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)), G.seed);
+  G.challenge = challenge && { from: challenge.from, score: challenge.score };
+  resetScene();
+  UI.shown = 0; $("score").textContent = 0;
+  freshGhost(); save(); hud(); paintPanel();
+  layout();
+  toast(`Welcome to ${townName(player, G.pick)}!${challenge ? ` Beat ${challenge.score}.` : ""}`);
+}
+
+function showGame() {
+  closeDialog();
+  resetScene();
+  UI.shown = total(); $("score").textContent = total();
+  freshGhost(); hud(); paintPanel();
+  layout();
+}
+
+/* A challenge link brings its map, its deck and a score to beat. */
+function intro(challenge = null) {
+  newGame("", 0, challenge ? challenge.seed : undefined);
+  resetScene(); UI.ghost = null;
+  $("panel").hidden = true;
+  hud();
+  const lead = challenge
+    ? `<div class="versus">${esc(challenge.from)} scored ${challenge.score} on this map<span>Same land, same buildings, same order. Can you beat it?</span></div>
+       ${challenge.v !== LINK_VERSION ? `<p>This link is from an older version of the game, so the map or the scoring may be different.</p>` : ""}`
+    : `<p>Fit odd-shaped buildings onto the map. Good spots score more.</p>`;
+  showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
+      <h1>Hügelland</h1>
+      ${lead}
+      <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="go" autocapitalize="words" spellcheck="false">
+      <div class="row"><button class="primary" id="found" type="submit" disabled>${challenge ? "Take the challenge" : "Start"}</button></div>
+      ${challenge ? `<button type="button" class="linkbtn" id="decline">Play a different map</button>` : ""}
+      <details class="how"><summary>How to play</summary>${RULES_HTML}</details>
+    </form>`);
+  $("nameIn").addEventListener("input", () => { $("found").disabled = !$("nameIn").value.trim(); });
+  if ($("decline")) $("decline").onclick = () => intro();
+  $("introForm").onsubmit = (e) => {
+    e.preventDefault();
+    const v = $("nameIn").value.trim();
+    if (!v) return;
+    $("nameIn").blur();
+    closeDialog();
+    startTown(v, challenge);
+  };
+  layout();
+}
+
+// Safari ignores the viewport's no-zoom setting, so stop pinch zoom here.
+for (const type of ["gesturestart", "gesturechange"]) document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+addEventListener("visibilitychange", () => { if (document.hidden) save(); });
+addEventListener("pagehide", save);
+new ResizeObserver(layout).observe($("stage"));
+
+restoreControls();
+const link = new URLSearchParams(location.search);
+if (link.has("seed")) {
+  const from = (link.get("from") || "").trim().slice(0, 14) || "A friend";
+  const challenge = { seed: parseInt(link.get("seed"), 10) | 0, score: parseInt(link.get("score"), 10) || 0, from, v: parseInt(link.get("v"), 10) || 0 };
+  // Drop the link from the address bar, so a reload resumes the game instead of starting the challenge again.
+  history.replaceState(null, "", location.pathname);
+  intro(challenge);
+} else if (load()) showGame(); else intro();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

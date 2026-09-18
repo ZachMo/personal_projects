@@ -1,6 +1,6 @@
-# First Town for iOS
+# Hügelland for iOS
 
-A native rebuild of `../first-town.html` in Swift, for the App Store. It starts from the web
+A native rebuild of `../hugelland.html` in Swift, for the App Store. It starts from the web
 version's rules and is free to grow its own.
 
 The browser version keeps moving. [`WEB-CHANGES.md`](WEB-CHANGES.md) lists every change made there
@@ -75,7 +75,7 @@ covering land takes nothing away, water under a bridge still counts, later neigh
 earlier buildings, and a saved game loads back the same.
 
 `WebParityTests` checks the port against the web version. `Tools/make-web-fixtures.js` plays 60
-games in Node with the rules from `first-town.html`, and the test plays the same games in Swift.
+games in Node with the rules from `hugelland.html`, and the test plays the same games in Swift.
 Maps, decks, every move's squares, points and trophies, and the final scores must all match.
 
 ```

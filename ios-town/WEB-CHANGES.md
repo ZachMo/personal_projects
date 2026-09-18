@@ -1,6 +1,6 @@
 # Web changes not yet in the iOS app
 
-The iOS app started from `first-town.html` at commit `67cc7e4`. This log lists every change to the
+The iOS app started from `hugelland.html` (then `first-town.html`) at commit `67cc7e4`. This log lists every change to the
 browser version since then that the app does not have yet, newest first. When a change is ported,
 move it to **Ported** at the bottom with the Swift commit that brought it over.
 
@@ -22,6 +22,9 @@ Commit: "Hügelland: the game gets its name and its icon", after the rebalance.
   and `hugelland-icon-512.png`. A green hillside with a clay-roofed house and a tree, in the game's colours.
   On iOS the app has its own app icon, so only the name matters there.
 * The save keys stay `firsttown.v3` and `firsttown.best`, so a game in progress survives the rename.
+* **Web only.** The page moves to `hugelland.html`, and `first-town.html` stays behind as a redirect that
+  keeps any `?seed=…` on a challenge link. `index.html` and both READMEs point at the new name, as does
+  `FirstTownCore/Tools/make-web-fixtures.js`, which reads the web file.
 
 ### Rebalance: herds, water, shops and civic
 

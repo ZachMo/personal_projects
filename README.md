@@ -199,7 +199,7 @@ faster does not make you nimbler.
 A bot that steers for the widest opening gets about 180 m and has reached 570.
 Mashing the controls gets about 60.
 
-## first-town.html
+## hugelland.html
 
 A town-building board game for a phone. It is a jigsaw puzzle: buildings come in odd shapes,
 and you fit them onto one map.
@@ -425,7 +425,7 @@ address bar once it loads the team.
 
 ## ios-town/
 
-A native rebuild of `first-town.html` in Swift, for the App Store. The rules live in a Swift
+A native rebuild of `hugelland.html` in Swift, for the App Store. The rules live in a Swift
 package, `FirstTownCore`, with tests that play 60 games against the web version's rules and
 require the same maps, decks, moves and scores. The app will add SpriteKit for the board,
 SwiftUI for the panels, and Game Center leaderboards with a daily map. See `ios-town/README.md`.

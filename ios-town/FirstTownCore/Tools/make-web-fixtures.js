@@ -9,7 +9,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const html = fs.readFileSync(path.join(__dirname, "../../../first-town.html"), "utf8");
+const html = fs.readFileSync(path.join(__dirname, "../../../hugelland.html"), "utf8");
 const logic = html.split('<script id="logic">')[1].split("</script>")[0];
 
 const out = eval(logic + `
@@ -36,7 +36,7 @@ const out = eval(logic + `
   });
 })()`);
 
-const swift = `// Made by Tools/make-web-fixtures.js from first-town.html. Don't edit by hand.
+const swift = `// Made by Tools/make-web-fixtures.js from hugelland.html. Don't edit by hand.
 
 enum WebFixtures {
     static let json = #"""

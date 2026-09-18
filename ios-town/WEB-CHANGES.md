@@ -10,6 +10,31 @@ parity tests will fail.
 
 ## Waiting
 
+### A daily map, with three goals and a par
+
+Commit: "Hügelland: a daily map with goals and par", after the rename.
+
+* **Two ways to start.** The intro asks for a name, then offers **Daily map** or **Free map**. A free map is the
+  game as it was. `newGame(player, pick, seed, daily)` takes a day key; `G` gains `day`, `goals` and `par`, and
+  the save version goes to 7 (a version 6 save carries on as a free map).
+* **The day's map.** `dayKey()` is today's date in UTC, so everyone gets the same map. `seedFrom(text)` is an
+  FNV hash, and the seed is `seedFrom("hugelland/" + day)`.
+* **Three goals,** drawn from `seedFrom("goals/" + day)`: one district of 5/6/7, 4 or 5 homes in one district,
+  a building worth 14/15/16, every building scores 3 or 4, or win 8/10/12 trophies. Each goal reads the town
+  as it stands, so the header shows "Daily 1/3" while you play and the day's card shows each goal's progress.
+  Thresholds were picked so a plain player hits about half of them.
+* **Par** is what a plain player scores on that map, always taking the best spot for the building in hand and
+  never looking ahead. `parFor(seed)` plays the whole game on a scratch board, about 25–60 ms, once, when a
+  daily town is founded. The summary shows "Par 222 +8 over par".
+* **The day's card** opens by tapping the town's name in the header: the date, the three goals with progress,
+  par, the score so far and the streak.
+* **Records.** `hugelland.daily` keeps the last finished day: day, score, par, goals hit and the streak of days
+  in a row. Only the first finished run of a day counts; later runs are practice. The intro shows the day's
+  result when it exists.
+* **Leaderboard hook.** `CLOUD = { url, key, table }` is empty, so the game never touches the network. Filled
+  in with a Supabase project's URL and public anon key, it posts each day's run and shows the day's top ten
+  under the summary.
+
 ### The game is called Hügelland
 
 Commit: "Hügelland: the game gets its name and its icon", after the rebalance.

@@ -2955,7 +2955,7 @@ const yesterdayOf = (key) => { const d = new Date(key + "T12:00:00Z"); d.setUTCD
 /* The first finished run of a day is the one that counts, so a second run is practice. */
 function recordDaily() {
   const past = dailyRecord();
-  if (!isDaily() || (past && past.day === G.day)) return past;
+  if (!isDaily() || G.day !== dayKey() || (past && past.day === G.day)) return past;
   const streak = past && past.day === yesterdayOf(G.day) ? past.streak + 1 : 1;
   const now = { day: G.day, score: total(), par: G.par, goals: goalsDone(), streak };
   try { localStorage.setItem(DAILY, JSON.stringify(now)); } catch (e) {}
@@ -2994,15 +2994,18 @@ function recordBest() {
 const LINK_VERSION = 6;
 
 function challengeURL() {
-  const base = location.href.split(/[?#]/)[0];
-  return `${base}?seed=${G.seed}&score=${total()}&from=${encodeURIComponent(G.player)}&v=${LINK_VERSION}`;
+  const base = location.href.split(/[?#]/)[0], who = encodeURIComponent(G.player);
+  // A daily town shares its day, so a friend gets the goals and the par with the map.
+  return isDaily() ? `${base}?daily=${G.day}&score=${total()}&from=${who}&v=${LINK_VERSION}`
+                   : `${base}?seed=${G.seed}&score=${total()}&from=${who}&v=${LINK_VERSION}`;
 }
 
 /* The phone's share sheet where there is one; otherwise copy the link, or show it to copy by hand. */
 async function shareChallenge() {
   const url = challengeURL(), button = $("sShare");
   if (navigator.share) {
-    try { await navigator.share({ title: GAME, text: `I scored ${total()} in ${GAME}. Beat me on the same map!`, url }); return; }
+    const where = isDaily() ? (G.day === dayKey() ? "on today's map" : `on the ${dayName(G.day)} map`) : "on the same map";
+    try { await navigator.share({ title: GAME, text: `I scored ${total()} in ${GAME}. Beat me ${where}!`, url }); return; }
     catch (e) { if (e && e.name === "AbortError") return; }
   }
   try {
@@ -3030,15 +3033,15 @@ function showSummary() {
     versus = `<div class="versus ${me > c.score ? "win" : me < c.score ? "lose" : ""}">${line}<span>You ${me} · ${who} ${c.score}</span></div>`;
   }
   const over = me - G.par;
-  const town = `<div class="final">
+  const head = `<div class="final">
       <h2>${esc(townName(G.player, G.pick))} is done</h2>
       <div class="big num">${me}</div>
       <div class="best">${daily ? esc(dayName(G.day)) + " · daily map" : me >= best ? "Your best town yet" : `Your best is ${best}`}</div>
     </div>
     ${versus}
     <button class="primary wide" id="sShare">${c ? `Challenge ${esc(c.from)} back` : "Challenge a friend"}</button>
-    <div id="shareBox" class="sharebox"></div>
-    <ul class="tally">
+    <div id="shareBox" class="sharebox"></div>`;
+  const town = `<ul class="tally">
       <li><span>Buildings</span><b>${boardScore()}</b></li>
       ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>`
                       : `<li><span>Every building fit</span><b>+${ALL_FIT}</b></li>`}
@@ -3047,17 +3050,14 @@ function showSummary() {
       `<span class="tchip${TROPHIES[id].good ? "" : " bad"}">${esc(TROPHIES[id].name.replace("!", ""))}${G.trophies[id] > 1 ? ` ×${G.trophies[id]}` : ""}</span>`).join("")}</div>` : ""}
     <p class="label">Best buildings</p>
     <ul class="tally" style="margin-top:4px">${top.map(x => `<li><span>${esc(DEF[x.p.type].name)}</span><b>${signed(x.v)}</b></li>`).join("")}</ul>`;
-  const day = !daily ? "" : `<div class="final">
-      <h2>${esc(dayName(G.day))}</h2>
-      <div class="best">The daily map</div>
-    </div>
-    <div class="par ${over >= 0 ? "win" : "lose"}"><span>Par ${G.par}</span><b>${over >= 0 ? "+" : "−"}${Math.abs(over)}</b>
+  const day = !daily ? "" : `<div class="par ${over >= 0 ? "win" : "lose"}"><span>Par ${G.par}</span><b>${over >= 0 ? "+" : "−"}${Math.abs(over)}</b>
       <span>${over > 0 ? "over par" : over < 0 ? "under par" : "level with par"}</span></div>
     <p class="label">Goals · ${goalsDone()} of 3</p>${goalRows()}
     ${run && run.day === G.day && run.streak > 1 ? `<p class="label">${run.streak} days in a row</p>` : ""}`;
-  const board = daily && cloudOn() ? `<div class="final"><h2>Today's top ten</h2><div class="best">${esc(dayName(G.day))}</div></div><div id="board10"></div>` : "";
+  const board = daily && cloudOn() ? `<p class="label">Today's top ten</p><div id="board10"></div>` : "";
   const pages = [town, day, board].filter(Boolean);
-  showDialog(`<div class="pages" id="pages">${pages.map(p => `<section>${p}</section>`).join("")}</div>
+  showDialog(`${head}
+    <div class="pages" id="pages">${pages.map(p => `<section>${p}</section>`).join("")}</div>
     ${pages.length > 1 ? `<div class="dots" id="dots">${pages.map((p, i) =>
       `<button type="button" data-i="${i}" aria-label="Page ${i + 1}" aria-current="${i === 0}"></button>`).join("")}</div>
       <p class="swipe">Swipe for ${daily ? "today's goals" : "more"}</p>` : ""}
@@ -3151,13 +3151,14 @@ function showGame() {
 
 /* A challenge link brings its map, its deck and a score to beat. */
 function intro(challenge = null) {
-  newGame("", 0, challenge ? challenge.seed : undefined);
+  newGame("", 0, challenge && challenge.seed ? challenge.seed : undefined, challenge && challenge.day ? challenge.day : null);
   resetScene(); UI.ghost = null;
   $("panel").hidden = true;
   hud();
   const today = dayKey(), rec = dailyRecord(), doneToday = rec && rec.day === today;
+  const sameDay = challenge && challenge.day === today;
   const lead = challenge
-    ? `<div class="versus">${esc(challenge.from)} scored ${challenge.score} on this map<span>Same land, same buildings, same order. Can you beat it?</span></div>
+    ? `<div class="versus">${esc(challenge.from)} scored ${challenge.score} on ${challenge.day ? (sameDay ? "today's map" : esc(dayName(challenge.day)) + "'s map") : "this map"}<span>${challenge.day ? "The daily map, with its three goals and its par." : "Same land, same buildings, same order. Can you beat it?"}</span></div>
        ${challenge.v !== LINK_VERSION ? `<p>This link is from an older version of the game, so the map or the scoring may be different.</p>` : ""}`
     : `<p>Fit odd-shaped buildings onto the map. Good spots score more.</p>`;
   const choose = challenge ? `<div class="row"><button class="primary" id="found" type="submit">Take the challenge</button></div>`
@@ -3186,7 +3187,7 @@ function intro(challenge = null) {
     startTown(player, challenge, daily);
   };
   if ($("goFree")) $("goFree").onclick = () => begin(null);
-  $("introForm").onsubmit = (e) => { e.preventDefault(); begin(challenge ? null : dayKey()); };
+  $("introForm").onsubmit = (e) => { e.preventDefault(); begin(challenge ? challenge.day || null : dayKey()); };
   layout();
 }
 
@@ -3198,9 +3199,11 @@ new ResizeObserver(layout).observe($("stage"));
 
 restoreControls();
 const link = new URLSearchParams(location.search);
-if (link.has("seed")) {
+if (link.has("seed") || link.has("daily")) {
   const from = (link.get("from") || "").trim().slice(0, 14) || "A friend";
-  const challenge = { seed: parseInt(link.get("seed"), 10) | 0, score: parseInt(link.get("score"), 10) || 0, from, v: parseInt(link.get("v"), 10) || 0 };
+  const day = (link.get("daily") || "").slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/) ? link.get("daily") : null;
+  const challenge = { seed: day ? 0 : parseInt(link.get("seed"), 10) | 0, day,
+                      score: parseInt(link.get("score"), 10) || 0, from, v: parseInt(link.get("v"), 10) || 0 };
   // Drop the link from the address bar, so a reload resumes the game instead of starting the challenge again.
   history.replaceState(null, "", location.pathname);
   intro(challenge);

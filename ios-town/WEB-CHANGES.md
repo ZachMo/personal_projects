@@ -10,6 +10,19 @@ parity tests will fail.
 
 ## Waiting
 
+### A pinned summary header, and daily challenge links
+
+Commit: "Hügelland: keep the score in view, share the daily map", after the swipeable summary.
+
+* The town's name, its score, the day or best line, and the **Challenge a friend** button sit above the pages
+  and stay while you swipe. The first page holds the tally, trophies and best buildings; the second the par
+  and the goals; a leaderboard would be the third.
+* A challenge from a daily town shares `?daily=2026-09-18` instead of `?seed=…`, so a friend gets that day's
+  map with its goals and its par. The share text reads "Beat me on today's map" or names the date.
+* Opening a `?daily=` link shows who scored what on that map, and **Take the challenge** starts that day.
+  `?seed=` links work as before.
+* Only today's map is recorded: playing an older day through a link does not touch the streak.
+
 ### The opening and the summary
 
 Commit: "Hügelland: a warmer opening, a summary you can swipe", after the daily map.

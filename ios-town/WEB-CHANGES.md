@@ -10,6 +10,19 @@ parity tests will fail.
 
 ## Waiting
 
+### The game is called Hügelland
+
+Commit: "Hügelland: the game gets its name and its icon", after the rebalance.
+
+* The name is in one place, `GAME = "Hügelland"`, used by the header, the intro heading and a shared link's
+  text. The page title, `apple-mobile-web-app-title` and the card on `index.html` use it too.
+* The header's second line now starts with the game's name: "Hügelland · 6 built", or "Hügelland · the town is
+  done". The town's own name stays on the first line, and shows the game's name before a town is founded.
+* New files: `hugelland-icon.svg` (rounded, for a browser tab), `hugelland-icon-180.png` (the iOS home screen)
+  and `hugelland-icon-512.png`. A green hillside with a clay-roofed house and a tree, in the game's colours.
+  On iOS the app has its own app icon, so only the name matters there.
+* The save keys stay `firsttown.v3` and `firsttown.best`, so a game in progress survives the rename.
+
 ### Rebalance: herds, water, shops and civic
 
 Commit: "First Town: rebalance herds, water and neighbours", after "less text on the cards".

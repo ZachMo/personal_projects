@@ -7,7 +7,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>First Town</title>
+<title>Hügelland</title>
+<meta name="apple-mobile-web-app-title" content="Hügelland">
+<meta name="description" content="Fit odd-shaped buildings onto the map and grow a town in the hills.">
+<link rel="icon" href="hugelland-icon.svg" type="image/svg+xml">
+<link rel="icon" href="hugelland-icon-180.png" sizes="180x180" type="image/png">
+<link rel="icon" href="hugelland-icon-512.png" sizes="512x512" type="image/png">
+<link rel="apple-touch-icon" href="hugelland-icon-180.png">
 <style>
   :root {
     color-scheme: dark;
@@ -225,7 +231,7 @@
     <button id="menuBtn" class="iconbtn glass" aria-label="Menu">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h12"/></svg>
     </button>
-    <div class="title"><b id="townName">First Town</b><span id="townSub">&nbsp;</span></div>
+    <div class="title"><b id="townName">Hügelland</b><span id="townSub">&nbsp;</span></div>
     <button id="scoreBtn" class="stat glass" aria-label="Score breakdown"><b id="score" class="num">0</b><span>Points</span></button>
     <button id="deckBtn" class="stat glass" aria-label="Buildings to come"><b id="left" class="num">0</b><span>To come</span></button>
   </header>
@@ -944,6 +950,8 @@ function partText(type, q) {
 "use strict";
 
 /* ───────────────────────── Names ───────────────────────── */
+
+const GAME = "Hügelland";   // the game's name, on the header and on a shared link
 
 const PREFIX = ["Fort", "St.", "New", "Port"];
 const SUFFIX = ["ville", "burg", "ton", "field"];
@@ -2534,10 +2542,11 @@ function modsHTML(type) {
 }
 
 function hud() {
-  $("townName").textContent = G.player ? townName(G.player, G.pick) : "First Town";
+  $("townName").textContent = G.player ? townName(G.player, G.pick) : GAME;
   const placed = G.pieces.length;
-  $("townSub").textContent = G.over ? "The town is done"
-    : `${placed} built${G.away.length ? ` · ${G.away.length} turned away` : ""}${G.challenge ? ` · Beat ${G.challenge.score}` : ""}`;
+  // The game's name sits under the town's, so it is on screen the whole game.
+  $("townSub").textContent = G.over ? `${GAME} · the town is done`
+    : `${GAME} · ${placed} built${G.away.length ? ` · ${G.away.length} turned away` : ""}${G.challenge ? ` · Beat ${G.challenge.score}` : ""}`;
   $("left").textContent = G.over ? 0 : G.deck.length - G.at;
 }
 
@@ -2813,7 +2822,7 @@ function challengeURL() {
 async function shareChallenge() {
   const url = challengeURL(), button = $("sShare");
   if (navigator.share) {
-    try { await navigator.share({ title: "First Town", text: `I scored ${total()} in First Town. Beat me on the same map!`, url }); return; }
+    try { await navigator.share({ title: GAME, text: `I scored ${total()} in ${GAME}. Beat me on the same map!`, url }); return; }
     catch (e) { if (e && e.name === "AbortError") return; }
   }
   try {
@@ -2924,7 +2933,7 @@ function intro(challenge = null) {
        ${challenge.v !== LINK_VERSION ? `<p>This link is from an older version of the game, so the map or the scoring may be different.</p>` : ""}`
     : `<p>Fit odd-shaped buildings onto the map. Good spots score more.</p>`;
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
-      <h1>First Town</h1>
+      <h1>Hügelland</h1>
       ${lead}
       <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="go" autocapitalize="words" spellcheck="false">
       <div class="row"><button class="primary" id="found" type="submit" disabled>${challenge ? "Take the challenge" : "Start"}</button></div>

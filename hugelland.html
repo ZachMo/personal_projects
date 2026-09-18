@@ -2960,7 +2960,13 @@ const yesterdayOf = (key) => { const d = new Date(key + "T12:00:00Z"); d.setUTCD
 /* The first finished run of a day is the one that counts, so a second run is practice. */
 function recordDaily() {
   const past = dailyRecord();
-  if (!isDaily() || G.day !== dayKey() || (past && past.day === G.day)) return past;
+  if (!isDaily() || G.day !== dayKey()) return past;
+  if (past && past.day === G.day) {
+    if (past.par === G.par) return past;
+    const fixed = { ...past, par: G.par };
+    try { localStorage.setItem(DAILY, JSON.stringify(fixed)); } catch (e) {}
+    return fixed;
+  }
   const streak = past && past.day === yesterdayOf(G.day) ? past.streak + 1 : 1;
   const now = { day: G.day, score: total(), par: G.par, goals: goalsDone(), streak };
   try { localStorage.setItem(DAILY, JSON.stringify(now)); } catch (e) {}
@@ -3026,7 +3032,9 @@ async function shareChallenge() {
 
 function showSummary() {
   hidePop();
-  const me = total(), c = G.challenge, daily = isDaily(), run = daily ? recordDaily() : null;
+  const daily = isDaily();
+  if (daily) G.par = parFor(G.seed);
+  const me = total(), c = G.challenge, run = daily ? recordDaily() : null;
   const top = G.pieces.map((p, k) => ({ p, v: pieceScore(k) })).sort((a, b) => b.v - a.v).slice(0, 3);
   const won = Object.keys(TROPHIES).filter(id => G.trophies[id]);
   let best = 0;
@@ -3137,12 +3145,11 @@ function resetScene() {
 function startTown(player, challenge = null, daily = null) {
   newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)), G.seed, daily);
   G.challenge = challenge && { from: challenge.from, score: challenge.score };
-  if (daily) G.par = parFor(G.seed);
   resetScene();
   UI.shown = 0; $("score").textContent = 0;
   freshGhost(); save(); hud(); paintPanel();
   layout();
-  if (daily) toast(`${townName(player, G.pick)} on today's map. Three goals, par ${G.par}.`, 3600);
+  if (daily) toast(`${townName(player, G.pick)} on today's map, with three goals.`, 3600);
   else toast(`Welcome to ${townName(player, G.pick)}!${challenge ? ` Beat ${challenge.score}.` : ""}`);
 }
 

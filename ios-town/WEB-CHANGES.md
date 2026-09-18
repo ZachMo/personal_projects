@@ -10,6 +10,15 @@ parity tests will fail.
 
 ## Waiting
 
+### Par is worked out at the end
+
+Commit: "Hügelland: work out par when the town is done", after the par change.
+
+Par was worked out when a daily town was founded and kept in the save, so a town started before par changed
+still showed the old number. `parFor` now runs in `showSummary`, once, when the town is done, and a day
+already written down takes the fresh par while keeping its score and goals. Founding a daily town no longer
+costs that moment, and the welcome line drops the par it used to name.
+
 ### Par comes down to a good game
 
 Commit: "Hügelland: par is a good game, not a perfect one", after the plainer daily card.

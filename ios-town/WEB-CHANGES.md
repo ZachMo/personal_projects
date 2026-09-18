@@ -10,6 +10,13 @@ parity tests will fail.
 
 ## Waiting
 
+### How to play drops the daily line
+
+Commit: "Hügelland: how to play stops explaining the two maps", after the par timing fix.
+
+The line "The daily map is the same for everyone, with three goals and a par to beat. A free map has neither."
+is gone from `RULES_HTML`. The two buttons say it where the choice is made.
+
 ### Par is worked out at the end
 
 Commit: "Hügelland: work out par when the town is done", after the par change.

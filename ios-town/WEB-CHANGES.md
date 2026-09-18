@@ -10,6 +10,22 @@ parity tests will fail.
 
 ## Waiting
 
+### The opening and the summary
+
+Commit: "Hügelland: a warmer opening, a summary you can swipe", after the daily map.
+
+* **Opening.** The app's icon sits above the name, the two buttons read **Daily** ("Play the daily challenge
+  map") and **Free** ("Play a random map"), in orange and green, and the paragraph explaining the daily map is
+  gone. The name is remembered in `hugelland.name` and fills the field, so the buttons work at once; an empty
+  name puts the cursor in the field instead of blocking the button. When a day is already finished, one line
+  reports it.
+* **Par waits.** The day's card during a game shows the goals and the score so far, not the par. It says par
+  waits until the town is done.
+* **A summary you can swipe.** The end screen keeps its old page, and the daily part moves to a second page:
+  the date, par against the score, the goals and the streak. Dots under the pages show where you are and move
+  you when tapped, and a line reads "Swipe for today's goals" until the last page. A leaderboard becomes a
+  third page when one is switched on.
+
 ### A daily map, with three goals and a par
 
 Commit: "Hügelland: a daily map with goals and par", after the rename.

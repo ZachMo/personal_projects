@@ -161,6 +161,15 @@
   .rules li { position: relative; padding: 7px 0 7px 26px; font-size: .86rem; color: var(--ink-2); border-top: 1px solid var(--line); }
   .rules li b { color: var(--ink); }
   .rules li::before { content: ""; position: absolute; left: 6px; top: 13px; width: 8px; height: 8px; border-radius: 3px; background: var(--accent); }
+  /* The summary is a few pages side by side: swipe, or use the dots. */
+  .pages { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+           margin: 0 -20px; padding: 0 20px; gap: 40px; scrollbar-width: none; }
+  .pages::-webkit-scrollbar { display: none; }
+  .pages > section { flex: 0 0 100%; scroll-snap-align: center; }
+  .dots { display: flex; justify-content: center; gap: 7px; margin: 14px 0 2px; }
+  .dots button { width: 8px; height: 8px; border-radius: 999px; background: var(--line); }
+  .dots button[aria-current="true"] { background: var(--ink-2); width: 20px; }
+  .swipe { text-align: center; font-size: .76rem; color: var(--muted); font-weight: 650; margin-top: 8px; }
   .final { text-align: center; }
   .final .big { font-size: 3.2rem; font-weight: 800; letter-spacing: -.04em; line-height: 1; margin: 8px 0 2px; }
   .final .best { font-size: .8rem; color: var(--muted); font-weight: 650; }
@@ -194,8 +203,12 @@
   .par b { font-size: 1.25rem; }
   .par.win { color: var(--good); } .par.lose { color: var(--bad); }
   .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-  .modes button { display: block; height: auto; min-height: 58px; padding: 10px 8px; text-align: center; flex: none; line-height: 1.25; }
-  .modes .sub { display: block; font-size: .72rem; font-weight: 600; opacity: .75; margin-top: 3px; }
+  .modes button { display: block; height: auto; min-height: 66px; padding: 12px 10px; text-align: center; flex: none; line-height: 1.25;
+                  font-size: 1.05rem; font-weight: 800; }
+  .modes .sub { display: block; font-size: .72rem; font-weight: 600; opacity: .85; margin-top: 4px; }
+  .primary.green { background: #2f8a55; box-shadow: inset 0 -3px 0 #226a41; }
+  .crest { width: 66px; height: 66px; border-radius: 20px; display: block; margin: 0 auto 10px; box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+  .today { margin: 12px 2px 0; font-size: .82rem; color: var(--ink-2); font-weight: 650; }
   .versus { margin: 12px 0 4px; padding: 12px 14px; border-radius: 16px; background: #f6e7b4; color: #6b4a08;
             font-weight: 750; font-size: 1rem; text-align: center; }
   .versus span { display: block; font-size: .8rem; font-weight: 600; margin-top: 3px; }
@@ -2896,10 +2909,10 @@ function showDaily() {
     <p>${esc(dayName(G.day))} · the same map for everyone today.</p>
     ${goalRows()}
     <ul class="tally" style="margin-top:12px">
-      <li><span>Par for this map</span><b>${G.par}</b></li>
       <li><span>Your town so far</span><b>${total()}</b></li>
       ${rec && rec.streak > 1 ? `<li><span>Days in a row</span><b>${rec.streak}</b></li>` : ""}
     </ul>
+    <p style="margin-top:10px">Par for this map waits until the town is done.</p>
     <div class="row"><button class="tool" id="dyClose">Close</button></div>`);
   $("dyClose").onclick = closeSheet;
 }
@@ -2926,7 +2939,12 @@ $("deckBtn").onclick = showDeck;
 function showDialog(html) { $("dialog").innerHTML = html; $("dialogWrap").hidden = false; }
 function closeDialog() { $("dialogWrap").hidden = true; }
 
-const DAILY = "hugelland.daily";
+const DAILY = "hugelland.daily", NAME = "hugelland.name";
+
+/* The name from last time, so a new game is two taps. */
+function lastName() {
+  try { return (localStorage.getItem(NAME) || "").slice(0, 14); } catch (e) { return ""; }
+}
 
 /* The day the player last finished, what they scored on it, and how many days in a row they have played. */
 function dailyRecord() {
@@ -3012,18 +3030,11 @@ function showSummary() {
     versus = `<div class="versus ${me > c.score ? "win" : me < c.score ? "lose" : ""}">${line}<span>You ${me} · ${who} ${c.score}</span></div>`;
   }
   const over = me - G.par;
-  const dailyBits = !daily ? "" : `
-    <div class="par ${over >= 0 ? "win" : "lose"}"><span>Par ${G.par}</span><b>${over >= 0 ? "+" : "−"}${Math.abs(over)}</b>
-      <span>${over > 0 ? "over par" : over < 0 ? "under par" : "level with par"}</span></div>
-    <p class="label">Today's goals · ${goalsDone()} of 3</p>${goalRows()}
-    ${run && run.day === G.day && run.streak > 1 ? `<p class="label">${run.streak} days in a row</p>` : ""}
-    <div id="board10"></div>`;
-  showDialog(`<div class="final">
+  const town = `<div class="final">
       <h2>${esc(townName(G.player, G.pick))} is done</h2>
       <div class="big num">${me}</div>
       <div class="best">${daily ? esc(dayName(G.day)) + " · daily map" : me >= best ? "Your best town yet" : `Your best is ${best}`}</div>
     </div>
-    ${dailyBits}
     ${versus}
     <button class="primary wide" id="sShare">${c ? `Challenge ${esc(c.from)} back` : "Challenge a friend"}</button>
     <div id="shareBox" class="sharebox"></div>
@@ -3035,12 +3046,39 @@ function showSummary() {
     ${won.length ? `<p class="label">Trophies</p><div class="tchips">${won.map(id =>
       `<span class="tchip${TROPHIES[id].good ? "" : " bad"}">${esc(TROPHIES[id].name.replace("!", ""))}${G.trophies[id] > 1 ? ` ×${G.trophies[id]}` : ""}</span>`).join("")}</div>` : ""}
     <p class="label">Best buildings</p>
-    <ul class="tally" style="margin-top:4px">${top.map(x => `<li><span>${esc(DEF[x.p.type].name)}</span><b>${signed(x.v)}</b></li>`).join("")}</ul>
+    <ul class="tally" style="margin-top:4px">${top.map(x => `<li><span>${esc(DEF[x.p.type].name)}</span><b>${signed(x.v)}</b></li>`).join("")}</ul>`;
+  const day = !daily ? "" : `<div class="final">
+      <h2>${esc(dayName(G.day))}</h2>
+      <div class="best">The daily map</div>
+    </div>
+    <div class="par ${over >= 0 ? "win" : "lose"}"><span>Par ${G.par}</span><b>${over >= 0 ? "+" : "−"}${Math.abs(over)}</b>
+      <span>${over > 0 ? "over par" : over < 0 ? "under par" : "level with par"}</span></div>
+    <p class="label">Goals · ${goalsDone()} of 3</p>${goalRows()}
+    ${run && run.day === G.day && run.streak > 1 ? `<p class="label">${run.streak} days in a row</p>` : ""}`;
+  const board = daily && cloudOn() ? `<div class="final"><h2>Today's top ten</h2><div class="best">${esc(dayName(G.day))}</div></div><div id="board10"></div>` : "";
+  const pages = [town, day, board].filter(Boolean);
+  showDialog(`<div class="pages" id="pages">${pages.map(p => `<section>${p}</section>`).join("")}</div>
+    ${pages.length > 1 ? `<div class="dots" id="dots">${pages.map((p, i) =>
+      `<button type="button" data-i="${i}" aria-label="Page ${i + 1}" aria-current="${i === 0}"></button>`).join("")}</div>
+      <p class="swipe">Swipe for ${daily ? "today's goals" : "more"}</p>` : ""}
     <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button></div>`);
   $("sShare").onclick = shareChallenge;
-  if (daily && cloudOn()) showBoard(G.day);
+  if (board) showBoard(G.day);
+  if (pages.length > 1) pageDots();
   $("sLook").onclick = closeDialog;
   $("sNew").onclick = () => { closeDialog(); intro(); };
+}
+
+/* The dots under the summary follow the page you swiped to, and move it when tapped. */
+function pageDots() {
+  const box = $("pages"), dots = [...$("dots").children], hint = document.querySelector(".swipe");
+  const mark = () => {
+    const i = Math.round(box.scrollLeft / (box.scrollWidth / dots.length));
+    dots.forEach((d, k) => d.setAttribute("aria-current", String(k === i)));
+    if (hint) hint.style.visibility = i === dots.length - 1 ? "hidden" : "visible";
+  };
+  box.addEventListener("scroll", mark, { passive: true });
+  dots.forEach((d, i) => { d.onclick = () => box.scrollTo({ left: i * box.scrollWidth / dots.length, behavior: "smooth" }); });
 }
 
 /* Today's top ten, when the game has a leaderboard to read. */
@@ -3122,30 +3160,27 @@ function intro(challenge = null) {
     ? `<div class="versus">${esc(challenge.from)} scored ${challenge.score} on this map<span>Same land, same buildings, same order. Can you beat it?</span></div>
        ${challenge.v !== LINK_VERSION ? `<p>This link is from an older version of the game, so the map or the scoring may be different.</p>` : ""}`
     : `<p>Fit odd-shaped buildings onto the map. Good spots score more.</p>`;
-  const choose = challenge ? `<div class="row"><button class="primary" id="found" type="submit" disabled>Take the challenge</button></div>`
+  const choose = challenge ? `<div class="row"><button class="primary" id="found" type="submit">Take the challenge</button></div>`
     : `<div class="modes">
-         <button class="primary" id="goDaily" type="submit" disabled>Daily map<span class="sub">${esc(dayName(today))}</span></button>
-         <button class="tool" id="goFree" type="button" disabled>Free map<span class="sub">A map of your own</span></button>
+         <button class="primary" id="goDaily" type="submit">Daily<span class="sub">Play the daily challenge map</span></button>
+         <button class="primary green" id="goFree" type="button">Free<span class="sub">Play a random map</span></button>
        </div>
-       <p style="margin:10px 2px 0;font-size:.8rem;color:var(--ink-2)">
-         ${doneToday ? `Today you scored ${rec.score} against par ${rec.par}, and hit ${rec.goals} of 3 goals.${rec.streak > 1 ? ` ${rec.streak} days in a row.` : ""} Play it again for practice.`
-                     : "The daily map is the same for everyone, with three goals and a par to beat. A free map has neither."}</p>`;
+       ${doneToday ? `<p class="today">Today: ${rec.score} against par ${rec.par}, ${rec.goals} of 3 goals${rec.streak > 1 ? ` · ${rec.streak} days in a row` : ""}</p>` : ""}`;
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
+      <img class="crest" src="hugelland-icon.svg" alt="">
       <h1>Hügelland</h1>
       ${lead}
-      <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="go" autocapitalize="words" spellcheck="false">
+      <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="go" autocapitalize="words" spellcheck="false" value="${esc(lastName())}">
       ${choose}
       ${challenge ? `<button type="button" class="linkbtn" id="decline">Play a different map</button>` : ""}
       <details class="how"><summary>How to play</summary>${RULES_HTML}</details>
     </form>`);
   const named = () => $("nameIn").value.trim();
-  $("nameIn").addEventListener("input", () => {
-    for (const id of ["found", "goDaily", "goFree"]) if ($(id)) $(id).disabled = !named();
-  });
   if ($("decline")) $("decline").onclick = () => intro();
   const begin = (daily) => {
-    if (!named()) return;
+    if (!named()) { $("nameIn").focus(); return; }
     const player = named();
+    try { localStorage.setItem(NAME, player); } catch (e) {}
     $("nameIn").blur();
     closeDialog();
     startTown(player, challenge, daily);

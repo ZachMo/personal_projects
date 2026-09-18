@@ -344,8 +344,8 @@ const SHAPES = {
 */
 const DEF = {
   well:      { name: "Town Well", plural: "Town Wells", cat: "civic", shape: "I1", n: 2, era: 1, base: 1,
-               roles: ["well"], blurb: "Water for the families and the herds.",
-               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "land", t: "herd", p: 1 }] },
+               roles: ["well"], blurb: "Water for the families and the fields.",
+               rules: [{ k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["agri"], p: 1 }] },
   cabin:     { name: "Cabin", cat: "home", shape: "I2", n: 3, era: 1, base: 2, roof: ["#dc7b50", "#b75d3a"],
                style: "logs", roles: ["house", "woodpile"], blurb: "Timber walls and a porch, close to the food.",
                rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["industry"], p: -2 }] },
@@ -354,16 +354,16 @@ const DEF = {
                rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "wheat", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, base: 3, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
                roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close and a river view.",
-               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["industry"], p: -2 }] },
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   farm:      { name: "Farm", cat: "agri", shape: "O4", n: 2, era: 1, base: 2, roof: ["#cc5443", "#a43f31"],
                roles: ["barn", "field", "field", "field"], blurb: "Grain for the families next door.",
                rules: [{ k: "land", t: "wheat", p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }] },
   ranch:     { name: "Ranch", plural: "Ranches", cat: "agri", shape: "V5", n: 1, era: 2, base: 2, roof: ["#b85a40", "#93432f"],
                roles: ["pasture", "pasture", "barn", "pasture", "pasture"], blurb: "Round up a herd and sell to the shops.",
-               rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
+               rules: [{ k: "land", t: "herd", p: 3 }, { k: "near", cats: ["shop"], p: 1 }] },
   lumber:    { name: "Lumber Mill", cat: "industry", shape: "S4", n: 2, era: 1, base: 2, roof: ["#8e6c4f", "#6e523b"], style: "metal", extra: "saw",
                roles: ["hall", "logs", "logs", "hall"], blurb: "Saws timber from the woods around it.",
-               rules: [{ k: "land", t: "forest", p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
+               rules: [{ k: "land", t: "forest", p: 2 }] },
   mine:      { name: "Mine", cat: "industry", shape: "V3", n: 2, era: 1, base: 2,
                roles: ["shaft", "rocks", "yard"], blurb: "Only worth digging for ore.",
                rules: [{ k: "land", t: "ore", p: 3 }] },
@@ -378,25 +378,25 @@ const DEF = {
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
   grocer:    { name: "Grocer", cat: "shop", shape: "L4", n: 1, era: 2, base: 2, roof: ["#5ea56b", "#468753"],
                roles: ["shop", "shop", "produce", "produce"], blurb: "Fresh food, straight from the source.",
-               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "herd", p: 1 }] },
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
   saloon:    { name: "Saloon", cat: "leisure", shape: "S4", n: 1, era: 2, base: 3, roof: ["#a95a90", "#864571"], style: "front", sign: "SALOON",
-               roles: ["hall", "hall", "porch", "porch"], blurb: "Where the miners and the cowhands go after a shift.",
-               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
+               roles: ["hall", "hall", "porch", "porch"], blurb: "Whiskey for the miners after a shift.",
+               rules: [{ k: "near", cats: ["industry"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
   church:    { name: "Church", plural: "Churches", cat: "civic", shape: "X5", n: 1, era: 3, base: 3, roof: ["#8195b8", "#63779d"],
                roles: ["steeple", "tree", "nave", "tree", "nave"], blurb: "The heart of a quiet town.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 1, once: true }, { k: "near", cats: ["leisure"], p: -3 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["leisure"], p: -3 }] },
   school:    { name: "Schoolhouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#cc5e4c", "#a84737"], extra: "bell",
                roles: ["hall", "hall", "hall", "yard", "play"], blurb: "Lessons for the children next door.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   hotel:     { name: "Hotel", cat: "leisure", shape: "P5", n: 1, era: 3, base: 3, roof: ["#9160aa", "#724489"], style: "dormer", sign: "HOTEL",
                roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "Travellers want a view and a store.",
-               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["shop"], p: 2 }] },
+               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }] },
   station:   { name: "Train Station", cat: "civic", shape: "I5", n: 1, era: 3, base: 3, roof: ["#5d7189", "#46586c"],
                roles: ["rail", "hall", "hall", "hall", "rail"], blurb: "The line comes in from the edge of the map.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry", "shop"], p: 2 }] },
-  townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, base: 3, roof: ["#5580c8", "#4065a8"],
+  townhall:  { name: "Town Hall", cat: "civic", shape: "U5", n: 1, era: 3, base: 4, roof: ["#5580c8", "#4065a8"],
                roles: ["tree", "flag", "hall", "hall", "hall"], blurb: "Wants every part of town at its door.",
-               rules: [{ k: "variety", p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
+               rules: [{ k: "variety", p: 2 }] },
 
   /* Homes */
   manor:     { name: "Manor", cat: "home", shape: "O4", n: 1, era: 2, base: 4, roof: ["#7e8a9e", "#616c80"],
@@ -418,17 +418,17 @@ const DEF = {
 
   /* Food */
   orchard:   { name: "Orchard", cat: "agri", shape: "L4", n: 1, era: 1, base: 2,
-               roles: ["orchard", "orchard", "orchard", "orchard"], blurb: "Apples for the homes and the shops.",
-               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }, { k: "near", cats: ["shop"], p: 1 }] },
+               roles: ["orchard", "orchard", "orchard", "orchard"], blurb: "Apples for the families next door.",
+               rules: [{ k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 2 }] },
   vineyard:  { name: "Vineyard", cat: "agri", shape: "W5", n: 1, era: 2, base: 1,
                roles: ["vines", "vines", "vines", "vines", "vines"], blurb: "Grapes like rocky ground. Wine for the saloons and hotels.",
                rules: [{ k: "land", t: "ore", p: 1 }, { k: "near", cats: ["leisure"], p: 2 }] },
   gristmill: { name: "Gristmill", cat: "agri", shape: "I2", n: 1, era: 2, base: 2, roof: ["#a7836a", "#86684f"],
-               roles: ["hall", "wheel"], blurb: "A water wheel grinds flour for the shops.",
-               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
+               roles: ["hall", "wheel"], blurb: "A water wheel grinds flour for the families.",
+               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["home"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
   stables:   { name: "Stables", plural: "Stables", cat: "agri", shape: "T4", n: 1, era: 2, base: 2, roof: ["#a2603c", "#7f492c"],
                extra: "cupola", roles: ["hall", "hall", "hall", "paddock"], blurb: "Horses for hire, broken from the herds.",
-               rules: [{ k: "land", t: "herd", p: 1 }, { k: "near", cats: ["leisure", "civic"], p: 1 }] },
+               rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["leisure", "civic"], p: 1 }] },
   granary:   { name: "Granary", plural: "Granaries", cat: "agri", shape: "I2", n: 1, era: 3, base: 1, roof: ["#caa24e", "#a8843a"],
                roles: ["silo", "silo"], blurb: "Stores wild grain and the harvest of every food building.",
                rules: [{ k: "land", t: "wheat", p: 1 }, { k: "town", cats: ["agri"], p: 1 }] },
@@ -440,21 +440,21 @@ const DEF = {
   sluice:    { name: "Gold Sluice", plural: "Gold Sluices", cat: "industry", shape: "I3", n: 1, era: 1, base: 2,
                roles: ["sluice", "sluice", "sluice"], blurb: "Washes gold out of the rock.",
                rules: [{ k: "land", t: "ore", p: 2 }, { k: "land", t: "water", p: 3, once: true }] },
-  stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 2, roof: ["#6c7480", "#525964"], style: "metal", extra: "stack",
+  stampmill: { name: "Stamp Mill", cat: "industry", shape: "O4", n: 1, era: 2, base: 3, roof: ["#6c7480", "#525964"], style: "metal", extra: "stack",
                roles: ["hall", "hall", "rocks", "cart"], blurb: "Crushes ore from the diggings.",
-               rules: [{ k: "land", t: "ore", p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
+               rules: [{ k: "land", t: "ore", p: 2 }] },
   brickworks:{ name: "Brickworks", plural: "Brickworks", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#b4533d", "#903f2e"],
                roles: ["beehive", "beehive", "beehive", "bricks"], blurb: "Bricks for every home in town.",
                rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "town", cats: ["home"], p: 1 }] },
   tannery:   { name: "Tannery", plural: "Tanneries", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8a6f4e", "#6b553b"],
                roles: ["hall", "hides"], blurb: "Hides from the herds. It smells.",
-               rules: [{ k: "land", t: "herd", p: 1 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
+               rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
   kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 2,
                roles: ["kiln"], blurb: "Burns wood into fuel.",
                rules: [{ k: "land", t: "forest", p: 2 }] },
   freight:   { name: "Freight Yard", cat: "industry", shape: "L5", n: 1, era: 3, base: 2, roof: ["#7d6a56", "#615243"], style: "metal",
-               roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads goods for the shops at the edge of town.",
-               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["shop"], p: 2 }] },
+               roles: ["rail", "rail", "rail", "rail", "shed"], blurb: "Loads what every mill in town makes.",
+               rules: [{ k: "edge", p: 3 }, { k: "town", cats: ["industry"], p: 1 }] },
 
   /* Shops */
   bakery:    { name: "Bakery", plural: "Bakeries", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#d69a52", "#b47c3c"], emblem: "loaf",
@@ -489,23 +489,23 @@ const DEF = {
   jail:      { name: "Jail", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#7b7f86", "#5f636a"], emblem: "bars", style: "stone",
                roles: ["hall", "pen"], blurb: "Close to the saloons, at the edge of town.",
                rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "edge", p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
-  plaza:     { name: "Plaza", cat: "civic", shape: "O4", n: 1, era: 2, base: 1,
+  plaza:     { name: "Plaza", cat: "civic", shape: "O4", n: 1, era: 2, base: 2,
                roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square among shops and homes.",
-               rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
+               rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
   cemetery:  { name: "Cemetery", plural: "Cemeteries", cat: "civic", shape: "T4", n: 1, era: 2, base: 2,
                roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet, shady ground, away from the noise.",
                rules: [{ k: "without", cats: ["leisure", "industry"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
   doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
                roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 1, once: true }, { k: "near", cats: ["industry"], p: -2 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
                roles: ["hall", "hall", "hall", "yard", "flag"], blurb: "Law and order, on the main street.",
-               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
+               rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
 
   /* Leisure */
   theater:   { name: "Theater", cat: "leisure", shape: "Y5", n: 1, era: 3, base: 3, roof: ["#b0445a", "#8c3447"], emblem: "mask",
                roles: ["hall", "hall", "hall", "hall", "porch"], blurb: "A show for the town and its visitors.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "water", p: 2, once: true }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }] },
   bathhouse: { name: "Bathhouse", cat: "leisure", shape: "L4", n: 1, era: 2, base: 2, roof: ["#6aa3b5", "#528596"],
                roles: ["hall", "hall", "pool", "pool"], blurb: "Hot water for tired travellers.",
                rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "land", t: "forest", p: 1 }] },
@@ -514,13 +514,13 @@ const DEF = {
                rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["civic"], p: -3 }] },
   racetrack: { name: "Racetrack", cat: "leisure", shape: "R6", n: 1, era: 3, base: 2,
                roles: ["track", "track", "track", "track", "track", "track"], blurb: "Horses from the herds and the stables.",
-               rules: [{ k: "land", t: "herd", p: 1 }, { k: "near", cats: ["agri"], p: 2 }] },
+               rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["agri"], p: 2 }] },
   fairground:{ name: "Fairground", cat: "leisure", shape: "N5", n: 1, era: 2, base: 2,
                roles: ["tent", "tent", "tent", "tent", "tent"], blurb: "Tents at the edge of town, near the farms.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
-  park:      { name: "Park", cat: "leisure", shape: "Z5", n: 1, era: 2, base: 1,
+  park:      { name: "Park", cat: "leisure", shape: "Z5", n: 1, era: 2, base: 2,
                extra: "birds", roles: ["tree", "garden", "tree", "garden", "tree"], blurb: "Green space for the families.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "land", t: "water", p: 1, once: true }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }] },
 };
 
 /* ───────────────────────── Small tools ───────────────────────── */
@@ -608,8 +608,8 @@ function makeMap(seed) {
   grow(t, r, spot(false), 2, "ore");
   grow(t, r, spot(true), n(4, 5), "wheat");
   grow(t, r, spot(false), n(3, 4), "wheat");
-  grow(t, r, spot(false), n(3, 4), "herd");
-  if (r() < .6) grow(t, r, spot(false), n(2, 3), "herd");
+  grow(t, r, spot(false), n(4, 5), "herd");
+  grow(t, r, spot(false), n(2, 3), "herd");
   return t;
 }
 
@@ -2802,7 +2802,7 @@ function recordBest() {
 }
 
 /* Bump when a change to the map, the deck or the scoring means an old link no longer gives the same game. */
-const LINK_VERSION = 5;
+const LINK_VERSION = 6;
 
 function challengeURL() {
   const base = location.href.split(/[?#]/)[0];

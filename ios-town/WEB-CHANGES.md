@@ -10,6 +10,30 @@ parity tests will fail.
 
 ## Waiting
 
+### Rebalance: herds, water, shops and civic
+
+Commit: "First Town: rebalance herds, water and neighbours", after "less text on the cards".
+
+**Herds pay.** A herd patch was worth about 5 points a game, the weakest land on the map. Ranch +3 each herd
+square, Stables, Tannery and Racetrack +2. Town Well, Grocer and Saloon no longer count herd: Town Well gains
++1 each food building, Saloon +1 each wheat square. Herd patches on the map grow from `n(3,4)` plus a 60%
+chance of `n(2,3)` to `n(4,5)` plus a certain `n(2,3)`, about 6.8 squares a map instead of 4.8.
+
+**Water on fewer buildings,** 24 down to 15. Dropped from Church (+1 woods instead), Plaza (base 1 → 2), Park
+(base 1 → 2), Courthouse (+1 each home instead), Theater (+1 each shop instead), Town Hall (base 3 → 4),
+Doctor (+1 woods instead) and Stamp Mill (base 2 → 3).
+
+**Fewer buildings want a shop next door,** 16 down to 13. Lumber Mill +2 each woods square (was +1 woods, +1
+shop). Orchard +2 each home (was +1 home, +1 shop), blurb "Apples for the families next door." Freight Yard
++1 each industry building in town (was +2 each shop next to it), blurb "Loads what every mill in town makes."
+Gristmill +2 each home (was +2 each shop), blurb "A water wheel grinds flour for the families."
+
+**Civic pulls a little,** wanted by 3 buildings, now 5: Row Houses +1 each civic, Hotel +1 each civic.
+
+**Blurbs:** Town Well "Water for the families and the fields.", Saloon "Whiskey for the miners after a shift."
+
+**Link version** goes to 6, since the map changed.
+
 ### Less text: no card for land, shorter scoring rows
 
 Commit: "First Town: less text on the cards", after the signs and sluice change.

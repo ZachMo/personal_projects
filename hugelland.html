@@ -988,9 +988,12 @@ const goalDone = (goal) => goalKind(goal).floor ? G.pieces.length > 0 && goalNow
 const goalsDone = () => (G.goals || []).filter(goalDone).length;
 
 /*
-  Par: what a plain player scores on this map, always taking the best spot for the building in hand and never
-  looking ahead. It plays the whole game on a scratch board, so it costs a moment but only once.
+  Par: a good game on this map. A machine plays it through, always taking the best spot for the building in
+  hand and never looking ahead, which is more than a person can weigh: it reads every one of the eighty or so
+  spots each turn. Par is a share of that, so it is a target a sharp player can beat on a good day, and it
+  still rises and falls with how rich the map is.
 */
+const PAR_SHARE = .85;
 function parFor(seed) {
   const keepG = G, keepMap = MAP, keepOwner = OWNER;
   try {
@@ -1010,7 +1013,7 @@ function parFor(seed) {
       if (!best) break;
       build(best.cells);
     }
-    return total();
+    return Math.round(total() * PAR_SHARE);
   } finally { G = keepG; MAP = keepMap; OWNER = keepOwner; }
 }
 

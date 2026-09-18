@@ -10,6 +10,18 @@ parity tests will fail.
 
 ## Waiting
 
+### Par comes down to a good game
+
+Commit: "Hügelland: par is a good game, not a perfect one", after the plainer daily card.
+
+Par was the machine's own score, and the machine reads all eighty-odd spots every turn, which no person does.
+It came out above a strong player's best: 222 on 18 September against an all-time best of 194. Par is now
+`PAR_SHARE = .85` of that score, rounded, so 18 September is 189 and the days after it 127, 135, 140 and 144.
+It still rises and falls with how rich the map is.
+
+A bot that samples a dozen spots a turn was the other candidate. It averages 158 but swings between days on
+one run (143 on 18 September, 173 on the 21st), so par would have felt arbitrary.
+
 ### A plainer daily card
 
 Commit: "Hügelland: the daily card shows the goals alone", after the menu change.

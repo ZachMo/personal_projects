@@ -2879,18 +2879,26 @@ const RULES_HTML = `<ul class="rules">
 </ul>`;
 
 function showMenu() {
-  const inGame = G && G.player;
-  openSheet(`<h2>How to play</h2>${RULES_HTML}
-    <div class="row">
-      <button class="tool" id="mClose">Close</button>
-      ${inGame ? `<button class="primary dark" id="mNew">${UI.confirm ? "Yes, start over" : "New town"}</button>` : ""}
+  const inGame = G && G.player, rec = dailyRecord(), doneToday = rec && rec.day === dayKey();
+  const risky = inGame && !G.over && G.pieces.length;   // a town under way would be lost
+  openSheet(`<h2>New town</h2>
+    <div class="modes">
+      <button class="primary" id="mDaily">Daily<span class="sub">${isDaily() && G.day === dayKey() ? "You are on today's map" : doneToday ? `Played: ${rec.score}` : "Today's challenge map"}</span></button>
+      <button class="primary green" id="mFree">Free<span class="sub">A random map</span></button>
     </div>
-    ${inGame && UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">This town will be lost.</p>` : ""}`);
+    ${UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">Start again and this town is lost. Tap once more.</p>` : ""}
+    <h2 style="margin-top:18px">How to play</h2>${RULES_HTML}
+    <div class="row"><button class="tool" id="mClose">Close</button></div>`);
   $("mClose").onclick = closeSheet;
-  if ($("mNew")) $("mNew").onclick = () => {
-    if (!G.over && G.pieces.length && !UI.confirm) { UI.confirm = true; return showMenu(); }
-    closeSheet(); intro();
+  const start = (daily) => {
+    if (risky && !UI.confirm) { UI.confirm = true; return showMenu(); }
+    closeSheet();
+    if (!inGame) return intro();
+    // The name is already known, so a new town starts straight away.
+    startTown(G.player, null, daily);
   };
+  $("mDaily").onclick = () => start(dayKey());
+  $("mFree").onclick = () => start(null);
 }
 $("menuBtn").onclick = () => { UI.confirm = false; showMenu(); };
 
@@ -3207,7 +3215,7 @@ if (link.has("seed") || link.has("daily")) {
   // Drop the link from the address bar, so a reload resumes the game instead of starting the challenge again.
   history.replaceState(null, "", location.pathname);
   intro(challenge);
-} else if (load()) showGame(); else intro();
+} else if (load() && !G.over) showGame(); else intro();
 requestAnimationFrame(frame);
 </script>
 </body>

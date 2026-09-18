@@ -10,6 +10,20 @@ parity tests will fail.
 
 ## Waiting
 
+### The daily map from the menu
+
+Commit: "Hügelland: reach the daily map from the menu", after the daily challenge links.
+
+A town already under way resumes when the page opens, so a player who had a game saved never saw the new
+opening screen. Two changes:
+
+* The menu leads with **New town**: a **Daily** button and a **Free** button, above How to play. In a town
+  under way, the first tap warns that the town will be lost and the second starts the new one. The name is
+  already known, so it starts straight away instead of returning to the opening screen. The Daily button's
+  line says whether you are on today's map already, or what you scored on it.
+* A finished town no longer greets you on the next visit. `load()` still restores it, but the opening screen
+  shows unless the town is still under way.
+
 ### A pinned summary header, and daily challenge links
 
 Commit: "Hügelland: keep the score in view, share the daily map", after the swipeable summary.

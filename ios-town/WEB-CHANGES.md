@@ -10,6 +10,14 @@ parity tests will fail.
 
 ## Waiting
 
+### The tutorial gives you a moment to look
+
+Commit: "Hügelland: the tutorial lets you look before it talks", after Each water.
+
+After a build, the coach card waits until the score and trophies over the new building have gone (`hold: "pop"`,
+from `popTime`). After you open a card, it waits 2.2 seconds. Then it fades in. The card you opened goes to the
+side away from the coach from the start, so it never jumps. The longer coach texts are about half as long.
+
 ### Free is a new map, Each water, a wheat Tutorial button
 
 Commit: "Hügelland: Free starts a new map, and water says when it counts each square", after the tutorial.

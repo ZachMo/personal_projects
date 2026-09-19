@@ -217,6 +217,8 @@
     max-height: calc(50% - 16px); overflow-y: auto; -webkit-overflow-scrolling: touch;
   }
   #coach.top { top: 10px; } #coach.bottom { bottom: 10px; }
+  #coach { animation: coachIn .35s ease both; }
+  @keyframes coachIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   #coach p { margin: 4px 0 0; color: var(--ink-2); font-size: .88rem; }
   #coach p b { color: var(--ink); }
   #coach .todo { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
@@ -2749,7 +2751,7 @@ function toggleRules() {
 }
 const ghostRow = () => { const cells = ghostCells(); return cells ? cells.reduce((sum, c) => sum + rowOf(c), 0) / cells.length : 0; };
 function placeInfo(row) {
-  const coach = $("coach"), side = !coach.hidden ? (coach.classList.contains("top") ? "bottom" : "top") : null;
+  const step = tutStep(), side = step ? (step.side === "top" ? "bottom" : "top") : null;
   const cls = "card " + (side || (row >= ROWS / 2 ? "top" : "bottom"));
   if ($("info").className !== cls) $("info").className = cls;
 }
@@ -2807,8 +2809,10 @@ function doBuild() {
 const CUP = `<svg viewBox="0 0 24 24" fill="#ffd45c"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V5h3zM6 7v1a2 2 0 0 0 1 1.7V7zm11 0v2.7A2 2 0 0 0 18 8V7z"/></svg>`;
 const DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="#ff9f8a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg>`;
 
-/* The new building's score, big, over its roof, with any trophies under it. */
+/* The new building's score, big, over its roof, with any trophies under it. It stays this long, fade included. */
 let popTimer = 0;
+const popPills = (res) => Math.min(2, res.trophies.filter(id => TROPHIES[id].good).length) + Math.min(1, res.trophies.filter(id => !TROPHIES[id].good).length);
+const popTime = (res) => res ? 1300 + popPills(res) * 600 + 400 : 0;
 function showPop(res, cells) {
   const good = res.trophies.filter(id => TROPHIES[id].good).slice(0, 2);
   const bad = res.trophies.filter(id => !TROPHIES[id].good).slice(0, 1);
@@ -2833,7 +2837,7 @@ function showPop(res, cells) {
   popTimer = setTimeout(() => {
     pop.classList.add("hide");
     popTimer = setTimeout(() => { pop.hidden = true; }, 400);
-  }, 1300 + (good.length + bad.length) * 600);
+  }, popTime(res) - 400);
 }
 function hidePop() { clearTimeout(popTimer); $("pop").hidden = true; }
 function bumpScore() {
@@ -3194,7 +3198,7 @@ const TUT_MAP = [
 ];
 const TUT_LAND = { F: "forest", O: "ore", W: "wheat", H: "herd", "~": "water", ".": "grass" };
 const TUT_DECK = ["lumber", "cabin", "loghouse", "homestead", "farm", "bridge", "mine", "windmill"];
-const TUT = { on: false, i: 0, turned: false, flipped: false, last: null, html: "" };
+const TUT = { on: false, i: 0, turned: false, flipped: false, last: null, html: "", until: 0, timer: 0 };
 
 const squares = (xys) => xys.map(([x, y]) => idx(x, y));
 const sameCells = (a, b) => !!a && a.length === b.length && a.every(c => b.includes(c));
@@ -3205,6 +3209,8 @@ const gained = (r) => r.changed.reduce((sum, x) => sum + x.d, 0);
   side:  where the coach sits, "top" or "bottom", clear of the squares the step is about.
   next:  the step waits for the Next button. wait: it waits for "rules", "deck", "sheetclose" or "select".
   build: the squares the building must cover, or "any". ghost: where the building in hand starts.
+  hold:  how long the coach stays away first, so the player can look: milliseconds, or "pop" to wait until the
+         score and trophies over the new building have gone.
   text gets the last build's result, so it can name the points the move earned.
 */
 const STEPS = [
@@ -3212,39 +3218,39 @@ const STEPS = [
     text: () => `Each turn you get one building. Your goal is to find the spot where it scores the most. First up: a <b>Lumber Mill</b>.` },
   { side: "bottom", wait: "rules",
     text: () => `Tap the mill on the map, or tap its name in the panel below, to see how it scores.` },
-  { side: "bottom", next: true, leave: () => closeInfo(),
-    text: () => `This card lists every way the mill scores. <b>Base</b> is what it always gets. <b>District</b> adds +1 for each other industry it touches. <b>Woods</b> adds +2 for each woods square under it or next to it. The dashed squares show what counts as next to it.` },
+  { side: "bottom", next: true, hold: 2200, leave: () => closeInfo(),
+    text: () => `Each row is one way the mill scores. <b>Base</b> is always yours. <b>District</b>: +1 for each industry it touches. <b>Woods</b>: +2 for each woods square under it or next to it, the dashed squares.` },
   { side: "bottom", build: [[2, 0], [2, 1], [1, 1], [1, 2]],
     todo: (s) => [["Turn", TUT.turned], ["Flip", TUT.flipped], ["On the outline", sameCells(ghostCells(), squares(s.build))]],
     text: () => `The outline sits deep in the woods. Use <b>Turn</b> and <b>Flip</b> to match its shape. Then drag the mill onto it and tap <b>Build</b>.` },
-  { side: "bottom", next: true,
-    text: (r) => `+${r.pts}! All four squares sit on woods, so you won <b>Perfect ground</b>. With ${landOf(r)} woods in all, you won <b>Rich land</b> too. Trophies like these pop up when you build well.` },
+  { side: "bottom", next: true, hold: "pop",
+    text: (r) => `+${r.pts}! <b>Perfect ground</b>: every square is on woods. <b>Rich land</b>: ${landOf(r)} woods in all. Build well to win trophies.` },
   { side: "top", build: [[0, 6], [1, 6]], ghost: { rot: 0, flip: false, ax: 3, ay: 4 },
     text: () => `Now a home. The Cabin's card has a red row: it loses 2 for each industry next to it, so keep homes away from the mill. Put the Cabin on the outline and tap <b>Build</b>.` },
-  { side: "top", build: [[0, 5], [1, 5], [2, 5]], ghost: { rot: 0, flip: false, ax: 2, ay: 3 },
+  { side: "top", hold: "pop", build: [[0, 5], [1, 5], [2, 5]], ghost: { rot: 0, flip: false, ax: 2, ay: 3 },
     text: () => `Buildings of one kind that touch make a <b>district</b>. Put the Log House on the outline, next to the Cabin. The shaded lot shows the district it joins.` },
-  { side: "top", next: true,
-    text: () => `A district of 2: each home gets +1. That is why the Cabin went up by 1 too.` },
+  { side: "top", next: true, hold: "pop",
+    text: () => `A district of 2: each home gets +1, so the Cabin went up too.` },
   { side: "top", build: [[2, 6], [2, 7], [3, 7]], ghost: { rot: 0, flip: false, ax: 3, ay: 3 },
     text: () => `Add the Homestead to the district.` },
-  { side: "top", next: true,
-    text: () => `A district of 3: now each home gets +2. A district adds +1 for every other building in it, up to +${DISTRICT_MAX}.` },
+  { side: "top", next: true, hold: "pop",
+    text: () => `A district of 3: now each home gets +2. It grows up to +${DISTRICT_MAX}.` },
   { side: "top", build: [[0, 7], [1, 7], [0, 8], [1, 8]], ghost: { rot: 0, flip: false, ax: 3, ay: 9 },
     text: () => `The Farm is food, and homes like food next door. Put it on the outline, next to the homes.` },
-  { side: "top", next: true,
-    text: (r) => `The Farm scored +${r.pts}, and the homes next to it gained +${gained(r)}. But look at the red trophy: <b>Wasted land</b>. The Farm sits on ore it can't use, and a Mine is still to come. It scores +3 for each ore. Every spot is a trade-off: a bonus now can cost you later.` },
+  { side: "top", next: true, hold: "pop",
+    text: (r) => `The homes gained +${gained(r)}. But see the red trophy, <b>Wasted land</b>: the Farm covers ore that a Mine will want later. Every spot is a trade-off.` },
   { side: "top", build: [[4, 7], [5, 7], [6, 7]], ghost: { rot: 0, flip: false, ax: 4, ay: 3 },
     text: () => `<b>Bridges</b> are the only buildings that can sit on water, and both ends must be on land. Put the bridge on the outline, across the river.` },
-  { side: "top", next: true,
-    text: (r) => `+${r.pts}. A bridge scores for the water under it and next to it, and for each building it touches. Bridges join no district.` },
+  { side: "top", next: true, hold: "pop",
+    text: (r) => `+${r.pts}: for the water around it and the building it touches. Bridges join no district.` },
   { side: "top", wait: "deck",
     text: () => `Two buildings are left. Tap <b>To come</b> at the top right to see them.` },
   { side: "top", wait: "sheetclose",
-    text: () => `Here is every building still to come, and how it scores. The Mine wants ore and the Windmill wants wheat, so plan room for them. Close the list when you are done.` },
+    text: () => `Every building still to come, and how it scores. Plan room for them, then close the list.` },
   { side: "top", wait: "select",
     text: () => `Tap any building you have built to see its score now.` },
-  { side: "top", next: true, leave: () => closeInfo(),
-    text: () => `Each row is one part of its score. Green rows add, red rows take away, and grey rows are bonuses it could still get. Scores stay live, so a new neighbour can still raise them. Tap <b>Points</b> at the top to see the whole town.` },
+  { side: "top", next: true, hold: 2200, leave: () => closeInfo(),
+    text: () => `Each row is part of its score now. Grey rows are bonuses it could still get. <b>Points</b> at the top shows the whole town.` },
   { side: "top", build: "any",
     text: () => `Your turn. Place the ${G.deck.slice(G.at).map(k => DEF[k].name).join(" and the ")} where you think ${G.deck.length - G.at > 1 ? "they score" : "it scores"} best. The town is done when the last building is down.` },
 ];
@@ -3262,13 +3268,13 @@ function placeOK() {
 
 function paintCoach() {
   const box = $("coach"), step = tutStep();
-  if (!step) { box.hidden = true; TUT.html = ""; return; }
+  if (!step || performance.now() < TUT.until) { box.hidden = true; TUT.html = ""; return; }
   const todo = step.todo ? step.todo(step) : [];
   const html = `<div class="kind">Tutorial · ${TUT.i + 1} of ${STEPS.length}</div><p>${step.text(TUT.last)}</p>` +
     (todo.length ? `<ul class="todo">${todo.map(([t, ok]) => `<li class="${ok ? "ok" : ""}">${t}</li>`).join("")}</ul>` : "") +
     (step.next ? `<div class="go"><button class="primary" id="coachNext">Next</button></div>` : "");
   box.className = "card " + step.side;
-  box.hidden = false;
+  if (box.hidden) { box.hidden = false; box.style.animation = "none"; void box.offsetWidth; box.style.animation = ""; }
   // Paint only on a change, so a tap on Next is never lost to a fresh button.
   if (html === TUT.html) return;
   box.innerHTML = html; TUT.html = html;
@@ -3278,6 +3284,10 @@ function paintCoach() {
 function enterStep() {
   const step = STEPS[TUT.i];
   TUT.turned = TUT.flipped = false;
+  clearTimeout(TUT.timer);
+  const wait = step.hold === "pop" ? popTime(TUT.last) + 300 : step.hold || 0;
+  TUT.until = performance.now() + wait;
+  if (wait) TUT.timer = setTimeout(paintCoach, wait);
   if (step.ghost && current()) UI.ghost = { ...step.ghost };
   paintPanel();
   if (UI.rules || UI.sel >= 0) paintInfo();

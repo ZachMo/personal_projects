@@ -26,6 +26,17 @@ Commit: "Hügelland: a town newspaper, Central time, and eight buildings from th
   With these the library is 69 kinds from 20 September.
 - Par bot over 30 days: average par 149.5, the same as before. The Country House (+2 an open square) is still the
   best building at 16.2 a game.
+- Follow-up: the paper now writes from the scoring itself, through four tables. `GRIPES` fires when a building
+  really loses points for a neighbour (doctor by the works, homes by the oil depot or the gin, church by the
+  saloon, jail by the houses, cemetery by a home, manor by a mill), so a Boarding House or Miners' Shacks beside
+  industry never complains, because they like it. `BOONS` fires when a bonus lands (manor, hotel or gambling hall
+  on the water, park in the woods, fairground or station at the town line, theatre or racetrack with homes at the
+  door, jail beside the sheriff, toll house on a bridge, a room-loving building with open ground). `MISSED` fires
+  when a bonus never came (a toll house with no crossing, an edge building stuck in the middle, quiet lost at the
+  cemetery, works on ground that gives them nothing). Trophies each have their own story, so `build()` now records
+  the trophies on the building that won them (`G.pieces[k].won`); iOS should store the same. Two flavour pairs
+  score nothing but run anyway: schoolhouse beside a saloon or gambling hall. Over 80 towns the lead came out 40
+  different ways, none above 10%.
 - Follow-up: the paper stopped writing about scores. "The pride of the town" and "a poor showing" are gone;
   a low score is a symptom, and the paper now prints the cause. Fifteen stories added about land and neighbours:
   ore or grain paved over by a roof that cannot use it, a mill deep in the woods, a vein or a harvest worth the

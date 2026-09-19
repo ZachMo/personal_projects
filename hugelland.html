@@ -914,6 +914,7 @@ function build(cells) {
   const gain = pts + changed.reduce((sum, x) => sum + x.d, 0);
   const trophies = judge(type, cells, parts, pts, gain, changed);
   for (const id of trophies) G.trophies[id] = (G.trophies[id] || 0) + 1;
+  G.pieces[k].won = trophies;
   return { type, k, pts, parts, gain, changed, trophies, events: settle() };
 }
 
@@ -3375,6 +3376,8 @@ function townFacts() {
              bridge: !!DEF[p.type].bridge,
              wasted: DEF[p.type].bridge ? [] : p.cells.filter(q => ["ore", "wheat", "herd"].includes(MAP[q]) && !uses.has(MAP[q])),
              room: p.cells.some(q => around(q).some(j => !own.has(j) && OWNER[j] < 0 && MAP[j] !== "water")),
+             openCount: new Set(p.cells.flatMap(q => around(q).filter(j => !own.has(j) && OWNER[j] < 0 && MAP[j] !== "water"))).size,
+             parts: pieceParts(k), won: p.won || [],
              neighbours: touching(p.cells, k).size };
   });
   const pairs = [];
@@ -3518,11 +3521,11 @@ const STORIES = [
     lines: [
       (d, N, W, R0) => ({ h: "ROOM ENOUGH AND THEN SOME", s: `The ${d.a.name} stands with no neighbour in any direction, which its owner ${N()} calls the whole point.`, c: "Room to breathe." }),
     ] },
-  { id: "no-civic", w: 9, find: (F) => F.of("civic").length === 0 && F.P.length ? { a: F.best } : null,
+  { id: "no-civic", w: 6, find: (F) => F.of("civic").length === 0 && F.P.length ? { a: F.best } : null,
     lines: [
       (d, N, W, R0) => ({ h: "NO HALL, NO LAW, NO CHURCH", s: `A town of business and little else. ${N()} asks who is to marry, bury or fine anybody.`, c: "Such as it is." }),
     ] },
-  { id: "no-leisure", w: 7, find: (F) => F.of("leisure").length === 0 && F.P.length > 6 ? { a: F.best } : null,
+  { id: "no-leisure", w: 5, find: (F) => F.of("leisure").length === 0 && F.P.length > 6 ? { a: F.best } : null,
     lines: [
       (d, N, W, R0) => ({ h: "A SOBER TOWN, LIKE IT OR NOT", s: `Not a saloon, a hall or a park within the town limits. The young men have taken to the river.`, c: "Nothing to do but work." }),
     ] },
@@ -3620,6 +3623,129 @@ const STORIES = [
     ] },
 ];
 
+/*
+  Four tables of stories that come straight off the scoring: a neighbour that grates, a bonus the building
+  never got, a fit that works, and a trophy it won. Each one names the two buildings, so the story is always
+  about this town. `a` and `b` take a building type or a whole category.
+*/
+const GRIPES = [
+  { id: "doc-works", a: ["doctor", "sanitarium"], b: "industry", w: 10, lines: [
+    (d, N) => ({ h: "REST AND QUIET, IN THEORY", s: `The ${d.a.name} prescribes clean air within a wall of the ${d.b.name}. ${N()} has taken to keeping the windows shut.`, c: "Rest, beside the works." }),
+    (d, N) => ({ h: "PATIENTS ASK TO BE MOVED", s: `Every bed at the ${d.a.name} looks out on the ${d.b.name}. The doctor has written to the council twice.`, c: "A poor prospect for the sick." }) ] },
+  { id: "home-oil", a: "home", b: ["oildepot"], w: 11, lines: [
+    (d, N) => ({ h: "TANKS AT THE GARDEN FENCE", s: `${N()} counted the ${d.b.name} tanks from the kitchen window and has not slept since.`, c: "Oil, at the fence line." }),
+    (d, N) => ({ h: "INSURANCE MAN DECLINES THE STREET", s: `With the ${d.b.name} beside the ${d.a.name}, the company will write no policy at any price.`, c: "A risk nobody will cover." }) ] },
+  { id: "home-gin", a: "home", b: ["cottongin", "tannery", "brickworks", "stampmill"], w: 10, lines: [
+    (d, N) => ({ h: "LINT, SMOKE AND NO PEACE", s: `The ${d.b.name} works the clock round beside the ${d.a.name}. ${N()} says the washing comes in grey.`, c: "The works, too close." }),
+    (d, N, W) => ({ h: `${W().toUpperCase()} HAS HAD ENOUGH`, s: `A petition against the ${d.b.name} went round the ${d.a.name} on Sunday and came back full.`, c: "Signed by every door." }) ] },
+  { id: "home-works", a: "home", b: "industry", w: 9, lines: [
+    (d, N) => ({ h: "THE WHISTLE AT FIVE", s: `Families at the ${d.a.name} rise with the ${d.b.name} whether they mean to or not.`, c: "One wall between them." }),
+    (d, N) => ({ h: "A HARD STREET TO SLEEP ON", s: `${N()} has moved the children's beds to the far side of the ${d.a.name}, away from the ${d.b.name}.`, c: "Noise, all night." }) ] },
+  { id: "church-fun", a: ["church"], b: "leisure", w: 12, lines: [
+    (d, N) => ({ h: "THE DEVIL KEEPS SHORT HOURS", s: `The ${d.b.name} stands within spitting distance of the ${d.a.name}, and the sermon named it twice on Sunday.`, c: "Sacred and profane, sharing a wall." }),
+    (d, N) => ({ h: "PASTOR PREACHES ON THE NEIGHBOURS", s: `"We need not travel to find temptation," he said, "it is next door." The ${d.b.name} reports a good week.`, c: `The ${d.b.name}, thriving.` }) ] },
+  { id: "school-fun", a: "school", b: "leisure", w: 13, lines: [
+    (d, N) => ({ h: "SCHOOLCHILDREN LEARN A NEW SONG", s: `The ${d.a.name} stands beside the ${d.b.name}. The schoolmaster reports the tune is catching and the words are not fit to print.`, c: "An education of sorts." }),
+    (d, N) => ({ h: "ARITHMETIC OVER THE PIANO", s: `Lessons at the ${d.a.name} now keep time with the ${d.b.name} next door. Attendance has never been better.`, c: "Lessons, with accompaniment." }) ] },
+  { id: "school-works", a: "school", b: "industry", w: 10, lines: [
+    (d, N) => ({ h: "LESSONS LOST TO THE HAMMER", s: `The ${d.a.name} sits against the ${d.b.name}, and the teacher has given up on dictation.`, c: "Hard by the works." }) ] },
+  { id: "jail-homes", a: "jail", b: "home", w: 10, lines: [
+    (d, N) => ({ h: "NEIGHBOURS OBJECT TO THE VIEW", s: `Families at the ${d.a.name} did not expect the ${d.b.name} at the end of the garden, nor the singing from it.`, c: "The cells, in a family street." }) ] },
+  { id: "cemetery-homes", a: "cemetery", b: "home", w: 10, lines: [
+    (d, N) => ({ h: "A WINDOW ON THE HEADSTONES", s: `The ${d.b.name} looks straight out on the ${d.a.name}. ${N()} says the children will not go upstairs after dark.`, c: "A view nobody asked for." }) ] },
+  { id: "manor-works", a: ["manor", "rowhouses", "apartments"], b: "industry", w: 9, lines: [
+    (d, N) => ({ h: "SOCIETY LEAVES THE STREET", s: `Since the ${d.b.name} went up beside the ${d.a.name}, the ${N()} family take their air on the other side of town.`, c: "Fine windows, poor outlook." }) ] },
+  { id: "casino-law", a: "casino", b: ["civic"], w: 10, lines: [
+    (d, N) => ({ h: "THE LAW KEEPS AN EYE ON THE TABLES", s: `The ${d.a.name} could hardly be closer to the ${d.b.name}. Both parties report a quiet week, which nobody believes.`, c: "Watched." }) ] },
+  { id: "library-noise2", a: "library", b: ["industry", "leisure"], w: 9, lines: [
+    (d, N) => ({ h: "READING ROOM SURRENDERS", s: `The librarian has stopped asking the ${d.b.name} for quiet and started handing out cotton wool.`, c: "Quiet, abandoned." }) ] },
+  { id: "toll-no-bridge", a: "tollhouse", b: "home", w: 8, lines: [
+    (d, N) => ({ h: "A GATE ACROSS NOTHING MUCH", s: `The ${d.a.name} takes its coin from whoever passes, which so far is ${N()} and a dog.`, c: "A toll on a quiet road." }) ] },
+];
+
+const BOONS = [
+  { id: "manor-water", a: ["manor", "hotel", "casino"], land: "water", w: 10, lines: [
+    (d, N) => ({ h: "A PROSPECT WORTH THE PRICE", s: `The ${N()} family will tell anyone who stands still that the ${d.a.name} looks out on the water, and that the evenings are very fine.`, c: "The view, much mentioned." }),
+    (d, N) => ({ h: "THE FINEST VIEW IN TOWN", s: `Every window at the ${d.a.name} faces the river, and the price of the rooms has not gone unnoticed.`, c: "On the water." }) ] },
+  { id: "park-woods", a: ["park", "cemetery", "bathhouse"], land: "forest", w: 9, lines: [
+    (d, N) => ({ h: "SHADE ENOUGH FOR SUNDAY", s: `The trees around the ${d.a.name} have made it the coolest half acre in the county, and the whole town knows it.`, c: "Under the trees." }) ] },
+  { id: "fair-edge", a: ["fairground", "racetrack", "station", "tradingpost"], edge: true, w: 9, lines: [
+    (d, N) => ({ h: "THE ROAD IN FILLS UP", s: `Wagons queue at the town line for the ${d.a.name}. Half the county came and the other half is expected tomorrow.`, c: "At the edge of everything." }) ] },
+  { id: "theater-homes", a: ["theater", "opera", "saloon", "hotel"], near: "home", n: 2, w: 9, lines: [
+    (d, N) => ({ h: "A FULL HOUSE EVERY NIGHT", s: `With ${d.n} households at its door, the ${d.a.name} has not played to an empty room since it opened.`, c: "The pride of the street." }),
+    (d, N, W) => ({ h: "THE HEART OF THE TOWN", s: `${W()} has taken the ${d.a.name} for its own. ${N()} claims a seat by right of habit.`, c: "Beloved, and busy." }) ] },
+  { id: "track-homes", a: ["racetrack", "plaza", "park"], near: "home", n: 2, w: 10, lines: [
+    (d, N) => ({ h: "A LANDMARK, AND EVERYBODY SAYS SO", s: `${d.n} households live within sight of the ${d.a.name}. Sunday belongs to it.`, c: "The town's own." }) ] },
+  { id: "jail-sheriff", a: "jail", nearType: ["sheriff", "courthouse", "saloon"], w: 10, lines: [
+    (d, N) => ({ h: "LAW AND ORDER, ALL IN A ROW", s: `The ${d.a.name} stands beside the ${d.b.name}, which the sheriff calls sensible and the prisoners call unlucky.`, c: "Arranged for convenience." }) ] },
+  { id: "toll-bridge2", a: "tollhouse", nearType: ["bridge", "coveredbridge"], w: 9, lines: [
+    (d, N) => ({ h: "EVERY CROSSING PAYS", s: `The ${d.a.name} sits at the end of the ${d.b.name}, and the keeper has not had a slow day yet.`, c: "A nickel a wagon." }) ] },
+  { id: "peaceful", a: null, room: 2, w: 9, lines: [
+    (d, N) => ({ h: "THE QUIETEST CORNER IN THE COUNTY", s: `Open ground on ${d.n} sides of the ${d.a.name}, and ${N()} says you can hear the river from the porch.`, c: "Room, and quiet with it." }),
+    (d, N) => ({ h: "ROOM TO BREATHE", s: `The ${d.a.name} keeps ${d.n} squares of open ground about it, and means to keep them.`, c: "Nothing built too close." }) ] },
+];
+
+/* A bonus the building never got, because of where it ended up. */
+const MISSED = [
+  { id: "toll-lost", types: ["tollhouse"], test: (r) => r.k === "near" && r.bridge, w: 11, lines: [
+    (d, N) => ({ h: "A TOLL GATE AND NO CROSSING", s: `The ${d.a.name} was built to take a coin from every wagon over the water. There is no water anywhere near it.`, c: "A gate in the middle of nowhere." }),
+    (d, N) => ({ h: "KEEPER AWAITS A BRIDGE", s: `The keeper of the ${d.a.name} lifts the bar for whoever asks and takes nothing for it. The council promises a crossing.`, c: "Waiting on the river." }) ] },
+  { id: "edge-lost", types: ["station", "freight", "tradingpost", "fairground", "sheriff", "jail", "postoffice", "oildepot"], test: (r) => r.k === "edge", w: 9, lines: [
+    (d, N) => ({ h: "THE ROAD DOES NOT COME THIS FAR", s: `The ${d.a.name} sits in the thick of town, where the trade from outside never reaches it.`, c: "Hemmed in by the town it serves." }),
+    (d, N) => ({ h: "BUILT FACING THE WRONG WAY", s: `The ${d.a.name} wanted the town line and got the middle of the map. ${N()} calls it a failure of nerve.`, c: "Far from the edge." }) ] },
+  { id: "quiet-lost", types: ["cemetery", "library", "sanitarium"], test: (r) => r.k === "without", w: 10, lines: [
+    (d, N) => ({ h: "QUIET LOST AT THE LAST", s: `The ${d.a.name} was laid out for peace, and the town has built up to its fence on every side.`, c: "Peace, formerly." }) ] },
+  { id: "land-lost", types: ["mine", "lumber", "windmill", "ranch", "sluice", "kiln"], test: (r) => r.k === "land", w: 8, lines: [
+    (d, N) => ({ h: "NOTHING UNDER IT WORTH DIGGING", s: `The ${d.a.name} stands on ground that gives it nothing. ${N()} says the site was chosen in a hurry.`, c: "The wrong ground entirely." }) ] },
+];
+
+/* What a trophy looked like from the street. */
+const TROPHY_LINES = {
+  jackpot: [(d, N) => ({ h: "THE TALK OF THE VALLEY", s: `Nothing the town has built came together like the ${d.a.name}. ${N()} has been telling the story all week.`, c: "The move of the year." })],
+  district: [(d, N) => ({ h: "THE QUARTER IS COMPLETE", s: `The ${d.a.name} filled the last gap, and the whole district gains by it.`, c: "A full quarter." })],
+  combo: [(d, N) => ({ h: "EVERY NEIGHBOUR A GOOD ONE", s: `The ${d.a.name} could not have asked for a better street if it had drawn the plan itself.`, c: "Well surrounded." })],
+  quadruple: [(d, N) => ({ h: "FOUR GOOD NEIGHBOURS", s: `Four of a kind stand at the door of the ${d.a.name}, and the takings show it.`, c: "Four at the door." })],
+  triple: [(d, N) => ({ h: "THREE AT THE DOOR", s: `Three of a kind beside the ${d.a.name}, which ${N()} calls either luck or a fine eye for a lot.`, c: "Three neighbours, well chosen." })],
+  perfect: [(d, N) => ({ h: "EVERY FOOT OF IT USEFUL", s: `Not a square under the ${d.a.name} is wasted. The surveyor has been asked to do it again elsewhere.`, c: "A perfect fit to the ground." })],
+  boost: [(d, N) => ({ h: "THE WHOLE STREET GAINS", s: `Three neighbours of the ${d.a.name} are better off since it opened, and two of them admit it.`, c: "A rising street." })],
+  snug: [(d, N) => ({ h: "FITTED LIKE A KEYSTONE", s: `The ${d.a.name} went into the last gap on the street with nothing to spare on any side.`, c: "Not a gap left." })],
+  spoiler: [(d, N) => ({ h: "THE NEW ARRIVAL COSTS THE STREET", s: `Neighbours of the ${d.a.name} are worse off than they were, and have said so at length.`, c: "An unwelcome arrival." })],
+};
+
+/* Runs the four tables over the town and returns every story that fits. */
+function ruleStories(F, R) {
+  const out = [], add = (e, d, cells) => out.push({ e, d, cells });
+  for (const e of GRIPES) {
+    const hit = F.pair(e.a, e.b);
+    // Only when the rule really bites: the building has a penalty for that neighbour.
+    if (hit && DEF[hit.a.type].rules.some(r => r.k === "near" && r.p < 0 && matches(r, hit.b.type))) add(e, hit, cellsOf(hit.a, hit.b));
+    else if (hit && e.id === "toll-no-bridge") add(e, hit, cellsOf(hit.a, hit.b));
+    else if (hit && e.id === "school-fun") add(e, hit, cellsOf(hit.a, hit.b));
+  }
+  for (const e of BOONS) {
+    let d = null;
+    if (e.land) { const p = F.of(e.a).find(q => q.land(e.land) >= 1); if (p) d = { a: p }; }
+    else if (e.edge) { const p = F.of(e.a).find(q => q.parts.some((x, i) => DEF[q.type].rules[x.r] && DEF[q.type].rules[x.r].k === "edge" && x.v > 0)); if (p) d = { a: p }; }
+    else if (e.near) { const p = F.of(e.a).find(q => [...touching(q.cells, q.k)].filter(k => DEF[G.pieces[k].type].cat === e.near).length >= e.n); if (p) d = { a: p, n: [...touching(p.cells, p.k)].filter(k => DEF[G.pieces[k].type].cat === e.near).length }; }
+    else if (e.nearType) { const hit = F.pair(e.a, e.nearType); if (hit) d = hit; }
+    else if (e.room) { const p = F.P.find(q => !q.bridge && DEF[q.type].rules.some(r => r.k === "room") && q.openCount >= e.room); if (p) d = { a: p, n: p.openCount }; }
+    if (d) add(e, d, cellsOf(...[d.a, d.b].filter(Boolean)));
+  }
+  for (const e of MISSED) {
+    const p = F.P.find(q => e.types.includes(q.type) && q.parts.some(x => { const r = DEF[q.type].rules[x.r]; return r && r.p > 0 && e.test(r) && x.v === 0; }));
+    if (p) add(e, { a: p }, p.cells);
+  }
+  for (const p of F.P) for (const id of p.won || []) {
+    if (!TROPHY_LINES[id]) continue;
+    add({ id: "trophy-" + id, w: 8, lines: TROPHY_LINES[id] }, { a: p }, p.cells);
+  }
+  return out.map(({ e, d, cells }) => {
+    const N = () => `${R() < .35 ? pick(FIRSTS, R) + " " : ""}${pick(SURNAMES, R)}`;
+    const W = () => pick(PLACES, R);
+    return { ...pick(e.lines, R)(d, N, W, R), w: e.w * (.35 + R() * 1.3), cells };
+  });
+}
+
 /* The paper the town earned: the loudest story that fits, then two shorter ones. */
 function paperStories(R) {
   const F = townFacts(), out = [];
@@ -3632,6 +3758,7 @@ function paperStories(R) {
     const line = pick(st.lines, R)(d, N, W, R);
     out.push({ ...line, w: st.w * (.35 + R() * 1.3), cells: d.cells || cellsOf(...[d.a, d.b].filter(Boolean)) });
   }
+  out.push(...ruleStories(F, R));
   out.sort((a, b) => b.w - a.w);
   const kept = [], seen = new Set();
   for (const st of out) {

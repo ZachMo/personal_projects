@@ -117,7 +117,7 @@
 <div id="toast"></div>
 
 <!-- The game itself, hidden. This page reads its buildings and draws them with its own code, so it always matches. -->
-<iframe id="game" src="hugelland.html?seed=1&amp;from=review" loading="eager" title="" aria-hidden="true" tabindex="-1"></iframe>
+<iframe id="game" loading="eager" title="" aria-hidden="true" tabindex="-1"></iframe>
 
 <script>
 "use strict";
@@ -165,6 +165,8 @@ function tryStart() {
   try { start(ev); } catch (e) { fail(`Something went wrong drawing the buildings: ${esc(e.message)}.`); }
 }
 $("game").addEventListener("load", tryStart);
+// A fresh copy every time: the site lets browsers keep files for ten minutes, and an old game has old buildings.
+$("game").src = `hugelland.html?seed=1&from=review&fresh=${Date.now()}`;
 tryStart();
 
 function start(ev) {

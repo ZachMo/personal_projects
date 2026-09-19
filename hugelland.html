@@ -633,8 +633,8 @@ const DEF = {
                roles: ["tank", "tank", "rail"], blurb: "Tanks by the tracks, at the edge of town. Nobody wants them closer.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry"], p: 1 }, { k: "near", cats: ["home"], p: -3 }] },
   firehouse: { name: "Fire Station", cat: "civic", shape: "V3", n: 1, era: 2, base: 2, roof: ["#c1453a", "#9b342c"], extra: "bell", draft: true,
-               roles: ["hall", "hall", "hosecart"], blurb: "The hose company answers for every roof it can reach.",
-               rules: [{ k: "near", any: true, p: 1 }, { k: "near", cats: ["home"], p: 1 }] },
+               roles: ["hall", "hall", "hosecart"], blurb: "The hose company answers for every roof it can reach, so long as it can draw water.",
+               rules: [{ k: "near", any: true, p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
   postoffice:{ name: "Post Office", plural: "Post Offices", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#5f7a9e", "#48607f"], emblem: "letter", draft: true,
                roles: ["hall", "flag"], blurb: "Letters for everyone, and the road out of town.",
                rules: [{ k: "variety", p: 1 }, { k: "edge", p: 2 }] },
@@ -3400,6 +3400,8 @@ function townFacts() {
 }
 
 const cellsOf = (...ps) => ps.flatMap(p => p.cells);
+/* "The Bank earns", but "The Row Houses earn". */
+const verb = (name, one, many) => /s$/.test(name) ? many : one;
 
 /*
   Every story the paper can run. `find` returns what it is about, or nothing when the town gives it no reason.
@@ -3462,7 +3464,7 @@ const STORIES = [
     ] },
   { id: "gin-homes", w: 8, find: (F) => F.pair("cottongin", "home"),
     lines: [
-      (d, N, W, R0) => ({ h: "LINT ON EVERY WINDOW SILL", s: `The ${d.a.name} runs through the night in picking season, as ${N()} can testify.`, c: "The gin, in season." }),
+      (d, N, W, R0) => ({ h: "LINT ON EVERY WINDOW SILL", s: `The ${d.a.name} ${verb(d.a.name, "runs", "run")} through the night in picking season, as ${N()} can testify.`, c: "The gin, in season." }),
     ] },
   { id: "toll-bridge", w: 8, find: (F) => F.pair("tollhouse", ["bridge", "coveredbridge"]),
     lines: [
@@ -3474,13 +3476,13 @@ const STORIES = [
     ] },
   { id: "mine-town", w: 6, find: (F) => F.pair(["mine", "sluice", "stampmill"], ["home", "shop"]),
     lines: [
-      (d, N, W, R0) => ({ h: "ORE AND ORDINARY LIFE", s: `The ${d.a.name} works within earshot of the ${d.b.name}, and the dust falls where it will.`, c: "The diggings, close in." }),
+      (d, N, W, R0) => ({ h: "ORE AND ORDINARY LIFE", s: `The ${d.a.name} ${verb(d.a.name, "works", "work")} within earshot of the ${d.b.name}, and the dust falls where it will.`, c: "The diggings, close in." }),
     ] },
-  { id: "hotel-view", w: 5, find: (F) => F.of("hotel")[0] && { a: F.of("hotel")[0] },
+  { id: "hotel-view", w: 3, find: (F) => F.of("hotel")[0] && { a: F.of("hotel")[0] },
     lines: [
       (d, N, W, R0) => ({ h: "GUESTS SPEAK WELL OF THE TOWN", s: `The register at the ${d.a.name} shows ${8 + Math.floor(R0() * 18)} names from out of the county this week.`, c: "The hotel, taking bookings." }),
     ] },
-  { id: "bridges", w: 6, find: (F) => { const b = F.of(["bridge", "coveredbridge"]); return b.length ? { a: b[0], n: b.length } : null; },
+  { id: "bridges", w: 4, find: (F) => { const b = F.of(["bridge", "coveredbridge"]); return b.length ? { a: b[0], n: b.length } : null; },
     lines: [
       (d, N, W, R0) => ({ h: "THE CROSSING HOLDS", s: `Wagons pass over the ${d.a.name} from first light. The council votes thanks to nobody in particular.`, c: "The crossing." }),
       (d, N, W, R0) => ({ h: "BOTH BANKS AGREE", s: `Since the ${d.a.name} went up, ${W()} and the far side are on speaking terms again.`, c: "Water under it." }),
@@ -3498,7 +3500,7 @@ const STORIES = [
     lines: [
       (d, N, W, R0) => ({ h: "THE WORKS EXPAND", s: `${d.n} concerns now share a fence line, and one whistle does for all of them.`, c: "The works." }),
     ] },
-  { id: "apartments", w: 8, find: (F) => F.of("apartments")[0] && { a: F.of("apartments")[0] },
+  { id: "apartments", w: 4, find: (F) => F.of("apartments")[0] && { a: F.of("apartments")[0] },
     lines: [
       (d, N, W, R0) => ({ h: `TOWN LIVING COMES TO ${W().toUpperCase()}`, s: `Every room at the ${d.a.name} is spoken for, and the landlord speaks of adding a storey.`, c: "Stacked high." }),
     ] },
@@ -3525,21 +3527,21 @@ const STORIES = [
     ] },
   { id: "best-building", w: 6, find: (F) => F.best && F.best.score >= 14 ? { a: F.best } : null,
     lines: [
-      (d, N, W, R0) => ({ h: "THE PRIDE OF THE TOWN", s: `The ${d.a.name} is valued at ${d.a.score} and no man in the county will hear otherwise.`, c: `The ${d.a.name}.` }),
+      (d, N, W, R0) => ({ h: "THE PRIDE OF THE TOWN", s: `The ${d.a.name} ${verb(d.a.name, "is", "are")} valued at ${d.a.score}, and no man in the county will hear otherwise.`, c: `The ${d.a.name}.` }),
     ] },
   { id: "worst-building", w: 7, find: (F) => F.worst && F.worst.score <= 1 ? { a: F.worst } : null,
     lines: [
-      (d, N, W, R0) => ({ h: "A POOR SHOWING", s: `The ${d.a.name} earns its keep at ${d.a.score}, and the assessor has been asked to look again.`, c: `The ${d.a.name}, struggling.` }),
+      (d, N, W, R0) => ({ h: "A POOR SHOWING", s: `The ${d.a.name} ${verb(d.a.name, "earns", "earn")} their keep at ${d.a.score}, and the assessor has been asked to look again.`, c: `The ${d.a.name}, struggling.` }),
     ] },
-  { id: "water-town", w: 5, find: (F) => { const w = F.of(["dock", "fishmarket", "gristmill", "bathhouse"])[0]; return w && { a: w }; },
+  { id: "water-town", w: 3, find: (F) => { const w = F.of(["dock", "fishmarket", "gristmill", "bathhouse"])[0]; return w && { a: w }; },
     lines: [
       (d, N, W, R0) => ({ h: "THE RIVER PROVIDES", s: `The ${d.a.name} reports a good week of it, and the water running clear.`, c: "On the water." }),
     ] },
-  { id: "edge-trade", w: 5, find: (F) => { const e = F.of(["station", "freight", "tradingpost", "fairground"])[0]; return e && { a: e }; },
+  { id: "edge-trade", w: 3, find: (F) => { const e = F.of(["station", "freight", "tradingpost", "fairground"])[0]; return e && { a: e }; },
     lines: [
       (d, N, W, R0) => ({ h: "TRADE COMES IN FROM OUTSIDE", s: `The ${d.a.name} at the town line did steady business, most of it in strangers.`, c: "The road in." }),
     ] },
-  { id: "post-office", w: 6, find: (F) => F.of("postoffice")[0] && { a: F.of("postoffice")[0] },
+  { id: "post-office", w: 4, find: (F) => F.of("postoffice")[0] && { a: F.of("postoffice")[0] },
     lines: [
       (d, N, W, R0) => ({ h: "MAIL TWICE A WEEK", s: `The ${d.a.name} reports one sack in, two out, and ${N()} waiting for both.`, c: "The post office." }),
     ] },
@@ -3565,7 +3567,15 @@ function paperStories(R) {
     const line = pick(st.lines, R)(d, N, W, R);
     out.push({ ...line, w: st.w * (.6 + R()), cells: d.cells || cellsOf(...[d.a, d.b].filter(Boolean)) });
   }
-  return out.sort((a, b) => b.w - a.w).slice(0, 3);
+  out.sort((a, b) => b.w - a.w);
+  const kept = [], seen = new Set();
+  for (const st of out) {
+    const key = st.cells.slice().sort((a, b) => a - b).join(",");
+    if (seen.has(key)) continue;
+    seen.add(key); kept.push(st);
+    if (kept.length === 3) break;
+  }
+  return kept;
 }
 
 /* A photograph for the paper: the squares the story is about, cut straight out of the board. */

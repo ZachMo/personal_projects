@@ -26,6 +26,9 @@ Commit: "Hügelland: a town newspaper, Central time, and eight buildings from th
   With these the library is 69 kinds from 20 September.
 - Par bot over 30 days: average par 149.5, the same as before. The Country House (+2 an open square) is still the
   best building at 16.2 a game.
+- Follow-up: the Fire Station's second row was "+1 Home", which double-counted a home already counted by
+  "+1 Any building". It is now "+2 Water" (once), for the hose. Stories that need only a building to exist were
+  weighed down, and a paper no longer runs two stories about the same squares. `verb()` handles plural names.
 
 ### The drafts and pending changes go live on 20 September
 

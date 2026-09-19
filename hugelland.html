@@ -3366,7 +3366,17 @@ function paperRandom() {
 
 /* What the finished town can be written about. */
 function townFacts() {
-  const P = G.pieces.map((p, k) => ({ k, type: p.type, cat: DEF[p.type].cat, name: DEF[p.type].name, cells: p.cells, score: pieceScore(k) }));
+  const P = G.pieces.map((p, k) => {
+    const c = look(p.cells, k), own = new Set(p.cells);
+    const land = (t) => (c.on[t] || 0) + (c.by[t] || 0);
+    const uses = new Set(DEF[p.type].rules.filter(r => r.k === "land" && r.p > 0).map(r => r.t));
+    return { k, type: p.type, cat: DEF[p.type].cat, name: DEF[p.type].name, cells: p.cells, score: pieceScore(k), land, uses,
+             // Ground it covers but has no use for, and whether anything can still be built beside it.
+             bridge: !!DEF[p.type].bridge,
+             wasted: DEF[p.type].bridge ? [] : p.cells.filter(q => ["ore", "wheat", "herd"].includes(MAP[q]) && !uses.has(MAP[q])),
+             room: p.cells.some(q => around(q).some(j => !own.has(j) && OWNER[j] < 0 && MAP[j] !== "water")),
+             neighbours: touching(p.cells, k).size };
+  });
   const pairs = [];
   for (const a of P) for (const j of touching(a.cells, a.k)) if (j > a.k) pairs.push([a, P[j]]);
   const is = (q) => typeof q === "string" ? (p) => p.type === q || p.cat === q : (p) => q.includes(p.type) || q.includes(p.cat);
@@ -3516,22 +3526,77 @@ const STORIES = [
     lines: [
       (d, N, W, R0) => ({ h: "A SOBER TOWN, LIKE IT OR NOT", s: `Not a saloon, a hall or a park within the town limits. The young men have taken to the river.`, c: "Nothing to do but work." }),
     ] },
-  { id: "turned-away", w: 10, find: (F) => F.away.length ? { a: F.best, away: F.away } : null,
+  { id: "turned-away", w: 5, find: (F) => F.away.length ? { a: F.best, away: F.away } : null,
     lines: [
       (d, N, W, R0) => ({ h: "NO ROOM AT THE TOWN LINE", s: `The ${DEF[d.away[0]].name} could find no lot to stand on and has gone on up the valley.`, c: "Every lot spoken for." }),
       (d, N, W, R0) => ({ h: `${DEF[d.away[0]].name.toUpperCase()} TURNED AWAY`, s: `The surveyor looked over the town twice and found nowhere to put it.`, c: "A full map." }),
     ] },
-  { id: "all-fit", w: 8, find: (F) => !F.away.length && F.P.length > 8 ? { a: F.best, n: F.P.length } : null,
+  { id: "all-fit", w: 4, find: (F) => !F.away.length && F.P.length > 8 ? { a: F.best, n: F.P.length } : null,
     lines: [
       (d, N, W, R0) => ({ h: "EVERY BUILDING FINDS ITS LOT", s: `${d.n} buildings, ${d.n} lots, and not a wagon sent away. The surveyor is being bought drinks.`, c: "A tidy fit." }),
     ] },
-  { id: "best-building", w: 6, find: (F) => F.best && F.best.score >= 14 ? { a: F.best } : null,
+  { id: "rich-woods", w: 9, find: (F) => { const p = F.of(["lumber", "kiln", "loghouse"]).find(q => q.land("forest") >= 5); return p && { a: p, n: p.land("forest") }; },
     lines: [
-      (d, N, W, R0) => ({ h: "THE PRIDE OF THE TOWN", s: `The ${d.a.name} ${verb(d.a.name, "is", "are")} valued at ${d.a.score}, and no man in the county will hear otherwise.`, c: `The ${d.a.name}.` }),
+      (d, N, W, R0) => ({ h: "TIMBER ENOUGH FOR A DECADE", s: `${d.n} squares of standing woods around the ${d.a.name}. The saw has not wanted for work since spring.`, c: "Deep in the trees." }),
+      (d, N, W, R0) => ({ h: "THE WOODS PAY THEIR WAY", s: `${N()} reckons the ${d.a.name} could not have been set better if the trees had been planted for it.`, c: `Woods on ${d.n} sides and then some.` }),
     ] },
-  { id: "worst-building", w: 7, find: (F) => F.worst && F.worst.score <= 1 ? { a: F.worst } : null,
+  { id: "rich-ore", w: 9, find: (F) => { const p = F.of(["mine", "sluice", "stampmill", "limeworks"]).find(q => q.land("ore") >= 4); return p && { a: p, n: p.land("ore") }; },
     lines: [
-      (d, N, W, R0) => ({ h: "A POOR SHOWING", s: `The ${d.a.name} ${verb(d.a.name, "earns", "earn")} their keep at ${d.a.score}, and the assessor has been asked to look again.`, c: `The ${d.a.name}, struggling.` }),
+      (d, N, W, R0) => ({ h: "THE VEIN RUNS TRUE", s: `${d.n} squares of ore under and about the ${d.a.name}. ${N()} has been seen buying a second wagon.`, c: "On the vein." }),
+    ] },
+  { id: "rich-wheat", w: 8, find: (F) => { const p = F.of(["farm", "windmill", "granary", "gristmill", "cottongin"]).find(q => q.land("wheat") >= 4); return p && { a: p, n: p.land("wheat") }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "A HARVEST WORTH THE TROUBLE", s: `${d.n} squares of grain stand around the ${d.a.name}, and every wagon in the county is spoken for.`, c: "Grain to the fence line." }),
+    ] },
+  { id: "rich-herd", w: 8, find: (F) => { const p = F.of(["ranch", "stables", "racetrack", "tannery", "farmhouse"]).find(q => q.land("herd") >= 3); return p && { a: p, n: p.land("herd") }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "GOOD GRASS, GOOD STOCK", s: `The ${d.a.name} looks out on ${d.n} squares of grazing, and ${N()} says the herd shows it.`, c: "Grazing on all sides." }),
+    ] },
+  { id: "river-works", w: 8, find: (F) => { const p = F.of(["gristmill", "brewery", "bathhouse", "dock", "sluice", "rollermills"]).find(q => q.land("water") >= 2); return p && { a: p }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "THE WATER DOES THE WORK", s: `The ${d.a.name} sits where the river bends, and has not wanted for power or custom since.`, c: "Hard by the water." }),
+    ] },
+  { id: "wasted-ground", w: 9, find: (F) => { const p = F.P.find(q => q.wasted.length >= 2); return p && { a: p, n: p.wasted.length, what: TERRAIN[MAP[p.wasted[0]]].short }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "GOOD GROUND UNDER A BAD ROOF", s: `The ${d.a.name} covers ${d.n} squares of ${d.what} and has no use for a foot of it. ${N()} calls it a waste and ${N()} agrees.`, c: `${d.what} paved over.` }),
+      (d, N, W, R0) => ({ h: "SURVEYOR ANSWERS FOR THE SITE", s: `Asked why the ${d.a.name} stands on ${d.what}, the office replied that the lot was there and the ${d.what} was not going anywhere.`, c: "A questionable lot." }),
+    ] },
+  { id: "hemmed-in", w: 8, find: (F) => { const p = F.P.find(q => !q.room && q.neighbours >= 2 && !q.bridge && ["home", "shop", "leisure"].includes(q.cat)); return p && { a: p }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "NOT A FOOT TO SPARE", s: `There is no open ground left around the ${d.a.name}. What it has, it has, and the town has grown to the wall.`, c: "Built in on every side." }),
+      (d, N, W, R0) => ({ h: "NO ROOM TO SWING A GATE", s: `${N()} reports the ${d.a.name} is walled in on all sides, and the cat has taken to the roof.`, c: "Hemmed in." }),
+    ] },
+  { id: "stands-apart", w: 8, find: (F) => { const p = F.P.find(q => q.neighbours === 0 && q.cat !== "civic" && !q.bridge); return p && { a: p }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "ALONE ON THE PRAIRIE", s: `Not one wall touches the ${d.a.name}. Its owner is said to prefer it and the town is said to talk.`, c: "No neighbours at all." }),
+    ] },
+  { id: "shop-no-homes", w: 7, find: (F) => { const p = F.of("shop").find(q => ![...touching(q.cells, q.k)].some(k => DEF[G.pieces[k].type].cat === "home")); return p && { a: p }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "A COUNTER AND NO CUSTOM", s: `Not a household within a fence of the ${d.a.name}. ${N()} keeps the door open all the same.`, c: "Waiting on custom." }),
+    ] },
+  { id: "home-no-food", w: 8, find: (F) => { const p = F.of("home").find(q => ![...touching(q.cells, q.k)].some(k => ["agri", "shop"].includes(DEF[G.pieces[k].type].cat))); return p && { a: p }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "A LONG WALK FOR FLOUR", s: `Neither farm nor store stands beside the ${d.a.name}. ${N()} keeps a horse for the errand.`, c: "Far from the table." }),
+    ] },
+  { id: "well-served", w: 7, find: (F) => F.pair("well", ["home", "agri"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "THE PUMP NEVER RESTS", s: `The ${d.a.name} serves the ${d.b.name} and half the street besides. A queue forms by six.`, c: "The town pump." }),
+    ] },
+  { id: "smith-farms", w: 7, find: (F) => F.pair(["smithy", "feedstore"], "agri"),
+    lines: [
+      (d, N, W, R0) => ({ h: "EVERY PLOUGH IN THE VALLEY", s: `The ${d.a.name} takes the work of the ${d.b.name} and three farms besides. The fire is banked by nine.`, c: "At the forge." }),
+    ] },
+  { id: "assay-mine", w: 8, find: (F) => F.pair(["assay", "bank"], ["mine", "sluice", "stampmill"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "WEIGHED THE SAME HOUR IT IS DUG", s: `The ${d.b.name} carries it as far as the ${d.a.name} next door, which suits everybody but the thieves.`, c: "Ore, weighed and paid." }),
+    ] },
+  { id: "rail-works", w: 7, find: (F) => F.pair(["station", "freight"], ["industry"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "LOADED WHERE IT IS MADE", s: `The ${d.b.name} loads straight onto the ${d.a.name}, and the town hears about it at every whistle.`, c: "Beside the line." }),
+    ] },
+  { id: "church-homes", w: 6, find: (F) => F.pair(["church", "school", "doctor"], "home"),
+    lines: [
+      (d, N, W, R0) => ({ h: "FULL PEWS AND SHORT WALKS", s: `The ${d.a.name} stands among the houses, and ${N()} has no excuse left.`, c: "In the middle of things." }),
     ] },
   { id: "water-town", w: 3, find: (F) => { const w = F.of(["dock", "fishmarket", "gristmill", "bathhouse"])[0]; return w && { a: w }; },
     lines: [
@@ -3565,7 +3630,7 @@ function paperStories(R) {
     const N = () => `${R() < .35 ? pick(FIRSTS, R) + " " : ""}${pick(SURNAMES, R)}`;
     const W = () => pick(PLACES, R);
     const line = pick(st.lines, R)(d, N, W, R);
-    out.push({ ...line, w: st.w * (.6 + R()), cells: d.cells || cellsOf(...[d.a, d.b].filter(Boolean)) });
+    out.push({ ...line, w: st.w * (.35 + R() * 1.3), cells: d.cells || cellsOf(...[d.a, d.b].filter(Boolean)) });
   }
   out.sort((a, b) => b.w - a.w);
   const kept = [], seen = new Set();

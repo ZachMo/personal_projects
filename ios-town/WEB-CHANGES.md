@@ -10,6 +10,18 @@ parity tests will fail.
 
 ## Waiting
 
+### Free is a new map, Each water, a wheat Tutorial button
+
+Commit: "Hügelland: Free starts a new map, and water says when it counts each square", after the tutorial.
+
+- Free (and Daily) from the menu during a game started the *same* map again, because `startTown` reused the
+  seed of the town on screen. It now takes a seed, and the menu and the tutorial's ending pass `null` for a fresh one.
+  Check the iOS menu for the same bug.
+- A water rule that counts every square (Fishing Dock, Fish Market, both bridges) reads "Each water". Water that
+  counts once still reads "Water". How to play says: "Water counts once, unless the card says Each water."
+- The Tutorial button is wheat yellow (`#e2bf5c`, dark brown text), not dark.
+- New page `hugelland-buildings.html` lists every building for review. Web only; not needed on iOS.
+
 ### A tutorial
 
 Commit: "Hügelland: a tutorial, and cards that name what they count", after how to play dropped the daily line.

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b2422">
+<title>Hügelland buildings</title>
+<meta name="description" content="Every building in Hügelland: its art, its category and how it scores, with room for notes.">
+<link rel="icon" href="hugelland-icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    color-scheme: dark;
+    --table: #1b2422; --table-2: #27332f;
+    --card: #fbf9f4; --card-2: #f0ece3; --line: #e6e1d6;
+    --ink: #1f2624; --ink-2: #5b645f; --muted: #8c938e;
+    --accent: #e0703f;
+    --good: #2f8a55; --good-bg: #e4f2e8; --bad: #b8412f; --bad-bg: #f9e5e0;
+    --home: #d8734a; --agri: #c9952a; --industry: #6f7d8b; --shop: #33968a; --civic: #5a7fc4; --leisure: #a8588f;
+  }
+  * { box-sizing: border-box; min-width: 0; }
+  body {
+    margin: 0; background: radial-gradient(120% 60% at 50% 0%, #2d3a36 0%, var(--table) 70%) fixed; color: #eef1ec;
+    font: 15px/1.4 system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+
+  header { max-width: 1180px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 24px) 16px 8px; }
+  h1 { margin: 0; font-size: 1.8rem; letter-spacing: -.03em; }
+  header p { margin: 4px 0 0; color: #9fb0a9; font-size: .9rem; }
+  header a { color: #cfe0d8; }
+
+  /* Pinned on wide screens only: on a phone it would cover a third of the page. */
+  .bar { position: static; z-index: 5; background: rgba(27,36,34,.92); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+         border-bottom: 1px solid rgba(255,255,255,.06); }
+  .bar > div { max-width: 1180px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  @media (min-width: 700px) { .bar { position: sticky; top: 0; } }
+  .cats { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 100%; }
+  .cat { border: 0; cursor: pointer; padding: 6px 12px; border-radius: 999px; font-size: .8rem; font-weight: 750;
+         background: rgba(255,255,255,.07); color: #cfd8d3; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+  .cat i { font-style: normal; opacity: .7; margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .cat[aria-pressed="true"] { background: var(--c, #eef1ec); color: #fff; box-shadow: none; }
+  .cat[data-cat="all"][aria-pressed="true"] { background: #eef1ec; color: var(--ink); }
+  .bar input, .bar select { height: 38px; border-radius: 12px; border: 0; padding: 0 12px; background: rgba(255,255,255,.08); color: #eef1ec;
+                            box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .bar input { flex: 1 1 180px; }
+  .bar input:focus, .bar select:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+  .btn { height: 38px; border: 0; cursor: pointer; border-radius: 12px; padding: 0 14px; font-weight: 750; font-size: .86rem;
+         background: #e2bf5c; color: #4a3508; box-shadow: inset 0 -3px 0 #b8952f; }
+  .btn:active { transform: translateY(1px); }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 16px 16px 60px; display: grid; gap: 14px;
+         grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+  .b { background: var(--card); color: var(--ink); border-radius: 20px; padding: 14px; box-shadow: 0 12px 34px rgba(0,0,0,.3);
+       display: flex; flex-direction: column; gap: 10px; }
+  .art { background: #2c3a35; border-radius: 14px; min-height: 150px; display: grid; place-items: center; padding: 8px; overflow: hidden; }
+  .art canvas { display: block; max-width: 100%; height: auto; }
+  .top { display: flex; align-items: flex-start; gap: 8px; }
+  .top h2 { margin: 0; font-size: 1.1rem; letter-spacing: -.01em; flex: 1; }
+  .top h2 small { display: block; font-size: .74rem; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+  .chip { font-size: .6rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; color: #fff;
+          background: var(--c); white-space: nowrap; }
+  .blurb { margin: 0; color: var(--ink-2); font-size: .86rem; font-style: italic; }
+  .facts { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
+  .facts li { font-size: .74rem; font-weight: 700; padding: 3px 8px; border-radius: 8px; background: var(--card-2); color: var(--ink-2); }
+  .facts li b { color: var(--ink); }
+  .shape { display: inline-block; vertical-align: -3px; margin-right: 4px; }
+
+  /* The scoring rows, as the game's cards show them. */
+  .mods { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+  .mods li { display: flex; align-items: center; gap: 7px; font-size: .86rem; }
+  .mods li b { flex: 0 0 auto; min-width: 36px; text-align: center; padding: 2px 6px; border-radius: 8px; font-size: .8rem; font-weight: 800;
+               font-variant-numeric: tabular-nums; background: var(--good-bg); color: var(--good); }
+  .mods li.bad b { background: var(--bad-bg); color: var(--bad); }
+  .mods li.base b { background: var(--ink); color: #fff; }
+  .mods li .ico { width: 18px; height: 18px; flex: 0 0 auto; }
+  .mods li i.sp { width: 18px; flex: 0 0 auto; }
+
+  details.design summary { cursor: pointer; font-size: .78rem; font-weight: 750; color: var(--muted); }
+  details.design p { margin: 6px 0 0; font-size: .8rem; color: var(--ink-2); }
+  textarea { width: 100%; min-height: 58px; resize: vertical; border: 0; border-radius: 12px; padding: 9px 11px; background: var(--card-2); color: var(--ink);
+             font-size: .86rem; }
+  textarea:focus { outline: 2px solid var(--accent); }
+  .b.noted { box-shadow: 0 0 0 3px #e2bf5c, 0 12px 34px rgba(0,0,0,.3); }
+
+  .msg { max-width: 640px; margin: 40px auto; padding: 20px; text-align: center; color: #cfd8d3; grid-column: 1 / -1; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 9px 16px; border-radius: 999px; background: rgba(20,28,26,.94);
+           color: #fff; font-size: .86rem; font-weight: 650; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #toast.on { opacity: 1; }
+  #game { position: absolute; width: 390px; height: 844px; left: -9999px; top: 0; border: 0; visibility: hidden; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hügelland buildings</h1>
+  <p id="lead">Loading the game…</p>
+</header>
+<div class="bar"><div>
+  <div class="cats" id="cats"></div>
+  <input id="q" type="search" placeholder="Find a building, a land or a word" aria-label="Find a building">
+  <select id="sort" aria-label="Sort">
+    <option value="cat">By category</option>
+    <option value="name">By name</option>
+    <option value="era">By era</option>
+    <option value="base">By base points</option>
+    <option value="size">By size</option>
+  </select>
+  <button class="btn" id="copy">Copy notes</button>
+</div></div>
+<main id="grid"></main>
+<div id="toast"></div>
+
+<!-- The game itself, hidden. This page reads its buildings and draws them with its own code, so it always matches. -->
+<iframe id="game" src="hugelland.html?seed=1&amp;from=review" title="" aria-hidden="true" tabindex="-1"></iframe>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+const NOTES = "hugelland.review.notes";
+let notes = {};
+try { notes = JSON.parse(localStorage.getItem(NOTES)) || {}; } catch (e) {}
+const keepNotes = () => { try { localStorage.setItem(NOTES, JSON.stringify(notes)); } catch (e) {} };
+
+let toastTimer = 0;
+function toast(text) { $("toast").textContent = text; $("toast").classList.add("on"); clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.remove("on"), 2200); }
+
+const STYLE = { logs: "log roof", metal: "metal roof", stone: "stone roof", front: "false front", dormer: "dormers" };
+const EXTRA = { stack: "smokestack", cupola: "cupola", bell: "bell", saw: "saw blade", birds: "birds overhead" };
+const state = { cat: "all", q: "", sort: "cat" };
+let W = null, DEF = null, CATS = null, ORDER = [];
+
+$("game").addEventListener("load", () => {
+  try {
+    W = $("game").contentWindow;
+    const ev = (code) => W.eval(code);
+    DEF = ev("DEF"); CATS = ev("CATS");
+    ORDER = Object.keys(DEF);
+    start(ev);
+  } catch (e) {
+    $("lead").textContent = "This page reads the game next to it. Open it from a web server, not straight from a file.";
+    $("grid").innerHTML = `<p class="msg">${esc(e.message)}</p>`;
+  }
+});
+
+function start(ev) {
+  const modsHTML = ev("modsHTML"), shapeSVG = ev("shapeSVG"), SHAPES = ev("SHAPES");
+  /*
+    Draws one building in the game's own style on its own canvas. The game places art by board square, so for a
+    moment its board starts at the canvas corner and its squares take this page's size. It all happens in one
+    call, so the game's own frame never sees the change.
+  */
+  const drawInGame = ev(`(g, type, S, pad) => {
+    const keep = { S: UI.S, BX: UI.BX, BY: UI.BY };
+    UI.S = S; UI.BX = pad; UI.BY = pad;
+    try {
+      const o = orientations(type).find(o => { const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip)); return w >= h; }) || { rot: 0, flip: false };
+      const offs = orient(DEF[type].shape, o.rot, o.flip), [w, h] = extent(offs);
+      const cells = offs.map(([x, y]) => idx(x, y));
+      // Land under it: grass, and water under the middle of a bridge.
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const bridge = DEF[type].bridge && x > 0 && x < w - 1;
+        g.beginPath(); rr(g, pad + x * S + S * .03, pad + y * S + S * .03, S * .94, S * .94, S * .14);
+        g.fillStyle = bridge ? "#62abc9" : (x + y) % 2 ? "#a0c47f" : "#a5c884"; g.fill();
+      }
+      drawPiece(g, type, cells, 0, false);
+      return [w, h];
+    } finally { Object.assign(UI, keep); }
+  }`);
+  const size = ev(`(type) => { const o = orientations(type).find(o => { const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip)); return w >= h; }) || { rot: 0, flip: false }; return extent(orient(DEF[type].shape, o.rot, o.flip)); }`);
+
+  const counts = {};
+  for (const k of ORDER) counts[DEF[k].cat] = (counts[DEF[k].cat] || 0) + 1;
+  $("lead").innerHTML = `${ORDER.length} buildings in ${Object.keys(CATS).length} categories, straight from the game. ` +
+    `Write a note on any card. Notes stay in this browser. <b>Copy notes</b> puts them all on the clipboard to paste back.`;
+  $("cats").innerHTML = `<button class="cat" data-cat="all" aria-pressed="true">All<i>${ORDER.length}</i></button>` +
+    Object.keys(CATS).map(c => `<button class="cat" data-cat="${c}" style="--c:var(--${c})" aria-pressed="false">${esc(CATS[c].name)}<i>${counts[c] || 0}</i></button>`).join("");
+  for (const b of $("cats").children) b.onclick = () => {
+    state.cat = b.dataset.cat;
+    for (const x of $("cats").children) x.setAttribute("aria-pressed", String(x === b));
+    show();
+  };
+
+  // One card for each building, drawn once. Filters only hide and reorder them.
+  const cards = {};
+  const catOrder = Object.keys(CATS);
+  for (const k of ORDER) {
+    const d = DEF[k], cells = SHAPES[d.shape].length;
+    const design = [d.style && STYLE[d.style], d.extra && EXTRA[d.extra], d.emblem && `${d.emblem} emblem`, d.sign && `sign “${d.sign}”`,
+                    d.bridge && "sits on water"].filter(Boolean);
+    const el = document.createElement("article");
+    el.className = "b";
+    el.innerHTML = `
+      <div class="art"><canvas></canvas></div>
+      <div class="top"><h2>${esc(d.name)}<small>${esc(k)} · plural ${esc(d.plural || d.name + "s")}</small></h2>
+        <span class="chip" style="--c:var(--${d.cat})">${esc(CATS[d.cat].name)}</span></div>
+      <p class="blurb">${esc(d.blurb)}</p>
+      <ul class="facts">
+        <li><span class="shape">${shapeSVG(k, 0, false, 16)}</span><b>${d.shape}</b> · ${cells} squares</li>
+        <li>Era <b>${d.era}</b></li>
+        <li><b>×${d.n}</b> per deck</li>
+        <li>Base <b>${d.base}</b></li>
+      </ul>
+      ${modsHTML(k)}
+      <details class="design"><summary>Design</summary>
+        <p>${design.length ? esc(design.join(" · ")) : "Plain gable roofs"}.</p>
+        <p>Squares: ${esc(d.roles.join(", "))}.</p>
+        ${d.roof ? `<p>Roof ${esc(d.roof.join(" / "))}${d.roof2 ? `, second roof ${esc(d.roof2.join(" / "))}` : ""}.</p>` : ""}
+      </details>
+      <textarea placeholder="Your note on the ${esc(d.name)}" aria-label="Note on the ${esc(d.name)}">${esc(notes[k] || "")}</textarea>`;
+    const text = el.querySelector("textarea");
+    el.classList.toggle("noted", !!(notes[k] || "").trim());
+    text.oninput = () => { notes[k] = text.value; if (!text.value.trim()) delete notes[k]; keepNotes(); el.classList.toggle("noted", !!text.value.trim()); };
+    const cv = el.querySelector("canvas"), [w, h] = size(k), S = 46, pad = 8, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = (w * S + pad * 2) * dpr; cv.height = (h * S + pad * 2) * dpr;
+    cv.style.width = (w * S + pad * 2) + "px";
+    const g = cv.getContext("2d"); g.scale(dpr, dpr);
+    drawInGame(g, k, S, pad);
+    const words = [d.name, k, CATS[d.cat].name, d.blurb, el.querySelector(".mods").textContent, design.join(" ")].join(" ").toLowerCase();
+    cards[k] = { el, words, d, cells, cat: catOrder.indexOf(d.cat) };
+  }
+
+  const sorts = {
+    cat: (a, b) => a.cat - b.cat || a.d.name.localeCompare(b.d.name),
+    name: (a, b) => a.d.name.localeCompare(b.d.name),
+    era: (a, b) => a.d.era - b.d.era || a.cat - b.cat,
+    base: (a, b) => b.d.base - a.d.base || a.d.name.localeCompare(b.d.name),
+    size: (a, b) => b.cells - a.cells || a.d.name.localeCompare(b.d.name),
+  };
+  function show() {
+    const q = state.q.trim().toLowerCase();
+    const list = Object.values(cards).sort(sorts[state.sort]);
+    let shown = 0;
+    for (const c of list) {
+      const on = (state.cat === "all" || c.d.cat === state.cat) && (!q || c.words.includes(q));
+      c.el.hidden = !on; if (on) shown++;
+      $("grid").appendChild(c.el);
+    }
+    let none = $("none");
+    if (!shown && !none) { none = document.createElement("p"); none.id = "none"; none.className = "msg"; none.textContent = "No building matches."; $("grid").appendChild(none); }
+    else if (none) { none.hidden = !!shown; $("grid").appendChild(none); }
+  }
+  $("q").oninput = () => { state.q = $("q").value; show(); };
+  $("sort").onchange = () => { state.sort = $("sort").value; show(); };
+  $("copy").onclick = async () => {
+    const lines = ORDER.filter(k => (notes[k] || "").trim()).map(k => `${DEF[k].name} (${k}): ${notes[k].trim()}`);
+    if (!lines.length) return toast("No notes yet.");
+    const text = `Hügelland building notes\n\n${lines.join("\n")}`;
+    try { await navigator.clipboard.writeText(text); toast(`Copied ${lines.length} ${lines.length === 1 ? "note" : "notes"}.`); }
+    catch (e) { prompt("Copy these notes:", text); }
+  };
+  show();
+}
+</script>
+</body>
+</html>

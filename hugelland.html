@@ -209,6 +209,7 @@
   .modes.one { grid-template-columns: 1fr; margin-top: 10px; }
   .modes.one button { min-height: 56px; }
   .primary.green { background: #2f8a55; box-shadow: inset 0 -3px 0 #226a41; }
+  .primary.wheat { background: #e2bf5c; color: #4a3508; box-shadow: inset 0 -3px 0 #b8952f; }
 
   /* ── The tutorial's coach: one card that says what to do next ── */
   #coach {
@@ -1056,7 +1057,8 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   card only names what it counts. Rules that count further away say so.
 */
 function ruleText(r) {
-  if (r.k === "land") return cap(landWord(r.t));
+  // Water mostly counts once. The few rules that count every square of it say so.
+  if (r.k === "land") return r.t === "water" && !r.once ? `Each ${landWord(r.t)}` : cap(landWord(r.t));
   if (r.k === "near") return r.any ? "Any building" : cap(nearNoun(r, 1));
   if (r.k === "edge") return "Map edge";
   if (r.k === "variety") return "Each kind of building";
@@ -2914,7 +2916,7 @@ $("scrim").onclick = closeSheet;
 const RULES_HTML = `<ul class="rules">
   <li><b>Build:</b> drag a building onto open land and press Build. Tap it to see how it scores.</li>
   <li><b>Districts:</b> buildings of one kind that touch share a lot. Each gains +1 for every other building on it, up to +${DISTRICT_MAX}.</li>
-  <li><b>Land bonuses</b> count each square of that land under a building or next to it. Most buildings count water once.</li>
+  <li><b>Land bonuses</b> count each square of that land under a building or next to it. Water counts once, unless the card says <b>Each water</b>.</li>
   <li><b>Neighbour bonuses grow.</b> A building gains whenever you add a neighbour it likes.</li>
   <li><b>Bridges</b> are the only buildings that can sit on water. Both ends must be on land.</li>
   <li><b>No room</b> for a building: −${AWAY}. Fit them all: +${ALL_FIT}.</li>
@@ -2928,7 +2930,7 @@ function showMenu() {
       <button class="primary" id="mDaily">Daily<span class="sub">${isDaily() && G.day === dayKey() ? "You are on today's map" : doneToday ? `Played: ${rec.score}` : "Today's challenge map"}</span></button>
       <button class="primary green" id="mFree">Free<span class="sub">A random map</span></button>
     </div>
-    <div class="modes one"><button class="primary dark" id="mTut">Tutorial<span class="sub">${G && G.tut ? "Start the tutorial again" : "Learn how to play"}</span></button></div>
+    <div class="modes one"><button class="primary wheat" id="mTut">Tutorial<span class="sub">${G && G.tut ? "Start the tutorial again" : "Learn how to play"}</span></button></div>
     ${UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">Start again and this town is lost. Tap once more.</p>` : ""}
     <h2 style="margin-top:18px">How to play</h2>${RULES_HTML}
     <div class="row"><button class="tool" id="mClose">Close</button></div>`);
@@ -2937,8 +2939,8 @@ function showMenu() {
     if (risky && !UI.confirm) { UI.confirm = true; return showMenu(); }
     closeSheet();
     if (!inGame) return intro();
-    // The name is already known, so a new town starts straight away.
-    startTown(G.player, null, daily);
+    // The name is already known, so a new town starts straight away, on a fresh map.
+    startTown(G.player, null, daily, null);
   };
   $("mDaily").onclick = () => start(dayKey());
   $("mFree").onclick = () => start(null);
@@ -3336,7 +3338,7 @@ function playFromTutorial(daily) {
   TUT.on = false;
   closeDialog();
   const name = lastName();
-  if (name) startTown(name, null, daily); else intro();
+  if (name) startTown(name, null, daily, null); else intro();
 }
 
 function startTutorial() {
@@ -3411,9 +3413,12 @@ function resetScene() {
   UI.drop = null; UI.dirty = true; closeInfo();
 }
 
-/* The town gets its name when it is founded: Fort Zach, Zachville and so on. It keeps the map shown behind the intro. */
-function startTown(player, challenge = null, daily = null) {
-  newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)), G.seed, daily);
+/*
+  The town gets its name when it is founded: Fort Zach, Zachville and so on. From the intro it keeps the map shown
+  behind it. Pass null as the seed for a fresh random map.
+*/
+function startTown(player, challenge = null, daily = null, seed = G.seed) {
+  newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)), seed, daily);
   G.challenge = challenge && { from: challenge.from, score: challenge.score };
   resetScene();
   UI.shown = 0; $("score").textContent = 0;
@@ -3448,7 +3453,7 @@ function intro(challenge = null) {
          <button class="primary" id="goDaily" type="submit">Daily<span class="sub">Play the daily challenge map</span></button>
          <button class="primary green" id="goFree" type="button">Free<span class="sub">Play a random map</span></button>
        </div>
-       <div class="modes one"><button class="primary dark" id="goTut" type="button">Tutorial<span class="sub">Learn how to play</span></button></div>
+       <div class="modes one"><button class="primary wheat" id="goTut" type="button">Tutorial<span class="sub">Learn how to play</span></button></div>
        ${doneToday ? `<p class="today">Today: ${rec.score} against par ${rec.par}, ${rec.goals} of 3 goals${rec.streak > 1 ? ` · ${rec.streak} days in a row` : ""}</p>` : ""}`;
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
       <img class="crest" src="hugelland-icon.svg" alt="">

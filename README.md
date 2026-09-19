@@ -289,6 +289,11 @@ and the same buildings in the same order, and gets a win or a loss at the end, w
 challenge you back. There is no server: the seed builds the same map and deck on any phone. If
 a later change to the game changes what a seed builds, the link says it may not match.
 
+**Reviewing buildings.** `hugelland-buildings.html` shows all 55 buildings with their art, category,
+shape, era, deck count and scoring card, with a note box on each. It loads the game in a hidden frame and draws
+each building with the game's own code, so it always matches. It needs a web server, not a file opened from disk.
+Notes stay in the browser, and **Copy notes** puts them on the clipboard.
+
 **On a phone.** Taps are plain taps, so pressing Turn quickly never zooms the page, and pinch zoom
 is off. The name field uses 16px text, because Safari zooms into smaller text fields when they get
 focus.

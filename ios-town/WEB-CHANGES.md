@@ -10,6 +10,23 @@ parity tests will fail.
 
 ## Waiting
 
+### Six draft buildings, and three new ways to score
+
+Commit: "Hügelland: six draft buildings for review", after the livelier buildings.
+
+Not in any game yet. `draft: true` keeps a building out of `makeDeck` (all three of its filters), so every deck,
+daily map, goal and par is unchanged. A fingerprint over 5,000 seeds and 60 days matched before and after.
+The drafts show on `hugelland-buildings.html` for review. Port them when they go live, not before.
+
+- Homes: Apartments (P5), Country House (L4), Company Houses (I3). Shops: Toll House (I2), Feed Store (V3),
+  Department Store (O4).
+- New rule `crowd` (`n`, `p`): points if its district has at least `n` buildings. Card: "District of 4 or more".
+- New rule `room` (`p`): points for each empty land square next to it, counted live from `look().open`.
+  Card: "Each open square".
+- `near` takes `bridge: true` to mean either bridge. Card: "Bridge".
+- `evalRule` now takes the building's type and squares, and `ruleIcon` takes the type.
+- New ground art `tollgate` and `sacks`, and a water tank on the Apartments roof.
+
 ### Livelier buildings
 
 Commit: "Hügelland: livelier stables, windmills and mines, clearer signs", after the jigsaw tutorial.

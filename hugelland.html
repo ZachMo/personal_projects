@@ -387,7 +387,10 @@ const SHAPES = {
     variety              p: points for each kind of building next to it
     town    cats / types p: points for each building of that kind anywhere in town
     without cats / types p: points if no building of that kind is next to it
-  near and without take any: true to mean every building.
+    crowd   n            p: points if its district has at least n buildings, itself included
+    room                 p: points for each empty land square next to it, counted live
+  near and without take any: true to mean every building, and near takes bridge: true to mean either bridge.
+  draft: true keeps a building out of every deck, so it can be looked at on hugelland-buildings.html first.
   bridge: true lets a building sit on water. Both of its ends must be on land.
   emblem: a small sign drawn on the roof.   tile: its own tile colours, instead of its category's.
   style:  how its roofs look: logs, metal, stone, front (a false front with a sign) or dormer. Plain gables otherwise.
@@ -576,6 +579,27 @@ const DEF = {
   park:      { name: "Park", cat: "leisure", shape: "Z5", n: 1, era: 2, base: 2,
                extra: "birds", roles: ["tree", "garden", "tree", "garden", "tree"], blurb: "Green space for the families.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }] },
+
+  /* Drafts: in no deck yet. */
+  apartments:{ name: "Apartments", plural: "Apartments", cat: "home", shape: "P5", n: 1, era: 3, base: 2, roof: ["#b5654a", "#924f39"], style: "dormer", draft: true,
+               roles: ["hall", "hall", "hall", "hall", "laundry"], blurb: "Town living, stacked high. Best in the thick of a big neighbourhood.",
+               rules: [{ k: "crowd", n: 4, p: 4 }, { k: "near", cats: ["shop"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+  countryhouse:{ name: "Country House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#c77d58", "#a3603f"], draft: true,
+               roles: ["house", "house", "garden", "tree"], blurb: "Room to breathe, with the herds in view.",
+               rules: [{ k: "room", p: 1 }, { k: "land", t: "herd", p: 1 }] },
+  company:   { name: "Company Houses", plural: "Company Houses", cat: "home", shape: "I3", n: 1, era: 2, base: 1, draft: true,
+               roof: ["#9a8f86", "#7a7068"], roof2: ["#b0a393", "#8e8274"],
+               roles: ["rowA", "rowB", "rowA"], blurb: "Built by the mine owners for the men who work for them.",
+               rules: [{ k: "town", cats: ["industry"], p: 1 }, { k: "land", t: "ore", p: 1 }] },
+  tollhouse: { name: "Toll House", cat: "shop", shape: "I2", n: 1, era: 1, base: 2, roof: ["#a8743f", "#86592f"], draft: true,
+               roles: ["house", "tollgate"], blurb: "A coin from everyone who crosses.",
+               rules: [{ k: "near", bridge: true, p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
+  feedstore: { name: "Feed Store", cat: "shop", shape: "V3", n: 1, era: 2, base: 2, roof: ["#b48a4a", "#936f36"], style: "front", sign: "FEED", draft: true,
+               roles: ["hall", "hall", "sacks"], blurb: "Grain and oats for the farms and the herds.",
+               rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
+  deptstore: { name: "Department Store", cat: "shop", shape: "O4", n: 1, era: 3, base: 3, roof: ["#3f8a8f", "#2f6c70"], style: "front", sign: "EMPORIUM", draft: true,
+               roles: ["hall", "hall", "hall", "hall"], blurb: "Everything under one roof, for a town that loves to shop.",
+               rules: [{ k: "town", cats: ["shop"], p: 1 }, { k: "near", cats: ["home"], p: 1 }] },
 };
 
 /* ───────────────────────── Small tools ───────────────────────── */
@@ -679,9 +703,9 @@ function makeDeck(seed, terrain) {
   const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const types = new Set();
   for (const cat in QUOTA) {
-    shuffle(Object.keys(DEF).filter(k => DEF[k].cat === cat && !DEF[k].bridge)).slice(0, QUOTA[cat]).forEach(k => types.add(k));
+    shuffle(Object.keys(DEF).filter(k => DEF[k].cat === cat && !DEF[k].bridge && !DEF[k].draft)).slice(0, QUOTA[cat]).forEach(k => types.add(k));
   }
-  const bridge = shuffle(Object.keys(DEF).filter(k => DEF[k].bridge)).find(k => placements(k).length);
+  const bridge = shuffle(Object.keys(DEF).filter(k => DEF[k].bridge && !DEF[k].draft)).find(k => placements(k).length);
   if (bridge) types.add(bridge);
 
   const chosen = [...types], count = {};
@@ -700,7 +724,7 @@ function makeDeck(seed, terrain) {
   while (total() < target - 1) {
     const gap = target - total();
     const more = chosen.filter(q => count[q] < cap(q));
-    const fresh = Object.keys(DEF).filter(q => !DEF[q].bridge && !types.has(q) && size(q) <= gap + 1);
+    const fresh = Object.keys(DEF).filter(q => !DEF[q].bridge && !DEF[q].draft && !types.has(q) && size(q) <= gap + 1);
     const k = (more.length && r() < .4 ? pick(more, r) : pick(fresh, r)) || pick(more, r);
     if (!k) break;
     if (!types.has(k)) { types.add(k); chosen.push(k); count[k] = 0; }
@@ -829,7 +853,7 @@ function build(cells) {
 
 /* What a footprint sits on and touches. `self` is its own index, so it doesn't count itself. */
 function look(cells, self = -1) {
-  const own = new Set(cells), on = {}, by = {}, near = new Set();
+  const own = new Set(cells), on = {}, by = {}, near = new Set(), open = new Set();
   let edge = false;
   for (const c of cells) {
     on[MAP[c]] = (on[MAP[c]] || 0) + 1;
@@ -839,6 +863,7 @@ function look(cells, self = -1) {
       const j = idx(x + dx, y + dy);
       if (own.has(j)) continue;
       if (OWNER[j] >= 0 && OWNER[j] !== self) near.add(OWNER[j]);
+      if (OWNER[j] < 0 && MAP[j] !== "water") open.add(j);
       // Water never runs out: a bridge over it doesn't stop it counting.
       if (OWNER[j] < 0 || MAP[j] === "water") by[j] = MAP[j];
     }
@@ -847,7 +872,7 @@ function look(cells, self = -1) {
   for (const j in by) byCount[by[j]] = (byCount[by[j]] || 0) + 1;
   // A placed building keeps the land it had beside it when it was built.
   const land = self >= 0 && G.pieces[self].land;
-  return { on, by: land || byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge, self };
+  return { on, by: land || byCount, near: [...near].map(k => ({ k, type: G.pieces[k].type })), edge, self, open: open.size };
 }
 
 /* The buildings a footprint shares a side with. */
@@ -869,9 +894,9 @@ function districtOf(type, cells, self = -1) {
   return [...found];
 }
 
-const matches = (r, type) => !!r.any || (r.types || []).includes(type) || (r.cats || []).includes(DEF[type].cat);
+const matches = (r, type) => !!r.any || (r.bridge && !!DEF[type].bridge) || (r.types || []).includes(type) || (r.cats || []).includes(DEF[type].cat);
 
-function evalRule(r, c) {
+function evalRule(r, c, type, cells) {
   if (r.k === "land") {
     const n = (c.on[r.t] || 0) + (c.by[r.t] || 0);
     return { n, v: (r.once ? Math.min(n, 1) : n) * r.p };
@@ -881,6 +906,8 @@ function evalRule(r, c) {
   if (r.k === "variety") { const n = new Set(c.near.map(q => DEF[q.type].cat)).size; return { n, v: n * r.p }; }
   if (r.k === "town") { const n = G.pieces.filter((p, k) => k !== c.self && matches(r, p.type)).length; return { n, v: n * r.p }; }
   if (r.k === "without") { const n = c.near.some(q => matches(r, q.type)) ? 0 : 1; return { n, v: n * r.p }; }
+  if (r.k === "crowd") { const n = districtOf(type, cells, c.self).length + 1; return { n, v: n >= r.n ? r.p : 0 }; }
+  if (r.k === "room") return { n: c.open, v: c.open * r.p };
   return { n: 0, v: 0 };
 }
 
@@ -891,7 +918,7 @@ function evalRule(r, c) {
 function scoreParts(type, cells, self = -1) {
   const d = DEF[type], c = look(cells, self), parts = [{ r: -1, n: 1, v: d.base }];
   if (!d.bridge) { const n = districtOf(type, cells, self).length + 1; parts.push({ r: "district", n, v: Math.min(n - 1, DISTRICT_MAX) }); }
-  return [...parts, ...d.rules.map((r, i) => { const e = evalRule(r, c); return { r: i, n: e.n, v: e.v }; })];
+  return [...parts, ...d.rules.map((r, i) => { const e = evalRule(r, c, type, cells); return { r: i, n: e.n, v: e.v }; })];
 }
 const sumParts = (parts) => parts.reduce((sum, q) => sum + q.v, 0);
 const pieceParts = (k) => scoreParts(G.pieces[k].type, G.pieces[k].cells, k);
@@ -933,7 +960,7 @@ function judge(type, cells, parts, pts, gain, changed) {
   let top = 0, land = 0;
   for (const q of parts) {
     const r = ruleOf(q);
-    if (!r || r.p <= 0 || r.once || r.k === "edge" || r.k === "without") continue;
+    if (!r || r.p <= 0 || r.once || ["edge", "without", "crowd", "room"].includes(r.k)) continue;
     if (r.k === "land") land = Math.max(land, q.n); else top = Math.max(top, q.n);
   }
   if (top >= 3) out.add(top >= 5 ? "combo" : top === 4 ? "quadruple" : "triple");
@@ -1047,7 +1074,7 @@ const plural = (k) => DEF[k].plural || DEF[k].name + "s";
 const joinOr = (a) => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " or " + a[a.length - 1];
 const landWord = (t) => TERRAIN[t].short;
 const signed = (v) => (v < 0 ? "−" : "+") + Math.abs(v);
-const nearNoun = (r, n) => r.any ? (n === 1 ? "building" : "buildings") : joinOr(n === 1
+const nearNoun = (r, n) => r.any ? (n === 1 ? "building" : "buildings") : r.bridge ? (n === 1 ? "bridge" : "bridges") : joinOr(n === 1
   ? [...(r.types || []).map(t => DEF[t].name), ...(r.cats || []).map(c => CATS[c].one)]
   : [...(r.types || []).map(plural), ...(r.cats || []).map(c => CATS[c].many)]);
 
@@ -1066,6 +1093,8 @@ function ruleText(r) {
   if (r.k === "variety") return "Each kind of building";
   if (r.k === "town") return `${cap(nearNoun(r, 2))} in town`;
   if (r.k === "without") return `No ${nearNoun(r, 2)}`;
+  if (r.k === "crowd") return `District of ${r.n} or more`;
+  if (r.k === "room") return "Each open square";
   return "";
 }
 
@@ -1083,6 +1112,8 @@ function partText(type, q) {
   if (r.k === "variety") return `${q.n} ${q.n === 1 ? "kind" : "kinds"}`;
   if (r.k === "town") return `${q.n} ${nearNoun(r, q.n)} in town`;
   if (r.k === "without") return q.n ? `No ${nearNoun(r, 2)}` : `Has ${nearNoun(r, 2)}`;
+  if (r.k === "crowd") return q.n >= r.n ? `District of ${q.n}` : `District of ${q.n}, needs ${r.n}`;
+  if (r.k === "room") return `${q.n} open ${q.n === 1 ? "square" : "squares"}`;
   return "";
 }
 </script>
@@ -1293,7 +1324,7 @@ const GROUND = {
   deck: "#c69a6b", hay: "#e5d6b7", plaza: "#e3dac7", graves: "#b3d494", pool: "#e3dac7", track: "#bddb95", tent: "#eadcb5",
   woodpile: "#c2d69b", veg: "#b99470", hedge: "#b3d494", laundry: "#e5d6b7", coop: "#dccfa4", fire: "#d2c9ba", hides: "#e5d6b7",
   anvil: "#cbc3b6", cart: "#cfc4b1", bricks: "#e5d6b7", bread: "#e9dcc0", fish: "#dfe6e3", furs: "#e5d6b7", hitch: "#e5d6b7",
-  pen: "#cdc8bf", paddock: "#bddb95",
+  pen: "#cdc8bf", paddock: "#bddb95", tollgate: "#d8cdb5", sacks: "#e5d6b7",
 };
 let BAKING = false;  // art is being drawn onto the baked board, so chimneys should smoke
 let NOW = 0;         // seconds, for the parts of buildings that move
@@ -1809,6 +1840,16 @@ function roofFor(g, role, d, x, y, w, h, baking) {
     hip(g, x + w / 2 - S * .16, y + h / 2 - S * .16, S * .32, S * .32, ["#e9e2d0", "#c9bfaa"]);
     circle(g, x + w / 2, y + h / 2, S * .05, "#e3a92f");
   }
+  if (role === "hall" && d === DEF.apartments) {
+    // A wooden water tank on legs, up on the roof.
+    const tx = x + w - S * .34, ty = y + S * .3;
+    g.strokeStyle = "#5c4028"; g.lineWidth = Math.max(1, S * .025);
+    g.beginPath(); for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { g.moveTo(tx, ty); g.lineTo(tx + dx * S * .14, ty + dy * S * .14); } g.stroke();
+    circle(g, tx + S * .03, ty + S * .04, S * .14, "rgba(40,30,20,.25)");
+    circle(g, tx, ty, S * .14, "#9b6d44"); circle(g, tx, ty, S * .1, "#b98a5c");
+    g.strokeStyle = "#6e4a2c"; g.beginPath(); g.arc(tx, ty, S * .12, 0, Math.PI * 2); g.stroke();
+    circle(g, tx, ty, S * .025, "#6e4a2c");
+  }
   if (role === "hall" && d === DEF.station) {
     g.fillStyle = "rgba(255,255,255,.5)";
     for (let k = 1; k < 4; k++) g.fillRect(x + (w / 4) * k - S * .02, y + h / 2 - S * .1, S * .04, S * .2);
@@ -2115,6 +2156,28 @@ function groundDetail(g, role, i, x, y, S, horiz) {
       circle(g, x + S * hx, y + S * hy, S * .09, "#e2c15c");
     }
     alive(g, "mosey", x, y, hash(i, 8), hash(i, 2) > .5 ? 1 : 0);
+  } else if (role === "tollgate") {
+    // A striped bar across the road, on a post, with a coin box beside it.
+    const along = !horiz, bar = (u0, u1, v) => along ? [x + S * v, y + S * u0, x + S * v, y + S * u1] : [x + S * u0, y + S * v, x + S * u1, y + S * v];
+    g.fillStyle = "#c7b99b"; if (along) g.fillRect(x + S * .3, y, S * .4, S); else g.fillRect(x, y + S * .3, S, S * .4);
+    const [x0, y0, x1, y1] = bar(.12, .88, .5);
+    g.lineCap = "butt"; g.lineWidth = Math.max(2, S * .07);
+    for (let k = 0; k < 6; k++) {
+      g.strokeStyle = k % 2 ? "#f7f2e6" : "#c8453a"; g.beginPath();
+      g.moveTo(x0 + (x1 - x0) * k / 6, y0 + (y1 - y0) * k / 6); g.lineTo(x0 + (x1 - x0) * (k + 1) / 6, y0 + (y1 - y0) * (k + 1) / 6); g.stroke();
+    }
+    circle(g, x0, y0, S * .06, "#5c4028");
+    const bx = along ? x + S * .8 : x + S * .14, by = along ? y + S * .18 : y + S * .78;
+    g.fillStyle = "rgba(40,30,20,.2)"; g.fillRect(bx - S * .06 + S * .02, by - S * .06 + S * .03, S * .12, S * .12);
+    g.fillStyle = "#7a5634"; g.fillRect(bx - S * .06, by - S * .06, S * .12, S * .12);
+    circle(g, bx, by, S * .03, "#f2c94c");
+  } else if (role === "sacks") {
+    for (const [sx, sy, r] of [[.32, .38, .13], [.62, .34, .12], [.46, .66, .14], [.74, .66, .1]]) {
+      ellipse(g, x + S * sx + S * .02, y + S * sy + S * .04, S * r, S * r * .85, "rgba(40,30,20,.2)");
+      ellipse(g, x + S * sx, y + S * sy, S * r, S * r * .85, "#d2b27a");
+      ellipse(g, x + S * sx - S * r * .25, y + S * sy - S * r * .25, S * r * .45, S * r * .35, "#e4c992");
+      circle(g, x + S * sx, y + S * sy - S * r * .72, S * .025, "#8f6a3a");
+    }
   } else if (role === "pasture" && hash(i, 11) > .35) {
     const px = x + S * (.3 + .35 * hash(i, 12)), py = y + S * (.35 + .3 * hash(i, 13));
     ellipse(g, px + S * .03, py + S * .05, S * .14, S * .08, "rgba(40,50,30,.2)");
@@ -2712,10 +2775,13 @@ function shapeSVG(type, rot = 0, flip = false, box = 44) {
 
 const LAND_HEX = { grass: "#a5c884", forest: "#5b9a58", ore: "#9a9285", wheat: "#e2bf5c", herd: "#c4a37c", water: "#62abc9" };
 
-/* A small picture of what a rule counts: a kind of land, a kind of building, the map edge. */
-function ruleIcon(r) {
+/* A small picture of what a rule counts: a kind of land, a kind of building, the map edge. `type` owns the rule. */
+function ruleIcon(r, type) {
   const svg = (inner) => `<svg class="ico" viewBox="0 0 20 20">${inner}</svg>`;
   if (r.k === "land") return svg(`<rect x="1" y="1" width="18" height="18" rx="4" fill="${LAND_HEX[r.t]}"/><path d="M5.5 15.5V9.8L10 5.8l4.5 4v5.7z" fill="#fff"/>`);
+  if (r.k === "room") return svg(`<rect x="1.5" y="1.5" width="17" height="17" rx="4" fill="${LAND_HEX.grass}" stroke="#5b645f" stroke-width="1.4" stroke-dasharray="2.6 2"/>`);
+  if (r.k === "crowd") return districtIcon(DEF[type].cat);
+  if (r.bridge) return svg(`<rect x="1.5" y="5.5" width="8" height="9" rx="2.5" fill="#fff" stroke="#c9c2b4"/><rect x="10.5" y="7" width="8.5" height="6" rx="1.5" fill="#c9a06f"/><path d="M11 10h7.5" stroke="#8f6a45" stroke-width="1.2"/>`);
   const catOf = () => r.any ? null : r.cats ? r.cats[0] : DEF[r.types[0]].cat;
   if (r.k === "town") {
     const cat = catOf();
@@ -2742,7 +2808,7 @@ const rowHTML = (v, text, cls, icon) =>
 function modsHTML(type) {
   const d = DEF[type];
   const district = d.bridge ? "" : rowHTML(1, districtText(type), "", districtIcon(d.cat));
-  return `<ul class="mods">${rowHTML(d.base, "Base", "base")}${district}${d.rules.map(r => rowHTML(r.p, ruleText(r), undefined, ruleIcon(r))).join("")}</ul>`;
+  return `<ul class="mods">${rowHTML(d.base, "Base", "base")}${district}${d.rules.map(r => rowHTML(r.p, ruleText(r), undefined, ruleIcon(r, type))).join("")}</ul>`;
 }
 
 function hud() {
@@ -2828,7 +2894,7 @@ function paintInfo() {
     const k = OWNER[i], p = G.pieces[k], d = DEF[p.type], parts = pieceParts(k);
     const rows = parts.map(q => {
       const r = d.rules[q.r];
-      return rowHTML(q.v, partText(p.type, q), q.r === -1 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "", q.r === "district" ? districtIcon(d.cat) : r && ruleIcon(r));
+      return rowHTML(q.v, partText(p.type, q), q.r === -1 ? "base" : q.v < 0 ? "bad" : q.v === 0 ? "zero" : "", q.r === "district" ? districtIcon(d.cat) : r && ruleIcon(r, p.type));
     }).join("");
     html += `<div class="kind">Built ${chip(d.cat)}</div><h3>${esc(d.name)} <span class="scored">${signed(sumParts(parts))}</span></h3><ul class="mods">${rows}</ul>`;
     placeInfo(rowOf(i));

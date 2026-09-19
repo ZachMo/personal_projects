@@ -10,6 +10,15 @@ parity tests will fail.
 
 ## Waiting
 
+### The toll gate lifts
+
+Commit: "Hügelland: the toll gate lifts for travellers", after the building notes. Draft art (Toll House), so
+nothing in play changes.
+
+The road through the gate square now runs across the building, as a road through a toll should, and the bar
+lies across it. The bar is a live part (`tollbar`): down for six seconds of every ten, then it lifts (it looks
+shorter from above and its shadow slides off), a traveller walks through, and it drops again.
+
 ### Building notes: a trader's yard, a truer blurb, and changes waiting
 
 Commit: "Hügelland: building notes, with scoring changes held for go-live", after the drafts.

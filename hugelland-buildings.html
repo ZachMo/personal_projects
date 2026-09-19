@@ -87,6 +87,12 @@
   .badge { font-size: .6rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px;
            background: #f6e7b4; color: #7a5608; white-space: nowrap; }
   .cat[data-cat="draft"][aria-pressed="true"] { background: #e2bf5c; color: #4a3508; }
+  /* A pending change: the proposed card, with today's rules underneath to compare. */
+  .b.pending { outline: 2px dashed #9fb7e0; outline-offset: 4px; }
+  .badge.change { background: #e3eaf7; color: #3f5f99; }
+  .was { border-top: 1px dashed var(--line); padding-top: 8px; opacity: .7; }
+  .was p { margin: 0 0 6px; font-size: .72rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .was .blurb { font-size: .8rem; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-2); margin-bottom: 6px; }
 
   .msg { max-width: 640px; margin: 40px auto; padding: 20px; text-align: center; color: #cfd8d3; grid-column: 1 / -1; }
   #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 9px 16px; border-radius: 999px; background: rgba(20,28,26,.94);
@@ -171,6 +177,8 @@ tryStart();
 
 function start(ev) {
   const modsHTML = ev("modsHTML"), shapeSVG = ev("shapeSVG"), SHAPES = ev("SHAPES");
+  // The card as it would read with other rules. It swaps them in and back in one call, so the game never sees it.
+  const modsWith = ev(`(k, rules) => { const d = DEF[k], keep = d.rules; d.rules = rules; try { return modsHTML(k); } finally { d.rules = keep; } }`);
   /*
     Draws one building in the game's own style on its own canvas. The game places art by board square, so for a
     moment its board starts at the canvas corner and its squares take this page's size. It all happens in one
@@ -195,14 +203,15 @@ function start(ev) {
   }`);
   const size = ev(`(type) => { const o = orientations(type).find(o => { const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip)); return w >= h; }) || { rot: 0, flip: false }; return extent(orient(DEF[type].shape, o.rot, o.flip)); }`);
 
-  const counts = {}, drafts = ORDER.filter(k => DEF[k].draft).length;
+  const counts = {}, drafts = ORDER.filter(k => DEF[k].draft).length, pending = ORDER.filter(k => DEF[k].pending).length;
   for (const k of ORDER) counts[DEF[k].cat] = (counts[DEF[k].cat] || 0) + 1;
   $("lead").innerHTML = `${ORDER.length - drafts} buildings in ${Object.keys(CATS).length} categories, straight from the game` +
-    (drafts ? `, and ${drafts} drafts that no game deals yet` : "") + `. ` +
+    (drafts ? `, and ${drafts} new buildings that no game deals yet` : "") +
+    (pending ? `. ${pending} buildings have changes waiting, shown next to how they score today` : "") + `. ` +
     `Write a note on any card. Notes stay in this browser. <b>Copy notes</b> puts them all on the clipboard to paste back.`;
   $("cats").innerHTML = `<button class="cat" data-cat="all" aria-pressed="true">All<i>${ORDER.length}</i></button>` +
     Object.keys(CATS).map(c => `<button class="cat" data-cat="${c}" style="--c:var(--${c})" aria-pressed="false">${esc(CATS[c].name)}<i>${counts[c] || 0}</i></button>`).join("") +
-    (drafts ? `<button class="cat" data-cat="draft" aria-pressed="false">Drafts<i>${drafts}</i></button>` : "");
+    (drafts + pending ? `<button class="cat" data-cat="draft" aria-pressed="false">Proposed<i>${drafts + pending}</i></button>` : "");
   for (const b of $("cats").children) b.onclick = () => {
     state.cat = b.dataset.cat;
     for (const x of $("cats").children) x.setAttribute("aria-pressed", String(x === b));
@@ -231,19 +240,21 @@ function start(ev) {
     const design = [d.style && STYLE[d.style], d.extra && EXTRA[d.extra], d.emblem && `${d.emblem} emblem`, d.sign && `sign “${d.sign}”`,
                     d.bridge && "sits on water"].filter(Boolean);
     const el = document.createElement("article");
-    el.className = "b" + (d.draft ? " draft" : "");
+    el.className = "b" + (d.draft ? " draft" : d.pending ? " pending" : "");
+    const next = d.pending || {};
     el.innerHTML = `
       <div class="art"><canvas></canvas></div>
       <div class="top"><h2>${esc(d.name)}<small>${esc(k)} · plural ${esc(d.plural || d.name + "s")}</small></h2>
-        ${d.draft ? `<span class="badge">Draft</span>` : ""}<span class="chip" style="--c:var(--${d.cat})">${esc(CATS[d.cat].name)}</span></div>
-      <p class="blurb">${esc(d.blurb)}</p>
+        ${d.draft ? `<span class="badge">Draft</span>` : d.pending ? `<span class="badge change">Change</span>` : ""}<span class="chip" style="--c:var(--${d.cat})">${esc(CATS[d.cat].name)}</span></div>
+      <p class="blurb">${esc(next.blurb || d.blurb)}</p>
       <ul class="facts">
         <li><span class="shape">${shapeSVG(k, 0, false, 16)}</span><b>${d.shape}</b> · ${cells} squares</li>
         <li>Era <b>${d.era}</b></li>
         <li><b>×${d.n}</b> per deck</li>
         <li>Base <b>${d.base}</b></li>
       </ul>
-      ${modsHTML(k)}
+      ${next.rules ? modsWith(k, next.rules) : modsHTML(k)}
+      ${d.pending ? `<div class="was"><p>Today</p>${next.blurb ? `<p class="blurb">${esc(d.blurb)}</p>` : ""}${next.rules ? modsHTML(k) : ""}</div>` : ""}
       <details class="design"><summary>Design</summary>
         <p>${design.length ? esc(design.join(" · ")) : "Plain gable roofs"}.</p>
         <p>Squares: ${esc(d.roles.join(", "))}.</p>
@@ -259,7 +270,7 @@ function start(ev) {
     const g = cv.getContext("2d");
     const paint = (now) => { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cv.width, cv.height); drawInGame(g, k, S, pad, now); };
     paint(0);
-    const words = [d.name, k, CATS[d.cat].name, d.draft ? "draft" : "", d.blurb, el.querySelector(".mods").textContent, design.join(" ")].join(" ").toLowerCase();
+    const words = [d.name, k, CATS[d.cat].name, d.draft ? "draft" : "", d.pending ? "change pending" : "", next.blurb || "", d.blurb, el.querySelector(".mods").textContent, design.join(" ")].join(" ").toLowerCase();
     cards[k] = { el, words, d, cells, cat: catOrder.indexOf(d.cat), paint };
     seen.observe(cv); cv.dataset.k = k;
   }
@@ -276,7 +287,7 @@ function start(ev) {
     const list = Object.values(cards).sort(sorts[state.sort]);
     let shown = 0;
     for (const c of list) {
-      const on = (state.cat === "all" || c.d.cat === state.cat || (state.cat === "draft" && c.d.draft)) && (!q || c.words.includes(q));
+      const on = (state.cat === "all" || c.d.cat === state.cat || (state.cat === "draft" && (c.d.draft || c.d.pending))) && (!q || c.words.includes(q));
       c.el.hidden = !on; if (on) shown++;
       $("grid").appendChild(c.el);
     }

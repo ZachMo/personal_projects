@@ -391,6 +391,8 @@ const SHAPES = {
     room                 p: points for each empty land square next to it, counted live
   near and without take any: true to mean every building, and near takes bridge: true to mean either bridge.
   draft: true keeps a building out of every deck, so it can be looked at on hugelland-buildings.html first.
+  pending: new rules or a new blurb for a building already in play, shown on that page as a proposal. The game
+  ignores it until the change goes live, so a day's map scores the same all day.
   bridge: true lets a building sit on water. Both of its ends must be on land.
   emblem: a small sign drawn on the roof.   tile: its own tile colours, instead of its category's.
   style:  how its roofs look: logs, metal, stone, front (a false front with a sign) or dormer. Plain gables otherwise.
@@ -411,7 +413,7 @@ const DEF = {
                roles: ["veg", "house", "house"], blurb: "A family that wants food and grain close by.",
                rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "wheat", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   rowhouses: { name: "Row Houses", plural: "Row Houses", cat: "home", shape: "I4", n: 2, era: 2, base: 3, roof: ["#d98c5b", "#b76d43"], roof2: ["#bb6f5b", "#955240"],
-               roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close and a river view.",
+               roles: ["rowA", "rowB", "rowA", "rowB"], blurb: "Town folk who want the shops close and civic services at hand.",
                rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["civic"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   farm:      { name: "Farm", cat: "agri", shape: "O4", n: 2, era: 1, base: 2, roof: ["#cc5443", "#a43f31"],
                roles: ["barn", "field", "field", "field"], blurb: "Grain for the families next door.",
@@ -524,7 +526,7 @@ const DEF = {
   bank:      { name: "Bank", cat: "shop", shape: "O4", n: 1, era: 3, base: 3, roof: ["#b9a26a", "#968250"], emblem: "dollar",
                roles: ["big", "big", "big", "big"], blurb: "Holds the town's gold. Wants the law and rich families close by.",
                rules: [{ k: "near", cats: ["civic"], p: 2 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "ore", p: 1 }] },
-  tradingpost:{ name: "Trading Post", cat: "shop", shape: "V3", n: 1, era: 1, base: 2, roof: ["#9a7b55", "#7a603f"], style: "logs",
+  tradingpost:{ name: "Trading Post", cat: "shop", shape: "V3", n: 1, era: 1, base: 2, roof: ["#9a7b55", "#7a603f"], style: "logs", sign: "TRADE",
                roles: ["hall", "hall", "furs"], blurb: "Trade with whoever comes in from outside.",
                rules: [{ k: "edge", p: 3 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["home"], p: 1 }] },
   assay:     { name: "Assay Office", cat: "shop", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8b8f96", "#6e7278"], style: "front", emblem: "scale",
@@ -534,10 +536,12 @@ const DEF = {
   /* Civic */
   bridge:    { name: "Bridge", cat: "civic", shape: "I3", n: 1, era: 1, base: 2, bridge: true, tile: ["#c9a06f", "#8f6a45"],
                roles: ["deck", "deck", "deck"], blurb: "Crosses the water. Both ends must sit on land.",
-               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }] },
+               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }],
+               pending: { rules: [{ k: "land", t: "water", p: 1 }, { k: "variety", p: 1 }] } },
   coveredbridge: { name: "Covered Bridge", cat: "civic", shape: "I4", n: 1, era: 1, base: 3, bridge: true, tile: ["#c9a06f", "#8f6a45"],
                roof: ["#b0503c", "#8c3d2d"], roles: ["deck", "hall", "hall", "deck"], blurb: "A long, roofed crossing. Both ends must sit on land.",
-               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }] },
+               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }],
+               pending: { rules: [{ k: "land", t: "water", p: 1 }, { k: "variety", p: 1 }] } },
   library:   { name: "Library", plural: "Libraries", cat: "civic", shape: "F5", n: 1, era: 3, base: 3, roof: ["#6d8f7a", "#557260"], emblem: "book",
                roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, trees and families to read.",
                rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "forest", p: 1 }] },
@@ -555,7 +559,9 @@ const DEF = {
                rules: [{ k: "without", cats: ["leisure", "industry"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
   doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
                roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }],
+               pending: { blurb: "Close to families and the shops, far from the smoke.",
+                          rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] } },
   courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
                roles: ["hall", "hall", "hall", "yard", "flag"], blurb: "Law and order, on the main street.",
                rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
@@ -586,11 +592,11 @@ const DEF = {
                rules: [{ k: "crowd", n: 4, p: 4 }, { k: "near", cats: ["shop"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   countryhouse:{ name: "Country House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#c77d58", "#a3603f"], draft: true,
                roles: ["house", "house", "garden", "tree"], blurb: "Room to breathe, with the herds in view.",
-               rules: [{ k: "room", p: 1 }, { k: "land", t: "herd", p: 1 }] },
-  company:   { name: "Company Houses", plural: "Company Houses", cat: "home", shape: "I3", n: 1, era: 2, base: 1, draft: true,
-               roof: ["#9a8f86", "#7a7068"], roof2: ["#b0a393", "#8e8274"],
-               roles: ["rowA", "rowB", "rowA"], blurb: "Built by the mine owners for the men who work for them.",
-               rules: [{ k: "town", cats: ["industry"], p: 1 }, { k: "land", t: "ore", p: 1 }] },
+               rules: [{ k: "room", p: 2 }, { k: "land", t: "herd", p: 1 }] },
+  duplex:    { name: "Duplex", plural: "Duplexes", cat: "home", shape: "I2", n: 2, era: 1, base: 2, draft: true,
+               roof: ["#c9855a", "#a5673f"], roof2: ["#b8765f", "#935944"],
+               roles: ["rowA", "rowB"], blurb: "Two families under one roof, a short walk from the works and the fields.",
+               rules: [{ k: "near", cats: ["industry"], p: 1 }, { k: "near", cats: ["agri"], p: 2 }] },
   tollhouse: { name: "Toll House", cat: "shop", shape: "I2", n: 1, era: 1, base: 2, roof: ["#a8743f", "#86592f"], draft: true,
                roles: ["house", "tollgate"], blurb: "A coin from everyone who crosses.",
                rules: [{ k: "near", bridge: true, p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
@@ -2120,19 +2126,33 @@ function groundDetail(g, role, i, x, y, S, horiz) {
       g.fillStyle = "#7d919c"; g.beginPath(); g.moveTo(fx + S * .1, fy); g.lineTo(fx + S * .16, fy - S * .04); g.lineTo(fx + S * .16, fy + S * .04); g.closePath(); g.fill();
     }
   } else if (role === "furs") {
+    // A trader's yard: a birch canoe pulled up, pelts laced into drying hoops, and a barrel.
     g.save(); g.translate(cx, cy); if (!horiz) g.rotate(Math.PI / 2);
-    ellipse(g, S * .03, S * .2, S * .38, S * .1, "rgba(40,30,20,.2)");
-    ellipse(g, 0, S * .16, S * .38, S * .1, "#a4643e"); ellipse(g, 0, S * .16, S * .3, S * .06, "#d6a574");
+    const cw = S * .4, cy2 = S * .25, ch = S * .09;
+    const hull = (dy, k) => { g.beginPath(); g.moveTo(-cw * k, cy2 + dy); g.quadraticCurveTo(0, cy2 + dy - ch * 1.8 * k, cw * k, cy2 + dy); g.quadraticCurveTo(0, cy2 + dy + ch * 1.8 * k, -cw * k, cy2 + dy); };
+    hull(S * .04, 1); g.fillStyle = "rgba(40,30,20,.22)"; g.fill();
+    hull(0, 1); g.fillStyle = "#b8743f"; g.fill();
+    hull(0, .82); g.fillStyle = "#ecd3a2"; g.fill();
+    g.strokeStyle = "#b8743f"; g.lineWidth = Math.max(1, S * .018); g.beginPath();
+    for (const u of [-.45, -.15, .15, .45]) { g.moveTo(cw * u, cy2 - ch * .9); g.lineTo(cw * u, cy2 + ch * .9); }
+    g.stroke();
     g.restore();
-    // Pelts pegged out flat to dry: a body with four legs spread.
-    for (const [px, col] of [[.3, "#7a5234"], [.66, "#a9784f"]]) {
-      const fx = x + S * px, fy = y + S * .34, u = S * .1;
+    for (const [px, col] of [[.28, "#7a5234"], [.6, "#a9784f"]]) {
+      const hx = x + S * px, hy = y + S * .34, u = S * .075;
+      circle(g, hx + S * .02, hy + S * .03, S * .15, "rgba(40,30,20,.18)");
+      g.strokeStyle = "#8a6444"; g.lineWidth = Math.max(1.2, S * .03); g.beginPath(); g.arc(hx, hy, S * .14, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = "rgba(90,60,35,.7)"; g.lineWidth = Math.max(.8, S * .012); g.beginPath();
+      for (let k = 0; k < 8; k++) { const b = k * Math.PI / 4; g.moveTo(hx + Math.cos(b) * u * .9, hy + Math.sin(b) * u * .9); g.lineTo(hx + Math.cos(b) * S * .14, hy + Math.sin(b) * S * .14); }
+      g.stroke();
       g.fillStyle = col; g.beginPath();
-      g.moveTo(fx, fy - u * 1.3); g.lineTo(fx + u * .5, fy - u * .7); g.lineTo(fx + u * 1.2, fy - u * 1.1); g.lineTo(fx + u * .7, fy);
-      g.lineTo(fx + u * 1.2, fy + u * 1.1); g.lineTo(fx + u * .4, fy + u * .9); g.lineTo(fx, fy + u * 1.4); g.lineTo(fx - u * .4, fy + u * .9);
-      g.lineTo(fx - u * 1.2, fy + u * 1.1); g.lineTo(fx - u * .7, fy); g.lineTo(fx - u * 1.2, fy - u * 1.1); g.lineTo(fx - u * .5, fy - u * .7);
+      g.moveTo(hx, hy - u * 1.3); g.lineTo(hx + u * .5, hy - u * .7); g.lineTo(hx + u * 1.2, hy - u * 1.1); g.lineTo(hx + u * .7, hy);
+      g.lineTo(hx + u * 1.2, hy + u * 1.1); g.lineTo(hx + u * .4, hy + u * .9); g.lineTo(hx, hy + u * 1.4); g.lineTo(hx - u * .4, hy + u * .9);
+      g.lineTo(hx - u * 1.2, hy + u * 1.1); g.lineTo(hx - u * .7, hy); g.lineTo(hx - u * 1.2, hy - u * 1.1); g.lineTo(hx - u * .5, hy - u * .7);
       g.closePath(); g.fill();
     }
+    circle(g, x + S * .86 + S * .02, y + S * .3 + S * .03, S * .075, "rgba(40,30,20,.2)");
+    circle(g, x + S * .86, y + S * .3, S * .075, "#8a5a36"); circle(g, x + S * .86, y + S * .3, S * .055, "#a7744a");
+    g.strokeStyle = "#4d3a2a"; g.lineWidth = Math.max(1, S * .015); g.beginPath(); g.arc(x + S * .86, y + S * .3, S * .066, 0, Math.PI * 2); g.stroke();
   } else if (role === "hitch") {
     g.fillStyle = "#62abc9"; g.fillRect(x + S * .62, y + S * .16, S * .22, S * .1);
     g.strokeStyle = "#7a5634"; g.lineWidth = Math.max(1.5, S * .035); g.beginPath(); g.moveTo(x + S * .18, y + S * .4); g.lineTo(x + S * .82, y + S * .4); g.stroke();

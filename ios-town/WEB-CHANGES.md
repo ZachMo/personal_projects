@@ -10,6 +10,21 @@ parity tests will fail.
 
 ## Waiting
 
+### Building notes: a trader's yard, a truer blurb, and changes waiting
+
+Commit: "Hügelland: building notes, with scoring changes held for go-live", after the drafts.
+
+Live now, words and art only:
+- Row Houses blurb: "Town folk who want the shops close and civic services at hand." (It promised a river view it never scored.)
+- Trading Post: a TRADE sign on its roof, and its yard (`furs`) is a birch canoe, two pelts laced in drying hoops and a barrel.
+
+Held back with `pending` (the game ignores it; the review page shows it beside today's card):
+- Bridge and Covered Bridge: "+1 each building" becomes "+1 each kind of building" (`variety`).
+- Doctor: Woods is replaced by +1 Shop; blurb "Close to families and the shops, far from the smoke."
+
+Drafts: the Country House's open squares are +2 each, and Company Houses are replaced by the Duplex (I2, ×2,
++1 Industry, +2 Food), a Cabin that likes the works instead of the woods. Decks and par are unchanged.
+
 ### Six draft buildings, and three new ways to score
 
 Commit: "Hügelland: six draft buildings for review", after the livelier buildings.

@@ -3181,23 +3181,25 @@ $("scoreBtn").onclick = showScore;
 
   F woods, O ore, W wheat, H herd, ~ water, . open grass. The mill fits the woods only when turned and flipped,
   the farm that helps the homes sits on the Mine's ore, and the bridge crosses the river next to the homes.
+  The lake keeps the land tight: at the end the Church, a plus, fits in only two gaps, next to the last ore.
+  A Mine put down without thinking of it can take both, and the Church is turned away.
 */
 const TUT_MAP = [
-  "F.F..~...",
-  ".FFF.~.HH",
-  ".F...~.HH",
-  ".F...~...",
-  "FFF..~...",
-  ".....~...",
-  ".....~...",
-  "OO...~...",
-  "OOW..~.HH",
-  "OOW..~.H.",
-  ".....~.FF",
-  ".....~.FF",
+  "F.F..~~~~",
+  ".FFF.~~~~",
+  ".F..~~~~~",
+  ".F.~~~~~~",
+  "FFF..~~~~",
+  ".....~~~~",
+  ".....~.~~",
+  "OO...~.HH",
+  "OOW..~.H~",
+  "OOW..~~~~",
+  "....~~~~~",
+  "~~~~~~~~~",
 ];
 const TUT_LAND = { F: "forest", O: "ore", W: "wheat", H: "herd", "~": "water", ".": "grass" };
-const TUT_DECK = ["lumber", "cabin", "loghouse", "homestead", "farm", "bridge", "mine", "windmill"];
+const TUT_DECK = ["lumber", "cabin", "loghouse", "homestead", "farm", "bridge", "mine", "church"];
 const TUT = { on: false, i: 0, turned: false, flipped: false, last: null, html: "", until: 0, timer: 0 };
 
 const squares = (xys) => xys.map(([x, y]) => idx(x, y));
@@ -3215,7 +3217,7 @@ const gained = (r) => r.changed.reduce((sum, x) => sum + x.d, 0);
 */
 const STEPS = [
   { side: "bottom", next: true,
-    text: () => `Each turn you get one building. Your goal is to find the spot where it scores the most. First up: a <b>Lumber Mill</b>.` },
+    text: () => `Hügelland is a jigsaw. Every building must fit somewhere, and one with no room costs −${AWAY}. Within that, put each where it scores the most. First up: a <b>Lumber Mill</b>.` },
   { side: "bottom", wait: "rules",
     text: () => `Tap the mill on the map, or tap its name in the panel below, to see how it scores.` },
   { side: "bottom", next: true, hold: 2200, leave: () => closeInfo(),
@@ -3227,32 +3229,34 @@ const STEPS = [
     text: (r) => `+${r.pts}! <b>Perfect ground</b>: every square is on woods. <b>Rich land</b>: ${landOf(r)} woods in all. Build well to win trophies.` },
   { side: "top", build: [[0, 6], [1, 6]], ghost: { rot: 0, flip: false, ax: 3, ay: 4 },
     text: () => `Now a home. The Cabin's card has a red row: it loses 2 for each industry next to it, so keep homes away from the mill. Put the Cabin on the outline and tap <b>Build</b>.` },
-  { side: "top", hold: "pop", build: [[0, 5], [1, 5], [2, 5]], ghost: { rot: 0, flip: false, ax: 2, ay: 3 },
+  { side: "top", hold: "pop", build: [[0, 5], [1, 5], [2, 5]], ghost: { rot: 0, flip: false, ax: 2, ay: 4 },
     text: () => `Buildings of one kind that touch make a <b>district</b>. Put the Log House on the outline, next to the Cabin. The shaded lot shows the district it joins.` },
   { side: "top", next: true, hold: "pop",
     text: () => `A district of 2: each home gets +1, so the Cabin went up too.` },
-  { side: "top", build: [[2, 6], [2, 7], [3, 7]], ghost: { rot: 0, flip: false, ax: 3, ay: 3 },
+  { side: "top", build: [[2, 6], [2, 7], [3, 7]], ghost: { rot: 0, flip: false, ax: 3, ay: 4 },
     text: () => `Add the Homestead to the district.` },
   { side: "top", next: true, hold: "pop",
     text: () => `A district of 3: now each home gets +2. It grows up to +${DISTRICT_MAX}.` },
-  { side: "top", build: [[0, 7], [1, 7], [0, 8], [1, 8]], ghost: { rot: 0, flip: false, ax: 3, ay: 9 },
+  { side: "top", build: [[0, 7], [1, 7], [0, 8], [1, 8]], ghost: { rot: 0, flip: false, ax: 3, ay: 8 },
     text: () => `The Farm is food, and homes like food next door. Put it on the outline, next to the homes.` },
   { side: "top", next: true, hold: "pop",
     text: (r) => `The homes gained +${gained(r)}. But see the red trophy, <b>Wasted land</b>: the Farm covers ore that a Mine will want later. Every spot is a trade-off.` },
-  { side: "top", build: [[4, 7], [5, 7], [6, 7]], ghost: { rot: 0, flip: false, ax: 4, ay: 3 },
+  { side: "top", build: [[4, 7], [5, 7], [6, 7]], ghost: { rot: 0, flip: false, ax: 4, ay: 6 },
     text: () => `<b>Bridges</b> are the only buildings that can sit on water, and both ends must be on land. Put the bridge on the outline, across the river.` },
   { side: "top", next: true, hold: "pop",
     text: (r) => `+${r.pts}: for the water around it and the building it touches. Bridges join no district.` },
   { side: "top", wait: "deck",
     text: () => `Two buildings are left. Tap <b>To come</b> at the top right to see them.` },
   { side: "top", wait: "sheetclose",
-    text: () => `Every building still to come, and how it scores. Plan room for them, then close the list.` },
+    text: () => `Everything still to come, and the squares it needs. In a real game that is almost every open square, so watch this count and leave room for awkward shapes. Then close the list.` },
   { side: "top", wait: "select",
     text: () => `Tap any building you have built to see its score now.` },
   { side: "top", next: true, hold: 2200, leave: () => closeInfo(),
     text: () => `Each row is part of its score now. Grey rows are bonuses it could still get. <b>Points</b> at the top shows the whole town.` },
   { side: "top", build: "any",
-    text: () => `Your turn. Place the ${G.deck.slice(G.at).map(k => DEF[k].name).join(" and the ")} where you think ${G.deck.length - G.at > 1 ? "they score" : "it scores"} best. The town is done when the last building is down.` },
+    text: () => current() === "church"
+      ? `Now the Church. Find a gap where the whole plus fits.`
+      : `Your turn. The Mine wants ore. But the Church comes next, a plus shape with only two gaps left that fit it, both by the ore. Place the Mine without taking them.` },
 ];
 
 const tutStep = () => G && G.tut && TUT.on && !G.over ? STEPS[TUT.i] : null;
@@ -3384,6 +3388,9 @@ function tutSummary() {
       <div class="best">Your tutorial town</div>
     </div>
     <p>When the last building is down, the town is done and every building's score adds up. Fit them all for +${ALL_FIT}. Each building with no room costs −${AWAY}.</p>
+    <p>${G.away.length
+      ? `The ${esc(DEF[G.away[0]].name)} had no room, so it cost −${AWAY} and the +${ALL_FIT}. That is the jigsaw: every square you take is one a later building can't have.`
+      : `You fit every building. On a real map that is the hard part, so keep an eye on To come.`}</p>
     <ul class="tally">
       <li><span>Buildings</span><b>${boardScore()}</b></li>
       ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>`

@@ -10,6 +10,17 @@ parity tests will fail.
 
 ## Waiting
 
+### The tutorial teaches the jigsaw
+
+Commit: "Hügelland: the tutorial teaches the jigsaw", after the tutorial pauses.
+
+Same number of steps. The first coach card says Hügelland is a jigsaw and a building with no room costs −5.
+The To come step points at the squares count and says a real deck fills almost every open square. The map is
+tighter: a lake fills the right side and the bottom, and a bay cuts into the top. The last building is now a
+Church (a plus) instead of a Windmill. After the scripted moves it fits in only two gaps, next to the last ore,
+and a careless Mine can take both. Careful play ends on 70, a blocked Church on 50. The tutorial summary says
+which building had no room and why that matters.
+
 ### The tutorial gives you a moment to look
 
 Commit: "Hügelland: the tutorial lets you look before it talks", after Each water.

@@ -245,6 +245,30 @@
   .tchip { font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #f6e7b4; color: #7a5608; }
   .tchip.bad { background: var(--bad-bg); color: var(--bad); }
 
+  /* ── The Herald-Zeitung, at the end of a daily town ── */
+  .paper {
+    background: #efe7d3; color: #241f19; border-radius: 4px; padding: 14px 14px 16px; margin: 4px 0 2px;
+    font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; box-shadow: 0 2px 10px rgba(0,0,0,.18);
+    background-image: repeating-linear-gradient(0deg, rgba(120,100,70,.05) 0 2px, transparent 2px 4px);
+  }
+  .paper .mast { display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+                 border-bottom: 3px double #241f19; padding-bottom: 6px; }
+  .paper .mast b { font-size: 1.24rem; letter-spacing: .01em; font-weight: 700; font-variant: small-caps; white-space: nowrap; }
+  .paper .mast span { font-size: .52rem; letter-spacing: .1em; text-transform: uppercase; color: #6b5f4d; flex: 1 1 0; }
+  .paper .mast span:last-child { text-align: right; }
+  .paper .dateline { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: #6b5f4d;
+                     border-bottom: 1px solid #c8bb9e; padding: 4px 0 6px; text-align: center; }
+  .paper .hl { margin: 10px 0 0; font-size: 1.2rem; line-height: 1.15; letter-spacing: -.01em; text-align: center; font-weight: 700; }
+  .paper .sub { margin: 6px 0 0; font-size: .84rem; line-height: 1.45; text-align: center; font-style: italic; color: #453c30; }
+  .paper .cut { margin: 10px 0 0; text-align: center; }
+  .paper .cut img { display: block; width: 100%; max-width: 250px; max-height: 150px; object-fit: cover; margin: 0 auto;
+                    border: 1px solid #241f19; filter: sepia(.72) contrast(1.12) saturate(.65) brightness(1.02); }
+  .paper .cut figcaption { font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; color: #6b5f4d; margin-top: 4px; }
+  .paper .short { margin-top: 10px; border-top: 1px solid #c8bb9e; padding-top: 8px; column-gap: 14px; }
+  .paper .short p { margin: 0 0 8px; font-size: .76rem; line-height: 1.4; color: #352e25; text-align: justify; }
+  .paper .short b { letter-spacing: .04em; }
+  @media (min-width: 440px) { .paper .short { column-count: 2; } }
+
   /* ── Score pop and trophies ── */
   .pop { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 5px;
          pointer-events: none; z-index: 5; transition: opacity .4s, margin-top .4s; }
@@ -593,6 +617,30 @@ const DEF = {
   countryhouse:{ name: "Country House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#c77d58", "#a3603f"], draft: true,
                roles: ["house", "house", "garden", "tree"], blurb: "Room to breathe, with the herds in view.",
                rules: [{ k: "room", p: 2 }, { k: "land", t: "herd", p: 1 }] },
+  cottongin: { name: "Cotton Gin", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#8d949c", "#6d747c"], style: "metal", extra: "stack", draft: true,
+               roles: ["hall", "hall", "hall", "bales"], blurb: "The gin runs day and night in the picking season. Dust and noise with it.",
+               rules: [{ k: "land", t: "wheat", p: 2 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
+  rollermills:{ name: "Roller Mills", plural: "Roller Mills", cat: "industry", shape: "L4", n: 1, era: 3, base: 2, roof: ["#a8865c", "#866a45"], draft: true,
+               roles: ["hall", "hall", "hall", "silo"], blurb: "Flour for the whole valley, ground by the river.",
+               rules: [{ k: "town", cats: ["agri"], p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
+  limeworks: { name: "Lime Works", plural: "Lime Works", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, draft: true,
+               roles: ["kiln", "rocks"], blurb: "Burnt lime for the mortar in every civic wall in town.",
+               rules: [{ k: "land", t: "ore", p: 3 }, { k: "town", cats: ["civic"], p: 1 }] },
+  brewery:   { name: "Brewery", plural: "Breweries", cat: "industry", shape: "O4", n: 1, era: 2, base: 3, roof: ["#a4503c", "#823c2c"], extra: "stack", draft: true,
+               roles: ["hall", "hall", "barrels", "barrels"], blurb: "Spring water, barley and the town's own thirst.",
+               rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["leisure"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
+  oildepot:  { name: "Oil Depot", cat: "industry", shape: "I3", n: 1, era: 3, base: 2, roof: ["#7d8288", "#5f646a"], style: "metal", draft: true,
+               roles: ["tank", "tank", "rail"], blurb: "Tanks by the tracks, at the edge of town. Nobody wants them closer.",
+               rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry"], p: 1 }, { k: "near", cats: ["home"], p: -3 }] },
+  firehouse: { name: "Fire Station", cat: "civic", shape: "V3", n: 1, era: 2, base: 2, roof: ["#c1453a", "#9b342c"], extra: "bell", draft: true,
+               roles: ["hall", "hall", "hosecart"], blurb: "The hose company answers for every roof it can reach.",
+               rules: [{ k: "near", any: true, p: 1 }, { k: "near", cats: ["home"], p: 1 }] },
+  postoffice:{ name: "Post Office", plural: "Post Offices", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#5f7a9e", "#48607f"], emblem: "letter", draft: true,
+               roles: ["hall", "flag"], blurb: "Letters for everyone, and the road out of town.",
+               rules: [{ k: "variety", p: 1 }, { k: "edge", p: 2 }] },
+  sanitarium:{ name: "Sanitarium", plural: "Sanitariums", cat: "civic", shape: "L5", n: 1, era: 3, base: 3, roof: ["#e4e0d2", "#c2bdac"], draft: true,
+               roles: ["hall", "hall", "hall", "garden", "tree"], blurb: "Rest, clean air and quiet. Especially quiet.",
+               rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "room", p: 1 }] },
   duplex:    { name: "Duplex", plural: "Duplexes", cat: "home", shape: "I2", n: 2, era: 1, base: 2, draft: true,
                roof: ["#c9855a", "#a5673f"], roof2: ["#b8765f", "#935944"],
                roles: ["rowA", "rowB"], blurb: "Two families under one roof, a short walk from the works and the fields.",
@@ -609,12 +657,13 @@ const DEF = {
 };
 
 /*
-  The drafts and pending changes go live with the daily map of LIVE_FROM, at midnight UTC when that map starts,
-  so no day's map changes its rules partway through. A page opened earlier keeps the old rules until it reloads.
-  Once the day has come, fold the changes into DEF for good and take this out.
+  The drafts and pending changes go live with the daily map of LIVE_FROM, at midnight Central when that map
+  starts, so no day's map changes its rules partway through. A page opened earlier keeps the old rules until it
+  reloads. Once the day has come, fold the changes into DEF for good and take this out.
 */
 const LIVE_FROM = "2026-09-20";
-const NEW_RULES = new Date().toISOString().slice(0, 10) >= LIVE_FROM;
+const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const NEW_RULES = today() >= LIVE_FROM;
 if (NEW_RULES) for (const k in DEF) {
   const d = DEF[k];
   if (d.pending) { Object.assign(d, d.pending); delete d.pending; }
@@ -1006,11 +1055,12 @@ function judge(type, cells, parts, pts, gain, changed) {
 /* ───────────────────────── The daily map ───────────────────────── */
 
 /*
-  One map a day, the same for everyone: the seed comes from today's date in UTC, so a player in Berlin and a
-  player in Denver build the same town. A daily game also carries three goals and a par, and a free map is
-  the game as it always was, with neither.
+  One map a day, the same for everyone: the seed comes from the date in Texas, where the town comes from, so
+  everyone plays the same map and the day turns over at midnight Central. A daily game also carries three goals
+  and a par, and a free map is the game as it always was, with neither.
 */
-const dayKey = (d = new Date()) => d.toISOString().slice(0, 10);
+const ZONE = "America/Chicago";
+const dayKey = (d = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 const dayName = (key) => new Date(key + "T12:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "long" });
 
 function seedFrom(text) {
@@ -1343,7 +1393,7 @@ const GROUND = {
   deck: "#c69a6b", hay: "#e5d6b7", plaza: "#e3dac7", graves: "#b3d494", pool: "#e3dac7", track: "#bddb95", tent: "#eadcb5",
   woodpile: "#c2d69b", veg: "#b99470", hedge: "#b3d494", laundry: "#e5d6b7", coop: "#dccfa4", fire: "#d2c9ba", hides: "#e5d6b7",
   anvil: "#cbc3b6", cart: "#cfc4b1", bricks: "#e5d6b7", bread: "#e9dcc0", fish: "#dfe6e3", furs: "#e5d6b7", hitch: "#e5d6b7",
-  pen: "#cdc8bf", paddock: "#bddb95", tollgate: "#d8cdb5", sacks: "#e5d6b7",
+  pen: "#cdc8bf", paddock: "#bddb95", tollgate: "#d8cdb5", sacks: "#e5d6b7", bales: "#e9e2d0", barrels: "#d8c9a8", tank: "#cfc8ba", hosecart: "#d9cdb8",
 };
 let BAKING = false;  // art is being drawn onto the baked board, so chimneys should smoke
 let NOW = 0;         // seconds, for the parts of buildings that move
@@ -1619,6 +1669,11 @@ function emblem(g, kind, x, y) {
       g.beginPath(); g.moveTo(0, -.75 * s); g.lineTo(0, .6 * s); g.moveTo(-.7 * s, -.45 * s); g.lineTo(.7 * s, -.45 * s); g.moveTo(-.35 * s, .6 * s); g.lineTo(.35 * s, .6 * s); g.stroke();
       g.fillStyle = "#c9a13b";
       for (const px of [-.6, .6]) { g.beginPath(); g.arc(px * s, -.1 * s, .28 * s, 0, Math.PI); g.fill(); }
+    } else if (kind === "letter") {
+      g.fillStyle = "#f7f2e6"; g.beginPath(); rr(g, -.78 * s, -.52 * s, 1.56 * s, 1.04 * s, .1 * s); g.fill();
+      g.strokeStyle = "#3d4148"; g.lineWidth = Math.max(1, S * .02);
+      g.beginPath(); rr(g, -.78 * s, -.52 * s, 1.56 * s, 1.04 * s, .1 * s); g.stroke();
+      g.beginPath(); g.moveTo(-.78 * s, -.52 * s); g.lineTo(0, .12 * s); g.lineTo(.78 * s, -.52 * s); g.stroke();
     } else if (kind === "loaf") {
       ellipse(g, 0, .05 * s, .78 * s, .5 * s, "#c8823f");
       ellipse(g, -.1 * s, -.05 * s, .55 * s, .3 * s, "#e0a55c");
@@ -2219,6 +2274,41 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     g.fillStyle = "#7a5634"; g.fillRect(bx - S * .06, by - S * .06, S * .12, S * .12);
     circle(g, bx, by, S * .03, "#f2c94c");
     alive(g, "tollbar", x, y, hash(i, 8), horiz ? 1 : 0);
+  } else if (role === "bales") {
+    // Cotton bales under their straps, stacked ready for the freight wagon.
+    for (const [bx, by, bw, bh] of [[.14, .2, .38, .26], [.56, .26, .32, .22], [.24, .58, .44, .28]]) {
+      g.fillStyle = "rgba(40,30,20,.2)"; g.beginPath(); rr(g, x + S * bx + S * .03, y + S * by + S * .04, S * bw, S * bh, S * .04); g.fill();
+      g.fillStyle = "#f4f0e4"; g.beginPath(); rr(g, x + S * bx, y + S * by, S * bw, S * bh, S * .04); g.fill();
+      g.strokeStyle = "#b6ab93"; g.lineWidth = Math.max(1, S * .02); g.beginPath();
+      for (const u of [.32, .68]) { g.moveTo(x + S * (bx + bw * u), y + S * by); g.lineTo(x + S * (bx + bw * u), y + S * (by + bh)); }
+      g.stroke();
+    }
+  } else if (role === "barrels") {
+    for (const [px, py, r] of [[.3, .32, .11], [.62, .28, .1], [.42, .64, .12], [.74, .62, .09]]) {
+      circle(g, x + S * px + S * .02, y + S * py + S * .03, S * r, "rgba(40,30,20,.2)");
+      circle(g, x + S * px, y + S * py, S * r, "#8a5a36"); circle(g, x + S * px, y + S * py, S * r * .72, "#a7744a");
+      g.strokeStyle = "#4d3a2a"; g.lineWidth = Math.max(1, S * .015);
+      g.beginPath(); g.arc(x + S * px, y + S * py, S * r * .86, 0, Math.PI * 2); g.stroke();
+    }
+  } else if (role === "tank") {
+    // A riveted oil tank, seen from above.
+    circle(g, cx + S * .03, cy + S * .05, S * .33, "rgba(40,30,20,.25)");
+    circle(g, cx, cy, S * .33, "#6f767c"); circle(g, cx, cy, S * .28, "#868e94");
+    g.strokeStyle = "#5b6167"; g.lineWidth = Math.max(1, S * .02);
+    g.beginPath(); g.arc(cx, cy, S * .18, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); for (let k = 0; k < 4; k++) { const b = k * Math.PI / 2 + .4; g.moveTo(cx + Math.cos(b) * S * .18, cy + Math.sin(b) * S * .18); g.lineTo(cx + Math.cos(b) * S * .28, cy + Math.sin(b) * S * .28); }
+    g.stroke();
+    circle(g, cx, cy, S * .06, "#4f555a"); circle(g, cx - S * .02, cy - S * .02, S * .03, "#9aa2a8");
+  } else if (role === "hosecart") {
+    // The hose cart stands ready outside, with buckets beside it.
+    const w = S * .46, h = S * .3, bx = cx - w / 2, by = cy - h / 2;
+    g.fillStyle = "rgba(40,30,20,.22)"; g.beginPath(); rr(g, bx + S * .03, by + S * .04, w, h, S * .05); g.fill();
+    g.fillStyle = "#c1453a"; g.beginPath(); rr(g, bx, by, w, h, S * .05); g.fill();
+    circle(g, cx, cy, S * .1, "#e8e2d2"); circle(g, cx, cy, S * .055, "#8c8f95");
+    g.strokeStyle = "#7a2f27"; g.lineWidth = Math.max(1, S * .02);
+    g.beginPath(); g.arc(cx, cy, S * .1, 0, Math.PI * 2); g.stroke();
+    for (const px of [-.28, .28]) circle(g, cx + S * px, cy + h / 2, S * .055, "#3d3a36");
+    for (const [qx, qy] of [[.74, .26], [.84, .46]]) { circle(g, x + S * qx, y + S * qy, S * .05, "#6f767c"); circle(g, x + S * qx, y + S * qy, S * .032, "#9aa2a8"); }
   } else if (role === "sacks") {
     for (const [sx, sy, r] of [[.32, .38, .13], [.62, .34, .12], [.46, .66, .14], [.74, .66, .1]]) {
       ellipse(g, x + S * sx + S * .02, y + S * sy + S * .04, S * r, S * r * .85, "rgba(40,30,20,.2)");
@@ -3254,6 +3344,266 @@ async function shareChallenge() {
   }
 }
 
+/* ───────────────────────── The Herald-Zeitung ───────────────────────── */
+
+/*
+  A daily town ends with a page of its local paper. Stories are read off the finished town: what ended up next
+  to what, how big the districts grew, what the map did and what was left out. Each story that fits is weighed,
+  and the day's own random pick decides the wording, so two players with the same town read the same paper.
+  The photograph is a crop of the board itself, so it needs no art of its own.
+*/
+const SURNAMES = ["Pfeuffer", "Dittlinger", "Landa", "Gruene", "Faust", "Voelcker", "Hoffmann", "Nolte", "Eiband", "Jahn",
+  "Krueger", "Mueller", "Rennert", "Saur", "Tolle", "Wernecke", "Zuehl", "Schmidt", "Klein", "Bremer", "Henne", "Fischer",
+  "Koepp", "Seidel", "Ludwig", "Stoltz", "Weidner", "Moeller", "Ruppert", "Vogel", "Weber", "Kuebler", "Haag", "Doerr", "Merz", "Brune"];
+const PLACES = ["Comal Avenue", "Guadalupe Street", "Seguin Avenue", "Castell Avenue", "San Antonio Street", "Mill Street",
+  "Coll Street", "Market Plaza", "Cypress Bend", "Dry Comal", "Hügel Hill", "Landa Street"];
+const FIRSTS = ["Herr", "Frau", "Old", "Young", "Widow"];
+
+function paperRandom() {
+  const town = G.pieces.map(p => p.type + ":" + p.cells[0]).join(",");
+  return mulberry(seedFrom("paper/" + G.day + "/" + town));
+}
+
+/* What the finished town can be written about. */
+function townFacts() {
+  const P = G.pieces.map((p, k) => ({ k, type: p.type, cat: DEF[p.type].cat, name: DEF[p.type].name, cells: p.cells, score: pieceScore(k) }));
+  const pairs = [];
+  for (const a of P) for (const j of touching(a.cells, a.k)) if (j > a.k) pairs.push([a, P[j]]);
+  const is = (q) => typeof q === "string" ? (p) => p.type === q || p.cat === q : (p) => q.includes(p.type) || q.includes(p.cat);
+  const F = {
+    P, pairs, away: G.away,
+    of: (q) => P.filter(is(q)),
+    // A pair that touches, first the one that matches `qa`.
+    pair: (qa, qb) => {
+      const fa = is(qa), fb = is(qb);
+      for (const [a, b] of pairs) {
+        if (fa(a) && fb(b) && a.k !== b.k) return { a, b };
+        if (fa(b) && fb(a) && a.k !== b.k) return { a: b, b: a };
+      }
+      return null;
+    },
+    // The biggest district of a kind, as a list of buildings.
+    biggest: (cat) => {
+      let best = [];
+      for (const p of P) {
+        if (p.cat !== cat || DEF[p.type].bridge) continue;
+        const group = [p, ...districtOf(p.type, p.cells, p.k).map(k => P[k])];
+        if (group.length > best.length) best = group;
+      }
+      return best;
+    },
+    alone: (q) => P.filter(is(q)).find(p => touching(p.cells, p.k).size === 0),
+    best: P.slice().sort((a, b) => b.score - a.score)[0],
+    worst: P.slice().sort((a, b) => a.score - b.score)[0],
+  };
+  return F;
+}
+
+const cellsOf = (...ps) => ps.flatMap(p => p.cells);
+
+/*
+  Every story the paper can run. `find` returns what it is about, or nothing when the town gives it no reason.
+  `w` is how loudly it shouts: a strange neighbour beats a plain one. `lines` are the wordings to choose from,
+  each returning a headline, the line under it, and a caption for the photograph.
+*/
+const STORIES = [
+  { id: "saloon-cemetery", w: 10, find: (F) => F.pair("leisure", "cemetery"),
+    lines: [
+      (d, N, W, R0) => ({ h: "SPIRITS AMONG THE HEADSTONES", s: `The sexton reports late callers from the ${d.a.name}, and asks that they call earlier.`, c: `The ${d.b.name}, lately livelier.` }),
+      (d, N, W, R0) => ({ h: "CEMETERY ASKS FOR QUIET", s: `${N()} says the singing carries from the ${d.a.name} to the family plot after midnight.`, c: "A short walk between the two." }),
+    ] },
+  { id: "jail-saloon", w: 9, find: (F) => F.pair("jail", "leisure"),
+    lines: [
+      (d, N, W, R0) => ({ h: "A SHORT WALK TO THE CELLS", s: `The sheriff allows the arrangement saves the town a deal of carrying.`, c: `The ${d.b.name}, next door to the ${d.a.name}.` }),
+      (d, N, W, R0) => ({ h: "CONVENIENT FOR ALL CONCERNED", s: `${N()} was escorted the length of one wall on Saturday night.`, c: "The shortest walk in town." }),
+    ] },
+  { id: "church-casino", w: 10, find: (F) => F.pair(["church", "sheriff", "courthouse"], ["casino", "saloon"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "SERMON NAMES THE NEIGHBOURS", s: `The ${d.a.name} looked squarely at the ${d.b.name} on Sunday, and the ${d.b.name} looked squarely back.`, c: "Two doors, one wall." }),
+      (d, N, W, R0) => ({ h: "TEMPERANCE MEETING CALLED", s: `The congregation will meet on the matter of the ${d.b.name}. All are invited, including the proprietor.`, c: `The ${d.b.name}, unrepentant.` }),
+    ] },
+  { id: "tannery-home", w: 9, find: (F) => F.pair(["tannery", "oildepot"], "home"),
+    lines: [
+      (d, N, W, R0) => ({ h: "A QUESTION OF THE AIR", s: `${N()} has written to the council about the ${d.a.name}, and enclosed a handkerchief as evidence.`, c: `The ${d.a.name}, upwind of the ${d.b.name}.` }),
+      (d, N, W, R0) => ({ h: "NEIGHBOURS PETITION COUNCIL", s: `Washing hung on ${W()} comes in worse than it went out, the petition says.`, c: "The offending works." }),
+    ] },
+  { id: "home-industry", w: 6, find: (F) => F.pair("home", ["industry"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "NOISE COMPLAINT FILED", s: `Residents of the ${d.a.name} report the ${d.b.name} keeps hours no Christian household would.`, c: `The ${d.b.name}, hard at it.` }),
+      (d, N, W, R0) => ({ h: `SLEEP SCARCE ON ${W().toUpperCase()}`, s: `${N()} counted the hammer blows and gave up at four hundred.`, c: "Close quarters." }),
+    ] },
+  { id: "school-saloon", w: 10, find: (F) => F.pair("school", ["saloon", "casino"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "SCHOOLMASTER OBJECTS", s: `The children of the ${d.a.name} have learned three songs they did not learn in class.`, c: "The schoolhouse and its neighbour." }),
+    ] },
+  { id: "doctor-smoke", w: 8, find: (F) => F.pair(["doctor", "sanitarium"], "industry"),
+    lines: [
+      (d, N, W, R0) => ({ h: "DOCTOR ORDERS FRESH AIR", s: `A difficult prescription to fill beside the ${d.b.name}, the ${d.a.name} admits.`, c: "Rest, quiet, and a chimney." }),
+    ] },
+  { id: "library-noise", w: 9, find: (F) => F.pair("library", ["leisure", "industry"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "SILENCE, PLEASE", s: `The librarian has asked the ${d.b.name} to consider the hour, and been asked in turn to consider loosening up.`, c: "Quiet, in theory." }),
+    ] },
+  { id: "bakery-home", w: 5, find: (F) => F.pair("bakery", "home"),
+    lines: [
+      (d, N, W, R0) => ({ h: "THE TOWN WAKES TO BREAD", s: `Families beside the ${d.a.name} report the finest alarm clock in the county.`, c: "First light at the bakery." }),
+    ] },
+  { id: "park-home", w: 4, find: (F) => F.pair(["park", "plaza"], "home"),
+    lines: [
+      (d, N, W, R0) => ({ h: "CHILDREN CLAIM THE GREEN", s: `${N()} counted eleven of them before breakfast, and no shoes among them.`, c: "The green, well used." }),
+    ] },
+  { id: "racetrack", w: 7, find: (F) => F.pair("racetrack", ["stables", "ranch", "agri"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "A HORSE FOR EVERY FENCE", s: `The ${d.b.name} sends them over and the ${d.a.name} sends them back tired.`, c: "Race day traffic." }),
+    ] },
+  { id: "brewery-saloon", w: 9, find: (F) => F.pair("brewery", "leisure"),
+    lines: [
+      (d, N, W, R0) => ({ h: "SHORTEST SUPPLY LINE IN TEXAS", s: `The ${d.a.name} rolls them next door, and the ${d.b.name} rolls the empties back.`, c: "Barrels, in transit." }),
+    ] },
+  { id: "gin-homes", w: 8, find: (F) => F.pair("cottongin", "home"),
+    lines: [
+      (d, N, W, R0) => ({ h: "LINT ON EVERY WINDOW SILL", s: `The ${d.a.name} runs through the night in picking season, as ${N()} can testify.`, c: "The gin, in season." }),
+    ] },
+  { id: "toll-bridge", w: 8, find: (F) => F.pair("tollhouse", ["bridge", "coveredbridge"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "A NICKEL TO CROSS", s: `The keeper of the ${d.a.name} reports business steady and the bar well oiled.`, c: "The crossing, at a price." }),
+    ] },
+  { id: "fire-neighbours", w: 8, find: (F) => { const p = F.of("firehouse")[0]; return p && touching(p.cells, p.k).size >= 3 ? { a: p, n: touching(p.cells, p.k).size } : null; },
+    lines: [
+      (d, N, W, R0) => ({ h: "HOSE COMPANY WELL PLACED", s: `${d.n} roofs stand within a hose length of the ${d.a.name}. The company is pleased; the insurers more so.`, c: "The hose cart, ready." }),
+    ] },
+  { id: "mine-town", w: 6, find: (F) => F.pair(["mine", "sluice", "stampmill"], ["home", "shop"]),
+    lines: [
+      (d, N, W, R0) => ({ h: "ORE AND ORDINARY LIFE", s: `The ${d.a.name} works within earshot of the ${d.b.name}, and the dust falls where it will.`, c: "The diggings, close in." }),
+    ] },
+  { id: "hotel-view", w: 5, find: (F) => F.of("hotel")[0] && { a: F.of("hotel")[0] },
+    lines: [
+      (d, N, W, R0) => ({ h: "GUESTS SPEAK WELL OF THE TOWN", s: `The register at the ${d.a.name} shows ${8 + Math.floor(R0() * 18)} names from out of the county this week.`, c: "The hotel, taking bookings." }),
+    ] },
+  { id: "bridges", w: 6, find: (F) => { const b = F.of(["bridge", "coveredbridge"]); return b.length ? { a: b[0], n: b.length } : null; },
+    lines: [
+      (d, N, W, R0) => ({ h: "THE CROSSING HOLDS", s: `Wagons pass over the ${d.a.name} from first light. The council votes thanks to nobody in particular.`, c: "The crossing." }),
+      (d, N, W, R0) => ({ h: "BOTH BANKS AGREE", s: `Since the ${d.a.name} went up, ${W()} and the far side are on speaking terms again.`, c: "Water under it." }),
+    ] },
+  { id: "home-district", w: 9, find: (F) => { const g = F.biggest("home"); return g.length >= 4 ? { a: g[0], n: g.length, cells: cellsOf(...g) } : null; },
+    lines: [
+      (d, N, W, R0) => ({ h: "A STREET WHERE THERE WAS NONE", s: `${d.n} households now stand shoulder to shoulder on ${W()}. ${N()} says it was pasture inside of a year.`, c: "The new street." }),
+      (d, N, W, R0) => ({ h: "THE TOWN GROWS A NEIGHBOURHOOD", s: `${d.n} homes together, and the Ladies' Aid already organising the corner.`, c: `${d.n} roofs in a row.` }),
+    ] },
+  { id: "shop-district", w: 8, find: (F) => { const g = F.biggest("shop"); return g.length >= 3 ? { a: g[0], n: g.length, cells: cellsOf(...g) } : null; },
+    lines: [
+      (d, N, W, R0) => ({ h: "MAIN STREET TAKES SHAPE", s: `${d.n} businesses stand in a row. ${W()} is spoken of as the place to be seen.`, c: "The business block." }),
+    ] },
+  { id: "industry-district", w: 7, find: (F) => { const g = F.biggest("industry"); return g.length >= 3 ? { a: g[0], n: g.length, cells: cellsOf(...g) } : null; },
+    lines: [
+      (d, N, W, R0) => ({ h: "THE WORKS EXPAND", s: `${d.n} concerns now share a fence line, and one whistle does for all of them.`, c: "The works." }),
+    ] },
+  { id: "apartments", w: 8, find: (F) => F.of("apartments")[0] && { a: F.of("apartments")[0] },
+    lines: [
+      (d, N, W, R0) => ({ h: `TOWN LIVING COMES TO ${W().toUpperCase()}`, s: `Every room at the ${d.a.name} is spoken for, and the landlord speaks of adding a storey.`, c: "Stacked high." }),
+    ] },
+  { id: "country-alone", w: 8, find: (F) => { const p = F.alone(["countryhouse", "manor"]); return p && { a: p }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "ROOM ENOUGH AND THEN SOME", s: `The ${d.a.name} stands with no neighbour in any direction, which its owner ${N()} calls the whole point.`, c: "Room to breathe." }),
+    ] },
+  { id: "no-civic", w: 9, find: (F) => F.of("civic").length === 0 && F.P.length ? { a: F.best } : null,
+    lines: [
+      (d, N, W, R0) => ({ h: "NO HALL, NO LAW, NO CHURCH", s: `A town of business and little else. ${N()} asks who is to marry, bury or fine anybody.`, c: "Such as it is." }),
+    ] },
+  { id: "no-leisure", w: 7, find: (F) => F.of("leisure").length === 0 && F.P.length > 6 ? { a: F.best } : null,
+    lines: [
+      (d, N, W, R0) => ({ h: "A SOBER TOWN, LIKE IT OR NOT", s: `Not a saloon, a hall or a park within the town limits. The young men have taken to the river.`, c: "Nothing to do but work." }),
+    ] },
+  { id: "turned-away", w: 10, find: (F) => F.away.length ? { a: F.best, away: F.away } : null,
+    lines: [
+      (d, N, W, R0) => ({ h: "NO ROOM AT THE TOWN LINE", s: `The ${DEF[d.away[0]].name} could find no lot to stand on and has gone on up the valley.`, c: "Every lot spoken for." }),
+      (d, N, W, R0) => ({ h: `${DEF[d.away[0]].name.toUpperCase()} TURNED AWAY`, s: `The surveyor looked over the town twice and found nowhere to put it.`, c: "A full map." }),
+    ] },
+  { id: "all-fit", w: 8, find: (F) => !F.away.length && F.P.length > 8 ? { a: F.best, n: F.P.length } : null,
+    lines: [
+      (d, N, W, R0) => ({ h: "EVERY BUILDING FINDS ITS LOT", s: `${d.n} buildings, ${d.n} lots, and not a wagon sent away. The surveyor is being bought drinks.`, c: "A tidy fit." }),
+    ] },
+  { id: "best-building", w: 6, find: (F) => F.best && F.best.score >= 14 ? { a: F.best } : null,
+    lines: [
+      (d, N, W, R0) => ({ h: "THE PRIDE OF THE TOWN", s: `The ${d.a.name} is valued at ${d.a.score} and no man in the county will hear otherwise.`, c: `The ${d.a.name}.` }),
+    ] },
+  { id: "worst-building", w: 7, find: (F) => F.worst && F.worst.score <= 1 ? { a: F.worst } : null,
+    lines: [
+      (d, N, W, R0) => ({ h: "A POOR SHOWING", s: `The ${d.a.name} earns its keep at ${d.a.score}, and the assessor has been asked to look again.`, c: `The ${d.a.name}, struggling.` }),
+    ] },
+  { id: "water-town", w: 5, find: (F) => { const w = F.of(["dock", "fishmarket", "gristmill", "bathhouse"])[0]; return w && { a: w }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "THE RIVER PROVIDES", s: `The ${d.a.name} reports a good week of it, and the water running clear.`, c: "On the water." }),
+    ] },
+  { id: "edge-trade", w: 5, find: (F) => { const e = F.of(["station", "freight", "tradingpost", "fairground"])[0]; return e && { a: e }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "TRADE COMES IN FROM OUTSIDE", s: `The ${d.a.name} at the town line did steady business, most of it in strangers.`, c: "The road in." }),
+    ] },
+  { id: "post-office", w: 6, find: (F) => F.of("postoffice")[0] && { a: F.of("postoffice")[0] },
+    lines: [
+      (d, N, W, R0) => ({ h: "MAIL TWICE A WEEK", s: `The ${d.a.name} reports one sack in, two out, and ${N()} waiting for both.`, c: "The post office." }),
+    ] },
+  { id: "lime-civic", w: 6, find: (F) => F.of("limeworks")[0] && F.of("civic").length >= 2 ? { a: F.of("limeworks")[0], n: F.of("civic").length } : null,
+    lines: [
+      (d, N, W, R0) => ({ h: "BUILT ON LIME", s: `${d.n} public buildings stand in mortar from the ${d.a.name}. The kiln burns on.`, c: "The kiln." }),
+    ] },
+  { id: "quiet-corner", w: 6, find: (F) => { const p = F.of(["sanitarium", "cemetery", "library"]).find(q => ![...touching(q.cells, q.k)].some(k => ["industry", "leisure"].includes(DEF[G.pieces[k].type].cat))); return p && { a: p }; },
+    lines: [
+      (d, N, W, R0) => ({ h: "A QUIET CORNER KEPT", s: `Not a mill or a hall within a fence of the ${d.a.name}, and the town means to keep it so.`, c: "Quiet, as intended." }),
+    ] },
+];
+
+/* The paper the town earned: the loudest story that fits, then two shorter ones. */
+function paperStories(R) {
+  const F = townFacts(), out = [];
+  for (const st of STORIES) {
+    let d;
+    try { d = st.find(F); } catch (e) { d = null; }
+    if (!d) continue;
+    const N = () => `${R() < .35 ? pick(FIRSTS, R) + " " : ""}${pick(SURNAMES, R)}`;
+    const W = () => pick(PLACES, R);
+    const line = pick(st.lines, R)(d, N, W, R);
+    out.push({ ...line, w: st.w * (.6 + R()), cells: d.cells || cellsOf(...[d.a, d.b].filter(Boolean)) });
+  }
+  return out.sort((a, b) => b.w - a.w).slice(0, 3);
+}
+
+/* A photograph for the paper: the squares the story is about, cut straight out of the board. */
+function paperShot(cells) {
+  if (!cells || !cells.length || !UI.w) return "";
+  if (UI.dirty) bake();
+  const S = UI.S, pad = S * .4;
+  const x0 = clamp(Math.min(...cells.map(cellX)) - pad, 0, UI.w), y0 = clamp(Math.min(...cells.map(cellY)) - pad, 0, UI.h);
+  const x1 = clamp(Math.max(...cells.map(cellX)) + S + pad, 0, UI.w), y1 = clamp(Math.max(...cells.map(cellY)) + S + pad, 0, UI.h);
+  const w = x1 - x0, h = y1 - y0;
+  if (w < 4 || h < 4) return "";
+  const out = document.createElement("canvas"), scale = Math.min(3, 420 / w);
+  out.width = Math.round(w * scale); out.height = Math.round(h * scale);
+  const g = out.getContext("2d");
+  g.fillStyle = "#a5c884"; g.fillRect(0, 0, out.width, out.height);
+  g.drawImage(layer, x0 * UI.dpr, y0 * UI.dpr, w * UI.dpr, h * UI.dpr, 0, 0, out.width, out.height);
+  try { return out.toDataURL("image/png"); } catch (e) { return ""; }
+}
+
+/* 1922 dress: the masthead, the dateline, one big story with its photograph, and two briefs. */
+function paperHTML() {
+  const R = paperRandom(), stories = paperStories(R);
+  if (!stories.length) return "";
+  const [lead, ...briefs] = stories;
+  const when = new Date(G.day + "T12:00:00Z");
+  const date = when.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const vol = `Vol. ${["XLIX", "LI", "LIV", "LVII", "LX"][Math.floor(R() * 5)]}`;
+  const shot = paperShot(lead.cells);
+  return `<div class="paper">
+    <div class="mast"><span>${vol}</span><b>Herald-Zeitung</b><span>Five Cents</span></div>
+    <div class="dateline">${esc(townName(G.player, G.pick))}, Texas · ${esc(date)}, 1922</div>
+    <h3 class="hl">${esc(lead.h)}</h3>
+    <p class="sub">${esc(lead.s)}</p>
+    ${shot ? `<figure class="cut"><img src="${shot}" alt=""><figcaption>${esc(lead.c)}</figcaption></figure>` : ""}
+    ${briefs.length ? `<div class="short">${briefs.map(b => `<p><b>${esc(b.h)}.</b> ${esc(b.s)}</p>`).join("")}</div>` : ""}
+  </div>`;
+}
+
 function showSummary() {
   if (G.tut) return tutSummary();
   hidePop();
@@ -3293,27 +3643,32 @@ function showSummary() {
     <p class="label">Goals · ${goalsDone()} of 3</p>${goalRows()}
     ${run && run.day === G.day && run.streak > 1 ? `<p class="label">${run.streak} days in a row</p>` : ""}`;
   const board = daily && cloudOn() ? `<p class="label">Today's top ten</p><div id="board10"></div>` : "";
-  const pages = [town, day, board].filter(Boolean);
+  const paper = daily ? paperHTML() : "";
+  const pages = [town, paper, day, board].filter(Boolean);
   showDialog(`${head}
     <div class="pages" id="pages">${pages.map(p => `<section>${p}</section>`).join("")}</div>
     ${pages.length > 1 ? `<div class="dots" id="dots">${pages.map((p, i) =>
       `<button type="button" data-i="${i}" aria-label="Page ${i + 1}" aria-current="${i === 0}"></button>`).join("")}</div>
-      <p class="swipe">Swipe for ${daily ? "today's goals" : "more"}</p>` : ""}
+      <p class="swipe" id="swipe"></p>` : ""}
     <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button></div>`);
   $("sShare").onclick = shareChallenge;
   if (board) showBoard(G.day);
-  if (pages.length > 1) pageDots();
+  // What the line under the dots offers next, page by page.
+  const labels = [town && "the town", paper && "the Herald-Zeitung", day && "today's goals", board && "the top ten"].filter(Boolean);
+  if (pages.length > 1) pageDots(labels);
   $("sLook").onclick = closeDialog;
   $("sNew").onclick = () => { closeDialog(); intro(); };
 }
 
 /* The dots under the summary follow the page you swiped to, and move it when tapped. */
-function pageDots() {
-  const box = $("pages"), dots = [...$("dots").children], hint = document.querySelector(".swipe");
+function pageDots(labels = []) {
+  const box = $("pages"), dots = [...$("dots").children], hint = $("swipe");
   const mark = () => {
     const i = Math.round(box.scrollLeft / (box.scrollWidth / dots.length));
     dots.forEach((d, k) => d.setAttribute("aria-current", String(k === i)));
-    if (hint) hint.style.visibility = i === dots.length - 1 ? "hidden" : "visible";
+    if (!hint) return;
+    hint.style.visibility = i === dots.length - 1 ? "hidden" : "visible";
+    hint.textContent = `Swipe for ${labels[i + 1] || "more"}`;
   };
   box.addEventListener("scroll", mark, { passive: true });
   dots.forEach((d, i) => { d.onclick = () => box.scrollTo({ left: i * box.scrollWidth / dots.length, behavior: "smooth" }); });

@@ -212,7 +212,7 @@ with a creek or two ponds. Woods, ore veins, wild wheat and grazing herds grow o
 patches. The cattle and sheep wander their patch until something is built on it. You can build
 on any square that is not water.
 
-**One building at a time.** The library holds 61 kinds of building (55 until the daily map of 20 September 2026), and each game draws about
+**One building at a time.** The library holds 69 kinds of building (55 until the daily map of 20 September 2026), and each game draws about
 20 of them, so no two decks are alike. The draw takes a few kinds from each category: homes,
 food, industry, shops, civic buildings and leisure. A town gets up to three of one kind of home,
 and no more of anything else than that building usually comes in, which is one for most of them.
@@ -293,6 +293,15 @@ a later change to the game changes what a seed builds, the link says it may not 
 shape, era, deck count and scoring card, with a note box on each. It loads the game in a hidden frame and draws
 each building with the game's own code, so it always matches. It needs a web server, not a file opened from disk.
 Notes stay in the browser, and **Copy notes** puts them on the clipboard.
+
+**The daily map.** One map a day, the same for everyone, seeded from the date in Texas. The day turns over at
+midnight Central, not UTC, because that is where the players and the town are. A finished daily town also gets a
+page of its local paper: see below.
+
+**The Herald-Zeitung.** When a daily town is done, the summary carries a page of the town's newspaper, dated 1922.
+Stories are read off the finished town: what ended up beside what, how big the districts grew, what was turned
+away. Each story that fits is weighed, the day's own seed picks the wording from a library of headlines, German
+Texan surnames and street names, and the photograph is a crop of the board itself.
 
 **On a phone.** Taps are plain taps, so pressing Turn quickly never zooms the page, and pinch zoom
 is off. The name field uses 16px text, because Safari zooms into smaller text fields when they get

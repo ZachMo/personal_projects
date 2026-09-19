@@ -10,6 +10,23 @@ parity tests will fail.
 
 ## Waiting
 
+### The Herald-Zeitung, Central time, and eight more buildings
+
+Commit: "Hügelland: a town newspaper, Central time, and eight buildings from the 1922 map", after the go-live switch.
+
+- **The day is Texan.** `dayKey` now formats the date in `America/Chicago` instead of UTC, so the daily map turns
+  over at midnight Central. `LIVE_FROM` is read the same way, so the new rules arrive with that same rollover.
+  On iOS, use the same zone for the daily key or the two will disagree about what day it is.
+- **The Herald-Zeitung.** A daily summary page, dated 1922, built from the finished town: `townFacts` gathers
+  pairs that touch, districts, absences and what was turned away; `STORIES` (35 stories, 42 wordings) each match
+  and weigh themselves; `paperRandom` seeds the wording from the day and the town, so the same town reads the
+  same paper. The photograph is a crop of the baked board (`paperShot`), sepia by CSS. Free maps get no paper.
+- **Eight more drafts from the 1922 Sanborn map:** Cotton Gin, Roller Mills, Lime Works, Brewery, Oil Depot,
+  Fire Station, Post Office, Sanitarium. New ground art: `bales`, `barrels`, `tank`, `hosecart`; new emblem `letter`.
+  With these the library is 69 kinds from 20 September.
+- Par bot over 30 days: average par 149.5, the same as before. The Country House (+2 an open square) is still the
+  best building at 16.2 a game.
+
 ### The drafts and pending changes go live on 20 September
 
 Commit: "Hügelland: the new buildings go live with the 20 September daily", after the toll gate.

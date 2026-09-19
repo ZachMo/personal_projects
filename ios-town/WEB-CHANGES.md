@@ -10,6 +10,22 @@ parity tests will fail.
 
 ## Waiting
 
+### Livelier buildings
+
+Commit: "Hügelland: livelier stables, windmills and mines, clearer signs", after the jigsaw tutorial.
+
+Art only; no rules change. On iOS it lands in the drawing code in `FirstTown/`.
+
+- **Stables:** the paddock horse wanders (`mosey`): a three-second walk to the next of four spots, then a
+  while grazing, with a slight head sway.
+- **Windmill:** the sails drift slowly, and every 9 seconds a gust spins them one and a half turns, easing in and out.
+- **Mine:** a headframe stands over the shaft. A cart of ore rises out of the shaft, rolls down the track, tips
+  the ore out, rolls back up empty and sinks out of sight. The headframe's wheel turns with the cable. The dust stays.
+- **Gambling Hall:** `sign: "CASINO"` on its roof instead of the diamond emblem, which is gone.
+- **Theater:** the emblem is the comedy and tragedy masks, tilted apart.
+- **Bank:** the dollar emblem is 1.9 times the usual emblem size, the masks 2.3 (`EMBLEM_SIZE`).
+- The building review page now animates the buildings on screen. Web only.
+
 ### The tutorial teaches the jigsaw
 
 Commit: "Hügelland: the tutorial teaches the jigsaw", after the tutorial pauses.

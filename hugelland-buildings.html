@@ -167,11 +167,11 @@ function start(ev) {
   /*
     Draws one building in the game's own style on its own canvas. The game places art by board square, so for a
     moment its board starts at the canvas corner and its squares take this page's size. It all happens in one
-    call, so the game's own frame never sees the change.
+    call, so the game's own frame never sees the change. \`now\` is the clock for the parts that move.
   */
-  const drawInGame = ev(`(g, type, S, pad) => {
-    const keep = { S: UI.S, BX: UI.BX, BY: UI.BY };
-    UI.S = S; UI.BX = pad; UI.BY = pad;
+  const drawInGame = ev(`(g, type, S, pad, now) => {
+    const keep = { S: UI.S, BX: UI.BX, BY: UI.BY, NOW };
+    UI.S = S; UI.BX = pad; UI.BY = pad; NOW = now;
     try {
       const o = orientations(type).find(o => { const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip)); return w >= h; }) || { rot: 0, flip: false };
       const offs = orient(DEF[type].shape, o.rot, o.flip), [w, h] = extent(offs);
@@ -184,7 +184,7 @@ function start(ev) {
       }
       drawPiece(g, type, cells, 0, false);
       return [w, h];
-    } finally { Object.assign(UI, keep); }
+    } finally { UI.S = keep.S; UI.BX = keep.BX; UI.BY = keep.BY; NOW = keep.NOW; }
   }`);
   const size = ev(`(type) => { const o = orientations(type).find(o => { const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip)); return w >= h; }) || { rot: 0, flip: false }; return extent(orient(DEF[type].shape, o.rot, o.flip)); }`);
 
@@ -200,8 +200,22 @@ function start(ev) {
     show();
   };
 
-  // One card for each building, drawn once. Filters only hide and reorder them.
-  const cards = {};
+  /*
+    One card for each building. Filters only hide and reorder them. The ones on screen are drawn again about
+    thirty times a second, so sails turn, carts roll and horses wander as they do in the game.
+  */
+  const cards = {}, onScreen = new Set();
+  const seen = new IntersectionObserver((list) => {
+    for (const e of list) { if (e.isIntersecting) onScreen.add(e.target.dataset.k); else onScreen.delete(e.target.dataset.k); }
+  });
+  let lastPaint = 0;
+  const loop = (ms) => {
+    requestAnimationFrame(loop);
+    if (ms - lastPaint < 33) return;
+    lastPaint = ms;
+    for (const k of onScreen) cards[k].paint(ms / 1000);
+  };
+  requestAnimationFrame(loop);
   const catOrder = Object.keys(CATS);
   for (const k of ORDER) {
     const d = DEF[k], cells = SHAPES[d.shape].length;
@@ -233,10 +247,12 @@ function start(ev) {
     const cv = el.querySelector("canvas"), [w, h] = size(k), S = 46, pad = 8, dpr = Math.min(window.devicePixelRatio || 1, 2);
     cv.width = (w * S + pad * 2) * dpr; cv.height = (h * S + pad * 2) * dpr;
     cv.style.width = (w * S + pad * 2) + "px";
-    const g = cv.getContext("2d"); g.scale(dpr, dpr);
-    drawInGame(g, k, S, pad);
+    const g = cv.getContext("2d");
+    const paint = (now) => { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cv.width, cv.height); drawInGame(g, k, S, pad, now); };
+    paint(0);
     const words = [d.name, k, CATS[d.cat].name, d.blurb, el.querySelector(".mods").textContent, design.join(" ")].join(" ").toLowerCase();
-    cards[k] = { el, words, d, cells, cat: catOrder.indexOf(d.cat) };
+    cards[k] = { el, words, d, cells, cat: catOrder.indexOf(d.cat), paint };
+    seen.observe(cv); cv.dataset.k = k;
   }
 
   const sorts = {

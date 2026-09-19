@@ -564,7 +564,7 @@ const DEF = {
   bathhouse: { name: "Bathhouse", cat: "leisure", shape: "L4", n: 1, era: 2, base: 2, roof: ["#6aa3b5", "#528596"],
                roles: ["hall", "hall", "pool", "pool"], blurb: "Hot water for tired travellers.",
                rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "land", t: "forest", p: 1 }] },
-  casino:    { name: "Gambling Hall", cat: "leisure", shape: "P5", n: 1, era: 3, base: 4, roof: ["#2f6b4f", "#22523c"], emblem: "diamond",
+  casino:    { name: "Gambling Hall", cat: "leisure", shape: "P5", n: 1, era: 3, base: 4, roof: ["#2f6b4f", "#22523c"], sign: "CASINO",
                roles: ["big", "big", "big", "big", "porch"], blurb: "A riverboat gamble. The law and the church hate it.",
                rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "land", t: "water", p: 2, once: true }, { k: "near", cats: ["civic"], p: -3 }] },
   racetrack: { name: "Racetrack", cat: "leisure", shape: "R6", n: 1, era: 3, base: 2,
@@ -1318,7 +1318,9 @@ function sparks(g, x, y, t, n) {
 function live(g, kind, x, y, a, r) {
   const S = UI.S, t = NOW + a * 10;
   if (kind === "sails") {
-    g.save(); g.translate(x, y); g.rotate(t * .9);
+    // A slow drift in the breeze, and every few seconds a gust spins the sails round one and a half turns.
+    const gust = 9, k = Math.floor(t / gust), u = Math.max(0, (t / gust - k - .4) / .6), ease = u * u * (3 - 2 * u);
+    g.save(); g.translate(x, y); g.rotate((k + ease) * Math.PI * 3 + t * .12);
     for (let k = 0; k < 4; k++) {
       g.rotate(Math.PI / 2);
       g.fillStyle = "#8a6444"; g.fillRect(-S * .02, 0, S * .04, S * .4);
@@ -1431,16 +1433,58 @@ function live(g, kind, x, y, a, r) {
       circle(g, fx - S * .008, fy - S * .008, S * (.016 + .008 * Math.sin(NOW * 7 + k * 2)), "#fff0a8");
     }
   } else if (kind === "mine") {
-    // Dust drifts up out of the shaft, and a little ore cart rolls up and down its track.
+    // A headframe winds a cart of ore up out of the shaft and down its track. It tips the ore out at the end,
+    // rolls back up empty and drops out of sight, then the next load comes up. Dust drifts from the shaft.
     for (let k = 0; k < 4; k++) {
       const p = (t * .35 + k / 4) % 1, ang = -Math.PI / 2 + (hash(k, Math.floor(t * .35 + k / 4)) - .5) * 1.6;
       circle(g, x + Math.cos(ang) * S * .2 * p, y + S * .05 + Math.sin(ang) * S * .2 * p, S * (.03 + .06 * p), `rgba(214,198,170,${.55 * (1 - p)})`);
     }
-    const p = (1 - Math.cos(t * .9)) / 2, cy = y + S * (.24 + .18 * p), k = S * 1.25;
-    g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(x - k * .08 + S * .02, cy - k * .06 + S * .03, k * .16, k * .12);
-    g.fillStyle = "#5c4028"; g.fillRect(x - k * .08, cy - k * .06, k * .16, k * .12);
-    circle(g, x - k * .03, cy - k * .01, k * .035, "#958d82"); circle(g, x + k * .03, cy + k * .01, k * .03, "#aaa396");
-    circle(g, x + k * .01, cy - k * .03, k * .022, "#f2cf63");
+    const T = ((t % 8) + 8) % 8, ease = (v) => v * v * (3 - 2 * v);
+    const top = y + S * .06, bottom = y + S * .4;
+    let at = top, seen = 1, full = true;
+    if (T < 1) { seen = T; }                                           // rising out of the shaft
+    else if (T < 3) at = top + (bottom - top) * ease((T - 1) / 2);      // down the track, loaded
+    else if (T < 3.8) { at = bottom; full = T < 3.2; }  // tips the ore out
+    else if (T < 5.8) { at = bottom - (bottom - top) * ease((T - 3.8) / 2); full = false; }
+    else if (T < 6.6) { seen = 1 - (T - 5.8) / .8; full = false; }      // down into the dark
+    else seen = 0;
+    if (T >= 3.1 && T < 4.2) {
+      // The load spills off the end of the track and settles.
+      const q = (T - 3.1) / 1.1;
+      for (let k = 0; k < 3; k++) circle(g, x + (k - 1) * S * .07, bottom + S * (.08 + .1 * q) - Math.sin(q * Math.PI) * S * .06 * (k % 2 + 1), S * .028,
+                                         `rgba(170,163,150,${1 - q * .6})`);
+    }
+    if (seen > 0) {
+      const w = S * .2, h = S * .15;
+      g.save(); g.globalAlpha = seen;
+      g.strokeStyle = "#3d3a36"; g.lineWidth = Math.max(1, S * .012);
+      g.beginPath(); g.moveTo(x, y - S * .2); g.lineTo(x, at - h / 2); g.stroke();
+      g.fillStyle = "rgba(40,30,20,.25)"; g.fillRect(x - w / 2 + S * .02, at - h / 2 + S * .03, w, h);
+      g.fillStyle = "#5c4028"; g.fillRect(x - w / 2, at - h / 2, w, h);
+      g.fillStyle = "#7a5a3c"; g.fillRect(x - w / 2, at - h / 2, w, h * .25);
+      if (full) {
+        circle(g, x - w * .22, at - h * .15, w * .2, "#958d82"); circle(g, x + w * .2, at - h * .1, w * .18, "#aaa396");
+        circle(g, x + w * .02, at - h * .35, w * .13, "#f2cf63");
+      }
+      g.restore();
+    }
+    // The headframe over the shaft: two legs and a wheel that turns while the cart moves.
+    const hx = x, hy = y - S * .2, spin = (at - top) / S * 14;   // the cable winds as the cart travels
+    g.strokeStyle = "#6c4f35"; g.lineWidth = Math.max(1.2, S * .03); g.lineCap = "round";
+    g.beginPath(); g.moveTo(hx - S * .13, y + S * .02); g.lineTo(hx, hy); g.lineTo(hx + S * .13, y + S * .02); g.stroke();
+    g.strokeStyle = "#3d3a36"; g.lineWidth = Math.max(1, S * .02);
+    g.beginPath(); g.arc(hx, hy, S * .07, 0, Math.PI * 2); g.stroke();
+    g.beginPath();
+    for (let k = 0; k < 3; k++) { const b = spin + k * Math.PI / 3; g.moveTo(hx - Math.cos(b) * S * .07, hy - Math.sin(b) * S * .07); g.lineTo(hx + Math.cos(b) * S * .07, hy + Math.sin(b) * S * .07); }
+    g.stroke();
+  } else if (kind === "mosey") {
+    // A horse wanders its paddock: a slow walk to the next spot, then a while grazing there. `r` picks the coat.
+    const spots = [[.32, .66], [.72, .7], [.7, .42], [.46, .6]], leg = 5.5, T = ((t % (leg * 4)) + leg * 4) % (leg * 4);
+    const n = Math.floor(T / leg), u = Math.min(1, (T - n * leg) / 3), ease = u * u * (3 - 2 * u);
+    const [ax, ay] = spots[n], [bx, by] = spots[(n + 1) % 4];
+    const walking = u < 1, head = Math.atan2(by - ay, bx - ax);
+    const hx = x + S * (ax + (bx - ax) * ease), hy = y + S * (ay + (by - ay) * ease) + (walking ? Math.sin(t * 9) * S * .006 : 0);
+    horse(g, hx, hy, head + (walking ? 0 : Math.sin(t * 1.3) * .12), r ? "#6e4a33" : "#b4875a", .9);
   } else if (kind === "birds") {
     // A few birds wheel over the trees, their shadows on the grass below.
     for (let k = 0; k < 3; k++) {
@@ -1453,12 +1497,34 @@ function live(g, kind, x, y, a, r) {
   }
 }
 
-/* A small sign on a roof: a star for the sheriff, a dollar for the bank. */
+/* A small sign on a roof: a star for the sheriff, a dollar for the bank, the two masks for the theatre. */
+const EMBLEM_SIZE = { dollar: 1.9, mask: 2.3 };
 function emblem(g, kind, x, y) {
-  const S = UI.S, s = S * .15;
+  const S = UI.S, s = S * .15 * (EMBLEM_SIZE[kind] || 1);
   g.save(); g.translate(x, y);
-  circle(g, S * .02, S * .03, s * 1.25, "rgba(30,20,10,.25)");
-  if (kind === "star") {
+  if (kind !== "mask") circle(g, S * .02, S * .03, s * 1.25, "rgba(30,20,10,.25)");
+  if (kind === "mask") {
+    // Tragedy behind, tilted one way and frowning; comedy in front, tilted the other way and laughing.
+    const face = (fx, fy, tilt, fill, happy) => {
+      g.save(); g.translate(fx, fy); g.rotate(tilt);
+      ellipse(g, s * .05, s * .08, s * .48, s * .6, "rgba(30,20,10,.25)");
+      g.beginPath(); g.moveTo(-s * .48, -s * .3);
+      g.quadraticCurveTo(0, -s * .55, s * .48, -s * .3); g.quadraticCurveTo(s * .5, s * .45, 0, s * .6); g.quadraticCurveTo(-s * .5, s * .45, -s * .48, -s * .3);
+      g.fillStyle = fill; g.fill(); g.strokeStyle = "#3d4148"; g.lineWidth = Math.max(1, S * .018); g.stroke();
+      g.fillStyle = "#3d4148";
+      for (const ex of [-1, 1]) {
+        g.save(); g.translate(ex * s * .2, -s * .1); g.rotate(ex * (happy ? -.35 : .35));
+        g.beginPath(); g.ellipse(0, 0, s * .12, s * .065, 0, 0, Math.PI * 2); g.fill(); g.restore();
+      }
+      g.beginPath();
+      if (happy) { g.moveTo(-s * .24, s * .16); g.quadraticCurveTo(0, s * .5, s * .24, s * .16); g.quadraticCurveTo(0, s * .28, -s * .24, s * .16); }
+      else { g.moveTo(-s * .22, s * .38); g.quadraticCurveTo(0, s * .08, s * .22, s * .38); g.quadraticCurveTo(0, s * .22, -s * .22, s * .38); }
+      g.fill();
+      g.restore();
+    };
+    face(s * .36, s * .08, .3, "#cfd6e6", false);
+    face(-s * .34, -s * .04, -.28, "#f2c94c", true);
+  } else if (kind === "star") {
     g.beginPath();
     for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? s * .5 : s * 1.2; g.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); }
     g.closePath(); g.fillStyle = "#f2c94c"; g.fill();
@@ -1477,9 +1543,6 @@ function emblem(g, kind, x, y) {
     } else if (kind === "dollar") {
       g.font = `800 ${Math.round(s * 1.5)}px system-ui, sans-serif`; g.textAlign = "center"; g.textBaseline = "middle";
       g.fillStyle = "#6b4a08"; g.fillText("$", 0, s * .08);
-    } else if (kind === "mask") {
-      circle(g, -.4 * s, -.2 * s, .17 * s, "#3d4148"); circle(g, .4 * s, -.2 * s, .17 * s, "#3d4148");
-      g.beginPath(); g.arc(0, .05 * s, .5 * s, .15 * Math.PI, .85 * Math.PI); g.stroke();
     } else if (kind === "scale") {
       g.lineWidth = Math.max(1, S * .02);
       g.beginPath(); g.moveTo(0, -.75 * s); g.lineTo(0, .6 * s); g.moveTo(-.7 * s, -.45 * s); g.lineTo(.7 * s, -.45 * s); g.moveTo(-.35 * s, .6 * s); g.lineTo(.35 * s, .6 * s); g.stroke();
@@ -1491,8 +1554,6 @@ function emblem(g, kind, x, y) {
       g.strokeStyle = "#8f5424"; g.lineWidth = Math.max(1, S * .018); g.beginPath();
       for (const bx of [-.35, 0, .35]) { g.moveTo(bx * s - .1 * s, -.2 * s); g.lineTo(bx * s + .1 * s, .25 * s); }
       g.stroke();
-    } else if (kind === "diamond") {
-      g.fillStyle = "#d9434f"; g.beginPath(); g.moveTo(0, -.8 * s); g.lineTo(.6 * s, 0); g.lineTo(0, .8 * s); g.lineTo(-.6 * s, 0); g.closePath(); g.fill();
     }
   }
   g.restore();
@@ -2053,7 +2114,7 @@ function groundDetail(g, role, i, x, y, S, horiz) {
       circle(g, x + S * hx + S * .02, y + S * hy + S * .04, S * .09, "rgba(40,30,20,.2)");
       circle(g, x + S * hx, y + S * hy, S * .09, "#e2c15c");
     }
-    horse(g, x + S * .52, y + S * .64, -Math.PI * .12, hash(i, 2) > .5 ? "#6e4a33" : "#b4875a");
+    alive(g, "mosey", x, y, hash(i, 8), hash(i, 2) > .5 ? 1 : 0);
   } else if (role === "pasture" && hash(i, 11) > .35) {
     const px = x + S * (.3 + .35 * hash(i, 12)), py = y + S * (.35 + .3 * hash(i, 13));
     ellipse(g, px + S * .03, py + S * .05, S * .14, S * .08, "rgba(40,50,30,.2)");

@@ -608,6 +608,19 @@ const DEF = {
                rules: [{ k: "town", cats: ["shop"], p: 1 }, { k: "near", cats: ["home"], p: 1 }] },
 };
 
+/*
+  The drafts and pending changes go live with the daily map of LIVE_FROM, at midnight UTC when that map starts,
+  so no day's map changes its rules partway through. A page opened earlier keeps the old rules until it reloads.
+  Once the day has come, fold the changes into DEF for good and take this out.
+*/
+const LIVE_FROM = "2026-09-20";
+const NEW_RULES = new Date().toISOString().slice(0, 10) >= LIVE_FROM;
+if (NEW_RULES) for (const k in DEF) {
+  const d = DEF[k];
+  if (d.pending) { Object.assign(d, d.pending); delete d.pending; }
+  delete d.draft;
+}
+
 /* ───────────────────────── Small tools ───────────────────────── */
 
 function mulberry(seed) {
@@ -3213,7 +3226,7 @@ function recordBest() {
 }
 
 /* Bump when a change to the map, the deck or the scoring means an old link no longer gives the same game. */
-const LINK_VERSION = 6;
+const LINK_VERSION = NEW_RULES ? 7 : 6;
 
 function challengeURL() {
   const base = location.href.split(/[?#]/)[0], who = encodeURIComponent(G.player);

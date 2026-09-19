@@ -10,6 +10,23 @@ parity tests will fail.
 
 ## Waiting
 
+### The drafts and pending changes go live on 20 September
+
+Commit: "Hügelland: the new buildings go live with the 20 September daily", after the toll gate.
+
+`LIVE_FROM = "2026-09-20"`. When the page loads on or after that UTC date, `NEW_RULES` is true: every `pending`
+is folded into its building and every `draft` flag is dropped, so the six new buildings are dealt, bridges score
+each kind of building and the Doctor likes shops. `LINK_VERSION` goes from 6 to 7 at the same moment. Before
+that date the game is exactly as it was (the deck and par fingerprint matched).
+
+For iOS, port the end state: 61 buildings, the `crowd` and `room` rules, `near` with `bridge: true`, the new
+bridge and Doctor rules, and the new art. Regenerate the parity fixtures from a web version after the switch.
+The web switch itself should be folded in and removed after the 20th; `make-web-fixtures.js` would otherwise
+give different results depending on the day it runs.
+
+Balance, par bot over 30 days: average par 149.5 before, 150.0 after. The Country House (+2 per open square)
+is the bot's best building at 15.3 a game on average.
+
 ### The toll gate lifts
 
 Commit: "Hügelland: the toll gate lifts for travellers", after the building notes. Draft art (Toll House), so

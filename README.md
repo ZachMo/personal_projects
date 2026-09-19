@@ -212,7 +212,7 @@ with a creek or two ponds. Woods, ore veins, wild wheat and grazing herds grow o
 patches. The cattle and sheep wander their patch until something is built on it. You can build
 on any square that is not water.
 
-**One building at a time.** The library holds 55 kinds of building, and each game draws about
+**One building at a time.** The library holds 61 kinds of building (55 until the daily map of 20 September 2026), and each game draws about
 20 of them, so no two decks are alike. The draw takes a few kinds from each category: homes,
 food, industry, shops, civic buildings and leisure. A town gets up to three of one kind of home,
 and no more of anything else than that building usually comes in, which is one for most of them.

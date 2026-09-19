@@ -10,6 +10,20 @@ parity tests will fail.
 
 ## Waiting
 
+### Nobody gets stuck scrolling, and a day is played once
+
+Commit: "Hügelland: the way out stays on screen, and a day is played once", after the story tables.
+
+- A dialog's last row of buttons is sticky, so "Look at the town" and "New town" stay on screen however long the
+  summary runs. The newspaper made the summary tall enough to push them off a small phone. The tutorial's ending
+  puts Daily and Free in that row too.
+- On the opening screen, **How to play** now takes the place of the crest, the name field and the three buttons
+  instead of unfolding below them, and the button reads **Back** while it is open. It fits a 375×667 screen.
+- **A day is played once.** The line reporting today's score is gone from the opening screen. When today's map is
+  already finished, the Daily button on the opening screen and in the menu opens "You have played today" instead:
+  the score, par against it, goals, the streak, and a Free map button. `showToday(rec)` reads the saved record,
+  so it works after a reload.
+
 ### The Herald-Zeitung, Central time, and eight more buildings
 
 Commit: "Hügelland: a town newspaper, Central time, and eight buildings from the 1922 map", after the go-live switch.

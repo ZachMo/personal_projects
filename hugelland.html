@@ -144,6 +144,13 @@
   .overlay { position: fixed; inset: 0; background: rgba(8,14,12,.55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
   .center { display: grid; place-items: center; padding: 20px; }
   .dialog { width: 100%; max-width: 380px; padding: 24px 20px 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
+  /* Whatever the dialog holds, its last row of buttons stays on screen: nobody gets stuck scrolling for the way out. */
+  .dialog > .row:last-child .primary { height: auto; min-height: 48px; padding: 8px 10px; line-height: 1.2; }
+  .dialog > .row:last-child .primary .sub { display: block; font-size: .68rem; font-weight: 600; opacity: .85; margin-top: 2px; }
+  .dialog > .row:last-child {
+    position: sticky; bottom: -20px; margin: 14px -20px -20px; padding: 10px 20px calc(20px + var(--pad-b));
+    background: linear-gradient(to bottom, rgba(251,249,244,0), var(--card) 22%); border-radius: 0 0 20px 20px;
+  }
   .dialog h1 { margin: 0; font-size: 2.1rem; letter-spacing: -.035em; line-height: 1; }
   .dialog h2 { margin: 0 0 4px; font-size: 1.3rem; letter-spacing: -.02em; }
   .dialog p { margin: 8px 0 12px; color: var(--ink-2); font-size: .9rem; }
@@ -3197,7 +3204,7 @@ function showMenu() {
   const risky = inGame && !G.over && G.pieces.length;   // a town under way would be lost
   openSheet(`<h2>New town</h2>
     <div class="modes">
-      <button class="primary" id="mDaily">Daily<span class="sub">${isDaily() && G.day === dayKey() ? "You are on today's map" : doneToday ? `Played: ${rec.score}` : "Today's challenge map"}</span></button>
+      <button class="primary" id="mDaily">Daily<span class="sub">${isDaily() && G.day === dayKey() && !G.over ? "You are on today's map" : doneToday ? "Played today · see how it went" : "Today's challenge map"}</span></button>
       <button class="primary green" id="mFree">Free<span class="sub">A random map</span></button>
     </div>
     <div class="modes one"><button class="primary wheat" id="mTut">Tutorial<span class="sub">${G && G.tut ? "Start the tutorial again" : "Learn how to play"}</span></button></div>
@@ -3212,7 +3219,12 @@ function showMenu() {
     // The name is already known, so a new town starts straight away, on a fresh map.
     startTown(G.player, null, daily, null);
   };
-  $("mDaily").onclick = () => start(dayKey());
+  // Today's map, once. After that the button shows how it went.
+  $("mDaily").onclick = () => {
+    const playingToday = isDaily() && G.day === dayKey() && !G.over;
+    if (doneToday && !playingToday) { closeSheet(); return showToday(rec); }
+    start(dayKey());
+  };
   $("mFree").onclick = () => start(null);
   // The tutorial is never saved, so the town under way waits for it.
   $("mTut").onclick = startTutorial;
@@ -4131,12 +4143,12 @@ function tutSummary() {
     ${won.length ? `<p class="label">Trophies</p><div class="tchips">${won.map(id =>
       `<span class="tchip${TROPHIES[id].good ? "" : " bad"}">${esc(TROPHIES[id].name.replace("!", ""))}${G.trophies[id] > 1 ? ` ×${G.trophies[id]}` : ""}</span>`).join("")}</div>` : ""}
     <p>Now try a real map. The <b>Daily</b> map is the same for everyone today, with three goals and a par to beat. A <b>Free</b> map is new each time.</p>
-    <div class="modes">
-      <button class="primary" id="tDaily">Daily<span class="sub">Today's challenge map</span></button>
-      <button class="primary green" id="tFree">Free<span class="sub">A random map</span></button>
-    </div>
     ${back ? `<p class="today">A new map takes the place of ${esc(back)}.</p><button class="linkbtn" id="tBack">Back to ${esc(back)}</button>` : ""}
-    <button class="linkbtn" id="tLook">Look at the town</button>`);
+    <button class="linkbtn" id="tLook">Look at the town</button>
+    <div class="row">
+      <button class="primary" id="tDaily">Daily<span class="sub">Today's map</span></button>
+      <button class="primary green" id="tFree">Free<span class="sub">A random map</span></button>
+    </div>`);
   $("tDaily").onclick = () => playFromTutorial(dayKey());
   $("tFree").onclick = () => playFromTutorial(null);
   if ($("tBack")) $("tBack").onclick = leaveTutorial;
@@ -4185,6 +4197,31 @@ function showGame() {
   layout();
 }
 
+/*
+  A day is played once. When today's map is already finished, the Daily button shows how it went instead of
+  dealing it again, and the way on from here is a free map or tomorrow.
+*/
+function showToday(rec) {
+  const over = rec.score - rec.par;
+  showDialog(`<div style="text-align:center">
+      <h2>You have played today</h2>
+      <p>${esc(dayName(rec.day))} · the daily map comes once a day.</p>
+      <div class="big num" style="font-size:3rem;font-weight:800;letter-spacing:-.04em">${rec.score}</div>
+      <div class="best" style="color:var(--muted);font-size:.8rem;font-weight:650">points</div>
+    </div>
+    <div class="par ${over >= 0 ? "win" : "lose"}"><span>Par ${rec.par}</span><b>${over >= 0 ? "+" : "−"}${Math.abs(over)}</b>
+      <span>${over > 0 ? "over par" : over < 0 ? "under par" : "level with par"}</span></div>
+    <p class="today" style="text-align:center">${rec.goals} of 3 goals${rec.streak > 1 ? ` · ${rec.streak} days in a row` : ""}</p>
+    <p style="text-align:center">A new map comes at midnight. Until then, a free map is always there.</p>
+    <div class="row"><button class="tool" id="tdBack">Back</button><button class="primary green" id="tdFree">Free map</button></div>`);
+  $("tdBack").onclick = () => intro();
+  $("tdFree").onclick = () => {
+    const name = lastName();
+    closeDialog();
+    if (name) startTown(name, null, null); else intro();
+  };
+}
+
 /* A challenge link brings its map, its deck and a score to beat. */
 function intro(challenge = null) {
   newGame("", 0, challenge && challenge.seed ? challenge.seed : undefined, challenge && challenge.day ? challenge.day : null);
@@ -4198,21 +4235,34 @@ function intro(challenge = null) {
        ${challenge.v !== LINK_VERSION ? `<p>This link is from an older version of the game, so the map or the scoring may be different.</p>` : ""}`
     : `<p>Fit odd-shaped buildings onto the map. Good spots score more.</p>`;
   const choose = challenge ? `<div class="row"><button class="primary" id="found" type="submit">Take the challenge</button></div>`
-    : `<div class="modes">
-         <button class="primary" id="goDaily" type="submit">Daily<span class="sub">Play the daily challenge map</span></button>
-         <button class="primary green" id="goFree" type="button">Free<span class="sub">Play a random map</span></button>
-       </div>
-       <div class="modes one"><button class="primary wheat" id="goTut" type="button">Tutorial<span class="sub">Learn how to play</span></button></div>
-       ${doneToday ? `<p class="today">Today: ${rec.score} against par ${rec.par}, ${rec.goals} of 3 goals${rec.streak > 1 ? ` · ${rec.streak} days in a row` : ""}</p>` : ""}`;
+    : `<div id="chooseBox">
+         <div class="modes">
+           <button class="primary" id="goDaily" type="submit">Daily<span class="sub">${doneToday ? "Played today · see how it went" : "Play the daily challenge map"}</span></button>
+           <button class="primary green" id="goFree" type="button">Free<span class="sub">Play a random map</span></button>
+         </div>
+         <div class="modes one"><button class="primary wheat" id="goTut" type="button">Tutorial<span class="sub">Learn how to play</span></button></div>
+       </div>`;
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
-      <img class="crest" src="hugelland-icon.svg" alt="">
-      <h1>Hügelland</h1>
-      ${lead}
-      <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="go" autocapitalize="words" spellcheck="false" value="${esc(lastName())}">
+      <div id="topBox">
+        <img class="crest" src="hugelland-icon.svg" alt="">
+        <h1>Hügelland</h1>
+        ${lead}
+        <input id="nameIn" maxlength="14" placeholder="Your name" enterkeyhint="go" autocapitalize="words" spellcheck="false" value="${esc(lastName())}">
+      </div>
       ${choose}
       ${challenge ? `<button type="button" class="linkbtn" id="decline">Play a different map</button>` : ""}
-      <details class="how"><summary>How to play</summary>${RULES_HTML}</details>
+      <div id="howBox" hidden><h2 style="margin-bottom:2px">How to play</h2>${RULES_HTML}</div>
+      <button type="button" class="linkbtn" id="howBtn">How to play</button>
     </form>`);
+  // The rules take the place of the buttons, so the dialog never grows past the screen.
+  const how = () => {
+    const open = !$("howBox").hidden;
+    $("howBox").hidden = open;
+    $("topBox").hidden = !open;
+    if ($("chooseBox")) $("chooseBox").hidden = !open;
+    $("howBtn").textContent = open ? "How to play" : "Back";
+  };
+  $("howBtn").onclick = how;
   const named = () => $("nameIn").value.trim();
   if ($("decline")) $("decline").onclick = () => intro();
   const begin = (daily) => {
@@ -4228,7 +4278,11 @@ function intro(challenge = null) {
     if (named()) try { localStorage.setItem(NAME, named()); } catch (e) {}
     startTutorial();
   };
-  $("introForm").onsubmit = (e) => { e.preventDefault(); begin(challenge ? challenge.day || null : dayKey()); };
+  $("introForm").onsubmit = (e) => {
+    e.preventDefault();
+    if (!challenge && doneToday) return showToday(rec);
+    begin(challenge ? challenge.day || null : dayKey());
+  };
   layout();
 }
 

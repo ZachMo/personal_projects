@@ -10,6 +10,26 @@ parity tests will fail.
 
 ## Waiting
 
+### A tutorial
+
+Commit: "Hügelland: a tutorial, and cards that name what they count", after how to play dropped the daily line.
+
+A Tutorial button sits under Daily and Free, on the start screen and in the menu. It plays a hand-drawn map
+(`TUT_MAP`) with eight buildings in a set order (`TUT_DECK`). A coach card walks through 19 steps (`STEPS`):
+read a card, turn and flip the Lumber Mill onto a gold outline in the woods, grow a home district, put a Farm
+on the Mine's ore to show a trade-off, cross the river with a bridge, open To come, tap a built building, and
+place the last two freely. Build stays off until the building covers the outline (`placeOK`). The tutorial is
+never saved, so a town under way comes back afterwards. Its own summary (`tutSummary`) explains final scoring
+and leads to Daily or Free. On iOS this is new UI in `FirstTown/`. The rules in `FirstTownCore` do not change.
+
+### Cards name what they count
+
+Same commit. A rule on a card is now its points, its icon and a name: "+2 Woods", "+2 Food", "+3 Map edge",
+"+1 Any building", "+1 Food in town", "+4 No industry or leisure". It was "+2 each woods", "+2 if water" and so on.
+The district row reads "Home district, max +4". A built card says "Water" or "No water", capitalised. How to play
+now says a land bonus counts each square, and that most buildings count water once. The iOS words live in
+`FirstTownCore/Sources/FirstTownCore/Words.swift`. Web only uses these for display, so the parity fixtures are unaffected.
+
 ### How to play drops the daily line
 
 Commit: "Hügelland: how to play stops explaining the two maps", after the par timing fix.

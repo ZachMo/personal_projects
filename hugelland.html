@@ -206,7 +206,27 @@
   .modes button { display: block; height: auto; min-height: 66px; padding: 12px 10px; text-align: center; flex: none; line-height: 1.25;
                   font-size: 1.05rem; font-weight: 800; }
   .modes .sub { display: block; font-size: .72rem; font-weight: 600; opacity: .85; margin-top: 4px; }
+  .modes.one { grid-template-columns: 1fr; margin-top: 10px; }
+  .modes.one button { min-height: 56px; }
   .primary.green { background: #2f8a55; box-shadow: inset 0 -3px 0 #226a41; }
+
+  /* ── The tutorial's coach: one card that says what to do next ── */
+  #coach {
+    position: absolute; left: 12px; right: 12px; margin: 0 auto; max-width: 420px; padding: 12px 16px 12px; z-index: 30;
+    max-height: calc(50% - 16px); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  #coach.top { top: 10px; } #coach.bottom { bottom: 10px; }
+  #coach p { margin: 4px 0 0; color: var(--ink-2); font-size: .88rem; }
+  #coach p b { color: var(--ink); }
+  #coach .todo { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  #coach .todo li { font-size: .78rem; font-weight: 700; padding: 3px 10px 3px 6px; border-radius: 999px; background: var(--card-2); color: var(--muted);
+                    display: flex; align-items: center; gap: 5px; }
+  #coach .todo li::before { content: ""; width: 12px; height: 12px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px currentColor; }
+  #coach .todo li.ok { background: var(--good-bg); color: var(--good); }
+  #coach .todo li.ok::before { content: "✓"; box-shadow: none; font-size: .7rem; line-height: 12px; text-align: center; }
+  #coach .go { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+  #coach .go .primary { flex: 0 0 auto; height: 40px; padding: 0 20px; font-size: .92rem; }
+  #coach .go .tool { height: 40px; }
   .crest { width: 66px; height: 66px; border-radius: 20px; display: block; margin: 0 auto 10px; box-shadow: 0 8px 20px rgba(0,0,0,.18); }
   .today { margin: 12px 2px 0; font-size: .82rem; color: var(--ink-2); font-weight: 650; }
   .versus { margin: 12px 0 4px; padding: 12px 14px; border-radius: 16px; background: #f6e7b4; color: #6b4a08;
@@ -266,6 +286,7 @@
     <div id="toast"></div>
     <div id="info" class="card" hidden></div>
     <div id="pop" class="pop" hidden></div>
+    <div id="coach" class="card top" hidden></div>
   </main>
 
   <section id="panel" class="card" hidden>
@@ -1027,26 +1048,32 @@ const nearNoun = (r, n) => r.any ? (n === 1 ? "building" : "buildings") : joinOr
   ? [...(r.types || []).map(t => DEF[t].name), ...(r.cats || []).map(c => CATS[c].one)]
   : [...(r.types || []).map(plural), ...(r.cats || []).map(c => CATS[c].many)]);
 
-/* A rule as the card shows it, after its points: "+2 each woods". The icon says whether it is land or neighbours. */
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/*
+  A rule as the card shows it, after its points and its icon: "+2 Woods", "+2 Food". How to play says a land
+  bonus counts the land under and next to a building, and a neighbour bonus counts what touches it, so the
+  card only names what it counts. Rules that count further away say so.
+*/
 function ruleText(r) {
-  if (r.k === "land") return r.once ? `if ${landWord(r.t)}` : `each ${landWord(r.t)}`;
-  if (r.k === "near") return `each ${nearNoun(r, 1)}`;
-  if (r.k === "edge") return "at the map edge";
-  if (r.k === "variety") return "each kind next to it";
-  if (r.k === "town") return `each ${nearNoun(r, 1)} in town`;
-  if (r.k === "without") return `if no ${nearNoun(r, 2)}`;
+  if (r.k === "land") return cap(landWord(r.t));
+  if (r.k === "near") return r.any ? "Any building" : cap(nearNoun(r, 1));
+  if (r.k === "edge") return "Map edge";
+  if (r.k === "variety") return "Each kind of building";
+  if (r.k === "town") return `${cap(nearNoun(r, 2))} in town`;
+  if (r.k === "without") return `No ${nearNoun(r, 2)}`;
   return "";
 }
 
 /* The district row on a building's card. */
-const districtText = (type) => `each other ${CATS[DEF[type].cat].one} in its district, max +${DISTRICT_MAX}`;
+const districtText = (type) => `${CATS[DEF[type].cat].name} district, max +${DISTRICT_MAX}`;
 
 /* One part of a score as it stands, in as few words as it takes: "3 woods". */
 function partText(type, q) {
   if (q.r === "district") return q.n > 1 ? `District of ${q.n}` : "No district";
   if (q.r < 0) return "Base";
   const r = DEF[type].rules[q.r];
-  if (r.k === "land") return r.once ? (q.n ? landWord(r.t) : `no ${landWord(r.t)}`) : `${q.n} ${landWord(r.t)}`;
+  if (r.k === "land") return r.once ? cap(q.n ? landWord(r.t) : `no ${landWord(r.t)}`) : `${q.n} ${landWord(r.t)}`;
   if (r.k === "near") return `${q.n} ${nearNoun(r, q.n)}`;
   if (r.k === "edge") return q.n ? "Map edge" : "Not at the edge";
   if (r.k === "variety") return `${q.n} ${q.n === 1 ? "kind" : "kinds"}`;
@@ -2492,6 +2519,8 @@ function turnGhost(dRot, flip) {
   const next = { rot: (g.rot + dRot + 4) % 4, flip: flip ? !g.flip : g.flip };
   const [w2, h2] = extent(orient(DEF[type].shape, next.rot, next.flip));
   placeGhost({ ...next, ax: Math.round(g.ax + w / 2 - w2 / 2), ay: Math.round(g.ay + h / 2 - h2 / 2) });
+  if (dRot) TUT.turned = true;
+  if (flip) TUT.flipped = true;
   paintPanel();
 }
 
@@ -2588,7 +2617,7 @@ function frame(nowMs) {
   for (const [kind, x, y, a, r] of LIVE) live(ctx, kind, x, y, a, r);
   updateSmoke(dt); drawSmoke(ctx);
   drawDust(ctx, dt);
-  if ($("dialogWrap").hidden) drawGhost(ctx, now);
+  if ($("dialogWrap").hidden) { drawGhost(ctx, now); drawTarget(ctx, now); }
   drawSelection(ctx, now);
   drawFloats(ctx, dt);
   drawConfetti(ctx, dt);
@@ -2652,13 +2681,14 @@ function modsHTML(type) {
 }
 
 function hud() {
-  $("townName").textContent = G.player ? townName(G.player, G.pick) : GAME;
+  $("townName").textContent = G.tut ? "Tutorial" : G.player ? townName(G.player, G.pick) : GAME;
   const placed = G.pieces.length;
   // The game's name sits under the town's, so it is on screen the whole game.
-  const where = isDaily() ? `${GAME} · Daily ${goalsDone()}/3` : GAME;
+  const where = isDaily() ? `${GAME} · Daily ${goalsDone()}/3` : G.tut ? `${GAME} · learn how to play` : GAME;
   $("townSub").textContent = G.over ? `${where} · the town is done`
     : `${where} · ${placed} built${G.away.length ? ` · ${G.away.length} turned away` : ""}${G.challenge ? ` · Beat ${G.challenge.score}` : ""}`;
   $("left").textContent = G.over ? 0 : G.deck.length - G.at;
+  paintCoach();
 }
 
 function paintPanel() {
@@ -2679,7 +2709,8 @@ function paintPanel() {
         <div class="hint"><span>${UI.rules ? "Scoring ▴" : "Scoring ▾"}</span>${nxt ? `<span class="nx">Next ${shapeSVG(nxt, 0, false, 15)}</span>` : ""}</div></div>
     </button>`;
   $("pieceHead").onclick = toggleRules;
-  $("bBuild").disabled = !canPlace(ghostCells(), current());
+  $("bBuild").disabled = !placeOK();
+  paintCoach();
 }
 
 const CONTROLS = $("controls").innerHTML;
@@ -2701,6 +2732,7 @@ function toast(text, ms = 2600) {
 function select(i) {
   UI.rules = false; UI.sel = i;
   paintInfo(); paintPanel();
+  tutEvent("select");
 }
 function closeInfo() {
   const wasRules = UI.rules;
@@ -2711,10 +2743,12 @@ function toggleRules() {
   if (UI.rules) return closeInfo();
   UI.sel = -1; UI.rules = !!current();
   paintInfo(); paintPanel();
+  if (UI.rules) tutEvent("rules");
 }
 const ghostRow = () => { const cells = ghostCells(); return cells ? cells.reduce((sum, c) => sum + rowOf(c), 0) / cells.length : 0; };
 function placeInfo(row) {
-  const cls = "card " + (row >= ROWS / 2 ? "top" : "bottom");
+  const coach = $("coach"), side = !coach.hidden ? (coach.classList.contains("top") ? "bottom" : "top") : null;
+  const cls = "card " + (side || (row >= ROWS / 2 ? "top" : "bottom"));
   if ($("info").className !== cls) $("info").className = cls;
 }
 
@@ -2745,7 +2779,7 @@ function paintInfo() {
 
 function doBuild() {
   const cells = ghostCells();
-  if (!G || G.over || !canPlace(cells, current())) return;
+  if (!G || G.over || !placeOK()) return;
   const res = build(cells), S = UI.S;
   const middle = (cs) => [cs.reduce((sum, c) => sum + cellX(c), 0) / cs.length + S / 2, cs.reduce((sum, c) => sum + cellY(c), 0) / cs.length + S / 2];
   // Neighbours whose scores moved show it over their roofs.
@@ -2764,7 +2798,8 @@ function doBuild() {
   save(); hud();
   if (G.over) closeInfo(); else if (UI.rules || UI.sel >= 0) paintInfo();
   paintPanel();
-  if (G.over) { recordBest(); setTimeout(showSummary, 2400); }
+  if (G.over) { if (!G.tut) recordBest(); setTimeout(showSummary, 2400); }
+  tutEvent("build", res);
 }
 
 const CUP = `<svg viewBox="0 0 24 24" fill="#ffd45c"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V17h3v3H8v-3h3v-2.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V5h3zM6 7v1a2 2 0 0 0 1 1.7V7zm11 0v2.7A2 2 0 0 0 18 8V7z"/></svg>`;
@@ -2835,8 +2870,9 @@ cv.addEventListener("pointermove", (e) => {
   const before = UI.ghost.ax + "," + UI.ghost.ay;
   placeGhost({ ...UI.ghost, ax, ay });
   if (UI.ghost.ax + "," + UI.ghost.ay !== before) {
-    $("bBuild").disabled = !canPlace(ghostCells(), current());
+    $("bBuild").disabled = !placeOK();
     if (UI.rules) placeInfo(ghostRow());
+    paintCoach();
   }
 });
 cv.addEventListener("pointerup", () => {
@@ -2868,26 +2904,31 @@ function openSheet(html) {
   $("sheet").innerHTML = html;
   $("sheetWrap").hidden = false;
 }
-function closeSheet() { $("sheetWrap").hidden = true; UI.confirm = false; }
+function closeSheet() {
+  const was = !$("sheetWrap").hidden;
+  $("sheetWrap").hidden = true; UI.confirm = false;
+  if (was) tutEvent("sheetclose");
+}
 $("scrim").onclick = closeSheet;
 
 const RULES_HTML = `<ul class="rules">
   <li><b>Build:</b> drag a building onto open land and press Build. Tap it to see how it scores.</li>
   <li><b>Districts:</b> buildings of one kind that touch share a lot. Each gains +1 for every other building on it, up to +${DISTRICT_MAX}.</li>
-  <li><b>Land bonuses</b> count that land under a building or next to it.</li>
+  <li><b>Land bonuses</b> count each square of that land under a building or next to it. Most buildings count water once.</li>
   <li><b>Neighbour bonuses grow.</b> A building gains whenever you add a neighbour it likes.</li>
   <li><b>Bridges</b> are the only buildings that can sit on water. Both ends must be on land.</li>
   <li><b>No room</b> for a building: −${AWAY}. Fit them all: +${ALL_FIT}.</li>
 </ul>`;
 
 function showMenu() {
-  const inGame = G && G.player, rec = dailyRecord(), doneToday = rec && rec.day === dayKey();
+  const inGame = G && G.player && !G.tut, rec = dailyRecord(), doneToday = rec && rec.day === dayKey();
   const risky = inGame && !G.over && G.pieces.length;   // a town under way would be lost
   openSheet(`<h2>New town</h2>
     <div class="modes">
       <button class="primary" id="mDaily">Daily<span class="sub">${isDaily() && G.day === dayKey() ? "You are on today's map" : doneToday ? `Played: ${rec.score}` : "Today's challenge map"}</span></button>
       <button class="primary green" id="mFree">Free<span class="sub">A random map</span></button>
     </div>
+    <div class="modes one"><button class="primary dark" id="mTut">Tutorial<span class="sub">${G && G.tut ? "Start the tutorial again" : "Learn how to play"}</span></button></div>
     ${UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">Start again and this town is lost. Tap once more.</p>` : ""}
     <h2 style="margin-top:18px">How to play</h2>${RULES_HTML}
     <div class="row"><button class="tool" id="mClose">Close</button></div>`);
@@ -2901,6 +2942,8 @@ function showMenu() {
   };
   $("mDaily").onclick = () => start(dayKey());
   $("mFree").onclick = () => start(null);
+  // The tutorial is never saved, so the town under way waits for it.
+  $("mTut").onclick = startTutorial;
 }
 $("menuBtn").onclick = () => { UI.confirm = false; showMenu(); };
 
@@ -2937,6 +2980,7 @@ function showDeck() {
       <div><div class="name">${esc(DEF[k].name)} <span class="count">×${count[k]}</span> ${chip(DEF[k].cat)}</div>${modsHTML(k)}</div></div>`).join("")}</div>
     <div class="row"><button class="tool" id="dClose">Close</button></div>`);
   $("dClose").onclick = closeSheet;
+  tutEvent("deck");
 }
 $("deckBtn").onclick = showDeck;
 
@@ -3030,6 +3074,7 @@ async function shareChallenge() {
 }
 
 function showSummary() {
+  if (G.tut) return tutSummary();
   hidePop();
   const daily = isDaily();
   if (daily) G.par = parFor(G.seed);
@@ -3121,9 +3166,235 @@ function showScore() {
 }
 $("scoreBtn").onclick = showScore;
 
+/* ───────────────────────── Tutorial ───────────────────────── */
+
+/*
+  A short game on a map drawn by hand, with eight buildings in a set order. A coach card says what to do next,
+  and the Build button waits until the building sits where the step wants it. The tutorial is never saved, so a
+  town under way is still there when it ends.
+
+  F woods, O ore, W wheat, H herd, ~ water, . open grass. The mill fits the woods only when turned and flipped,
+  the farm that helps the homes sits on the Mine's ore, and the bridge crosses the river next to the homes.
+*/
+const TUT_MAP = [
+  "F.F..~...",
+  ".FFF.~.HH",
+  ".F...~.HH",
+  ".F...~...",
+  "FFF..~...",
+  ".....~...",
+  ".....~...",
+  "OO...~...",
+  "OOW..~.HH",
+  "OOW..~.H.",
+  ".....~.FF",
+  ".....~.FF",
+];
+const TUT_LAND = { F: "forest", O: "ore", W: "wheat", H: "herd", "~": "water", ".": "grass" };
+const TUT_DECK = ["lumber", "cabin", "loghouse", "homestead", "farm", "bridge", "mine", "windmill"];
+const TUT = { on: false, i: 0, turned: false, flipped: false, last: null, html: "" };
+
+const squares = (xys) => xys.map(([x, y]) => idx(x, y));
+const sameCells = (a, b) => !!a && a.length === b.length && a.every(c => b.includes(c));
+const landOf = (r) => r.parts.find(q => q.r === 0).n;
+const gained = (r) => r.changed.reduce((sum, x) => sum + x.d, 0);
+
+/*
+  side:  where the coach sits, "top" or "bottom", clear of the squares the step is about.
+  next:  the step waits for the Next button. wait: it waits for "rules", "deck", "sheetclose" or "select".
+  build: the squares the building must cover, or "any". ghost: where the building in hand starts.
+  text gets the last build's result, so it can name the points the move earned.
+*/
+const STEPS = [
+  { side: "bottom", next: true,
+    text: () => `Each turn you get one building. Your goal is to find the spot where it scores the most. First up: a <b>Lumber Mill</b>.` },
+  { side: "bottom", wait: "rules",
+    text: () => `Tap the mill on the map, or tap its name in the panel below, to see how it scores.` },
+  { side: "bottom", next: true, leave: () => closeInfo(),
+    text: () => `This card lists every way the mill scores. <b>Base</b> is what it always gets. <b>District</b> adds +1 for each other industry it touches. <b>Woods</b> adds +2 for each woods square under it or next to it. The dashed squares show what counts as next to it.` },
+  { side: "bottom", build: [[2, 0], [2, 1], [1, 1], [1, 2]],
+    todo: (s) => [["Turn", TUT.turned], ["Flip", TUT.flipped], ["On the outline", sameCells(ghostCells(), squares(s.build))]],
+    text: () => `The outline sits deep in the woods. Use <b>Turn</b> and <b>Flip</b> to match its shape. Then drag the mill onto it and tap <b>Build</b>.` },
+  { side: "bottom", next: true,
+    text: (r) => `+${r.pts}! All four squares sit on woods, so you won <b>Perfect ground</b>. With ${landOf(r)} woods in all, you won <b>Rich land</b> too. Trophies like these pop up when you build well.` },
+  { side: "top", build: [[0, 6], [1, 6]], ghost: { rot: 0, flip: false, ax: 3, ay: 4 },
+    text: () => `Now a home. The Cabin's card has a red row: it loses 2 for each industry next to it, so keep homes away from the mill. Put the Cabin on the outline and tap <b>Build</b>.` },
+  { side: "top", build: [[0, 5], [1, 5], [2, 5]], ghost: { rot: 0, flip: false, ax: 2, ay: 3 },
+    text: () => `Buildings of one kind that touch make a <b>district</b>. Put the Log House on the outline, next to the Cabin. The shaded lot shows the district it joins.` },
+  { side: "top", next: true,
+    text: () => `A district of 2: each home gets +1. That is why the Cabin went up by 1 too.` },
+  { side: "top", build: [[2, 6], [2, 7], [3, 7]], ghost: { rot: 0, flip: false, ax: 3, ay: 3 },
+    text: () => `Add the Homestead to the district.` },
+  { side: "top", next: true,
+    text: () => `A district of 3: now each home gets +2. A district adds +1 for every other building in it, up to +${DISTRICT_MAX}.` },
+  { side: "top", build: [[0, 7], [1, 7], [0, 8], [1, 8]], ghost: { rot: 0, flip: false, ax: 3, ay: 9 },
+    text: () => `The Farm is food, and homes like food next door. Put it on the outline, next to the homes.` },
+  { side: "top", next: true,
+    text: (r) => `The Farm scored +${r.pts}, and the homes next to it gained +${gained(r)}. But look at the red trophy: <b>Wasted land</b>. The Farm sits on ore it can't use, and a Mine is still to come. It scores +3 for each ore. Every spot is a trade-off: a bonus now can cost you later.` },
+  { side: "top", build: [[4, 7], [5, 7], [6, 7]], ghost: { rot: 0, flip: false, ax: 4, ay: 3 },
+    text: () => `<b>Bridges</b> are the only buildings that can sit on water, and both ends must be on land. Put the bridge on the outline, across the river.` },
+  { side: "top", next: true,
+    text: (r) => `+${r.pts}. A bridge scores for the water under it and next to it, and for each building it touches. Bridges join no district.` },
+  { side: "top", wait: "deck",
+    text: () => `Two buildings are left. Tap <b>To come</b> at the top right to see them.` },
+  { side: "top", wait: "sheetclose",
+    text: () => `Here is every building still to come, and how it scores. The Mine wants ore and the Windmill wants wheat, so plan room for them. Close the list when you are done.` },
+  { side: "top", wait: "select",
+    text: () => `Tap any building you have built to see its score now.` },
+  { side: "top", next: true, leave: () => closeInfo(),
+    text: () => `Each row is one part of its score. Green rows add, red rows take away, and grey rows are bonuses it could still get. Scores stay live, so a new neighbour can still raise them. Tap <b>Points</b> at the top to see the whole town.` },
+  { side: "top", build: "any",
+    text: () => `Your turn. Place the ${G.deck.slice(G.at).map(k => DEF[k].name).join(" and the ")} where you think ${G.deck.length - G.at > 1 ? "they score" : "it scores"} best. The town is done when the last building is down.` },
+];
+
+const tutStep = () => G && G.tut && TUT.on && !G.over ? STEPS[TUT.i] : null;
+
+/* Only what the step asks for can be built. Outside the tutorial, any open spot will do. */
+function placeOK() {
+  const cells = ghostCells();
+  if (!canPlace(cells, current())) return false;
+  if (!G.tut) return true;
+  const step = tutStep();
+  return !!step && !!step.build && (step.build === "any" || sameCells(cells, squares(step.build)));
+}
+
+function paintCoach() {
+  const box = $("coach"), step = tutStep();
+  if (!step) { box.hidden = true; TUT.html = ""; return; }
+  const todo = step.todo ? step.todo(step) : [];
+  const html = `<div class="kind">Tutorial · ${TUT.i + 1} of ${STEPS.length}</div><p>${step.text(TUT.last)}</p>` +
+    (todo.length ? `<ul class="todo">${todo.map(([t, ok]) => `<li class="${ok ? "ok" : ""}">${t}</li>`).join("")}</ul>` : "") +
+    (step.next ? `<div class="go"><button class="primary" id="coachNext">Next</button></div>` : "");
+  box.className = "card " + step.side;
+  box.hidden = false;
+  // Paint only on a change, so a tap on Next is never lost to a fresh button.
+  if (html === TUT.html) return;
+  box.innerHTML = html; TUT.html = html;
+  if ($("coachNext")) $("coachNext").onclick = nextStep;
+}
+
+function enterStep() {
+  const step = STEPS[TUT.i];
+  TUT.turned = TUT.flipped = false;
+  if (step.ghost && current()) UI.ghost = { ...step.ghost };
+  paintPanel();
+  if (UI.rules || UI.sel >= 0) paintInfo();
+}
+function nextStep() {
+  const step = STEPS[TUT.i];
+  if (step.leave) step.leave();
+  TUT.i = Math.min(TUT.i + 1, STEPS.length - 1);
+  enterStep();
+}
+/* What the player just did. A step moves on when it is the thing the step waits for. */
+function tutEvent(name, res) {
+  const step = tutStep();
+  if (name === "build" && G && G.tut) TUT.last = res;
+  if (!step) return;
+  if (name === "build" && step.build === "any") return paintCoach();
+  if (step.wait === name || (name === "build" && step.build)) nextStep();
+}
+
+/* The squares the step wants, marked with a gold outline that turns green when the building fits them. */
+function drawTarget(g, now) {
+  const step = tutStep();
+  if (!step || !step.build || step.build === "any") return;
+  const cells = squares(step.build), set = new Set(cells), S = UI.S, hit = sameCells(ghostCells(), cells);
+  union(g, cells, S * .04, S * .2);
+  g.fillStyle = hit ? "rgba(108,240,154,.18)" : `rgba(255,214,92,${.14 + .1 * Math.sin(now * 4)})`;
+  g.fill();
+  g.beginPath();
+  for (const c of cells) {
+    const x = cellX(c), y = cellY(c), col = colOf(c);
+    if (!set.has(c - COLS)) { g.moveTo(x, y); g.lineTo(x + S, y); }
+    if (!set.has(c + COLS)) { g.moveTo(x, y + S); g.lineTo(x + S, y + S); }
+    if (col === 0 || !set.has(c - 1)) { g.moveTo(x, y); g.lineTo(x, y + S); }
+    if (col === COLS - 1 || !set.has(c + 1)) { g.moveTo(x + S, y); g.lineTo(x + S, y + S); }
+  }
+  g.save();
+  g.setLineDash([S * .16, S * .1]); g.lineDashOffset = -now * S * .5; g.lineCap = "round";
+  g.lineWidth = Math.max(2, S * .07); g.strokeStyle = hit ? "#6cf09a" : "#ffd45c";
+  g.stroke();
+  g.restore();
+}
+
+/* The name of the unfinished town in the save, if there is one. */
+function savedTown() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE));
+    return s && (s.v === 6 || s.v === 7) && s.player && !s.over ? townName(s.player, s.pick) : null;
+  } catch (e) { return null; }
+}
+/* Out of the tutorial: back to the town under way, or to the start. */
+function leaveTutorial() {
+  TUT.on = false;
+  closeDialog();
+  if (load() && !G.over) showGame(); else intro();
+}
+/* Into a real game, with the name from last time if there is one. */
+function playFromTutorial(daily) {
+  TUT.on = false;
+  closeDialog();
+  const name = lastName();
+  if (name) startTown(name, null, daily); else intro();
+}
+
+function startTutorial() {
+  TUT.on = false;
+  closeSheet(); closeDialog();
+  MAP = TUT_MAP.join("").split("").map(ch => TUT_LAND[ch]);
+  OWNER = new Array(N).fill(-1);
+  G = { v: 7, player: lastName() || "You", pick: 0, seed: (Math.random() * 2 ** 31) | 0, deck: TUT_DECK.slice(), at: 0,
+        away: [], pieces: [], over: false, trophies: {}, streak: 0, challenge: null, day: null, goals: null, par: 0, tut: true };
+  Object.assign(TUT, { i: 0, last: null, html: "" });
+  resetScene();
+  UI.shown = 0; $("score").textContent = 0;
+  UI.ghost = { rot: 0, flip: false, ax: 2, ay: 2 };
+  hud(); paintPanel();
+  layout();
+  const back = savedTown();
+  showDialog(`<div style="text-align:center"><img class="crest" src="hugelland-icon.svg" alt="">
+      <h2>Welcome to the tutorial</h2>
+      <p>You will build a small town, one building at a time. These are the rules. The tutorial shows you each one.</p></div>
+    ${RULES_HTML}
+    <div class="row"><button class="tool" id="tutQuit">${back ? "Back to my town" : "Not now"}</button><button class="primary" id="tutGo">Start</button></div>`);
+  $("tutQuit").onclick = leaveTutorial;
+  $("tutGo").onclick = () => { closeDialog(); TUT.on = true; enterStep(); };
+}
+
+/* The end of the tutorial: the final score, how it adds up, and the way into a real game. */
+function tutSummary() {
+  hidePop();
+  const won = Object.keys(TROPHIES).filter(id => G.trophies[id]), back = savedTown();
+  showDialog(`<div class="final">
+      <h2>Final scoring</h2>
+      <div class="big num">${total()}</div>
+      <div class="best">Your tutorial town</div>
+    </div>
+    <p>When the last building is down, the town is done and every building's score adds up. Fit them all for +${ALL_FIT}. Each building with no room costs −${AWAY}.</p>
+    <ul class="tally">
+      <li><span>Buildings</span><b>${boardScore()}</b></li>
+      ${G.away.length ? `<li><span>${G.away.length} turned away</span><b>−${G.away.length * AWAY}</b></li>`
+                      : `<li><span>Every building fit</span><b>+${ALL_FIT}</b></li>`}
+    </ul>
+    ${won.length ? `<p class="label">Trophies</p><div class="tchips">${won.map(id =>
+      `<span class="tchip${TROPHIES[id].good ? "" : " bad"}">${esc(TROPHIES[id].name.replace("!", ""))}${G.trophies[id] > 1 ? ` ×${G.trophies[id]}` : ""}</span>`).join("")}</div>` : ""}
+    <p>Now try a real map. The <b>Daily</b> map is the same for everyone today, with three goals and a par to beat. A <b>Free</b> map is new each time.</p>
+    <div class="modes">
+      <button class="primary" id="tDaily">Daily<span class="sub">Today's challenge map</span></button>
+      <button class="primary green" id="tFree">Free<span class="sub">A random map</span></button>
+    </div>
+    ${back ? `<p class="today">A new map takes the place of ${esc(back)}.</p><button class="linkbtn" id="tBack">Back to ${esc(back)}</button>` : ""}
+    <button class="linkbtn" id="tLook">Look at the town</button>`);
+  $("tDaily").onclick = () => playFromTutorial(dayKey());
+  $("tFree").onclick = () => playFromTutorial(null);
+  if ($("tBack")) $("tBack").onclick = leaveTutorial;
+  $("tLook").onclick = closeDialog;
+}
+
 /* ───────────────────────── Saving and starting ───────────────────────── */
 
-function save() { if (!G || !G.player) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
+function save() { if (!G || !G.player || G.tut) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE));
@@ -3177,6 +3448,7 @@ function intro(challenge = null) {
          <button class="primary" id="goDaily" type="submit">Daily<span class="sub">Play the daily challenge map</span></button>
          <button class="primary green" id="goFree" type="button">Free<span class="sub">Play a random map</span></button>
        </div>
+       <div class="modes one"><button class="primary dark" id="goTut" type="button">Tutorial<span class="sub">Learn how to play</span></button></div>
        ${doneToday ? `<p class="today">Today: ${rec.score} against par ${rec.par}, ${rec.goals} of 3 goals${rec.streak > 1 ? ` · ${rec.streak} days in a row` : ""}</p>` : ""}`;
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
       <img class="crest" src="hugelland-icon.svg" alt="">
@@ -3198,6 +3470,10 @@ function intro(challenge = null) {
     startTown(player, challenge, daily);
   };
   if ($("goFree")) $("goFree").onclick = () => begin(null);
+  if ($("goTut")) $("goTut").onclick = () => {
+    if (named()) try { localStorage.setItem(NAME, named()); } catch (e) {}
+    startTutorial();
+  };
   $("introForm").onsubmit = (e) => { e.preventDefault(); begin(challenge ? challenge.day || null : dayKey()); };
   layout();
 }

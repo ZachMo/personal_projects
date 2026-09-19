@@ -87,7 +87,8 @@
   #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 9px 16px; border-radius: 999px; background: rgba(20,28,26,.94);
            color: #fff; font-size: .86rem; font-weight: 650; opacity: 0; transition: opacity .25s; pointer-events: none; }
   #toast.on { opacity: 1; }
-  #game { position: absolute; width: 390px; height: 844px; left: -9999px; top: 0; border: 0; visibility: hidden; }
+  /* On screen but unseen: browsers put off loading frames that sit far outside the page. */
+  #game { position: fixed; left: 0; top: 0; width: 390px; height: 844px; border: 0; opacity: 0; pointer-events: none; z-index: -1; }
 </style>
 </head>
 <body>
@@ -111,7 +112,7 @@
 <div id="toast"></div>
 
 <!-- The game itself, hidden. This page reads its buildings and draws them with its own code, so it always matches. -->
-<iframe id="game" src="hugelland.html?seed=1&amp;from=review" title="" aria-hidden="true" tabindex="-1"></iframe>
+<iframe id="game" src="hugelland.html?seed=1&amp;from=review" loading="eager" title="" aria-hidden="true" tabindex="-1"></iframe>
 
 <script>
 "use strict";
@@ -128,20 +129,38 @@ function toast(text) { $("toast").textContent = text; $("toast").classList.add("
 const STYLE = { logs: "log roof", metal: "metal roof", stone: "stone roof", front: "false front", dormer: "dormers" };
 const EXTRA = { stack: "smokestack", cupola: "cupola", bell: "bell", saw: "saw blade", birds: "birds overhead" };
 const state = { cat: "all", q: "", sort: "cat" };
-let W = null, DEF = null, CATS = null, ORDER = [];
+let DEF = null, CATS = null, ORDER = [];
 
-$("game").addEventListener("load", () => {
+const LIVE = "https://zachmo.github.io/personal_projects/hugelland-buildings.html";
+function fail(why) {
+  $("lead").innerHTML = `${why} <a href="${LIVE}">Open the page on the site</a>.`;
+}
+
+/*
+  Waits for the game in the frame to be ready, then builds the page from it. The frame's load event can come
+  before this script is listening, so this also checks on a timer instead of trusting the event alone.
+*/
+let started = false, tries = 0;
+function tryStart() {
+  if (started) return;
+  let ev;
   try {
-    W = $("game").contentWindow;
-    const ev = (code) => W.eval(code);
-    DEF = ev("DEF"); CATS = ev("CATS");
-    ORDER = Object.keys(DEF);
-    start(ev);
+    const W = $("game").contentWindow;
+    ev = (code) => W.eval(code);
+    if (typeof ev("typeof DEF === 'object' && typeof modsHTML === 'function' && DEF") !== "object") throw new Error("not ready");
   } catch (e) {
-    $("lead").textContent = "This page reads the game next to it. Open it from a web server, not straight from a file.";
-    $("grid").innerHTML = `<p class="msg">${esc(e.message)}</p>`;
+    if (location.protocol !== "file:" && ++tries < 60) return setTimeout(tryStart, 250);
+    return fail(location.protocol === "file:"
+      ? "This page reads the game next to it, and a browser does not allow that for a file opened from disk."
+      : "The game did not load, so there is nothing to show.");
   }
-});
+  started = true;
+  DEF = ev("DEF"); CATS = ev("CATS");
+  ORDER = Object.keys(DEF);
+  try { start(ev); } catch (e) { fail(`Something went wrong drawing the buildings: ${esc(e.message)}.`); }
+}
+$("game").addEventListener("load", tryStart);
+tryStart();
 
 function start(ev) {
   const modsHTML = ev("modsHTML"), shapeSVG = ev("shapeSVG"), SHAPES = ev("SHAPES");

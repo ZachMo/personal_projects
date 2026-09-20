@@ -147,10 +147,14 @@
   /* Whatever the dialog holds, its last row of buttons stays on screen: nobody gets stuck scrolling for the way out. */
   .dialog > .row:last-child .primary { height: auto; min-height: 48px; padding: 8px 10px; line-height: 1.2; }
   .dialog > .row:last-child .primary .sub { display: block; font-size: .68rem; font-weight: 600; opacity: .85; margin-top: 2px; }
-  .dialog > .row:last-child {
-    position: sticky; bottom: -20px; margin: 14px -20px -20px; padding: 10px 20px calc(20px + var(--pad-b));
-    background: linear-gradient(to bottom, rgba(251,249,244,0), var(--card) 22%); border-radius: 0 0 20px 20px;
+  .dialog > .row:last-child, .dialog > .foot {
+    position: sticky; bottom: -20px; margin: 14px -20px -20px; padding: 12px 20px calc(20px + var(--pad-b));
+    background: var(--card); border-radius: 0 0 20px 20px;
+    /* Soft above, so the page looks like it runs on under the buttons rather than being cut off. */
+    box-shadow: 0 -14px 16px -8px var(--card);
   }
+  .dialog > .foot .dots { margin: 2px 0 0; } .dialog > .foot .swipe { margin: 6px 0 0; }
+  .dialog > .foot .row { margin-top: 10px; }
   .dialog h1 { margin: 0; font-size: 2.1rem; letter-spacing: -.035em; line-height: 1; }
   .dialog h2 { margin: 0 0 4px; font-size: 1.3rem; letter-spacing: -.02em; }
   .dialog p { margin: 8px 0 12px; color: var(--ink-2); font-size: .9rem; }
@@ -2972,9 +2976,8 @@ function paintPanel() {
   $("panel").hidden = false;
   if (G.over) {
     $("piece").innerHTML = `<div class="done"><div class="big num">${total()}</div><div class="sub">points</div></div>`;
-    $("controls").innerHTML = `<button class="tool" id="bSummary">Summary</button><button class="primary" id="bNew">New town</button>`;
+    $("controls").innerHTML = `<button class="primary" id="bSummary">Summary</button>`;
     $("bSummary").onclick = showSummary;
-    $("bNew").onclick = () => intro();
     return;
   }
   if (!$("bTurn")) restoreControls();
@@ -3184,6 +3187,7 @@ addEventListener("keydown", (e) => {
 /* ───────────────────────── Sheets and dialogs ───────────────────────── */
 
 function openSheet(html) {
+  hidePop();   // the score floating over the board would sit on top of the sheet
   $("sheet").innerHTML = html;
   $("sheetWrap").hidden = false;
 }
@@ -3204,34 +3208,17 @@ const RULES_HTML = `<ul class="rules">
 </ul>`;
 
 function showMenu() {
-  const inGame = G && G.player && !G.tut, rec = dailyRecord(), doneToday = rec && rec.day === dayKey();
-  const risky = inGame && !G.over && G.pieces.length;   // a town under way would be lost
-  openSheet(`<h2>New town</h2>
-    <div class="modes">
-      <button class="primary" id="mDaily">Daily<span class="sub">${isDaily() && G.day === dayKey() && !G.over ? "You are on today's map" : doneToday ? "Played today · see how it went" : "Today's challenge map"}</span></button>
-      <button class="primary green" id="mFree">Free<span class="sub">A random map</span></button>
-    </div>
-    <div class="modes one"><button class="primary wheat" id="mTut">Tutorial<span class="sub">${G && G.tut ? "Start the tutorial again" : "Learn how to play"}</span></button></div>
-    ${UI.confirm ? `<p style="margin:10px 2px 0;font-size:.82rem;color:var(--bad)">Start again and this town is lost. Tap once more.</p>` : ""}
+  const inGame = G && G.player && !G.tut;
+  const onDaily = inGame && isDaily() && G.day === dayKey() && !G.over;
+  openSheet(`<h2>Menu</h2>
+    <div class="modes one"><button class="primary" id="mNew">New game<span class="sub">Back to Daily, Free or Tutorial</span></button></div>
+    <p class="today">${onDaily ? "Today's map is kept as it stands, so you can carry on with it."
+      : inGame && !G.over && !G.tut ? "This town is lost when you start another."
+      : "Choose a map on the next screen."}</p>
     <h2 style="margin-top:18px">How to play</h2>${RULES_HTML}
     <div class="row"><button class="tool" id="mClose">Close</button></div>`);
+  $("mNew").onclick = () => { stashDaily(); closeSheet(); intro(); };
   $("mClose").onclick = closeSheet;
-  const start = (daily) => {
-    if (risky && !UI.confirm) { UI.confirm = true; return showMenu(); }
-    closeSheet();
-    if (!inGame) return intro();
-    // The name is already known, so a new town starts straight away, on a fresh map.
-    startTown(G.player, null, daily, null);
-  };
-  // Today's map, once. After that the button shows how it went.
-  $("mDaily").onclick = () => {
-    const playingToday = isDaily() && G.day === dayKey() && !G.over;
-    if (doneToday && !playingToday) { closeSheet(); return showToday(rec); }
-    start(dayKey());
-  };
-  $("mFree").onclick = () => start(null);
-  // The tutorial is never saved, so the town under way waits for it.
-  $("mTut").onclick = startTutorial;
 }
 $("menuBtn").onclick = () => { UI.confirm = false; showMenu(); };
 
@@ -3284,8 +3271,20 @@ function keepTodayTown() { try { localStorage.setItem(TOWN_TODAY, JSON.stringify
 function todayTown() {
   try {
     const t = JSON.parse(localStorage.getItem(TOWN_TODAY));
-    return t && t.v === 7 && t.over && t.day === dayKey() ? t : null;
+    return t && t.v === 7 && t.day === dayKey() ? t : null;
   } catch (e) { return null; }
+}
+/* Leaving today's map half built keeps it: a day is played once, so it waits rather than being lost. */
+function stashDaily() {
+  if (G && G.player && !G.tut && !G.viewing && G.day === dayKey() && !G.over) keepTodayTown();
+}
+/* Back to today's map, where it was left. */
+function resumeToday(town) {
+  closeDialog(); closeSheet();
+  restore(town);
+  resetScene(); UI.shown = total(); $("score").textContent = total();
+  freshGhost(); save(); hud(); paintPanel(); layout();
+  toast("Carrying on with today's map.");
 }
 
 /* The name from last time, so a new game is two taps. */
@@ -3928,12 +3927,14 @@ function showSummary() {
   const pages = [town, paper, day, board].filter(Boolean);
   showDialog(`${head}
     <div class="pages" id="pages">${pages.map(p => `<section>${p}</section>`).join("")}</div>
+    <div class="foot">
     ${pages.length > 1 ? `<div class="dots" id="dots">${pages.map((p, i) =>
       `<button type="button" data-i="${i}" aria-label="Page ${i + 1}" aria-current="${i === 0}"></button>`).join("")}</div>
       <p class="swipe" id="swipe"></p>` : ""}
     <div class="row">${G.viewing
       ? `<button class="tool" id="sLook">Look at the town</button><button class="primary" id="sBack">Back</button>`
-      : `<button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button>`}</div>`);
+      : `<button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button>`}</div>
+    </div>`);
   $("sShare").onclick = shareChallenge;
   if (board) showBoard(G.day);
   // What the line under the dots offers next, page by page.
@@ -4254,9 +4255,11 @@ function resetScene() {
   behind it. Pass null as the seed for a fresh random map.
 */
 function startTown(player, challenge = null, daily = null, seed = G.seed) {
-  // Today's map, once. Any way in leads to how it went instead of dealing it again.
-  const rec = dailyRecord();
+  // Today's map, once: carry on with it if it is half built, or see how it went if it is done.
+  const kept = todayTown(), rec = dailyRecord();
+  if (daily && daily === dayKey() && kept) { closeDialog(); closeSheet(); return kept.over ? viewToday(kept) : resumeToday(kept); }
   if (daily && daily === dayKey() && rec && rec.day === daily) { closeDialog(); closeSheet(); return showToday(rec); }
+  stashDaily();
   newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)), seed, daily);
   G.challenge = challenge && { from: challenge.from, score: challenge.score };
   resetScene();
@@ -4330,6 +4333,8 @@ function intro(challenge = null) {
   $("panel").hidden = true;
   hud();
   const today = dayKey(), rec = dailyRecord(), doneToday = rec && rec.day === today;
+  // Today's map may be waiting half built, or already done.
+  const kept = todayTown(), back = savedTown();
   const sameDay = challenge && challenge.day === today;
   const lead = challenge
     ? `<div class="versus">${esc(challenge.from)} scored ${challenge.score} on ${challenge.day ? (sameDay ? "today's map" : esc(dayName(challenge.day)) + "'s map") : "this map"}<span>${challenge.day ? "The daily map, with its three goals and its par." : "Same land, same buildings, same order. Can you beat it?"}</span></div>
@@ -4338,10 +4343,12 @@ function intro(challenge = null) {
   const choose = challenge ? `<div class="row"><button class="primary" id="found" type="submit">Take the challenge</button></div>`
     : `<div id="chooseBox">
          <div class="modes">
-           <button class="primary" id="goDaily" type="submit">Daily<span class="sub">${doneToday ? "Played today · see how it went" : "Play the daily challenge map"}</span></button>
+           <button class="primary" id="goDaily" type="submit">Daily<span class="sub">${kept && !kept.over ? "Carry on with today's map"
+             : (kept && kept.over) || doneToday ? "Played today · see how it went" : "Play the daily challenge map"}</span></button>
            <button class="primary green" id="goFree" type="button">Free<span class="sub">Play a random map</span></button>
          </div>
          <div class="modes one"><button class="primary wheat" id="goTut" type="button">Tutorial<span class="sub">Learn how to play</span></button></div>
+         ${back ? `<button type="button" class="linkbtn" id="goBack">Back to ${esc(back)}</button>` : ""}
        </div>`;
   showDialog(`<form id="introForm" autocomplete="off" style="text-align:center">
       <div id="topBox">
@@ -4375,12 +4382,14 @@ function intro(challenge = null) {
     startTown(player, challenge, daily);
   };
   if ($("goFree")) $("goFree").onclick = () => begin(null);
+  if ($("goBack")) $("goBack").onclick = () => { closeDialog(); if (load() && !G.over) showGame(); else intro(); };
   if ($("goTut")) $("goTut").onclick = () => {
     if (named()) try { localStorage.setItem(NAME, named()); } catch (e) {}
     startTutorial();
   };
   $("introForm").onsubmit = (e) => {
     e.preventDefault();
+    if (!challenge && kept) return kept.over ? viewToday(kept) : resumeToday(kept);
     if (!challenge && doneToday) return showToday(rec);
     begin(challenge ? challenge.day || null : dayKey());
   };

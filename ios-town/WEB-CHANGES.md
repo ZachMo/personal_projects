@@ -10,6 +10,22 @@ parity tests will fail.
 
 ## Waiting
 
+### The summary shows there is more to see, and the menu is a menu
+
+Commit: "Hügelland: dots in view, a simpler menu, and today's map waits for you", after the top three.
+
+- The pinned buttons hid the page dots and the "Swipe for the Herald" line, so nobody knew the paper was there.
+  Dots, that line and the buttons now sit together in one pinned footer (`.foot`), solid, with a soft edge above.
+- **The menu** is now **New game** and How to play. New game goes back to the opening screen to choose Daily,
+  Free or Tutorial. The mode buttons and the two-tap "this town is lost" warning are gone from the menu.
+- **Today's map waits.** Leaving a half-built daily keeps it (`stashDaily()` writes it to `hugelland.today`), and
+  Daily then reads "Carry on with today's map" and picks it up where it was left (`resumeToday`). A Free map
+  starts a fresh seed and replaces the town in progress, as before. The opening screen gains a "Back to <town>"
+  link when a town is waiting in the save.
+- **A finished town** offers only **Summary** in the panel, so the way on is the summary, which carries Look at
+  the town and New town.
+- The score pop no longer floats over an open sheet.
+
 ### Today's best three, and no writing from a laptop
 
 Commit: "Hügelland: today's best three, and no board writing from a laptop", after the summary return.

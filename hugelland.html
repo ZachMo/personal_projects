@@ -3892,7 +3892,7 @@ function showSummary() {
       <span>${over > 0 ? "over par" : over < 0 ? "under par" : "level with par"}</span></div>
     <p class="label">Goals · ${goalsDone()} of 3</p>${goalRows()}
     ${run && run.day === G.day && run.streak > 1 ? `<p class="label">${run.streak} days in a row</p>` : ""}`;
-  const board = daily && cloudOn() ? `<p class="label">Today's top ten</p><div id="board10"></div>` : "";
+  const board = daily && cloudOn() ? `<div id="board10"></div>` : "";
   const paper = daily ? paperHTML() : "";
   const pages = [town, paper, day, board].filter(Boolean);
   showDialog(`${head}
@@ -4215,6 +4215,9 @@ function resetScene() {
   behind it. Pass null as the seed for a fresh random map.
 */
 function startTown(player, challenge = null, daily = null, seed = G.seed) {
+  // Today's map, once. Any way in leads to how it went instead of dealing it again.
+  const rec = dailyRecord();
+  if (daily && daily === dayKey() && rec && rec.day === daily) { closeDialog(); closeSheet(); return showToday(rec); }
   newGame(player, Math.floor(Math.random() * (PREFIX.length + SUFFIX.length)), seed, daily);
   G.challenge = challenge && { from: challenge.from, score: challenge.score };
   resetScene();

@@ -10,6 +10,16 @@ parity tests will fail.
 
 ## Waiting
 
+### One heading on the board, and no way to replay a day
+
+Commit: "Hügelland: one heading on the board, and today's map really is once", after the board became reachable.
+
+- The summary printed "Today's top ten" and `showBoard` printed it again. The board owns its heading now.
+- The day was gated at the opening screen and in the menu, but not at `startTown` itself, so another way in
+  (a challenge link for today, or any later caller) could still deal it again. The guard now sits in `startTown`:
+  a daily for today with a record already written shows how it went instead. Tested from the opening screen,
+  the menu and a direct call.
+
 ### The leaderboard is on, and reachable
 
 Commit: "Hügelland: see the board any time, not only at the end", after the leaderboard went live.

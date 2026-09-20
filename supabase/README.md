@@ -46,6 +46,24 @@ The anon key is meant to be public. It can only read the board, because of step 
 **5. Try it.** Finish today's daily map. The summary gains a "Today's top ten" page. In Supabase, the table
 editor should show the row, with the score the function worked out, not the one the browser claimed.
 
+## Where it stands now
+
+The project `hugelland` (`tnaassoaraijvhswevvp`) is live: the tables and policies are in, the `score` function is
+deployed, and `CLOUD` in `hugelland.html` is filled in with the project URL and the publishable key. A finished
+daily town posts its moves, the function replays it and the summary shows the day's top ten.
+
+Deploying a change to the function later:
+
+```sh
+supabase functions deploy score --no-verify-jwt
+```
+
+Running SQL against it without leaving the terminal:
+
+```sh
+supabase db query --linked -f supabase/schema.sql
+```
+
 ## What it does and does not stop
 
 - **Stops:** editing the score in the page, posting a town that never happened, replaying a town on the wrong

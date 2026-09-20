@@ -3307,7 +3307,7 @@ function recordDaily() {
   score posted here is one the town really earned. Left empty, the game never touches the network and shows no
   board. See supabase/README.md.
 */
-const CLOUD = { url: "", key: "", table: "daily_scores", fn: "score" };
+const CLOUD = { url: "https://tnaassoaraijvhswevvp.supabase.co", key: "sb_publishable_KSJZlg0qLmEOak6sP3WX0g_UDo8lz9Z", table: "daily_scores", fn: "score" };
 const cloudOn = () => !!(CLOUD.url && CLOUD.key);
 const cloudHead = () => ({ "Content-Type": "application/json", apikey: CLOUD.key, Authorization: `Bearer ${CLOUD.key}` });
 
@@ -3326,9 +3326,12 @@ const townMoves = () => G.pieces.map(p => p.cells);
 
 async function cloudPost(run) {
   if (!cloudOn() || !isDaily() || run.day !== G.day) return;
+  const day = G.day;
   try {
-    await fetch(`${CLOUD.url}/functions/v1/${CLOUD.fn}`, { method: "POST", headers: cloudHead(),
-      body: JSON.stringify({ day: G.day, name: G.player.slice(0, 14), device: deviceId(), moves: townMoves() }) });
+    const r = await fetch(`${CLOUD.url}/functions/v1/${CLOUD.fn}`, { method: "POST", headers: cloudHead(),
+      body: JSON.stringify({ day, name: G.player.slice(0, 14), device: deviceId(), moves: townMoves() }) });
+    // The board was drawn before this town reached it, so read it again now.
+    if (r.ok && $("board10")) showBoard(day);
   } catch (e) {}
 }
 async function cloudTop(day) {

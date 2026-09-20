@@ -204,9 +204,9 @@ Mashing the controls gets about 60.
 A town-building board game for a phone. It is a jigsaw puzzle: buildings come in odd shapes,
 and you fit them onto one map.
 
-Each new town asks for your name. When the game starts, the town takes a name made from it:
-Fort Zach, St. Zach, New Zach, Port Zach, Zachville, Zachburg, Zachton, Zachfield, Zachfels,
-New Zachfels, Neu Zachfels, New Zachburg or Fort Zachton. The leaderboard lists towns, not players.
+Each new town asks for your name. When the game starts, the town takes one of 25 names made from it:
+Fort Zach, Mount Zach, Glenzach, Zachville, Zachbury, Zachchester, Zach Creek, New Zachfels and so on.
+The leaderboard lists towns, not players, so the name is new each day.
 
 **The map.** Every game has a new map, 9 squares by 12. Water crosses it as a river, a lake
 with a creek or two ponds. Woods, ore veins, wild wheat and grazing herds grow on it in

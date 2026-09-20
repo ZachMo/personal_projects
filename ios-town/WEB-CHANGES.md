@@ -17,8 +17,11 @@ Commit: "Hügelland: the board lists towns, and names take both ends", after the
 - The leaderboard now carries the **town's** name, not the player's: "New Zachfels" rather than "Zach". The
   column and the function allow 24 characters instead of 14 (`alter table ... name_length` run on the live table
   and changed in `schema.sql`).
-- `townName` adds a "fels" suffix and four names that take a prefix and a suffix at once, the way New Braunfels
-  got its: New …fels, Neu …fels, New …burg, Fort …ton. Thirteen names in all, from eight.
+- `townName` grew from eight forms to **25**, in five shapes: a spaced prefix (Fort, St., New, Port, Mount), a
+  joined one (Glenzach), a joined suffix (ville, burg, ton, field, fels, bury, dale, chester, ford, bie, hurst,
+  mont, grove, ridge), a spaced one (Zach Creek, Zach Springs), and both ends at once (New Zachfels, New
+  Zachburg, Fort Zachton). "Neu" is gone: American towns do not use it. `NAME_FORMS` counts them, and
+  `startTown` picks over all of them; it used to pick over only the first two lists, so new forms never showed.
 
 ### The day's best joins the goals
 

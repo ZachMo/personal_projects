@@ -18,7 +18,7 @@ Commit: "Hügelland: the board lists towns, and names take both ends", after the
   column and the function allow 24 characters instead of 14 (`alter table ... name_length` run on the live table
   and changed in `schema.sql`).
 - `townName` grew from eight forms to **25**, in five shapes: a spaced prefix (Fort, St., New, Port, Mount), a
-  joined one (Glenzach), a joined suffix (ville, burg, ton, field, fels, bury, dale, chester, ford, bie, hurst,
+  joined one (Glenzach), a joined suffix (ville, burg, ton, field, fels, bury, dale, chester, ford, by, hurst,
   mont, grove, ridge), a spaced one (Zach Creek, Zach Springs), and both ends at once (New Zachfels, New
   Zachburg, Fort Zachton). "Neu" is gone: American towns do not use it. `NAME_FORMS` counts them, and
   `startTown` picks over all of them; it used to pick over only the first two lists, so new forms never showed.

@@ -3938,7 +3938,7 @@ function showSummary() {
   $("sShare").onclick = shareChallenge;
   if (daily && cloudOn()) showBoard(G.day);
   // What the line under the dots offers next, page by page.
-  const labels = [town && "the town", paper && "the Herald", day && "today's goals and the day's best"].filter(Boolean);
+  const labels = [town && "the town", paper && "the News", day && "Today's Stats"].filter(Boolean);
   if (pages.length > 1) pageDots(labels);
   $("sLook").onclick = closeDialog;
   if ($("sBack")) $("sBack").onclick = leaveViewing;

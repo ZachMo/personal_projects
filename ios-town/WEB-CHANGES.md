@@ -10,6 +10,20 @@ parity tests will fail.
 
 ## Waiting
 
+### Daily brings back today's summary
+
+Commit: "Hügelland: Daily brings back today's summary", after the replay gate.
+
+Tapping Daily once today's map is done now reopens that town's summary, with all four pages: the tally, the
+Herald, the goals against par, and the top ten. The finished daily town is kept in its own save
+(`hugelland.today`, written by `keepTodayTown()` when a daily town ends), so it survives the next free town.
+`viewToday()` saves whatever is under way, restores the daily town, marks it `G.viewing`, and opens the summary;
+`save()` ignores a town being viewed, so the town in progress is untouched. The summary's second button becomes
+**Back**, which resumes it. Where no kept town exists (a day played before this), the plain stats card still shows.
+
+Also: the swipe line under the dots was blank until the first scroll, since it became dynamic. `pageDots` now
+sets it straight away.
+
 ### One heading on the board, and no way to replay a day
 
 Commit: "Hügelland: one heading on the board, and today's map really is once", after the board became reachable.

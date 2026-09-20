@@ -3075,7 +3075,11 @@ function doBuild() {
   save(); hud();
   if (G.over) closeInfo(); else if (UI.rules || UI.sel >= 0) paintInfo();
   paintPanel();
-  if (G.over) { if (!G.tut) recordBest(); setTimeout(showSummary, 2400); }
+  if (G.over) {
+    if (!G.tut) recordBest();
+    if (!G.tut && isDaily() && G.day === dayKey()) keepTodayTown();
+    setTimeout(showSummary, 2400);
+  }
   tutEvent("build", res);
 }
 
@@ -3273,7 +3277,16 @@ $("deckBtn").onclick = showDeck;
 function showDialog(html) { $("dialog").innerHTML = html; $("dialogWrap").hidden = false; }
 function closeDialog() { $("dialogWrap").hidden = true; }
 
-const DAILY = "hugelland.daily", NAME = "hugelland.name";
+const DAILY = "hugelland.daily", NAME = "hugelland.name", TOWN_TODAY = "hugelland.today";
+
+/* Today's finished daily town, kept apart from the town in progress so both survive. */
+function keepTodayTown() { try { localStorage.setItem(TOWN_TODAY, JSON.stringify(G)); } catch (e) {} }
+function todayTown() {
+  try {
+    const t = JSON.parse(localStorage.getItem(TOWN_TODAY));
+    return t && t.v === 7 && t.over && t.day === dayKey() ? t : null;
+  } catch (e) { return null; }
+}
 
 /* The name from last time, so a new game is two taps. */
 function lastName() {
@@ -3900,14 +3913,17 @@ function showSummary() {
     ${pages.length > 1 ? `<div class="dots" id="dots">${pages.map((p, i) =>
       `<button type="button" data-i="${i}" aria-label="Page ${i + 1}" aria-current="${i === 0}"></button>`).join("")}</div>
       <p class="swipe" id="swipe"></p>` : ""}
-    <div class="row"><button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button></div>`);
+    <div class="row">${G.viewing
+      ? `<button class="tool" id="sLook">Look at the town</button><button class="primary" id="sBack">Back</button>`
+      : `<button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button>`}</div>`);
   $("sShare").onclick = shareChallenge;
   if (board) showBoard(G.day);
   // What the line under the dots offers next, page by page.
   const labels = [town && "the town", paper && "the Herald", day && "today's goals", board && "the top ten"].filter(Boolean);
   if (pages.length > 1) pageDots(labels);
   $("sLook").onclick = closeDialog;
-  $("sNew").onclick = () => { closeDialog(); intro(); };
+  if ($("sBack")) $("sBack").onclick = leaveViewing;
+  if ($("sNew")) $("sNew").onclick = () => { closeDialog(); intro(); };
 }
 
 /* The dots under the summary follow the page you swiped to, and move it when tapped. */
@@ -3920,6 +3936,7 @@ function pageDots(labels = []) {
     hint.style.visibility = i === dots.length - 1 ? "hidden" : "visible";
     hint.textContent = `Swipe for ${labels[i + 1] || "more"}`;
   };
+  mark();
   box.addEventListener("scroll", mark, { passive: true });
   dots.forEach((d, i) => { d.onclick = () => box.scrollTo({ left: i * box.scrollWidth / dots.length, behavior: "smooth" }); });
 }
@@ -4193,7 +4210,7 @@ function tutSummary() {
 
 /* ───────────────────────── Saving and starting ───────────────────────── */
 
-function save() { if (!G || !G.player || G.tut) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
+function save() { if (!G || !G.player || G.tut || G.viewing) return; try { localStorage.setItem(SAVE, JSON.stringify(G)); } catch (e) {} }
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE));
@@ -4241,6 +4258,9 @@ function showGame() {
   dealing it again, and the way on from here is a free map or tomorrow.
 */
 function showToday(rec) {
+  // The town itself is the best answer: its summary carries the tally, the paper, the goals and the board.
+  const town = todayTown();
+  if (town) return viewToday(town);
   const over = rec.score - rec.par;
   showDialog(`<div style="text-align:center">
       <h2>You have played today</h2>
@@ -4261,6 +4281,24 @@ function showToday(rec) {
     closeDialog();
     if (name) startTown(name, null, null); else intro();
   };
+}
+
+/* Brings today's finished town back to the board and opens its summary. The town in progress waits in the save. */
+function viewToday(town) {
+  save();
+  closeDialog(); closeSheet();
+  restore(town);
+  G.viewing = true;
+  resetScene(); UI.ghost = null;
+  UI.shown = total(); $("score").textContent = total();
+  hud(); paintPanel(); layout();
+  showSummary();
+}
+
+/* Out of looking at today's town, back to whatever was under way. */
+function leaveViewing() {
+  closeDialog();
+  if (load() && !G.over) showGame(); else intro();
 }
 
 /* A challenge link brings its map, its deck and a score to beat. */

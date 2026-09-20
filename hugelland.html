@@ -3921,10 +3921,10 @@ function showSummary() {
   const day = !daily ? "" : `<div class="par ${over >= 0 ? "win" : "lose"}"><span>Par ${G.par}</span><b>${over >= 0 ? "+" : "−"}${Math.abs(over)}</b>
       <span>${over > 0 ? "over par" : over < 0 ? "under par" : "level with par"}</span></div>
     <p class="label">Goals · ${goalsDone()} of 3</p>${goalRows()}
-    ${run && run.day === G.day && run.streak > 1 ? `<p class="label">${run.streak} days in a row</p>` : ""}`;
-  const board = daily && cloudOn() ? `<div id="board10"></div>` : "";
+    ${run && run.day === G.day && run.streak > 1 ? `<p class="label">${run.streak} days in a row</p>` : ""}
+    ${cloudOn() ? `<div id="board10"></div>` : ""}`;
   const paper = daily ? paperHTML() : "";
-  const pages = [town, paper, day, board].filter(Boolean);
+  const pages = [town, paper, day].filter(Boolean);
   showDialog(`${head}
     <div class="pages" id="pages">${pages.map(p => `<section>${p}</section>`).join("")}</div>
     <div class="foot">
@@ -3936,9 +3936,9 @@ function showSummary() {
       : `<button class="tool" id="sLook">Look at the town</button><button class="tool" id="sNew">New town</button>`}</div>
     </div>`);
   $("sShare").onclick = shareChallenge;
-  if (board) showBoard(G.day);
+  if (daily && cloudOn()) showBoard(G.day);
   // What the line under the dots offers next, page by page.
-  const labels = [town && "the town", paper && "the Herald", day && "today's goals", board && "today's best"].filter(Boolean);
+  const labels = [town && "the town", paper && "the Herald", day && "today's goals and the day's best"].filter(Boolean);
   if (pages.length > 1) pageDots(labels);
   $("sLook").onclick = closeDialog;
   if ($("sBack")) $("sBack").onclick = leaveViewing;

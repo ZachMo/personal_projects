@@ -10,6 +10,13 @@ parity tests will fail.
 
 ## Waiting
 
+### The day's best joins the goals
+
+Commit: "Hügelland: the day's best sits with the goals", after the menu work.
+
+Three names do not need a page of their own. The summary is three pages again: the town, the Herald, and the
+day (par, goals, streak, then today's best three). The board keeps `#board10` inside the day's page.
+
 ### The summary shows there is more to see, and the menu is a menu
 
 Commit: "Hügelland: dots in view, a simpler menu, and today's map waits for you", after the top three.

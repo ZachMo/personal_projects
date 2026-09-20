@@ -10,6 +10,16 @@ parity tests will fail.
 
 ## Waiting
 
+### The leaderboard is on, and reachable
+
+Commit: "Hügelland: see the board any time, not only at the end", after the leaderboard went live.
+
+The Supabase project `hugelland` is live and `CLOUD` is filled in. The day's top ten now shows in three places,
+each with its own element id (`board10` in the summary, `boardCard` on the daily card, `boardToday` on the
+"you have played today" screen). They shared one id at first, and a hidden sheet left in the DOM swallowed the
+dialog's board. `showBoard(day, id)` takes the box to fill. `cloudPost` reads the board again once a town has
+posted, so a player's own score is there when they look.
+
 ### The Hügelland Herald, a share worth reading, and a leaderboard that checks
 
 Commit: "Hügelland: the Hügelland Herald, a better share, and a leaderboard that checks the town", after the

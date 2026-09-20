@@ -3244,7 +3244,9 @@ function showDaily() {
   openSheet(`<h2>Daily map</h2>
     <p>${esc(dayName(G.day))} · the same map for everyone today.</p>
     ${goalRows()}
+    ${cloudOn() ? `<div id="boardCard"></div>` : ""}
     <div class="row"><button class="tool" id="dyClose">Close</button></div>`);
+  if (cloudOn()) showBoard(G.day, "boardCard");
   $("dyClose").onclick = closeSheet;
 }
 $("titleBtn").onclick = () => { if (isDaily()) showDaily(); };
@@ -3922,9 +3924,9 @@ function pageDots(labels = []) {
   dots.forEach((d, i) => { d.onclick = () => box.scrollTo({ left: i * box.scrollWidth / dots.length, behavior: "smooth" }); });
 }
 
-/* Today's top ten, when the game has a leaderboard to read. */
-async function showBoard(day) {
-  const box = $("board10");
+/* Today's top ten, when the game has a leaderboard to read. Each place that shows it owns its own box. */
+async function showBoard(day, id = "board10") {
+  const box = $(id);
   if (!box) return;
   box.innerHTML = `<p class="label">Today's top ten</p><p>Loading…</p>`;
   const rows = await cloudTop(day);
@@ -4246,8 +4248,10 @@ function showToday(rec) {
     <div class="par ${over >= 0 ? "win" : "lose"}"><span>Par ${rec.par}</span><b>${over >= 0 ? "+" : "−"}${Math.abs(over)}</b>
       <span>${over > 0 ? "over par" : over < 0 ? "under par" : "level with par"}</span></div>
     <p class="today" style="text-align:center">${rec.goals} of 3 goals${rec.streak > 1 ? ` · ${rec.streak} days in a row` : ""}</p>
+    <div id="boardToday"></div>
     <p style="text-align:center">A new map comes at midnight. Until then, a free map is always there.</p>
     <div class="row"><button class="tool" id="tdBack">Back</button><button class="primary green" id="tdFree">Free map</button></div>`);
+  if (cloudOn()) showBoard(rec.day, "boardToday");
   $("tdBack").onclick = () => intro();
   $("tdFree").onclick = () => {
     const name = lastName();

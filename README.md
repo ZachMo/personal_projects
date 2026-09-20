@@ -298,10 +298,17 @@ Notes stay in the browser, and **Copy notes** puts them on the clipboard.
 midnight Central, not UTC, because that is where the players and the town are. A finished daily town also gets a
 page of its local paper: see below.
 
-**The Herald-Zeitung.** When a daily town is done, the summary carries a page of the town's newspaper, dated 1922.
+**The Hügelland Herald.** When a daily town is done, the summary carries a page of the town's newspaper, dated 1922.
 Stories are read off the finished town: what ended up beside what, how big the districts grew, what was turned
 away. Each story that fits is weighed, the day's own seed picks the wording from a library of headlines, German
 Texan surnames and street names, and the photograph is a crop of the board itself.
+
+**Sharing a town.** A finished daily town shares its date, its score against par, its three goals as ticks and
+the headline it earned, with the challenge link under it. A free map shares the map and the score.
+
+**The leaderboard.** Off unless `CLOUD` is filled in, and then the browser sends its moves rather than a score:
+a Supabase function replays the town on that day's map, works out the score itself and writes that down. The
+rules it plays by are read from the deployed page, so the board cannot drift from the game. See `supabase/`.
 
 **On a phone.** Taps are plain taps, so pressing Turn quickly never zooms the page, and pinch zoom
 is off. The name field uses 16px text, because Safari zooms into smaller text fields when they get

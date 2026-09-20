@@ -10,6 +10,21 @@ parity tests will fail.
 
 ## Waiting
 
+### The Hügelland Herald, a share worth reading, and a leaderboard that checks
+
+Commit: "Hügelland: the Hügelland Herald, a better share, and a leaderboard that checks the town", after the
+screen fixes.
+
+- The paper is the **Hügelland Herald**. The Herald-Zeitung is a real newspaper, still printing in New Braunfels,
+  so the game should not wear its masthead.
+- **Share.** `shareText()`: "Hügelland · September 19 / 145 points · par 123 (+22) · ✅✅✅ / “THE FINEST VIEW IN
+  TOWN”" and the link. A free map shares the map and the score. `LEAD_STORY` keeps the headline the paper printed.
+- **Leaderboard.** The browser now posts its **moves**, not a score (`townMoves()`, `deviceId()`), to a Supabase
+  edge function in `supabase/functions/score/`. The function fetches the deployed page, runs its
+  `<script id="logic">` block and replays the town, so the board scores by the same rules players play by. Tested:
+  a nudged move, swapped moves, a dropped move, an extra move and the wrong day are all refused. `supabase/schema.sql`
+  has the tables, the one-town-a-day index and row level security with read-only policies.
+
 ### Nobody gets stuck scrolling, and a day is played once
 
 Commit: "Hügelland: the way out stays on screen, and a day is played once", after the story tables.

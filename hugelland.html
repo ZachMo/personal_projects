@@ -252,7 +252,7 @@
   .tchip { font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #f6e7b4; color: #7a5608; }
   .tchip.bad { background: var(--bad-bg); color: var(--bad); }
 
-  /* ── The Herald-Zeitung, at the end of a daily town ── */
+  /* ── The Hügelland Herald, at the end of a daily town ── */
   .paper {
     background: #efe7d3; color: #241f19; border-radius: 4px; padding: 14px 14px 16px; margin: 4px 0 2px;
     font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; box-shadow: 0 2px 10px rgba(0,0,0,.18);
@@ -3302,18 +3302,33 @@ function recordDaily() {
 }
 
 /*
-  A daily leaderboard: fill in a Supabase project's URL and its public anon key, and the game posts each day's
-  score and reads the day's top ten. Left empty, the game never touches the network and shows no board.
+  A daily leaderboard. Fill in a Supabase project's URL and its public anon key and the game sends each finished
+  daily town to a function that plays the moves again on that day's map and works out the score itself, so a
+  score posted here is one the town really earned. Left empty, the game never touches the network and shows no
+  board. See supabase/README.md.
 */
-const CLOUD = { url: "", key: "", table: "daily_scores" };
+const CLOUD = { url: "", key: "", table: "daily_scores", fn: "score" };
 const cloudOn = () => !!(CLOUD.url && CLOUD.key);
 const cloudHead = () => ({ "Content-Type": "application/json", apikey: CLOUD.key, Authorization: `Bearer ${CLOUD.key}` });
 
-async function cloudPost(run) {
-  if (!cloudOn()) return;
+/* This browser, so a day counts once for it. It is a random string and says nothing about who you are. */
+const DEVICE = "hugelland.device";
+function deviceId() {
   try {
-    await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}`, { method: "POST", headers: cloudHead(),
-      body: JSON.stringify({ day: run.day, name: G.player.slice(0, 14), score: run.score, goals: run.goals, par: run.par }) });
+    let id = localStorage.getItem(DEVICE);
+    if (!id) { id = ([1e7] + "").replace(/\d/g, () => Math.floor(Math.random() * 36).toString(36)) + Date.now().toString(36); localStorage.setItem(DEVICE, id); }
+    return id;
+  } catch (e) { return "anon"; }
+}
+
+/* The town's moves, in the order they were built: all the server needs to play it through again. */
+const townMoves = () => G.pieces.map(p => p.cells);
+
+async function cloudPost(run) {
+  if (!cloudOn() || !isDaily() || run.day !== G.day) return;
+  try {
+    await fetch(`${CLOUD.url}/functions/v1/${CLOUD.fn}`, { method: "POST", headers: cloudHead(),
+      body: JSON.stringify({ day: G.day, name: G.player.slice(0, 14), device: deviceId(), moves: townMoves() }) });
   } catch (e) {}
 }
 async function cloudTop(day) {
@@ -3338,26 +3353,38 @@ function challengeURL() {
                    : `${base}?seed=${G.seed}&score=${total()}&from=${who}&v=${LINK_VERSION}`;
 }
 
-/* The phone's share sheet where there is one; otherwise copy the link, or show it to copy by hand. */
+/*
+  What a finished town says when it is passed on: the score, how it went against par and the goals, and the
+  headline the town earned, which is the part worth reading.
+*/
+function shareText() {
+  const me = total();
+  if (!isDaily()) return `${GAME} · a free map\n${me} points. Beat me on the same map!`;
+  const goals = (G.goals || []).map(g => goalDone(g) ? "✅" : "⬜").join("");
+  const over = me - G.par, par = G.par ? ` · par ${G.par} (${over >= 0 ? "+" : "−"}${Math.abs(over)})` : "";
+  const head = LEAD_STORY ? `\n“${LEAD_STORY.h}”` : "";
+  return `${GAME} · ${dayName(G.day)}\n${me} points${par}${goals ? ` · ${goals}` : ""}${head}`;
+}
+
+/* The phone's share sheet where there is one; otherwise copy the text, or show it to copy by hand. */
 async function shareChallenge() {
-  const url = challengeURL(), button = $("sShare");
+  const url = challengeURL(), button = $("sShare"), text = shareText();
   if (navigator.share) {
-    const where = isDaily() ? (G.day === dayKey() ? "on today's map" : `on the ${dayName(G.day)} map`) : "on the same map";
-    try { await navigator.share({ title: GAME, text: `I scored ${total()} in ${GAME}. Beat me ${where}!`, url }); return; }
+    try { await navigator.share({ title: GAME, text, url }); return; }
     catch (e) { if (e && e.name === "AbortError") return; }
   }
   try {
-    await navigator.clipboard.writeText(url);
-    if (button) button.textContent = "Link copied ✓";
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    if (button) button.textContent = "Copied ✓";
   } catch (e) {
     const box = $("shareBox");
     if (!box) return;
-    box.innerHTML = `<input readonly value="${esc(url)}">`;
+    box.innerHTML = `<input readonly value="${esc(text.replace(/\n/g, " · ") + " " + url)}">`;
     box.querySelector("input").select();
   }
 }
 
-/* ───────────────────────── The Herald-Zeitung ───────────────────────── */
+/* ───────────────────────── The Hügelland Herald ───────────────────────── */
 
 /*
   A daily town ends with a page of its local paper. Stories are read off the finished town: what ended up next
@@ -3799,17 +3826,21 @@ function paperShot(cells) {
   try { return out.toDataURL("image/png"); } catch (e) { return ""; }
 }
 
+/* The lead story of the paper just printed, for the share text. */
+let LEAD_STORY = null;
+
 /* 1922 dress: the masthead, the dateline, one big story with its photograph, and two briefs. */
 function paperHTML() {
   const R = paperRandom(), stories = paperStories(R);
   if (!stories.length) return "";
   const [lead, ...briefs] = stories;
+  LEAD_STORY = lead;
   const when = new Date(G.day + "T12:00:00Z");
   const date = when.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
   const vol = `Vol. ${["XLIX", "LI", "LIV", "LVII", "LX"][Math.floor(R() * 5)]}`;
   const shot = paperShot(lead.cells);
   return `<div class="paper">
-    <div class="mast"><span>${vol}</span><b>Herald-Zeitung</b><span>Five Cents</span></div>
+    <div class="mast"><span>${vol}</span><b>Hügelland Herald</b><span>Five Cents</span></div>
     <div class="dateline">${esc(townName(G.player, G.pick))}, Texas · ${esc(date)}, 1922</div>
     <h3 class="hl">${esc(lead.h)}</h3>
     <p class="sub">${esc(lead.s)}</p>
@@ -3868,7 +3899,7 @@ function showSummary() {
   $("sShare").onclick = shareChallenge;
   if (board) showBoard(G.day);
   // What the line under the dots offers next, page by page.
-  const labels = [town && "the town", paper && "the Herald-Zeitung", day && "today's goals", board && "the top ten"].filter(Boolean);
+  const labels = [town && "the town", paper && "the Herald", day && "today's goals", board && "the top ten"].filter(Boolean);
   if (pages.length > 1) pageDots(labels);
   $("sLook").onclick = closeDialog;
   $("sNew").onclick = () => { closeDialog(); intro(); };

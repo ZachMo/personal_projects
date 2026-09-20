@@ -10,6 +10,17 @@ parity tests will fail.
 
 ## Waiting
 
+### Today's best three, and no writing from a laptop
+
+Commit: "Hügelland: today's best three, and no board writing from a laptop", after the summary return.
+
+- The board shows **three** names, not ten, with the number of towns played beside the heading, and your own
+  line under them when the three are other people's ("7. Zach 133"). `cloudRank(day, score)` counts how many
+  beat a score with a HEAD request and `Prefer: count=exact`.
+- A copy served from localhost, 127.0.0.1 or opened from a file may read the board but never posts to it.
+  Test runs were writing real rows: each cleared its storage, so each looked like a new browser. Three such rows
+  were deleted from the table.
+
 ### Daily brings back today's summary
 
 Commit: "Hügelland: Daily brings back today's summary", after the replay gate.

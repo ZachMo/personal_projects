@@ -43,7 +43,7 @@ const CLOUD = { url: "https://abcdefgh.supabase.co", key: "<the anon public key>
 
 The anon key is meant to be public. It can only read the board, because of step 2.
 
-**5. Try it.** Finish today's daily map. The summary gains a "Today's top ten" page. In Supabase, the table
+**5. Try it.** Finish today's daily map. The summary gains a "Today's best" page with the day's best three. In Supabase, the table
 editor should show the row, with the score the function worked out, not the one the browser claimed.
 
 ## Where it stands now

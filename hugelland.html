@@ -3323,6 +3323,8 @@ function recordDaily() {
   board. See supabase/README.md.
 */
 const CLOUD = { url: "https://tnaassoaraijvhswevvp.supabase.co", key: "sb_publishable_KSJZlg0qLmEOak6sP3WX0g_UDo8lz9Z", table: "daily_scores", fn: "score" };
+// A copy running on a laptop or opened from disk may read the board, but never writes to it.
+const LOCAL = ["localhost", "127.0.0.1", ""].includes(location.hostname) || location.protocol === "file:";
 const cloudOn = () => !!(CLOUD.url && CLOUD.key);
 const cloudHead = () => ({ "Content-Type": "application/json", apikey: CLOUD.key, Authorization: `Bearer ${CLOUD.key}` });
 
@@ -3340,7 +3342,7 @@ function deviceId() {
 const townMoves = () => G.pieces.map(p => p.cells);
 
 async function cloudPost(run) {
-  if (!cloudOn() || !isDaily() || run.day !== G.day) return;
+  if (!cloudOn() || LOCAL || !isDaily() || run.day !== G.day) return;
   const day = G.day;
   try {
     const r = await fetch(`${CLOUD.url}/functions/v1/${CLOUD.fn}`, { method: "POST", headers: cloudHead(),
@@ -3349,11 +3351,27 @@ async function cloudPost(run) {
     if (r.ok && $("board10")) showBoard(day);
   } catch (e) {}
 }
+const TOP_N = 3;
 async function cloudTop(day) {
   if (!cloudOn()) return null;
   try {
-    const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?day=eq.${day}&select=name,score,goals&order=score.desc&limit=10`, { headers: cloudHead() });
+    const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?day=eq.${day}&select=name,score,goals&order=score.desc,made_at.asc&limit=${TOP_N}`, { headers: cloudHead() });
     return r.ok ? await r.json() : null;
+  } catch (e) { return null; }
+}
+
+/* Where a score stands on a day: how many beat it, and how many played. */
+async function cloudRank(day, score) {
+  if (!cloudOn()) return null;
+  const count = async (q) => {
+    const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?day=eq.${day}${q}&select=id`,
+      { method: "HEAD", headers: { ...cloudHead(), Prefer: "count=exact", Range: "0-0" } });
+    const said = r.headers.get("content-range") || "";
+    return r.ok ? parseInt(said.split("/")[1], 10) : NaN;
+  };
+  try {
+    const [above, all] = await Promise.all([count(`&score=gt.${score}`), count("")]);
+    return Number.isFinite(above) && Number.isFinite(all) ? { place: above + 1, of: Math.max(all, above + 1) } : null;
   } catch (e) { return null; }
 }
 
@@ -3919,7 +3937,7 @@ function showSummary() {
   $("sShare").onclick = shareChallenge;
   if (board) showBoard(G.day);
   // What the line under the dots offers next, page by page.
-  const labels = [town && "the town", paper && "the Herald", day && "today's goals", board && "the top ten"].filter(Boolean);
+  const labels = [town && "the town", paper && "the Herald", day && "today's goals", board && "today's best"].filter(Boolean);
   if (pages.length > 1) pageDots(labels);
   $("sLook").onclick = closeDialog;
   if ($("sBack")) $("sBack").onclick = leaveViewing;
@@ -3945,11 +3963,15 @@ function pageDots(labels = []) {
 async function showBoard(day, id = "board10") {
   const box = $(id);
   if (!box) return;
-  box.innerHTML = `<p class="label">Today's top ten</p><p>Loading…</p>`;
-  const rows = await cloudTop(day);
+  box.innerHTML = `<p class="label">Today's best</p><p>Loading…</p>`;
+  const rec = dailyRecord(), mine = rec && rec.day === day ? rec.score : null;
+  const [rows, rank] = await Promise.all([cloudTop(day), mine === null ? null : cloudRank(day, mine)]);
   if (!box.isConnected) return;
-  box.innerHTML = !rows || !rows.length ? "" : `<p class="label">Today's top ten</p>
-    <ul class="tally">${rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.name || "Anon")}</span><b>${r.score}</b></li>`).join("")}</ul>`;
+  // Your own line, when the best three are other people's towns.
+  const among = rank && rank.place <= TOP_N;
+  const yours = rank && !among ? `<li><span>${rank.place}. ${esc(G && G.player ? G.player : "You")}</span><b>${mine}</b></li>` : "";
+  box.innerHTML = !rows || !rows.length ? "" : `<p class="label">Today's best${rank ? ` · ${rank.of} ${rank.of === 1 ? "town" : "towns"}` : ""}</p>
+    <ul class="tally">${rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.name || "Anon")}</span><b>${r.score}</b></li>`).join("")}${yours}</ul>`;
 }
 
 /* Every building's score as it stands, part by part. Tap one to find it on the map. */

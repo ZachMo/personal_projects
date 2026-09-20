@@ -10,6 +10,16 @@ parity tests will fail.
 
 ## Waiting
 
+### Towns on the board, and a name with both ends
+
+Commit: "Hügelland: the board lists towns, and names take both ends", after the swipe labels.
+
+- The leaderboard now carries the **town's** name, not the player's: "New Zachfels" rather than "Zach". The
+  column and the function allow 24 characters instead of 14 (`alter table ... name_length` run on the live table
+  and changed in `schema.sql`).
+- `townName` adds a "fels" suffix and four names that take a prefix and a suffix at once, the way New Braunfels
+  got its: New …fels, Neu …fels, New …burg, Fort …ton. Thirteen names in all, from eight.
+
 ### The day's best joins the goals
 
 Commit: "Hügelland: the day's best sits with the goals", after the menu work.

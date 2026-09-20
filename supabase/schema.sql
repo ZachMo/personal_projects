@@ -11,7 +11,7 @@ create table if not exists public.daily_scores (
   away        int         not null default 0,
   device      text        not null,
   made_at     timestamptz not null default now(),
-  constraint name_length  check (char_length(name) between 1 and 14),
+  constraint name_length  check (char_length(name) between 1 and 24),
   constraint score_sane   check (score between -200 and 400),
   constraint goals_sane   check (goals between 0 and 3)
 );

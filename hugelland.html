@@ -1207,11 +1207,15 @@ function partText(type, q) {
 const GAME = "Hügelland";   // the game's name, on the header and on a shared link
 
 const PREFIX = ["Fort", "St.", "New", "Port"];
-const SUFFIX = ["ville", "burg", "ton", "field"];
+const SUFFIX = ["ville", "burg", "ton", "field", "fels"];
+/* Both ends at once, the way New Braunfels got its name. */
+const BOTH = [["New", "fels"], ["Neu", "fels"], ["New", "burg"], ["Fort", "ton"]];
 function townName(player, n) {
   const first = player.trim().split(/\s+/)[0] || "Pioneer";
   const name = first.charAt(0).toUpperCase() + first.slice(1);
-  const all = PREFIX.map(p => p + " " + name).concat(SUFFIX.map(s => name + s));
+  const all = PREFIX.map(p => p + " " + name)
+    .concat(SUFFIX.map(s => name + s))
+    .concat(BOTH.map(([p, s]) => `${p} ${name}${s}`));
   return all[((n % all.length) + all.length) % all.length];
 }
 
@@ -3345,7 +3349,7 @@ async function cloudPost(run) {
   const day = G.day;
   try {
     const r = await fetch(`${CLOUD.url}/functions/v1/${CLOUD.fn}`, { method: "POST", headers: cloudHead(),
-      body: JSON.stringify({ day, name: G.player.slice(0, 14), device: deviceId(), moves: townMoves() }) });
+      body: JSON.stringify({ day, name: townName(G.player, G.pick).slice(0, 24), device: deviceId(), moves: townMoves() }) });
     // The board was drawn before this town reached it, so read it again now.
     if (r.ok && $("board10")) showBoard(day);
   } catch (e) {}
@@ -3970,7 +3974,8 @@ async function showBoard(day, id = "board10") {
   if (!box.isConnected) return;
   // Your own line, when the best three are other people's towns.
   const among = rank && rank.place <= TOP_N;
-  const yours = rank && !among ? `<li><span>${rank.place}. ${esc(G && G.player ? G.player : "You")}</span><b>${mine}</b></li>` : "";
+  const mine_name = G && G.player ? townName(G.player, G.pick) : "Your town";
+  const yours = rank && !among ? `<li><span>${rank.place}. ${esc(mine_name)}</span><b>${mine}</b></li>` : "";
   box.innerHTML = !rows || !rows.length ? "" : `<p class="label">Today's best${rank ? ` · ${rank.of} ${rank.of === 1 ? "town" : "towns"}` : ""}</p>
     <ul class="tally">${rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.name || "Anon")}</span><b>${r.score}</b></li>`).join("")}${yours}</ul>`;
 }

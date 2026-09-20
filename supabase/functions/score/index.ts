@@ -80,7 +80,8 @@ Deno.serve(async (req) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return bad("no day");
   if (!dayIsOpen(day)) return bad("that day is closed");
 
-  const name = String(body.name ?? "").replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, 14);
+  // The town's name, not the player's: "New Zachfels" rather than "Zach".
+  const name = String(body.name ?? "").replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, 24);
   if (!name) return bad("no name");
 
   const device = String(body.device ?? "").replace(/[^a-z0-9]/gi, "").slice(0, 40);

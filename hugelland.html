@@ -544,7 +544,7 @@ const DEF = {
   tannery:   { name: "Tannery", plural: "Tanneries", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8a6f4e", "#6b553b"],
                roles: ["hall", "hides"], blurb: "Hides from the herds. It smells.",
                rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
-  derrick:   { name: "Oil Derrick", cat: "industry", shape: "I1", n: 2, era: 3, base: 2, draft: true,
+  derrick:   { name: "Oil Derrick", cat: "industry", shape: "I1", n: 2, era: 3, base: 2,
                roles: ["derrick"], blurb: "One pump, nodding over the rock day and night.",
                rules: [{ k: "land", t: "ore", p: 2 }, { k: "near", types: ["oildepot"], p: 2 }] },
   kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 2,
@@ -667,9 +667,10 @@ const DEF = {
 };
 
 /*
-  The drafts and pending changes go live with the daily map of LIVE_FROM, at midnight Central when that map
-  starts, so no day's map changes its rules partway through. A page opened earlier keeps the old rules until it
-  reloads. Once the day has come, fold the changes into DEF for good and take this out.
+  Staging for a change that would alter what a map deals or how it scores. Mark a building `draft: true`, or give
+  one a `pending` block, and set LIVE_FROM to the day it should arrive: at midnight Central that morning the
+  drafts join the decks and the pending changes take effect, so no day's map changes partway through. Then fold
+  the change into DEF, drop the flags, and move LIVE_FROM on to the next one. Nothing is staged at the moment.
 */
 const LIVE_FROM = "2026-09-21";
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -1098,7 +1099,7 @@ const goodTrophies = () => Object.keys(G.trophies).filter(id => TROPHIES[id].goo
   so a goal can show its progress while you play. `floor` goals are met by the worst building, not the best.
 */
 const GOALS = [
-  { id: "district", ns: NEW_RULES ? [6, 7] : [5, 6, 7], text: (n) => `One district of ${n} buildings`, at: () => biggestDistrict() },
+  { id: "district", ns: [6, 7], text: (n) => `One district of ${n} buildings`, at: () => biggestDistrict() },
   /*
     A district of one other kind. Homes come four kinds to a deck and everything else two or three, so asking
     for five shops is asking for something the day never deals. This one reads the day's own deck and asks only
@@ -1126,7 +1127,7 @@ function goalsFor(key, deck = []) {
   const r = mulberry(seedFrom("goals/" + key));
   const count = {};
   for (const k of deck) if (!DEF[k].bridge) count[DEF[k].cat] = (count[DEF[k].cat] || 0) + 1;
-  const pool = GOALS.filter(g => NEW_RULES || g.id !== "catdistrict");
+  const pool = GOALS.slice();
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   const out = [];
   for (const g of pool) {
@@ -3444,7 +3445,7 @@ function recordBest() {
 }
 
 /* Bump when a change to the map, the deck or the scoring means an old link no longer gives the same game. */
-const LINK_VERSION = NEW_RULES ? 8 : 7;
+const LINK_VERSION = 8;
 
 function challengeURL() {
   const base = location.href.split(/[?#]/)[0], who = encodeURIComponent(G.player);
@@ -4037,8 +4038,10 @@ async function showBoard(day, id = "board10") {
   const among = rank && rank.place <= TOP_N;
   const mine_name = G && G.player ? townName(G.player, G.pick) : "Your town";
   const yours = rank && !among ? `<li><span>${rank.place}. ${esc(mine_name)}</span><b>${mine}</b></li>` : "";
-  box.innerHTML = !rows || !rows.length ? "" : `<p class="label">Today's best${rank ? ` · ${rank.of} ${rank.of === 1 ? "town" : "towns"}` : ""}</p>
-    <ul class="tally">${rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.name || "Anon")}</span><b>${r.score}</b></li>`).join("")}${yours}</ul>`;
+  const head = `<p class="label">Today's best${rank && rows && rows.length ? ` · ${rank.of} ${rank.of === 1 ? "town" : "towns"}` : ""}</p>`;
+  box.innerHTML = !rows ? `${head}<p>The board cannot be reached just now.</p>`
+    : !rows.length ? `${head}<p>No town has finished today's map yet. Yours would be the first.</p>`
+    : `${head}<ul class="tally">${rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.name || "Anon")}</span><b>${r.score}</b></li>`).join("")}${yours}</ul>`;
 }
 
 /* Every building's score as it stands, part by part. Tap one to find it on the map. */

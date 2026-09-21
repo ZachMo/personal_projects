@@ -10,6 +10,19 @@ parity tests will fail.
 
 ## Waiting
 
+### An empty board says so, and the 21 September switch folded in
+
+Commit: "Hügelland: an empty board says so", 21 September.
+
+- The board drew nothing at all when a day had no towns yet, which reads as a board that failed to load. It now
+  says "No town has finished today's map yet. Yours would be the first.", and "The board cannot be reached just
+  now." when the read fails. The read path itself was fine: a town posted from the live page today was accepted
+  and scored 145.
+- Cleanup after the 21 September switch: the Oil Derrick loses its `draft` flag, the district goal is plainly
+  `[6, 7]`, `goalsFor` no longer filters the category goal behind `NEW_RULES`, and `LINK_VERSION` is 8. Checked
+  against the live page: decks and goals match for all 45 days tried, so nothing moved. `LIVE_FROM` stays at
+  2026-09-21 with nothing staged behind it; the comment says how to use it next time.
+
 ### Goals that fit the deck
 
 Commit: "Hügelland: a goal that fits the day's deck", 21 September (with the derrick).

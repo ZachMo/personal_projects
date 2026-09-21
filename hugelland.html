@@ -3393,6 +3393,26 @@ const LOCAL = ["localhost", "127.0.0.1", ""].includes(location.hostname) || loca
 const cloudOn = () => !!(CLOUD.url && CLOUD.key);
 const cloudHead = () => ({ "Content-Type": "application/json", apikey: CLOUD.key, Authorization: `Bearer ${CLOUD.key}` });
 
+/*
+  A tab left open across a release plays by the library it loaded with, which deals a different deck for the
+  same day, and the board rightly refuses a town it cannot replay. So the page keeps its own build stamp and
+  compares it with the one on the site whenever it comes back into view. A page behind the site reloads: at
+  once if no town is under way, otherwise at the next town, which is a safe moment to change the rules.
+*/
+const BUILD = "2026-09-21T17:24Z";
+let STALE = false;
+async function checkBuild() {
+  if (LOCAL) return;
+  try {
+    const r = await fetch(`version.txt?t=${Date.now()}`, { cache: "no-store" });
+    if (!r.ok) return;
+    const said = (await r.text()).trim();
+    STALE = !!said && said !== BUILD;
+    if (STALE && (!G || !G.player || G.over || !G.pieces.length)) location.reload();
+  } catch (e) {}
+}
+addEventListener("visibilitychange", () => { if (!document.hidden) checkBuild(); });
+
 /* This browser, so a day counts once for it. It is a random string and says nothing about who you are. */
 const DEVICE = "hugelland.device";
 function deviceId() {
@@ -3406,8 +3426,13 @@ function deviceId() {
 /* The town's moves, in the order they were built: all the server needs to play it through again. */
 const townMoves = () => G.pieces.map(p => p.cells);
 
-/* How the last town fared on its way to the board, so the player is told rather than left wondering. */
+/*
+  How the last town fared on its way to the board. Nothing of this shows on screen: a town that misses the board
+  is tried again when the summary is opened, and the reason waits in the console and in `hugelland.post` for
+  whoever is looking into it.
+*/
 let POSTED = null;
+const POST_LOG = "hugelland.post";
 
 async function cloudPost(run) {
   if (!cloudOn() || LOCAL || !isDaily() || run.day !== G.day) return null;
@@ -3420,7 +3445,11 @@ async function cloudPost(run) {
     // A town this browser already sent in counts as on the board: the first one stands.
     POSTED = r.ok || r.status === 409 ? { ok: true } : { ok: false, why: said.why || `the board said no (${r.status})` };
   } catch (e) {
-    POSTED = { ok: false, why: "no answer from the board" };
+    POSTED = { ok: false, why: "no answer from the board: " + (e && e.message) };
+  }
+  if (!POSTED.ok) {
+    console.warn("Hügelland: this town did not reach the board —", POSTED.why);
+    try { localStorage.setItem(POST_LOG, JSON.stringify({ at: new Date().toISOString(), day, why: POSTED.why })); } catch (e) {}
   }
   // The board was drawn before this town reached it, so read it again now.
   if (box) showBoard(day, box);
@@ -4050,14 +4079,9 @@ async function showBoard(day, id = "board10") {
   const mine_name = G && G.player ? townName(G.player, G.pick) : "Your town";
   const yours = rank && !among ? `<li><span>${rank.place}. ${esc(mine_name)}</span><b>${mine}</b></li>` : "";
   const head = `<p class="label">Today's best${rank && rows && rows.length ? ` · ${rank.of} ${rank.of === 1 ? "town" : "towns"}` : ""}</p>`;
-  // If this town never reached the board, say so here rather than leaving a gap.
-  const failed = POSTED && POSTED.ok === false && day === dayKey()
-    ? `<p class="today">Your town did not reach the board: ${esc(POSTED.why)}. <button class="linkbtn" style="display:inline;padding:0" id="tryBoard">Try again</button></p>` : "";
   box.innerHTML = !rows ? `${head}<p>The board cannot be reached just now.</p>`
     : !rows.length ? `${head}<p>No town has finished today's map yet. Yours would be the first.</p>`
     : `${head}<ul class="tally">${rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.name || "Anon")}</span><b>${r.score}</b></li>`).join("")}${yours}</ul>`;
-  box.insertAdjacentHTML("beforeend", failed);
-  if ($("tryBoard")) $("tryBoard").onclick = () => { $("tryBoard").textContent = "Sending…"; cloudPost({ day }); };
 }
 
 /* Every building's score as it stands, part by part. Tap one to find it on the map. */
@@ -4345,6 +4369,8 @@ function startTown(player, challenge = null, daily = null, seed = G.seed) {
   if (daily && daily === dayKey() && kept) { closeDialog(); closeSheet(); return kept.over ? viewToday(kept) : resumeToday(kept); }
   if (daily && daily === dayKey() && rec && rec.day === daily) { closeDialog(); closeSheet(); return showToday(rec); }
   stashDaily();
+  // A page behind the site would deal a deck the board cannot check, so it takes the new one first.
+  if (STALE) return location.reload();
   newGame(player, Math.floor(Math.random() * NAME_FORMS), seed, daily);
   G.challenge = challenge && { from: challenge.from, score: challenge.score };
   resetScene();
@@ -4488,6 +4514,7 @@ addEventListener("pagehide", save);
 new ResizeObserver(layout).observe($("stage"));
 
 restoreControls();
+checkBuild();
 const link = new URLSearchParams(location.search);
 if (link.has("seed") || link.has("daily")) {
   const from = (link.get("from") || "").trim().slice(0, 14) || "A friend";

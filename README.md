@@ -304,6 +304,11 @@ Stories are read off the finished town: what ended up beside what, how big the d
 away. Each story that fits is weighed, the day's own seed picks the wording from a library of headlines, German
 Texan surnames and street names, and the photograph is a crop of the board itself.
 
+**Releasing.** Run `python3 tools/bump-build.py` before deploying a change to how maps are dealt or scored. It
+stamps the page and `version.txt` with the same time. A page compares the two whenever it comes back into view
+and reloads at the next town if it is behind, so a tab left open across a release never plays by an older
+library — which would deal a different deck for the same day and be refused by the leaderboard.
+
 **Sharing a town.** A finished daily town shares its date, its score against par, its three goals as ticks and
 the headline it earned, with the challenge link under it. A free map shares the map and the score.
 

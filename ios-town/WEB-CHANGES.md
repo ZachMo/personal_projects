@@ -10,6 +10,21 @@ parity tests will fail.
 
 ## Waiting
 
+### A tab left open reloads itself
+
+Commit: "Hügelland: a page behind the site takes the new one", 21 September.
+
+A finished daily town went missing from the board, and this was why: a tab open since before a release plays by
+the library it loaded with, which deals a different deck for the same day, so the board refuses a town it cannot
+replay. Tested: a tab from the 19th playing today's map is refused with "wrong shape for the Cabin".
+
+The page now carries `BUILD` and the site carries `version.txt`. `checkBuild()` compares them at startup and
+whenever the tab comes back into view. A page behind the site reloads at once when no town is under way, and
+otherwise at the next town (`startTown`), which is a safe moment. `tools/bump-build.py` stamps both.
+
+Also: nothing about a missed post shows on screen any more. The reason goes to the console and to
+`hugelland.post` for whoever is looking into it, and the summary quietly tries again.
+
 ### A town that misses the board says so
 
 Commit: "Hügelland: say when a town misses the board", 21 September.

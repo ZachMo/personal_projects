@@ -10,6 +10,16 @@ parity tests will fail.
 
 ## Waiting
 
+### A town that misses the board says so
+
+Commit: "Hügelland: say when a town misses the board", 21 September.
+
+A failed post was silent: the score simply never appeared and the player had no way to know. `cloudPost` now
+keeps the outcome in `POSTED` (a 409 counts as on the board, since the first town stands), and the board shows
+"Your town did not reach the board: <reason>" with a Try again button. Opening the summary of today's finished
+daily posts again if the last attempt failed, so a reopened summary is itself a retry; the server keeps only the
+first town, so repeats cost nothing.
+
 ### An empty board says so, and the 21 September switch folded in
 
 Commit: "Hügelland: an empty board says so", 21 September.

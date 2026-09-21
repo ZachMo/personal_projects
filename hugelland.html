@@ -3406,15 +3406,25 @@ function deviceId() {
 /* The town's moves, in the order they were built: all the server needs to play it through again. */
 const townMoves = () => G.pieces.map(p => p.cells);
 
+/* How the last town fared on its way to the board, so the player is told rather than left wondering. */
+let POSTED = null;
+
 async function cloudPost(run) {
-  if (!cloudOn() || LOCAL || !isDaily() || run.day !== G.day) return;
-  const day = G.day;
+  if (!cloudOn() || LOCAL || !isDaily() || run.day !== G.day) return null;
+  const day = G.day, box = ["board10", "boardCard", "boardToday"].find(id => $(id));
+  POSTED = { sending: true };
   try {
     const r = await fetch(`${CLOUD.url}/functions/v1/${CLOUD.fn}`, { method: "POST", headers: cloudHead(),
       body: JSON.stringify({ day, name: townName(G.player, G.pick).slice(0, 24), device: deviceId(), moves: townMoves() }) });
-    // The board was drawn before this town reached it, so read it again now.
-    if (r.ok && $("board10")) showBoard(day);
-  } catch (e) {}
+    const said = await r.json().catch(() => ({}));
+    // A town this browser already sent in counts as on the board: the first one stands.
+    POSTED = r.ok || r.status === 409 ? { ok: true } : { ok: false, why: said.why || `the board said no (${r.status})` };
+  } catch (e) {
+    POSTED = { ok: false, why: "no answer from the board" };
+  }
+  // The board was drawn before this town reached it, so read it again now.
+  if (box) showBoard(day, box);
+  return POSTED;
 }
 const TOP_N = 3;
 async function cloudTop(day) {
@@ -3956,6 +3966,7 @@ function showSummary() {
   const daily = isDaily();
   if (daily) G.par = parFor(G.seed);
   const me = total(), c = G.challenge, run = daily ? recordDaily() : null;
+  if (daily && G.over && G.day === dayKey() && (!POSTED || POSTED.ok === false)) cloudPost({ day: G.day });
   const top = G.pieces.map((p, k) => ({ p, v: pieceScore(k) })).sort((a, b) => b.v - a.v).slice(0, 3);
   const won = Object.keys(TROPHIES).filter(id => G.trophies[id]);
   let best = 0;
@@ -4039,9 +4050,14 @@ async function showBoard(day, id = "board10") {
   const mine_name = G && G.player ? townName(G.player, G.pick) : "Your town";
   const yours = rank && !among ? `<li><span>${rank.place}. ${esc(mine_name)}</span><b>${mine}</b></li>` : "";
   const head = `<p class="label">Today's best${rank && rows && rows.length ? ` · ${rank.of} ${rank.of === 1 ? "town" : "towns"}` : ""}</p>`;
+  // If this town never reached the board, say so here rather than leaving a gap.
+  const failed = POSTED && POSTED.ok === false && day === dayKey()
+    ? `<p class="today">Your town did not reach the board: ${esc(POSTED.why)}. <button class="linkbtn" style="display:inline;padding:0" id="tryBoard">Try again</button></p>` : "";
   box.innerHTML = !rows ? `${head}<p>The board cannot be reached just now.</p>`
     : !rows.length ? `${head}<p>No town has finished today's map yet. Yours would be the first.</p>`
     : `${head}<ul class="tally">${rows.map((r, i) => `<li><span>${i + 1}. ${esc(r.name || "Anon")}</span><b>${r.score}</b></li>`).join("")}${yours}</ul>`;
+  box.insertAdjacentHTML("beforeend", failed);
+  if ($("tryBoard")) $("tryBoard").onclick = () => { $("tryBoard").textContent = "Sending…"; cloudPost({ day }); };
 }
 
 /* Every building's score as it stands, part by part. Tap one to find it on the map. */

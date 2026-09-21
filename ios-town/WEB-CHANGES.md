@@ -10,6 +10,24 @@ parity tests will fail.
 
 ## Waiting
 
+### Goals that fit the deck
+
+Commit: "Hügelland: a goal that fits the day's deck", 21 September (with the derrick).
+
+Two of the five goals asked for a district, and both were really the same goal: homes average 7.1 a deck while
+every other kind averages 2 to 3.6, and leisure never reaches five at all, so "one district of 5" meant "5 homes".
+
+- New goal `catdistrict`: **"A district of 3 shops"**, and so on. It reads the day's own deck when the goals are
+  drawn, picks a kind that is not home, and asks for three when the deck holds four or five, four when it holds
+  six or more — always one spare, so it never demands that every shop in the deck touch. A day with no such kind
+  sets a different goal. `goalsFor(key, deck)` takes the deck now, and `newGame` draws the deck first to pass it.
+  A goal may carry a `cat`, so `goalText`/`goalNow` pass the goal to `text`/`at`.
+- "One district of N buildings" asks for 6 or 7, not 5, so the home goal and it are no longer the same target.
+- Difficulty, measured with the par bot over 80 days: the new goal lands 40% of the time, in line with "one
+  district of 7" at 41% and "win 12 trophies" at 31%. A player chasing it lands it 58% of the time. Goals overall
+  move from 45% to 48%.
+- Both changes are behind `NEW_RULES`, so today's goals are untouched; they arrive with tomorrow's map.
+
 ### Oil derricks, and the 20 September changes folded in
 
 Commit: "Hügelland: an oil derrick that nods, and last night's changes folded in", 21 September.

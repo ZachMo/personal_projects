@@ -855,8 +855,9 @@ function newGame(player, pickName, seed, daily = null) {
   seed = daily ? dailySeed(daily) : seed ?? (Math.random() * 2 ** 31) | 0;
   MAP = makeMap(seed);
   OWNER = new Array(N).fill(-1);
-  G = { v: 7, player, pick: pickName, seed, deck: makeDeck(seed, MAP), at: 0, away: [], pieces: [], over: false,
-        trophies: {}, streak: 0, challenge: null, day: daily, goals: daily ? goalsFor(daily) : null, par: 0 };
+  const deck = makeDeck(seed, MAP);
+  G = { v: 7, player, pick: pickName, seed, deck, at: 0, away: [], pieces: [], over: false,
+        trophies: {}, streak: 0, challenge: null, day: daily, goals: daily ? goalsFor(daily, deck) : null, par: 0 };
   settle();
 }
 const isDaily = () => !!(G && G.day);
@@ -1097,7 +1098,22 @@ const goodTrophies = () => Object.keys(G.trophies).filter(id => TROPHIES[id].goo
   so a goal can show its progress while you play. `floor` goals are met by the worst building, not the best.
 */
 const GOALS = [
-  { id: "district", ns: [5, 6, 7], text: (n) => `One district of ${n} buildings`, at: () => biggestDistrict() },
+  { id: "district", ns: NEW_RULES ? [6, 7] : [5, 6, 7], text: (n) => `One district of ${n} buildings`, at: () => biggestDistrict() },
+  /*
+    A district of one other kind. Homes come four kinds to a deck and everything else two or three, so asking
+    for five shops is asking for something the day never deals. This one reads the day's own deck and asks only
+    for what is in it, and always keeps a spare: three of a kind when the deck holds four or five, four when it
+    holds six or more. A day with no such kind sets another goal instead.
+  */
+  { id: "catdistrict", text: (n, goal) => `A district of ${n} ${CATS[goal.cat].many}`, at: (goal) => biggestDistrict(goal.cat),
+    pick: (count, r) => {
+      // Always one more of that kind in the deck than the goal asks for: a day that deals three shops does not
+      // demand that all three touch, which needs the shapes to fall exactly right.
+      const cats = Object.keys(CATS).filter(c => c !== "home" && (count[c] || 0) >= 4);
+      if (!cats.length) return null;
+      const cat = pick(cats, r);
+      return { cat, n: count[cat] >= 6 ? 4 : 3 };
+    } },
   { id: "homes",    ns: [4, 5],    text: (n) => `${n} homes in one district`,    at: () => biggestDistrict("home") },
   { id: "big",      ns: [14, 15, 16], text: (n) => `A building worth ${n}`,      at: () => Math.max(0, ...G.pieces.map((p, k) => pieceScore(k))) },
   { id: "clean",    ns: [3, 4],    text: (n) => `Every building scores ${n}`,    floor: true,
@@ -1105,16 +1121,25 @@ const GOALS = [
   { id: "trophies", ns: [8, 10, 12], text: (n) => `Win ${n} trophies`,           at: () => goodTrophies() },
 ];
 
-/* Three goals for a day, drawn from its seed. */
-function goalsFor(key) {
+/* Three goals for a day, drawn from its seed. A goal that reads the deck is given it, and stands aside when the day cannot meet it. */
+function goalsFor(key, deck = []) {
   const r = mulberry(seedFrom("goals/" + key));
-  const pool = GOALS.slice();
+  const count = {};
+  for (const k of deck) if (!DEF[k].bridge) count[DEF[k].cat] = (count[DEF[k].cat] || 0) + 1;
+  const pool = GOALS.filter(g => NEW_RULES || g.id !== "catdistrict");
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-  return pool.slice(0, 3).map(g => ({ id: g.id, n: g.ns[Math.floor(r() * g.ns.length)] }));
+  const out = [];
+  for (const g of pool) {
+    if (out.length === 3) break;
+    if (!g.pick) { out.push({ id: g.id, n: g.ns[Math.floor(r() * g.ns.length)] }); continue; }
+    const got = g.pick(count, r);
+    if (got) out.push({ id: g.id, ...got });
+  }
+  return out;
 }
 const goalKind = (goal) => GOALS.find(g => g.id === goal.id);
-const goalText = (goal) => goalKind(goal).text(goal.n);
-const goalNow = (goal) => goalKind(goal).at();
+const goalText = (goal) => goalKind(goal).text(goal.n, goal);
+const goalNow = (goal) => goalKind(goal).at(goal);
 const goalDone = (goal) => goalKind(goal).floor ? G.pieces.length > 0 && goalNow(goal) >= goal.n : goalNow(goal) >= goal.n;
 const goalsDone = () => (G.goals || []).filter(goalDone).length;
 

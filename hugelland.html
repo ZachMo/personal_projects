@@ -544,6 +544,9 @@ const DEF = {
   tannery:   { name: "Tannery", plural: "Tanneries", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, roof: ["#8a6f4e", "#6b553b"],
                roles: ["hall", "hides"], blurb: "Hides from the herds. It smells.",
                rules: [{ k: "land", t: "herd", p: 2 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
+  derrick:   { name: "Oil Derrick", cat: "industry", shape: "I1", n: 2, era: 3, base: 2, draft: true,
+               roles: ["derrick"], blurb: "One pump, nodding over the rock day and night.",
+               rules: [{ k: "land", t: "ore", p: 2 }, { k: "near", types: ["oildepot"], p: 2 }] },
   kiln:      { name: "Charcoal Kiln", cat: "industry", shape: "I1", n: 1, era: 1, base: 2,
                roles: ["kiln"], blurb: "Burns wood into fuel.",
                rules: [{ k: "land", t: "forest", p: 2 }] },
@@ -571,12 +574,10 @@ const DEF = {
   /* Civic */
   bridge:    { name: "Bridge", cat: "civic", shape: "I3", n: 1, era: 1, base: 2, bridge: true, tile: ["#c9a06f", "#8f6a45"],
                roles: ["deck", "deck", "deck"], blurb: "Crosses the water. Both ends must sit on land.",
-               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }],
-               pending: { rules: [{ k: "land", t: "water", p: 1 }, { k: "variety", p: 1 }] } },
+               rules: [{ k: "land", t: "water", p: 1 }, { k: "variety", p: 1 }] },
   coveredbridge: { name: "Covered Bridge", cat: "civic", shape: "I4", n: 1, era: 1, base: 3, bridge: true, tile: ["#c9a06f", "#8f6a45"],
                roof: ["#b0503c", "#8c3d2d"], roles: ["deck", "hall", "hall", "deck"], blurb: "A long, roofed crossing. Both ends must sit on land.",
-               rules: [{ k: "land", t: "water", p: 1 }, { k: "near", any: true, p: 1 }],
-               pending: { rules: [{ k: "land", t: "water", p: 1 }, { k: "variety", p: 1 }] } },
+               rules: [{ k: "land", t: "water", p: 1 }, { k: "variety", p: 1 }] },
   library:   { name: "Library", plural: "Libraries", cat: "civic", shape: "F5", n: 1, era: 3, base: 3, roof: ["#6d8f7a", "#557260"], emblem: "book",
                roles: ["hall", "tree", "garden", "hall", "hall"], blurb: "Needs quiet, trees and families to read.",
                rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "near", cats: ["home"], p: 1 }, { k: "land", t: "forest", p: 1 }] },
@@ -593,10 +594,8 @@ const DEF = {
                roles: ["graves", "graves", "graves", "graves"], blurb: "Quiet, shady ground, away from the noise.",
                rules: [{ k: "without", cats: ["leisure", "industry"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["home"], p: -1 }] },
   doctor:    { name: "Doctor", cat: "civic", shape: "I2", n: 1, era: 2, base: 3, roof: ["#e9e3d6", "#c9c1b0"], emblem: "cross",
-               roles: ["house", "garden"], blurb: "Close to families, far from the smoke.",
-               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }, { k: "near", cats: ["industry"], p: -2 }],
-               pending: { blurb: "Close to families and the shops, far from the smoke.",
-                          rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] } },
+               roles: ["house", "garden"], blurb: "Close to families and the shops, far from the smoke.",
+               rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "near", cats: ["shop"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
   courthouse:{ name: "Courthouse", cat: "civic", shape: "T5", n: 1, era: 3, base: 3, roof: ["#9aa3ad", "#7c858f"], emblem: "clock",
                roles: ["hall", "hall", "hall", "yard", "flag"], blurb: "Law and order, on the main street.",
                rules: [{ k: "near", cats: ["shop"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
@@ -621,48 +620,48 @@ const DEF = {
                extra: "birds", roles: ["tree", "garden", "tree", "garden", "tree"], blurb: "Green space for the families.",
                rules: [{ k: "near", cats: ["home"], p: 2 }, { k: "land", t: "forest", p: 1 }] },
 
-  /* Drafts: in no deck yet. */
-  apartments:{ name: "Apartments", plural: "Apartments", cat: "home", shape: "P5", n: 1, era: 3, base: 2, roof: ["#b5654a", "#924f39"], style: "dormer", draft: true,
+  /* From the 1922 Sanborn map of New Braunfels. */
+  apartments:{ name: "Apartments", plural: "Apartments", cat: "home", shape: "P5", n: 1, era: 3, base: 2, roof: ["#b5654a", "#924f39"], style: "dormer",
                roles: ["hall", "hall", "hall", "hall", "laundry"], blurb: "Town living, stacked high. Best in the thick of a big neighbourhood.",
                rules: [{ k: "crowd", n: 4, p: 4 }, { k: "near", cats: ["shop"], p: 1 }, { k: "near", cats: ["industry"], p: -2 }] },
-  countryhouse:{ name: "Country House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#c77d58", "#a3603f"], draft: true,
+  countryhouse:{ name: "Country House", cat: "home", shape: "L4", n: 1, era: 2, base: 2, roof: ["#c77d58", "#a3603f"],
                roles: ["house", "house", "garden", "tree"], blurb: "Room to breathe, with the herds in view.",
                rules: [{ k: "room", p: 2 }, { k: "land", t: "herd", p: 1 }] },
-  cottongin: { name: "Cotton Gin", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#8d949c", "#6d747c"], style: "metal", extra: "stack", draft: true,
+  cottongin: { name: "Cotton Gin", cat: "industry", shape: "T4", n: 1, era: 2, base: 2, roof: ["#8d949c", "#6d747c"], style: "metal", extra: "stack",
                roles: ["hall", "hall", "hall", "bales"], blurb: "The gin runs day and night in the picking season. Dust and noise with it.",
                rules: [{ k: "land", t: "wheat", p: 2 }, { k: "near", cats: ["agri"], p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
-  rollermills:{ name: "Roller Mills", plural: "Roller Mills", cat: "industry", shape: "L4", n: 1, era: 3, base: 2, roof: ["#a8865c", "#866a45"], draft: true,
+  rollermills:{ name: "Roller Mills", plural: "Roller Mills", cat: "industry", shape: "L4", n: 1, era: 3, base: 2, roof: ["#a8865c", "#866a45"],
                roles: ["hall", "hall", "hall", "silo"], blurb: "Flour for the whole valley, ground by the river.",
                rules: [{ k: "town", cats: ["agri"], p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
-  limeworks: { name: "Lime Works", plural: "Lime Works", cat: "industry", shape: "I2", n: 1, era: 2, base: 2, draft: true,
+  limeworks: { name: "Lime Works", plural: "Lime Works", cat: "industry", shape: "I2", n: 1, era: 2, base: 2,
                roles: ["kiln", "rocks"], blurb: "Burnt lime for the mortar in every civic wall in town.",
                rules: [{ k: "land", t: "ore", p: 3 }, { k: "town", cats: ["civic"], p: 1 }] },
-  brewery:   { name: "Brewery", plural: "Breweries", cat: "industry", shape: "O4", n: 1, era: 2, base: 3, roof: ["#a4503c", "#823c2c"], extra: "stack", draft: true,
+  brewery:   { name: "Brewery", plural: "Breweries", cat: "industry", shape: "O4", n: 1, era: 2, base: 3, roof: ["#a4503c", "#823c2c"], extra: "stack",
                roles: ["hall", "hall", "barrels", "barrels"], blurb: "Spring water, barley and the town's own thirst.",
                rules: [{ k: "land", t: "water", p: 3, once: true }, { k: "near", cats: ["leisure"], p: 2 }, { k: "land", t: "wheat", p: 1 }] },
-  oildepot:  { name: "Oil Depot", cat: "industry", shape: "I3", n: 1, era: 3, base: 2, roof: ["#7d8288", "#5f646a"], style: "metal", draft: true,
+  oildepot:  { name: "Oil Depot", cat: "industry", shape: "I3", n: 1, era: 3, base: 2, roof: ["#7d8288", "#5f646a"], style: "metal",
                roles: ["tank", "tank", "rail"], blurb: "Tanks by the tracks, at the edge of town. Nobody wants them closer.",
                rules: [{ k: "edge", p: 3 }, { k: "near", cats: ["industry"], p: 1 }, { k: "near", cats: ["home"], p: -3 }] },
-  firehouse: { name: "Fire Station", cat: "civic", shape: "V3", n: 1, era: 2, base: 2, roof: ["#c1453a", "#9b342c"], extra: "bell", draft: true,
+  firehouse: { name: "Fire Station", cat: "civic", shape: "V3", n: 1, era: 2, base: 2, roof: ["#c1453a", "#9b342c"], extra: "bell",
                roles: ["hall", "hall", "hosecart"], blurb: "The hose company answers for every roof it can reach, so long as it can draw water.",
                rules: [{ k: "near", any: true, p: 1 }, { k: "land", t: "water", p: 2, once: true }] },
-  postoffice:{ name: "Post Office", plural: "Post Offices", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#5f7a9e", "#48607f"], emblem: "letter", draft: true,
+  postoffice:{ name: "Post Office", plural: "Post Offices", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#5f7a9e", "#48607f"], emblem: "letter",
                roles: ["hall", "flag"], blurb: "Letters for everyone, and the road out of town.",
                rules: [{ k: "variety", p: 1 }, { k: "edge", p: 2 }] },
-  sanitarium:{ name: "Sanitarium", plural: "Sanitariums", cat: "civic", shape: "L5", n: 1, era: 3, base: 3, roof: ["#e4e0d2", "#c2bdac"], draft: true,
+  sanitarium:{ name: "Sanitarium", plural: "Sanitariums", cat: "civic", shape: "L5", n: 1, era: 3, base: 3, roof: ["#e4e0d2", "#c2bdac"],
                roles: ["hall", "hall", "hall", "garden", "tree"], blurb: "Rest, clean air and quiet. Especially quiet.",
                rules: [{ k: "without", cats: ["industry", "leisure"], p: 4 }, { k: "room", p: 1 }] },
-  duplex:    { name: "Duplex", plural: "Duplexes", cat: "home", shape: "I2", n: 2, era: 1, base: 2, draft: true,
+  duplex:    { name: "Duplex", plural: "Duplexes", cat: "home", shape: "I2", n: 2, era: 1, base: 2,
                roof: ["#c9855a", "#a5673f"], roof2: ["#b8765f", "#935944"],
                roles: ["rowA", "rowB"], blurb: "Two families under one roof, a short walk from the works and the fields.",
                rules: [{ k: "near", cats: ["industry"], p: 1 }, { k: "near", cats: ["agri"], p: 2 }] },
-  tollhouse: { name: "Toll House", cat: "shop", shape: "I2", n: 1, era: 1, base: 2, roof: ["#a8743f", "#86592f"], draft: true,
+  tollhouse: { name: "Toll House", cat: "shop", shape: "I2", n: 1, era: 1, base: 2, roof: ["#a8743f", "#86592f"],
                roles: ["house", "tollgate"], blurb: "A coin from everyone who crosses.",
                rules: [{ k: "near", bridge: true, p: 3 }, { k: "near", cats: ["home"], p: 1 }] },
-  feedstore: { name: "Feed Store", cat: "shop", shape: "V3", n: 1, era: 2, base: 2, roof: ["#b48a4a", "#936f36"], style: "front", sign: "FEED", draft: true,
+  feedstore: { name: "Feed Store", cat: "shop", shape: "V3", n: 1, era: 2, base: 2, roof: ["#b48a4a", "#936f36"], style: "front", sign: "FEED",
                roles: ["hall", "hall", "sacks"], blurb: "Grain and oats for the farms and the herds.",
                rules: [{ k: "near", cats: ["agri"], p: 2 }, { k: "land", t: "herd", p: 1 }] },
-  deptstore: { name: "Department Store", cat: "shop", shape: "O4", n: 1, era: 3, base: 3, roof: ["#3f8a8f", "#2f6c70"], style: "front", sign: "EMPORIUM", draft: true,
+  deptstore: { name: "Department Store", cat: "shop", shape: "O4", n: 1, era: 3, base: 3, roof: ["#3f8a8f", "#2f6c70"], style: "front", sign: "EMPORIUM",
                roles: ["hall", "hall", "hall", "hall"], blurb: "Everything under one roof, for a town that loves to shop.",
                rules: [{ k: "town", cats: ["shop"], p: 1 }, { k: "near", cats: ["home"], p: 1 }] },
 };
@@ -672,7 +671,7 @@ const DEF = {
   starts, so no day's map changes its rules partway through. A page opened earlier keeps the old rules until it
   reloads. Once the day has come, fold the changes into DEF for good and take this out.
 */
-const LIVE_FROM = "2026-09-20";
+const LIVE_FROM = "2026-09-21";
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const NEW_RULES = today() >= LIVE_FROM;
 if (NEW_RULES) for (const k in DEF) {
@@ -1415,7 +1414,7 @@ const GROUND = {
   deck: "#c69a6b", hay: "#e5d6b7", plaza: "#e3dac7", graves: "#b3d494", pool: "#e3dac7", track: "#bddb95", tent: "#eadcb5",
   woodpile: "#c2d69b", veg: "#b99470", hedge: "#b3d494", laundry: "#e5d6b7", coop: "#dccfa4", fire: "#d2c9ba", hides: "#e5d6b7",
   anvil: "#cbc3b6", cart: "#cfc4b1", bricks: "#e5d6b7", bread: "#e9dcc0", fish: "#dfe6e3", furs: "#e5d6b7", hitch: "#e5d6b7",
-  pen: "#cdc8bf", paddock: "#bddb95", tollgate: "#d8cdb5", sacks: "#e5d6b7", bales: "#e9e2d0", barrels: "#d8c9a8", tank: "#cfc8ba", hosecart: "#d9cdb8",
+  pen: "#cdc8bf", paddock: "#bddb95", tollgate: "#d8cdb5", sacks: "#e5d6b7", derrick: "#cfc4b1", bales: "#e9e2d0", barrels: "#d8c9a8", tank: "#cfc8ba", hosecart: "#d9cdb8",
 };
 let BAKING = false;  // art is being drawn onto the baked board, so chimneys should smoke
 let NOW = 0;         // seconds, for the parts of buildings that move
@@ -1628,6 +1627,32 @@ function live(g, kind, x, y, a, r) {
       g.moveTo(px + dx * len * k / 6, py - lift + dy * len * k / 6); g.lineTo(px + dx * len * (k + 1) / 6, py - lift + dy * len * (k + 1) / 6); g.stroke();
     }
     circle(g, px, py, S * .065, "#5c4028"); circle(g, px, py, S * .035, "#8a6444");
+  } else if (kind === "pumpjack") {
+    // A walking beam nods over the wellhead: the horse head dips to the ground and lifts again, and the
+    // counterweight at the other end swings the opposite way. Seen from the side, like the mine's headframe.
+    const sw = Math.sin(t * 1.45), apex = [x + S * .04, y - S * .2], down = [x - S * .24, y + S * .16];
+    // The A-frame it all turns on.
+    g.strokeStyle = "#6c5b4a"; g.lineWidth = Math.max(1.4, S * .035); g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(x - S * .1, y + S * .2); g.lineTo(...apex); g.lineTo(x + S * .18, y + S * .2);
+    g.moveTo(x - S * .04, y + S * .04); g.lineTo(x + S * .12, y + S * .04);
+    g.stroke();
+    // The beam, tilting about the apex.
+    const ang = Math.PI + sw * .42, head = [apex[0] + Math.cos(ang) * S * .3, apex[1] + Math.sin(ang) * S * .3];
+    const tail = [apex[0] - Math.cos(ang) * S * .22, apex[1] - Math.sin(ang) * S * .22];
+    // The polished rod, rising and falling out of the wellhead.
+    g.strokeStyle = "#8a8f95"; g.lineWidth = Math.max(1.2, S * .03);
+    g.beginPath(); g.moveTo(head[0], head[1]); g.lineTo(down[0], down[1]); g.stroke();
+    g.strokeStyle = "#4f453a"; g.lineWidth = Math.max(2, S * .07);
+    g.beginPath(); g.moveTo(tail[0], tail[1]); g.lineTo(head[0], head[1]); g.stroke();
+    // The horse head at one end, the counterweight at the other.
+    g.fillStyle = "#3d3a36"; g.beginPath();
+    g.ellipse(head[0], head[1], S * .07, S * .05, ang, 0, Math.PI * 2); g.fill();
+    circle(g, tail[0], tail[1], S * .062, "#6f767c"); circle(g, tail[0], tail[1], S * .03, "#4f555a");
+    circle(g, ...apex, S * .03, "#8a8f95");
+    // The wellhead on the pad.
+    g.fillStyle = "#5b5349"; g.fillRect(down[0] - S * .05, down[1], S * .1, S * .1);
+    circle(g, down[0], down[1], S * .035, "#7c7368");
   } else if (kind === "birds") {
     // A few birds wheel over the trees, their shadows on the grass below.
     for (let k = 0; k < 3; k++) {
@@ -2296,6 +2321,11 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     g.fillStyle = "#7a5634"; g.fillRect(bx - S * .06, by - S * .06, S * .12, S * .12);
     circle(g, bx, by, S * .03, "#f2c94c");
     alive(g, "tollbar", x, y, hash(i, 8), horiz ? 1 : 0);
+  } else if (role === "derrick") {
+    ellipse(g, cx + S * .02, cy + S * .2, S * .3, S * .12, "rgba(40,30,20,.16)");
+    g.fillStyle = "#b9ae99"; g.beginPath(); rr(g, x + S * .16, y + S * .2, S * .68, S * .6, S * .06); g.fill();
+    for (let k = 0; k < 3; k++) circle(g, x + S * (.26 + k * .2), y + S * (.74 + (k % 2) * .06), S * .022, "#9d927e");
+    alive(g, "pumpjack", cx, cy, hash(i, 8));
   } else if (role === "bales") {
     // Cotton bales under their straps, stacked ready for the freight wagon.
     for (const [bx, by, bw, bh] of [[.14, .2, .38, .26], [.56, .26, .32, .22], [.24, .58, .44, .28]]) {
@@ -3389,7 +3419,7 @@ function recordBest() {
 }
 
 /* Bump when a change to the map, the deck or the scoring means an old link no longer gives the same game. */
-const LINK_VERSION = NEW_RULES ? 7 : 6;
+const LINK_VERSION = NEW_RULES ? 8 : 7;
 
 function challengeURL() {
   const base = location.href.split(/[?#]/)[0], who = encodeURIComponent(G.player);

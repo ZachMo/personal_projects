@@ -10,6 +10,22 @@ parity tests will fail.
 
 ## Waiting
 
+### Oil derricks, and the 20 September changes folded in
+
+Commit: "Hügelland: an oil derrick that nods, and last night's changes folded in", 21 September.
+
+**Cleanup.** The 20 September switch has fired, so its changes are written into `DEF` for good: the fourteen
+buildings lost their `draft` flags, and the three `pending` blocks are folded in (bridges score each kind of
+building, the Doctor likes shops and says so in its blurb). A deck and par fingerprint over 5,000 seeds and 60
+days is identical before and after the fold, so nothing in play moved. `LIVE_FROM` is now **2026-09-21** and
+`LINK_VERSION` is `NEW_RULES ? 8 : 7`, for the next change.
+
+**The Oil Derrick** (draft until midnight): one square, industry, era 3, two to a deck, base 2, **+2 each ore**
+and **+2 next to an Oil Depot**. It is the windmill's opposite number: the same size and count, wanting rock
+instead of grain. New ground art `derrick` (a gravel pad and the wellhead) and a live part `pumpjack`: a walking
+beam nodding on its A-frame, the polished rod rising and falling out of the wellhead, the counterweight swinging
+against it. With it the library is 70 kinds.
+
 ### Towns on the board, and a name with both ends
 
 Commit: "Hügelland: the board lists towns, and names take both ends", after the swipe labels.

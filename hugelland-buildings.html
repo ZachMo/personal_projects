@@ -94,6 +94,24 @@
   .was p { margin: 0 0 6px; font-size: .72rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
   .was .blurb { font-size: .8rem; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-2); margin-bottom: 6px; }
 
+  /* ── Every story the newspaper can run ── */
+  #stories { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+  #stories > summary { cursor: pointer; padding: 12px 0; font-weight: 750; font-size: .95rem; color: #cfd8d3; }
+  #stories > summary b { color: #fff; }
+  .fam { margin: 14px 0 0; }
+  .fam h2 { margin: 0 0 2px; font-size: .95rem; color: #eef1ec; }
+  .fam p { margin: 0 0 8px; font-size: .82rem; color: #9fb0a9; }
+  .story { background: var(--card); color: var(--ink); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+  .story .id { font-size: .6rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .story .id b { color: var(--ink-2); }
+  .story h3 { margin: 3px 0 2px; font-size: .92rem; letter-spacing: -.01em; }
+  .story .sub { margin: 0; font-size: .84rem; color: var(--ink-2); }
+  .story .cap { margin: 3px 0 0; font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .story .slot { background: #f6e7b4; color: #7a5608; border-radius: 4px; padding: 0 3px; font-style: normal; }
+  .story.second { opacity: .92; border-left: 3px solid var(--line); border-radius: 4px 14px 14px 4px; }
+  .words { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+  .words span { font-size: .74rem; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,.08); color: #cfd8d3; }
+
   .msg { max-width: 640px; margin: 40px auto; padding: 20px; text-align: center; color: #cfd8d3; grid-column: 1 / -1; }
   #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 9px 16px; border-radius: 999px; background: rgba(20,28,26,.94);
            color: #fff; font-size: .86rem; font-weight: 650; opacity: 0; transition: opacity .25s; pointer-events: none; }
@@ -119,6 +137,7 @@
   </select>
   <button class="btn" id="copy">Copy notes</button>
 </div></div>
+<details id="stories"><summary>Loading the newspaper's stories…</summary><div id="storyList"></div></details>
 <main id="grid"></main>
 <div id="toast"></div>
 
@@ -203,6 +222,7 @@ function start(ev) {
   }`);
   const size = ev(`(type) => { const o = orientations(type).find(o => { const [w, h] = extent(orient(DEF[type].shape, o.rot, o.flip)); return w >= h; }) || { rot: 0, flip: false }; return extent(orient(DEF[type].shape, o.rot, o.flip)); }`);
 
+  listStories(ev);
   const counts = {}, drafts = ORDER.filter(k => DEF[k].draft).length, pending = ORDER.filter(k => DEF[k].pending).length;
   for (const k of ORDER) counts[DEF[k].cat] = (counts[DEF[k].cat] || 0) + 1;
   $("lead").innerHTML = `${ORDER.length - drafts} buildings in ${Object.keys(CATS).length} categories, straight from the game` +
@@ -217,6 +237,57 @@ function start(ev) {
     for (const x of $("cats").children) x.setAttribute("aria-pressed", String(x === b));
     show();
   };
+
+    /*
+    Every wording the paper can print, filled with {slots} instead of a real town, so the whole library can be
+    read in one go. The tables live in the game, so this list is never out of date.
+  */
+  function listStories(ev) {
+    const stories = ev(`(() => {
+      // A stand-in town: anything a wording asks for comes back as a slot.
+      const ph = (o) => new Proxy(o, { get: (t, k) => (k in t ? t[k] : "{" + String(k) + "}") });
+      const d = ph({ a: ph({ name: "{Building}", score: 12, cat: "home" }), b: ph({ name: "{Neighbour}" }),
+                     n: "{n}", what: "{land}", away: ["bakery"] });
+      const N = () => "{Surname}", W = () => "{Street}", R0 = () => .5;
+      const name = (x) => Array.isArray(x) ? x.map(name).join(" or ") : DEF[x] ? DEF[x].name : CATS[x] ? CATS[x].name.toLowerCase() : x;
+      const out = [];
+      const add = (family, id, w, lines, when) => (lines || []).forEach((fn, i) => {
+        let t; try { t = fn(d, N, W, R0); } catch (e) { t = { h: "(cannot be shown here: " + e.message + ")", s: "", c: "" }; }
+        out.push({ family, id, w, nth: i, when: when || "", h: t.h, s: t.s, c: t.c });
+      });
+      for (const st of STORIES) add("The town itself", st.id, st.w, st.lines);
+      for (const e of GRIPES) add("A neighbour that grates", e.id, e.w, e.lines, name(e.a) + " beside " + name(e.b));
+      for (const e of BOONS) {
+        const when = e.land ? "on or beside " + e.land : e.edge ? "at the town line" : e.near ? e.n + "+ " + name(e.near) + " next to it"
+          : e.nearType ? name(e.a) + " beside " + name(e.nearType) : e.room ? e.room + "+ open squares beside it" : "";
+        add("A bonus that lands", e.id, e.w, e.lines, (e.a ? name(e.a) + " " : "") + when);
+      }
+      for (const e of MISSED) add("A bonus that never came", e.id, e.w, e.lines, name(e.types) + ", bonus unclaimed");
+      for (const id in TROPHY_LINES) add("A trophy won", "trophy-" + id, 8, TROPHY_LINES[id], "won " + TROPHIES[id].name.replace("!", ""));
+      return { list: out, names: SURNAMES.length, places: PLACES.length, firsts: FIRSTS.length };
+    })()`);
+    const list = stories.list, byFam = {};
+    for (const st of list) (byFam[st.family] = byFam[st.family] || []).push(st);
+    const ids = new Set(list.map(s => s.id));
+    const slots = (t) => esc(t || "").replace(/\{([^}]+)\}/g, (m, w) => `<i class="slot">${w}</i>`);
+    $("stories").querySelector("summary").innerHTML =
+      `Newspaper stories: <b>${ids.size} stories, ${list.length} wordings</b>, with ${stories.names} family names, ` +
+      `${stories.places} streets and ${stories.firsts} titles to fill them. Tap to read them all.`;
+    $("storyList").innerHTML = Object.entries(byFam).map(([fam, items]) => `<div class="fam">
+      <h2>${esc(fam)} · ${items.length} wordings</h2>
+      <p>${esc(fam === "The town itself" ? "Written one by one: districts, land, what was turned away."
+        : fam === "A neighbour that grates" ? "Runs only when the building really loses points for that neighbour."
+        : fam === "A bonus that lands" ? "Runs when the building got what it wanted."
+        : fam === "A bonus that never came" ? "Runs when it ended up where its bonus could not happen."
+        : "Runs when a building won that trophy.")}</p>
+      ${items.map(st => `<div class="story${st.nth ? " second" : ""}">
+        <div class="id"><b>${esc(st.id)}</b>${st.nth ? " · wording " + (st.nth + 1) : ""} · weight ${st.w}${st.when ? " · " + esc(st.when) : ""}</div>
+        <h3>${slots(st.h)}</h3>
+        <p class="sub">${slots(st.s)}</p>
+        ${st.c ? `<p class="cap">${slots(st.c)}</p>` : ""}
+      </div>`).join("")}
+    </div>`).join("");
+  }
 
   /*
     One card for each building. Filters only hide and reorder them. The ones on screen are drawn again about

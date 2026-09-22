@@ -10,6 +10,16 @@ parity tests will fail.
 
 ## Waiting
 
+### The whole story library, on the buildings page
+
+Commit: "Hügelland buildings: read every newspaper story", 21 September. Web only.
+
+`hugelland-buildings.html` gains a collapsible section listing every wording the paper can print — 81 stories in
+103 wordings — grouped by family (the town itself, a neighbour that grates, a bonus that lands, a bonus that
+never came, a trophy won), each with its id, its weight and, where the table says, what makes it run. The
+wordings are called with a stand-in town whose every field answers with a slot, so "{Building}", "{Surname}" and
+"{Street}" show where the town fills them in. The tables live in the game, so the list cannot fall behind.
+
 ### A tab left open reloads itself
 
 Commit: "Hügelland: a page behind the site takes the new one", 21 September.

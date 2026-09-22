@@ -3399,7 +3399,7 @@ const cloudHead = () => ({ "Content-Type": "application/json", apikey: CLOUD.key
   compares it with the one on the site whenever it comes back into view. A page behind the site reloads: at
   once if no town is under way, otherwise at the next town, which is a safe moment to change the rules.
 */
-const BUILD = "2026-09-21T17:24Z";
+const BUILD = "2026-09-22T01:35Z";
 let STALE = false;
 async function checkBuild() {
   if (LOCAL) return;
@@ -3683,6 +3683,7 @@ const STORIES = [
     lines: [
       (d, N, W, R0) => ({ h: "A STREET WHERE THERE WAS NONE", s: `${d.n} households now stand shoulder to shoulder on ${W()}. ${N()} says it was pasture inside of a year.`, c: "The new street." }),
       (d, N, W, R0) => ({ h: "THE TOWN GROWS A NEIGHBOURHOOD", s: `${d.n} homes together, and the Ladies' Aid already organising the corner.`, c: `${d.n} roofs in a row.` }),
+      (d, N, W, R0) => ({ h: "PASTURE TO PARISH IN ONE SEASON", s: `${d.n} families where there were cattle in the spring. The council talks of a pump and a proper road.`, c: "Grown from grass." })
     ] },
   { id: "shop-district", w: 8, find: (F) => { const g = F.biggest("shop"); return g.length >= 3 ? { a: g[0], n: g.length, cells: cellsOf(...g) } : null; },
     lines: [
@@ -3725,28 +3726,36 @@ const STORIES = [
   { id: "rich-ore", w: 9, find: (F) => { const p = F.of(["mine", "sluice", "stampmill", "limeworks"]).find(q => q.land("ore") >= 4); return p && { a: p, n: p.land("ore") }; },
     lines: [
       (d, N, W, R0) => ({ h: "THE VEIN RUNS TRUE", s: `${d.n} squares of ore under and about the ${d.a.name}. ${N()} has been seen buying a second wagon.`, c: "On the vein." }),
+      (d, N, W, R0) => ({ h: "A SECOND SHIFT AT THE WORKINGS", s: `There is more under the ${d.a.name} than one crew can lift, and ${N()} is taking on men.`, c: "Working late." })
     ] },
   { id: "rich-wheat", w: 8, find: (F) => { const p = F.of(["farm", "windmill", "granary", "gristmill", "cottongin"]).find(q => q.land("wheat") >= 4); return p && { a: p, n: p.land("wheat") }; },
     lines: [
       (d, N, W, R0) => ({ h: "A HARVEST WORTH THE TROUBLE", s: `${d.n} squares of grain stand around the ${d.a.name}, and every wagon in the county is spoken for.`, c: "Grain to the fence line." }),
+      (d, N, W, R0) => ({ h: "A GOOD YEAR ON THE BOTTOM LAND", s: `Grain stands to the fence on every side of the ${d.a.name}. ${N()} has hired two more hands and may hire a third.`, c: "Hands wanted." })
     ] },
   { id: "rich-herd", w: 8, find: (F) => { const p = F.of(["ranch", "stables", "racetrack", "tannery", "farmhouse"]).find(q => q.land("herd") >= 3); return p && { a: p, n: p.land("herd") }; },
     lines: [
       (d, N, W, R0) => ({ h: "GOOD GRASS, GOOD STOCK", s: `The ${d.a.name} looks out on ${d.n} squares of grazing, and ${N()} says the herd shows it.`, c: "Grazing on all sides." }),
+      (d, N, W, R0) => ({ h: "STOCK FAT AND SELLING WELL", s: `The grazing about the ${d.a.name} has done its work. Buyers came up from the city and paid without much arguing.`, c: "A good season." })
     ] },
   { id: "river-works", w: 8, find: (F) => { const p = F.of(["gristmill", "brewery", "bathhouse", "dock", "sluice", "rollermills"]).find(q => q.land("water") >= 2); return p && { a: p }; },
     lines: [
       (d, N, W, R0) => ({ h: "THE WATER DOES THE WORK", s: `The ${d.a.name} sits where the river bends, and has not wanted for power or custom since.`, c: "Hard by the water." }),
+      (d, N, W, R0) => ({ h: "THE RIVER EARNS ITS KEEP", s: `${N()} at the ${d.a.name} says the water has not failed once this season, which is more than can be said for the weather.`, c: "Never short of water." }),
+      (d, N, W, R0) => ({ h: "A GOOD SPOT ON THE BANK", s: `Whoever chose the ground for the ${d.a.name} chose it by the water, and the whole town has the benefit.`, c: "On the bank." })
     ] },
   { id: "wasted-ground", w: 9, find: (F) => { const p = F.P.find(q => q.wasted.length >= 2); return p && { a: p, n: p.wasted.length, what: TERRAIN[MAP[p.wasted[0]]].short }; },
     lines: [
       (d, N, W, R0) => ({ h: "GOOD GROUND UNDER A BAD ROOF", s: `The ${d.a.name} covers ${d.n} squares of ${d.what} and has no use for a foot of it. ${N()} calls it a waste and ${N()} agrees.`, c: `${d.what} paved over.` }),
       (d, N, W, R0) => ({ h: "SURVEYOR ANSWERS FOR THE SITE", s: `Asked why the ${d.a.name} stands on ${d.what}, the office replied that the lot was there and the ${d.what} was not going anywhere.`, c: "A questionable lot." }),
+      (d, N, W, R0) => ({ h: "A WASTE, SAYS THE VALLEY", s: `Nobody who works the land can pass the ${d.a.name} without a word about the ${d.what} beneath it.`, c: "A sore point." }),
+      (d, N, W, R0) => ({ h: "THE LAST OF THE GOOD GROUND", s: `Where there was ${d.what} on ${W()} there is now a roof, and ${N()} is not alone in minding.`, c: "Built over." })
     ] },
   { id: "hemmed-in", w: 8, find: (F) => { const p = F.P.find(q => !q.room && q.neighbours >= 2 && !q.bridge && ["home", "shop", "leisure"].includes(q.cat)); return p && { a: p }; },
     lines: [
       (d, N, W, R0) => ({ h: "NOT A FOOT TO SPARE", s: `There is no open ground left around the ${d.a.name}. What it has, it has, and the town has grown to the wall.`, c: "Built in on every side." }),
       (d, N, W, R0) => ({ h: "NO ROOM TO SWING A GATE", s: `${N()} reports the ${d.a.name} is walled in on all sides, and the cat has taken to the roof.`, c: "Hemmed in." }),
+      (d, N, W, R0) => ({ h: "BUILT IN ON EVERY SIDE", s: `The ${d.a.name} has neighbours at every wall now. ${N()} says you can hear both sides of an argument through either one.`, c: "Close quarters." })
     ] },
   { id: "stands-apart", w: 8, find: (F) => { const p = F.P.find(q => q.neighbours === 0 && q.cat !== "civic" && !q.bridge); return p && { a: p }; },
     lines: [
@@ -3759,6 +3768,8 @@ const STORIES = [
   { id: "home-no-food", w: 8, find: (F) => { const p = F.of("home").find(q => ![...touching(q.cells, q.k)].some(k => ["agri", "shop"].includes(DEF[G.pieces[k].type].cat))); return p && { a: p }; },
     lines: [
       (d, N, W, R0) => ({ h: "A LONG WALK FOR FLOUR", s: `Neither farm nor store stands beside the ${d.a.name}. ${N()} keeps a horse for the errand.`, c: "Far from the table." }),
+      (d, N, W, R0) => ({ h: "NO BAKER, NO BUTCHER, NO NOTHING", s: `The families at the ${d.a.name} send a cart to town on Saturdays and make it last the week.`, c: "A weekly errand." }),
+      (d, N, W, R0) => ({ h: "A PETITION FOR A SHOP", s: `${N()} has gathered names for a store nearer the ${d.a.name}. Every household on the row has signed it.`, c: "Names gathered." })
     ] },
   { id: "well-served", w: 7, find: (F) => F.pair("well", ["home", "agri"]),
     lines: [
@@ -3847,14 +3858,21 @@ const BOONS = [
     (d, N) => ({ h: "A PROSPECT WORTH THE PRICE", s: `The ${N()} family will tell anyone who stands still that the ${d.a.name} looks out on the water, and that the evenings are very fine.`, c: "The view, much mentioned." }),
     (d, N) => ({ h: "THE FINEST VIEW IN TOWN", s: `Every window at the ${d.a.name} faces the river, and the price of the rooms has not gone unnoticed.`, c: "On the water." }) ] },
   { id: "park-woods", a: ["park", "cemetery", "bathhouse"], land: "forest", w: 9, lines: [
-    (d, N) => ({ h: "SHADE ENOUGH FOR SUNDAY", s: `The trees around the ${d.a.name} have made it the coolest half acre in the county, and the whole town knows it.`, c: "Under the trees." }) ] },
+    (d, N) => ({ h: "SHADE ENOUGH FOR SUNDAY", s: `The trees around the ${d.a.name} have made it the coolest half acre in the county, and the whole town knows it.`, c: "Under the trees." }),
+    (d, N, W, R0) => ({ h: "THE COOLEST HALF ACRE IN TOWN", s: `On a warm Sunday there is not a bench free at the ${d.a.name}. ${N()} arrives early with a book and keeps it that way.`, c: "Shade, and plenty of it." })
+  ] },
   { id: "fair-edge", a: ["fairground", "racetrack", "station", "tradingpost"], edge: true, w: 9, lines: [
-    (d, N) => ({ h: "THE ROAD IN FILLS UP", s: `Wagons queue at the town line for the ${d.a.name}. Half the county came and the other half is expected tomorrow.`, c: "At the edge of everything." }) ] },
+    (d, N) => ({ h: "THE ROAD IN FILLS UP", s: `Wagons queue at the town line for the ${d.a.name}. Half the county came and the other half is expected tomorrow.`, c: "At the edge of everything." }),
+    (d, N, W, R0) => ({ h: "STRANGERS IN TOWN ALL WEEK", s: `Nobody within a day's ride has missed the ${d.a.name}, and the boarding houses are full of faces the town does not know.`, c: "Beds all taken." }),
+    (d, N, W, R0) => ({ h: "BUILT WHERE THE ROAD COMES IN", s: `${N()} reckons the ${d.a.name} takes more custom from outside the town than in it, which was rather the idea.`, c: "The first thing you see." })
+  ] },
   { id: "theater-homes", a: ["theater", "opera", "saloon", "hotel"], near: "home", n: 2, w: 9, lines: [
     (d, N) => ({ h: "A FULL HOUSE EVERY NIGHT", s: `With ${d.n} households at its door, the ${d.a.name} has not played to an empty room since it opened.`, c: "The pride of the street." }),
     (d, N, W) => ({ h: "THE HEART OF THE TOWN", s: `${W()} has taken the ${d.a.name} for its own. ${N()} claims a seat by right of habit.`, c: "Beloved, and busy." }) ] },
   { id: "track-homes", a: ["racetrack", "plaza", "park"], near: "home", n: 2, w: 10, lines: [
-    (d, N) => ({ h: "A LANDMARK, AND EVERYBODY SAYS SO", s: `${d.n} households live within sight of the ${d.a.name}. Sunday belongs to it.`, c: "The town's own." }) ] },
+    (d, N) => ({ h: "A LANDMARK, AND EVERYBODY SAYS SO", s: `${d.n} households live within sight of the ${d.a.name}. Sunday belongs to it.`, c: "The town's own." }),
+    (d, N, W, R0) => ({ h: "EVERY WINDOW HAS A VIEW OF IT", s: `The families about the ${d.a.name} can watch the whole business from their own porches, and do.`, c: "Watched from the porch." })
+  ] },
   { id: "jail-sheriff", a: "jail", nearType: ["sheriff", "courthouse", "saloon"], w: 10, lines: [
     (d, N) => ({ h: "LAW AND ORDER, ALL IN A ROW", s: `The ${d.a.name} stands beside the ${d.b.name}, which the sheriff calls sensible and the prisoners call unlucky.`, c: "Arranged for convenience." }) ] },
   { id: "toll-bridge2", a: "tollhouse", nearType: ["bridge", "coveredbridge"], w: 9, lines: [
@@ -3875,20 +3893,62 @@ const MISSED = [
   { id: "quiet-lost", types: ["cemetery", "library", "sanitarium"], test: (r) => r.k === "without", w: 10, lines: [
     (d, N) => ({ h: "QUIET LOST AT THE LAST", s: `The ${d.a.name} was laid out for peace, and the town has built up to its fence on every side.`, c: "Peace, formerly." }) ] },
   { id: "land-lost", types: ["mine", "lumber", "windmill", "ranch", "sluice", "kiln"], test: (r) => r.k === "land", w: 8, lines: [
-    (d, N) => ({ h: "NOTHING UNDER IT WORTH DIGGING", s: `The ${d.a.name} stands on ground that gives it nothing. ${N()} says the site was chosen in a hurry.`, c: "The wrong ground entirely." }) ] },
+    (d, N) => ({ h: "NOTHING UNDER IT WORTH DIGGING", s: `The ${d.a.name} stands on ground that gives it nothing. ${N()} says the site was chosen in a hurry.`, c: "The wrong ground entirely." }),
+    (d, N, W, R0) => ({ h: "A SITE CHOSEN IN HASTE", s: `The men at the ${d.a.name} have little to show for the week. Those who know the ground could have told them so.`, c: "Poor prospects." })
+  ] },
 ];
 
-/* What a trophy looked like from the street. */
+/*
+  What a trophy looked like from the street. A paper does not know what a district multiplier is: it knows that
+  wagons came three times this month and that the neighbours have stopped writing letters. Three wordings each,
+  and a paper runs at most one of these, so a town full of trophies does not read like a scoreboard.
+*/
 const TROPHY_LINES = {
-  jackpot: [(d, N) => ({ h: "THE TALK OF THE VALLEY", s: `Nothing the town has built came together like the ${d.a.name}. ${N()} has been telling the story all week.`, c: "The move of the year." })],
-  district: [(d, N) => ({ h: "THE QUARTER IS COMPLETE", s: `The ${d.a.name} filled the last gap, and the whole district gains by it.`, c: "A full quarter." })],
-  combo: [(d, N) => ({ h: "EVERY NEIGHBOUR A GOOD ONE", s: `The ${d.a.name} could not have asked for a better street if it had drawn the plan itself.`, c: "Well surrounded." })],
-  quadruple: [(d, N) => ({ h: "FOUR GOOD NEIGHBOURS", s: `Four of a kind stand at the door of the ${d.a.name}, and the takings show it.`, c: "Four at the door." })],
-  triple: [(d, N) => ({ h: "THREE AT THE DOOR", s: `Three of a kind beside the ${d.a.name}, which ${N()} calls either luck or a fine eye for a lot.`, c: "Three neighbours, well chosen." })],
-  perfect: [(d, N) => ({ h: "EVERY FOOT OF IT USEFUL", s: `Not a square under the ${d.a.name} is wasted. The surveyor has been asked to do it again elsewhere.`, c: "A perfect fit to the ground." })],
-  boost: [(d, N) => ({ h: "THE WHOLE STREET GAINS", s: `Three neighbours of the ${d.a.name} are better off since it opened, and two of them admit it.`, c: "A rising street." })],
-  snug: [(d, N) => ({ h: "FITTED LIKE A KEYSTONE", s: `The ${d.a.name} went into the last gap on the street with nothing to spare on any side.`, c: "Not a gap left." })],
-  spoiler: [(d, N) => ({ h: "THE NEW ARRIVAL COSTS THE STREET", s: `Neighbours of the ${d.a.name} are worse off than they were, and have said so at length.`, c: "An unwelcome arrival." })],
+  jackpot: [
+    (d, N, W) => ({ h: "THE TALK OF THE VALLEY", s: `Half the county has been by to look at the ${d.a.name}. ${N()} brought a camera and used the whole plate.`, c: `The ${d.a.name}, much visited.` }),
+    (d, N, W) => ({ h: `A FINE WEEK FOR ${W().toUpperCase()}`, s: `Since the ${d.a.name} opened its doors, nobody on the street has talked of much else.`, c: "The week's business." }),
+    (d, N, W) => ({ h: "EVERYBODY PLEASED WITH THEMSELVES", s: `The council, the builders and ${N()} have each claimed the credit for the ${d.a.name}. The town does not much mind who is right.`, c: "Credit where it is due." }),
+  ],
+  district: [
+    (d, N, W) => ({ h: "QUAINT NEIGHBOURHOOD DRAWS CROWDS", s: `What began as one roof on ${W()} is a proper neighbourhood now, and Sunday visitors come out to walk it.`, c: "A corner worth the walk." }),
+    (d, N, W) => ({ h: "THE QUARTER FILLS UP", s: `With the ${d.a.name} finished, the last gap on ${W()} is closed. ${N()} says it feels like a town at last.`, c: "No gaps left." }),
+    (d, N, W) => ({ h: "A STREET WITH A NAME OF ITS OWN", s: `The families around the ${d.a.name} have taken to calling their corner by its own name, and the post office is minded to allow it.`, c: "Lately christened." }),
+  ],
+  combo: [
+    (d, N, W) => ({ h: "GOOD NEIGHBOURS ALL ROUND", s: `Not a soul beside the ${d.a.name} has a complaint to make, which this paper notes is a first.`, c: "Nobody complaining." }),
+    (d, N, W) => ({ h: "THE BEST CORNER IN TOWN", s: `${N()} will tell you the corner by the ${d.a.name} has everything a family needs inside a hundred yards.`, c: "Everything to hand." }),
+    (d, N, W) => ({ h: "A HAPPY ACCIDENT OF PLANNING", s: `Nobody quite meant the ${d.a.name} to land in such good company, and nobody is arguing with it.`, c: "Well placed, by luck or by wit." }),
+  ],
+  quadruple: [
+    (d, N, W) => ({ h: `BUILDING BOOM ON ${W().toUpperCase()}`, s: `Four more have gone up at the door of the ${d.a.name} this season, and ${N()} has given up keeping count.`, c: "One street, four new roofs." }),
+    (d, N, W) => ({ h: "THE STREET IS UNRECOGNISABLE", s: `Those who remember the ${d.a.name} standing alone would not know the place now.`, c: "Filled in within the year." }),
+    (d, N, W) => ({ h: "WAGONS AGAIN ON ${W}".replace("${W}", "THE ROAD"), s: `A fourth family has moved in beside the ${d.a.name}. The road has not been quiet since spring.`, c: "Another arrival." }),
+  ],
+  triple: [
+    (d, N, W) => ({ h: "THREE MORE MOVE IN", s: `Wagons came three times this month to the lots beside the ${d.a.name}. The street is filling fast.`, c: "Three arrivals in a month." }),
+    (d, N, W) => ({ h: "A GROWING CORNER", s: `${N()}, who remembers when the ${d.a.name} stood on its own, counts three new roofs beside it.`, c: "Grown in a season." }),
+    (d, N, W) => ({ h: `${W().toUpperCase()} COMES ALIVE`, s: `Where there was one building beside the ${d.a.name}, there are three, and the neighbours say it is only the start.`, c: "A street with prospects." }),
+  ],
+  perfect: [
+    (d, N, W) => ({ h: "AS IF THE GROUND WERE MEASURED FOR IT", s: `The ${d.a.name} sits on ground that suits it to the inch. The surveyor has been asked how he managed it.`, c: "A site that fits." }),
+    (d, N, W) => ({ h: "NOT AN INCH GONE TO WASTE", s: `Old hands on ${W()} say they have never seen a piece of ground used so well as under the ${d.a.name}.`, c: "Every foot at work." }),
+    (d, N, W) => ({ h: "THE RIGHT PLACE FOR IT", s: `${N()} put it plainly: the ${d.a.name} could not stand anywhere else in the county and be half as useful.`, c: "Where it belongs." }),
+  ],
+  boost: [
+    (d, N, W) => ({ h: "KEEPING THE STREET TOGETHER", s: `Residents watched the scaffolding go up with some suspicion. With the ${d.a.name} open, three of them now allow it has been the making of the street.`, c: "Suspicion, then relief." }),
+    (d, N, W) => ({ h: "NEIGHBOURS WON OVER", s: `There were letters to this paper when ground was broken for the ${d.a.name}. There have been none since it opened.`, c: "The letters have stopped." }),
+    (d, N, W) => ({ h: `TRADE IS UP ON ${W().toUpperCase()}`, s: `Business has improved on every side of the ${d.a.name}, and ${N()} has taken to leaving the shutters open late.`, c: "Open late, lately." }),
+  ],
+  snug: [
+    (d, N, W) => ({ h: `THE LAST LOT ON ${W().toUpperCase()}`, s: `With the ${d.a.name} finished there is not an empty lot left on the street. Late arrivals must look elsewhere.`, c: "Nothing left to buy." }),
+    (d, N, W) => ({ h: "A GAP CLOSED AT LAST", s: `The ${d.a.name} has gone into the last space on the row, and the row is the better for it.`, c: "The row, completed." }),
+    (d, N, W) => ({ h: "NO ROOM FOR LATECOMERS", s: `${N()}, who had hoped to build beside the ${d.a.name}, will be building on the far side of town instead.`, c: "Hopes moved elsewhere." }),
+  ],
+  spoiler: [
+    (d, N, W) => ({ h: "NEIGHBOURS UNIMPRESSED", s: `The arrival of the ${d.a.name} has not been welcomed on ${W()}, and two households have said so in writing.`, c: "An unwelcome arrival." }),
+    (d, N, W) => ({ h: "A MIXED WELCOME", s: `${N()} says the ${d.a.name} has taken the shine off the whole row. Its proprietor disagrees, at length.`, c: "Opinions differ." }),
+    (d, N, W) => ({ h: "THE STREET WAS QUIETER BEFORE", s: `Whatever the ${d.a.name} has done for the town, the families beside it were happier last week.`, c: "Quieter days, lately gone." }),
+  ],
 };
 
 /* Runs the four tables over the town and returns every story that fits. */
@@ -3916,12 +3976,12 @@ function ruleStories(F, R) {
   }
   for (const p of F.P) for (const id of p.won || []) {
     if (!TROPHY_LINES[id]) continue;
-    add({ id: "trophy-" + id, w: 8, lines: TROPHY_LINES[id] }, { a: p }, p.cells);
+    add({ id: "trophy-" + id, w: 7, fam: "trophy", lines: TROPHY_LINES[id] }, { a: p }, p.cells);
   }
   return out.map(({ e, d, cells }) => {
     const N = () => `${R() < .35 ? pick(FIRSTS, R) + " " : ""}${pick(SURNAMES, R)}`;
     const W = () => pick(PLACES, R);
-    return { ...pick(e.lines, R)(d, N, W, R), w: e.w * (.35 + R() * 1.3), cells };
+    return { ...pick(e.lines, R)(d, N, W, R), w: e.w * (.35 + R() * 1.3), cells, fam: e.fam || "" };
   });
 }
 
@@ -3940,9 +4000,12 @@ function paperStories(R) {
   out.push(...ruleStories(F, R));
   out.sort((a, b) => b.w - a.w);
   const kept = [], seen = new Set();
+  let trophies = 0;
   for (const st of out) {
     const key = st.cells.slice().sort((a, b) => a - b).join(",");
     if (seen.has(key)) continue;
+    if (st.fam === "trophy" && trophies >= 1) continue;
+    if (st.fam === "trophy") trophies++;
     seen.add(key); kept.push(st);
     if (kept.length === 3) break;
   }

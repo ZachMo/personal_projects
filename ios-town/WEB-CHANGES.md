@@ -10,6 +10,23 @@ parity tests will fail.
 
 ## Waiting
 
+### The paper stops reading like a scoreboard
+
+Commit: "Hügelland: trophy stories written as news, not arithmetic", 21 September.
+
+The trophy stories read like the rules talking — "Four of a kind stand at the door of the Building, and the
+takings show it" is the district multiplier with a hat on. All nine are rewritten as local news about people:
+"QUAINT NEIGHBOURHOOD DRAWS CROWDS — What began as one roof on Comal Avenue is a proper neighbourhood now, and
+Sunday visitors come out to walk it." Three wordings each instead of one.
+
+- **A paper runs at most one trophy story** (`fam: "trophy"`, capped in `paperStories`), so a town that won eight
+  trophies no longer prints three of them. Their weight drops from 8 to 7.
+- Extra wordings for the stories a player meets most: the wasted ground, the home with no shop, the fairground at
+  the town line, the new street, the works on the river, the hemmed-in house, the works on poor ground, the park
+  in the woods, the racetrack among homes, and the rich wheat, herd and ore.
+- Measured over 100 towns, three stories each: **89 different headlines**, up from 64, and the most repeated
+  falls from 19 towns in 100 to 13. Trophy stories have left the top twelve altogether.
+
 ### The whole story library, on the buildings page
 
 Commit: "Hügelland buildings: read every newspaper story", 21 September. Web only.

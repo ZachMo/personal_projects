@@ -587,6 +587,9 @@ const DEF = {
   jail:      { name: "Jail", cat: "civic", shape: "I2", n: 1, era: 2, base: 2, roof: ["#7b7f86", "#5f636a"], emblem: "bars", style: "stone",
                roles: ["hall", "pen"], blurb: "Close to the saloons, at the edge of town.",
                rules: [{ k: "near", cats: ["leisure"], p: 2 }, { k: "edge", p: 2 }, { k: "near", cats: ["home"], p: -2 }] },
+  statue:    { name: "Founder's Statue", plural: "Founders' Statues", cat: "civic", shape: "I1", n: 1, era: 2, base: 2, draft: true,
+               roles: ["statue"], blurb: "Cast in bronze, facing the square, pigeons and all.",
+               rules: [{ k: "variety", p: 1 }, { k: "near", types: ["plaza", "park"], p: 2 }] },
   plaza:     { name: "Plaza", cat: "civic", shape: "O4", n: 1, era: 2, base: 2,
                roles: ["plaza", "plaza", "plaza", "plaza"], blurb: "An open square among shops and homes.",
                rules: [{ k: "near", cats: ["shop", "leisure"], p: 2 }, { k: "near", cats: ["home"], p: 1 }] },
@@ -672,7 +675,7 @@ const DEF = {
   drafts join the decks and the pending changes take effect, so no day's map changes partway through. Then fold
   the change into DEF, drop the flags, and move LIVE_FROM on to the next one. Nothing is staged at the moment.
 */
-const LIVE_FROM = "2026-09-21";
+const LIVE_FROM = "2026-09-22";
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const NEW_RULES = today() >= LIVE_FROM;
 if (NEW_RULES) for (const k in DEF) {
@@ -852,8 +855,18 @@ let G = null;       // what gets saved
 let MAP = null;     // terrain, rebuilt from the seed
 let OWNER = null;   // for each square, the index of the building on it, or -1
 
+/* "Zach Statue", once Zach has founded the place. */
+function statueName(player) {
+  const first = (player || "").trim().split(/\s+/)[0];
+  if (!first) return "Founder's Statue";
+  return first.charAt(0).toUpperCase() + first.slice(1) + " Statue";
+}
+
 function newGame(player, pickName, seed, daily = null) {
   seed = daily ? dailySeed(daily) : seed ?? (Math.random() * 2 ** 31) | 0;
+  // The monument carries the name of whoever founded this town, wherever a building's name is shown.
+  DEF.statue.name = statueName(player);
+  DEF.statue.plural = DEF.statue.name + "s";
   MAP = makeMap(seed);
   OWNER = new Array(N).fill(-1);
   const deck = makeDeck(seed, MAP);
@@ -1440,7 +1453,7 @@ const GROUND = {
   deck: "#c69a6b", hay: "#e5d6b7", plaza: "#e3dac7", graves: "#b3d494", pool: "#e3dac7", track: "#bddb95", tent: "#eadcb5",
   woodpile: "#c2d69b", veg: "#b99470", hedge: "#b3d494", laundry: "#e5d6b7", coop: "#dccfa4", fire: "#d2c9ba", hides: "#e5d6b7",
   anvil: "#cbc3b6", cart: "#cfc4b1", bricks: "#e5d6b7", bread: "#e9dcc0", fish: "#dfe6e3", furs: "#e5d6b7", hitch: "#e5d6b7",
-  pen: "#cdc8bf", paddock: "#bddb95", tollgate: "#d8cdb5", sacks: "#e5d6b7", derrick: "#cfc4b1", bales: "#e9e2d0", barrels: "#d8c9a8", tank: "#cfc8ba", hosecart: "#d9cdb8",
+  pen: "#cdc8bf", paddock: "#bddb95", tollgate: "#d8cdb5", sacks: "#e5d6b7", derrick: "#cfc4b1", statue: "#e3dac7", bales: "#e9e2d0", barrels: "#d8c9a8", tank: "#cfc8ba", hosecart: "#d9cdb8",
 };
 let BAKING = false;  // art is being drawn onto the baked board, so chimneys should smoke
 let NOW = 0;         // seconds, for the parts of buildings that move
@@ -1653,6 +1666,23 @@ function live(g, kind, x, y, a, r) {
       g.moveTo(px + dx * len * k / 6, py - lift + dy * len * k / 6); g.lineTo(px + dx * len * (k + 1) / 6, py - lift + dy * len * (k + 1) / 6); g.stroke();
     }
     circle(g, px, py, S * .065, "#5c4028"); circle(g, px, py, S * .035, "#8a6444");
+  } else if (kind === "pigeon") {
+    // One pigeon, on and off the founder's hat, with no respect for the occasion.
+    const T = ((t % 9) + 9) % 9;
+    if (T > 6.4) return;
+    const land = Math.min(1, T / .6), off = T > 5.8 ? (T - 5.8) / .6 : 0;
+    // It settles on the hat brim, shuffles about, and is off again.
+    const px = x + S * (.07 + .03 * Math.sin(t * 1.6)), py = y - S * (.35 + (1 - land) * .45 + off * .5);
+    ellipse(g, px, py, S * .075, S * .05, "#8a929b");
+    ellipse(g, px - S * .03, py - S * .02, S * .045, S * .03, "#a8b0b8");
+    circle(g, px + S * .06, py - S * .035, S * .032, "#9aa2ab");
+    circle(g, px + S * .078, py - S * .04, S * .01, "#3d4148");
+    g.fillStyle = "#d8a24a"; g.beginPath(); g.moveTo(px + S * .09, py - S * .03); g.lineTo(px + S * .12, py - S * .025); g.lineTo(px + S * .09, py - S * .012); g.closePath(); g.fill();
+    if (land < 1 || off > 0) {
+      const flap = Math.sin(t * 22) * S * .06;
+      g.strokeStyle = "#8a929b"; g.lineWidth = Math.max(1.4, S * .028); g.lineCap = "round";
+      g.beginPath(); g.moveTo(px - S * .07, py - flap); g.lineTo(px - S * .02, py - S * .01); g.lineTo(px + S * .04, py - flap); g.stroke();
+    }
   } else if (kind === "pumpjack") {
     // A walking beam nods over the wellhead: the horse head dips to the ground and lifts again, and the
     // counterweight at the other end swings the opposite way. Seen from the side, like the mine's headframe.
@@ -2347,6 +2377,21 @@ function groundDetail(g, role, i, x, y, S, horiz) {
     g.fillStyle = "#7a5634"; g.fillRect(bx - S * .06, by - S * .06, S * .12, S * .12);
     circle(g, bx, by, S * .03, "#f2c94c");
     alive(g, "tollbar", x, y, hash(i, 8), horiz ? 1 : 0);
+  } else if (role === "statue") {
+    // Paving, a plinth, and the founder in bronze with one arm out.
+    g.fillStyle = "#d8cfba"; g.beginPath(); rr(g, x + S * .12, y + S * .12, S * .76, S * .76, S * .08); g.fill();
+    g.strokeStyle = "#c6bca4"; g.lineWidth = Math.max(1, S * .02);
+    g.beginPath(); g.moveTo(x + S * .12, y + S * .5); g.lineTo(x + S * .88, y + S * .5); g.moveTo(x + S * .5, y + S * .12); g.lineTo(x + S * .5, y + S * .88); g.stroke();
+    ellipse(g, cx + S * .03, cy + S * .17, S * .2, S * .09, "rgba(40,30,20,.22)");
+    g.fillStyle = "#b8ae97"; g.beginPath(); rr(g, cx - S * .15, cy - S * .02, S * .3, S * .22, S * .03); g.fill();
+    g.fillStyle = "#cfc5ad"; g.beginPath(); rr(g, cx - S * .12, cy - S * .05, S * .24, S * .07, S * .02); g.fill();
+    g.fillStyle = "#6f7f6a";
+    g.beginPath(); rr(g, cx - S * .07, cy - S * .26, S * .14, S * .24, S * .05); g.fill();
+    g.strokeStyle = "#6f7f6a"; g.lineWidth = Math.max(1.4, S * .035); g.lineCap = "round";
+    g.beginPath(); g.moveTo(cx + S * .03, cy - S * .2); g.lineTo(cx + S * .17, cy - S * .27); g.stroke();
+    circle(g, cx, cy - S * .28, S * .055, "#7f8f78");
+    g.fillStyle = "#5d6b59"; g.beginPath(); g.ellipse(cx, cy - S * .31, S * .085, S * .035, 0, 0, Math.PI * 2); g.fill();
+    alive(g, "pigeon", cx, cy, hash(i, 8));
   } else if (role === "derrick") {
     ellipse(g, cx + S * .02, cy + S * .2, S * .3, S * .12, "rgba(40,30,20,.16)");
     g.fillStyle = "#b9ae99"; g.beginPath(); rr(g, x + S * .16, y + S * .2, S * .68, S * .6, S * .06); g.fill();
@@ -3399,7 +3444,7 @@ const cloudHead = () => ({ "Content-Type": "application/json", apikey: CLOUD.key
   compares it with the one on the site whenever it comes back into view. A page behind the site reloads: at
   once if no town is under way, otherwise at the next town, which is a safe moment to change the rules.
 */
-const BUILD = "2026-09-22T01:35Z";
+const BUILD = "2026-09-22T01:45Z";
 let STALE = false;
 async function checkBuild() {
   if (LOCAL) return;

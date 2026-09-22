@@ -10,6 +10,21 @@ parity tests will fail.
 
 ## Waiting
 
+### A statue of whoever founded the town
+
+Commit: "Hügelland: a statue of the founder", staged for 22 September (`LIVE_FROM`, draft until then).
+
+One square, civic, era 2, one to a deck, base 2. **+1 for each kind of building next to it** and **+2 beside a
+Plaza or a Park**: a monument wants a crossroads and a square, not a quiet lane. Dealt in about one map in six.
+
+It carries the founder's name. `statueName(player)` makes "Zach Statue", and `newGame` writes it into
+`DEF.statue.name` and `.plural` when a town is founded, so every place a building's name appears — the panel, the
+card, To come, the summary, the paper — says "Zach Statue". A game with no name given keeps "Founder's Statue".
+iOS will want the same trick wherever it reads a building's name.
+
+New ground art `statue` (paving, a plinth, the founder in bronze with an arm out) and a live part `pigeon`: it
+lands on the hat brim, shuffles about for five seconds, and leaves. With it the library is 71 kinds.
+
 ### The paper stops reading like a scoreboard
 
 Commit: "Hügelland: trophy stories written as news, not arithmetic", 21 September.

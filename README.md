@@ -1,6 +1,6 @@
 # personal_projects
 
-Seven pages. Each one is a single HTML file with no build step, no dependencies and no
+Eight pages. Each one is a single HTML file with no build step, no dependencies and no
 network calls. Open any of them in a browser.
 
 ## fall.html
@@ -449,6 +449,21 @@ There is no backend. The team and the lineup live in the browser's localStorage.
 link** puts the roster in the URL fragment, so a coach can send the team to a phone or to an
 assistant coach. The fragment never reaches the server, and the page removes it from the
 address bar once it loads the team.
+
+## isabella-y-el-toro.html
+
+A concept page for a game that is not built yet: a Spanish-learning adventure for kids
+aged 8 to 14, planned for RPG Maker MZ. Isabella gets lost in Pamplona during San Fermín,
+and a runaway bull chases her through the old town. She calms him with Spanish in battles
+where nobody gets hurt, and in the end she learns he was only trying to get out.
+
+The page covers the story, the four acts with sample dialogue and the words each one teaches,
+how the encounters work, and the color plan. The city is only yellow, red and black, and green
+and blue appear for the first time in the final field. The six scenes are flat SVG mockups at
+MZ's screen size, embedded in the page.
+
+The fonts are embedded too, so the page makes no network calls. It is built from a separate
+project folder by `tools/build_concept_page.py`, and this file is a copy of its standalone output.
 
 ## ios-town/
 

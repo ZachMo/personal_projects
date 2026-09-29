@@ -147,11 +147,15 @@
   .warn { background: var(--warn-wash); color: var(--warn); font-size: .8rem; padding: 7px 10px; border-radius: 8px; margin: 0; }
 
   .lights { display: flex; flex-wrap: wrap; gap: 6px; }
-  .lights button {
-    padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
-    cursor: pointer; font-size: .8rem; font-weight: 600;
+  .chip {
+    display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
   }
-  .lights button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-wash); }
+  .chip.on { border-color: var(--accent); background: var(--accent-wash); }
+  .chip button { border: 0; background: none; cursor: pointer; font-size: .8rem; font-weight: 600; padding: 5px 4px 5px 11px; border-radius: 999px; }
+  .chip button.x { padding: 5px 9px 5px 5px; color: var(--muted); font-size: .95rem; line-height: 1; }
+  .chip button.x:hover { color: var(--warn); }
+  .btn.danger { color: var(--warn); border-color: var(--warn); background: transparent; }
+  .btn.danger:hover { background: var(--warn-wash); }
   .adders { display: flex; flex-wrap: wrap; gap: 6px; }
   .where { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .pill { font-size: .74rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--accent-wash); color: var(--accent); letter-spacing: .02em; }
@@ -205,7 +209,7 @@
       <canvas id="view" width="10" height="10" aria-label="Coloring page preview. Drag the light handles to move lights."></canvas>
       <div class="busy" id="busy" hidden>Working…</div>
     </div>
-    <p class="hint" id="hint">Drag a light's handle, or drag anywhere to move the selected light. The dotted border is outside the page, so a light there is out of frame.</p>
+    <p class="hint" id="hint">Drag a light's handle, or drag anywhere to move the selected light. Press Delete to remove it. The dotted border is outside the page, so a light there is out of frame.</p>
     <div class="legend">
       <h2>What to lay down</h2>
       <div class="inks" id="inks"></div>
@@ -948,7 +952,7 @@ function setTool(t) {
   $('#toolRegions').setAttribute('aria-pressed', t === 'regions');
   $('#brushes').hidden = t !== 'regions';
   $('#hint').textContent = t === 'lights'
-    ? 'Drag a light\'s handle, or drag anywhere to move the selected light. The dotted border is outside the page, so a light there is out of frame.'
+    ? 'Drag a light\'s handle, or drag anywhere to move the selected light. Press Delete to remove it. The dotted border is outside the page, so a light there is out of frame.'
     : 'Click or drag across shapes to paint them. "Follow the light" lets the lighting pick the marker; the others lock a shape to one marker or leave it blank.';
   if (G && hoverR >= 0) setHover(-1);
   redraw();
@@ -988,18 +992,25 @@ function buildLightUI() {
   const list = $('#lightList');
   list.innerHTML = '';
   for (const L of S.lights) {
+    const chip = document.createElement('span'); chip.className = 'chip' + (L.id === selId ? ' on' : '');
     const b = document.createElement('button'); b.type = 'button'; b.textContent = L.name;
     b.setAttribute('aria-pressed', L.id === selId);
     b.addEventListener('click', () => { selId = L.id; buildLightUI(); redraw(); });
-    list.appendChild(b);
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×';
+    x.title = 'Remove ' + L.name; x.setAttribute('aria-label', 'Remove ' + L.name);
+    x.addEventListener('click', () => removeLight(L));
+    chip.append(b, x);
+    list.appendChild(chip);
   }
   const box = $('#lightCtl'); box.innerHTML = '';
   const L = S.lights.find(l => l.id === selId);
   if (!L) { box.innerHTML = '<p class="hint">No lights yet. Add one above; the page is lit only by room light until then.</p>'; return; }
   const top = document.createElement('div'); top.className = 'where';
   top.innerHTML = `<select id="ltype" aria-label="Light type">${Object.entries(TYPE_NAME).map(([k, v]) => `<option value="${k}"${k === L.type ? ' selected' : ''}>${v}</option>`).join('')}</select>`
-    + (L.type === 'sun' ? '<span class="pill out">Always out of frame</span>' : `<span class="pill" id="lwhere"></span><button class="btn small" type="button" id="lmove"></button>`);
+    + (L.type === 'sun' ? '<span class="pill out">Always out of frame</span>' : `<span class="pill" id="lwhere"></span><button class="btn small" type="button" id="lmove"></button>`)
+    + `<button class="btn small danger" type="button" id="lrem">Remove ${L.name}</button>`;
   box.appendChild(top);
+  top.querySelector('#lrem').addEventListener('click', () => removeLight(L));
   top.querySelector('#ltype').addEventListener('change', e => {
     L.type = e.target.value;
     if (L.name.match(/^(Lamp|Spotlight|Sun \/ window|Window light)( \d+)?$/)) L.name = uniqueName(TYPE_NAME[L.type], L);
@@ -1025,15 +1036,24 @@ function buildLightUI() {
     g.querySelector('input').addEventListener('change', e => { L.glow = e.target.checked; save(); schedule(true); });
     box.appendChild(g);
   }
-  const foot = document.createElement('div'); foot.className = 'adders';
-  foot.innerHTML = '<button class="btn small ghost" type="button" id="lrem">Remove this light</button>';
-  foot.querySelector('#lrem').addEventListener('click', () => {
-    S.lights = S.lights.filter(l => l !== L); selId = S.lights.length ? S.lights[0].id : 0;
-    save(); buildLightUI(); schedule(true);
-  });
-  box.appendChild(foot);
   syncLightUI();
 }
+function removeLight(L) {
+  const i = S.lights.indexOf(L);
+  if (i < 0) return;
+  S.lights.splice(i, 1);
+  if (selId === L.id) selId = S.lights.length ? S.lights[Math.min(i, S.lights.length - 1)].id : 0;
+  save(); buildLightUI(); schedule(true);
+}
+// Delete or Backspace removes the selected light, unless you're typing in a field
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+  const t = e.target;
+  if (t.closest && t.closest('input, select, textarea, [contenteditable]')) return;
+  if (tool !== 'lights') return;
+  const L = S.lights.find(l => l.id === selId);
+  if (L) { e.preventDefault(); removeLight(L); }
+});
 function syncLightUI() {
   const L = S.lights.find(l => l.id === selId);
   if (!L) return;

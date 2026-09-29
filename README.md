@@ -1,6 +1,6 @@
 # personal_projects
 
-Eight pages. Each one is a single HTML file with no build step, no dependencies and no
+Nine pages. Each one is a single HTML file with no build step, no dependencies and no
 network calls. Open any of them in a browser.
 
 ## fall.html
@@ -464,6 +464,25 @@ MZ's screen size, embedded in the page.
 
 The fonts are embedded too, so the page makes no network calls. It is built from a separate
 project folder by `tools/build_concept_page.py`, and this file is a copy of its standalone output.
+
+## two-marker.html
+
+A planner for coloring a page with only two markers: a light one for where the light falls
+and a dark one for shadow, each laid down in one to four passes for deeper tones. Open a
+photo or scan of an uncolored coloring page (or drop or paste one in) and the page shows how
+it could be colored, updating as you move the lights.
+
+The page finds the enclosed shapes between the lines. Each light is a **Lamp**, a
+**Spotlight** with an aim and a beam width, or a **Sun / window** that shines in from off the
+page. The dotted margin around the page is out of frame, so dragging a lamp or spotlight
+there lights the page from outside it. A lamp inside the frame can light up the shape it sits
+in, like a glowing lampshade. Shapes get a rounded, pillow-like shading, and smaller shapes
+cast shadows onto the larger shapes behind them, pointing away from each light.
+
+**Paint regions** lets a shape follow the light, stay in one marker, or stay bare paper. The
+legend lists each tone to lay down and how much of the page it covers. **Save reference PNG**
+makes a sheet with the colored page and that list, to keep beside the real page while
+coloring. Settings and lights stay in localStorage. The image never leaves the browser.
 
 ## ios-town/
 

@@ -1105,6 +1105,10 @@ function audioInit() {
   }
   if (AC && AC.state === 'suspended') AC.resume();
 }
+// Browsers only allow sound after a click, key press or tap; a controller button does not count.
+// So unlock it on the first one of those, whenever it happens.
+for (const t of ['pointerdown', 'keydown', 'touchstart']) addEventListener(t, audioInit, { capture: true, passive: true });
+function soundLocked() { return !muted && (!AC || AC.state !== 'running'); }
 function tone(f1, f2, dur, type, vol) {
   if (!AC || muted) return;
   const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
@@ -1808,6 +1812,7 @@ function drawHud() {
     ctx.globalAlpha = 1;
   });
 
+  if (soundLocked() && (S.tick >> 5) % 2) text('CLICK FOR SOUND', HUD_W - 6, S.rule === 'training' ? 22 : 6, '#ffd25a', 1, 'right');
   if (NET.role === 'guest' && NET.ping) {
     const ms = Math.round(NET.ping);
     text('PING ' + ms, HUD_W - 6, HUD_H - 34, ms < 90 ? '#8b94ad' : ms < 160 ? '#f0c040' : '#ff6a5a', 1, 'right');

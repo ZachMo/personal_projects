@@ -302,6 +302,14 @@ controller has its own jump button, so you can jump while you shoot. When a cont
 connected, the lobby shows a Controller panel: click an action, press a button, and the choice
 is saved.
 
+**Couch play and menus.** Up to four controllers can play on one computer. A controller that
+connects while you are in the lobby takes the first CPU or empty place; any place P2–P4 can also be
+set to Controller 1–4 by hand. P1 plays on the keyboard and Controller 1, unless Controller 1 is
+given to someone else. The lobby, the menu and the end screen work from a controller too: the
+stick or d-pad moves a white highlight, ✕ (A) presses, and on a dropdown steps to the next choice,
+○ (B) leaves the menu, and Options starts the match from the lobby. The end screen opens with
+Rematch highlighted.
+
 **Its own look when shared.** The page has its own icon, a pixel spartan helmet, its own theme
 color, and a link preview made from a real match frame (`spartan-brawl-card.png`), so a shared
 link no longer borrows Hügelland's.

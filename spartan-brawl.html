@@ -49,6 +49,7 @@
     padding: 6px 12px; cursor: pointer; box-shadow: 3px 3px 0 #000; }
   button:hover { border-color: var(--dim); }
   button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #000; }
+  body.padnav button:focus, body.padnav select:focus, body.padnav input:focus { outline: 3px solid #fff; outline-offset: 2px; }
   .seg button.on { background: var(--accent); color: #1a1000; border-color: #ffd27a; }
   .big { font-size: 18px; padding: 10px 22px; background: var(--accent); color: #1a1000; border-color: #ffd27a;
     text-transform: uppercase; letter-spacing: .1em; }
@@ -1066,14 +1067,12 @@ function padName(g, i) { return padFamily(g).names[i] || '#' + i; }
 const PAD_MENU = 9; // Options opens the menu, like Esc
 let padMap = Object.assign({}, PAD_DEFAULT);
 try { const m = JSON.parse(localStorage.getItem(PAD_KEY)); if (m) for (const k in PAD_DEFAULT) if (Number.isInteger(m[k])) padMap[k] = m[k]; } catch (e) {}
-function getPad() {
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  for (const g of pads) if (g && g.connected) return g;
-  return null;
-}
+// Connected controllers in a steady order: Controller 1, 2, 3, 4.
+function getPads() { return [...(navigator.getGamepads ? navigator.getGamepads() : [])].filter(g => g && g.connected); }
+function getPad(n = 0) { return getPads()[n] || null; }
 function padDown(g, i) { const b = g && g.buttons[i]; return !!(b && (b.pressed || b.value > 0.4)); }
-function padInput() {
-  const I = Object.assign({}, NO_INPUT), g = getPad();
+function padInput(n = 0) {
+  const I = Object.assign({}, NO_INPUT), g = getPad(n);
   if (!g) return I;
   const ax = g.axes[0] || 0, ay = g.axes[1] || 0;
   I.left = ax < -0.35 || padDown(g, 14); I.right = ax > 0.35 || padDown(g, 15);
@@ -1081,14 +1080,14 @@ function padInput() {
   for (const [k] of PAD_ACTIONS) I[k] = padDown(g, padMap[k]);
   return I;
 }
-function localInput(map) { // the keyboard and the controller together
-  const a = keyInput(map), b = padInput(), I = {};
+function localInput(map) { // the keyboard, plus Controller 1 unless someone else has it
+  const a = keyInput(map), b = S && S.players.some(p => p.ctrl === 'pad0') ? NO_INPUT : padInput(0), I = {};
   for (const k in NO_INPUT) I[k] = !!(a[k] || b[k]);
   return I;
 }
 function gatherInputs() {
   return S.players.map(p => p.ctrl === 'cpu' ? botInput(S, p) : p.ctrl === 'dummy' ? dummyInput(S, p)
-    : p.ctrl === 'net' ? netInput(p) : localInput(KEYMAP[p.ctrl]));
+    : p.ctrl === 'net' ? netInput(p) : /^pad\d$/.test(p.ctrl) ? padInput(+p.ctrl[3]) : localInput(KEYMAP[p.ctrl]));
 }
 
 // ============================================================================
@@ -2438,7 +2437,7 @@ const CFG_KEY = 'spartan-brawl-lobby', NAME_KEY = 'spartan-brawl-name';
 let cfg = { mode: 'ffa', rule: 'lives', map: 'random', skill: 'normal', set: 'standard', teamColors: [0, 1],
   slots: [{ ctrl: 'A', color: 2 }, { ctrl: 'cpu', color: 0 }, { ctrl: 'off', color: 1 }, { ctrl: 'off', color: 5 }] };
 try { const saved = JSON.parse(localStorage.getItem(CFG_KEY)); if (saved && saved.slots) cfg = Object.assign(cfg, saved); } catch (e) {}
-cfg.slots.forEach((sl, i) => { sl.ctrl = i === 0 ? 'A' : sl.ctrl === 'off' ? 'off' : 'cpu'; }); // P1 is you; the rest are CPUs
+cfg.slots.forEach((sl, i) => { sl.ctrl = i === 0 ? 'A' : /^(off|pad[0-3])$/.test(sl.ctrl) ? sl.ctrl : 'cpu'; }); // P1 is you
 function saveCfg() { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} }
 function saveName(n) { try { localStorage.setItem(NAME_KEY, n); } catch (e) {} }
 try { $('nameIn').value = localStorage.getItem(NAME_KEY) || ''; } catch (e) {}
@@ -2479,7 +2478,13 @@ function slotRow(i) {
   } else {
     const sel = document.createElement('select');
     sel.setAttribute('aria-label', 'Player ' + (i + 1));
-    [['cpu', 'CPU'], ['off', 'Off']].forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); });
+    const n = getPads().length;
+    [['cpu', 'CPU'], ['pad0', 'Controller 1'], ['pad1', 'Controller 2'], ['pad2', 'Controller 3'], ['pad3', 'Controller 4'], ['off', 'Off']]
+      .forEach(([v, t]) => {
+        const o = document.createElement('option'); o.value = v;
+        o.textContent = t + (/^pad/.test(v) && +v[3] >= n ? ' (not connected)' : '');
+        sel.appendChild(o);
+      });
     sel.value = sl.ctrl;
     sel.onchange = () => { sl.ctrl = sel.value; saveCfg(); renderLobby(); };
     row.appendChild(sel);
@@ -2603,7 +2608,11 @@ $('tabs').addEventListener('click', e => {
 function problem() {
   if (cfg.mode === 'training') return null;
   const on = cfg.slots.filter(s => s.ctrl !== 'off');
-  if (on.length < 2) return 'Turn on at least one CPU.';
+  if (on.length < 2) return 'Turn on at least one other player.';
+  const pads = on.filter(s => /^pad/.test(s.ctrl)).map(s => s.ctrl);
+  if (new Set(pads).size < pads.length) return 'Each controller can only play one spartan.';
+  const n = getPads().length, missing = pads.find(c => +c[3] >= n);
+  if (missing) return 'Controller ' + (+missing[3] + 1) + ' is not connected. Press a button on it.';
   if (cfg.mode === 'team') {
     const t0 = cfg.slots.slice(0, 2).some(s => s.ctrl !== 'off'), t1 = cfg.slots.slice(2).some(s => s.ctrl !== 'off');
     if (!t0 || !t1) return 'Each team needs at least one player.';
@@ -2672,6 +2681,7 @@ function showEnd() {
   $('toLobby').textContent = guest ? 'Leave game' : 'Lobby';
   $('endNote').textContent = guest ? 'Waiting for the host to start a rematch.' : 'Enter: rematch · Esc: lobby';
   $('end').classList.remove('hidden');
+  if (getPads().length) padFocus(defaultFocus($('end')));
 }
 function fullscreen() {
   const d = document.documentElement;
@@ -2777,20 +2787,90 @@ function renderPad() {
     : 'Click an action, then press a button. Stick: move, and aim while shooting.';
 }
 $('padReset').onclick = () => { padMap = Object.assign({}, PAD_DEFAULT); padWait = null; try { localStorage.setItem(PAD_KEY, JSON.stringify(padMap)); } catch (e) {} renderPad(); };
-addEventListener('gamepadconnected', renderPad);
-addEventListener('gamepaddisconnected', renderPad);
+addEventListener('gamepadconnected', e => {
+  const n = getPads().indexOf(e.gamepad);
+  if (n >= 1 && tab === 'local' && !NET.role && !$('lobby').classList.contains('hidden') && cfg.mode !== 'training'
+      && !cfg.slots.some(sl => sl.ctrl === 'pad' + n)) {
+    const sl = cfg.slots.find((x, i) => i > 0 && (x.ctrl === 'cpu' || x.ctrl === 'off'));
+    if (sl) { sl.ctrl = 'pad' + n; saveCfg(); status('Controller ' + (n + 1) + ' joined as P' + (cfg.slots.indexOf(sl) + 1) + '.', true); }
+  }
+  renderLobby(); renderPad();
+});
+addEventListener('gamepaddisconnected', () => { renderLobby(); renderPad(); });
+// --- moving around the lobby and menus with a controller ---
+function uiScreen() { for (const id of ['end', 'pause', 'lobby']) if (!$(id).classList.contains('hidden')) return $(id); return null; }
+function focusables(root) {
+  return [...root.querySelectorAll('button, select, input')].filter(el => el.offsetParent !== null && !el.disabled
+    && !(el.closest('.seg') && el.closest('.seg').style.pointerEvents === 'none'));
+}
+function defaultFocus(root) {
+  const pick = { end: $('again').classList.contains('hidden') ? 'toLobby' : 'again', pause: 'resume', lobby: 'start' }[root.id];
+  const el = $(pick);
+  return el && el.offsetParent !== null ? el : focusables(root)[0];
+}
+function padFocus(el) { if (!el) return; document.body.classList.add('padnav'); el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'nearest' }); }
+function navMove(dx, dy) { // move to the nearest control in that direction
+  const root = uiScreen(); if (!root) return;
+  const list = focusables(root), cur = document.activeElement;
+  if (!list.includes(cur)) { padFocus(defaultFocus(root)); return; }
+  const r = cur.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  let best = null, bd = 1e9;
+  for (const el of list) {
+    if (el === cur) continue;
+    const q = el.getBoundingClientRect(), ex = q.left + q.width / 2 - cx, ey = q.top + q.height / 2 - cy;
+    const along = dx ? ex * dx : ey * dy, across = dx ? Math.abs(ey) : Math.abs(ex);
+    if (along <= 4) continue;
+    const d = along + across * 2.5;
+    if (d < bd) { bd = d; best = el; }
+  }
+  if (best) padFocus(best);
+}
+function navPress() { // ✕: press the highlighted control; on a dropdown, step to the next choice
+  const root = uiScreen(), el = document.activeElement;
+  if (!root || !focusables(root).includes(el)) { padFocus(root && defaultFocus(root)); return; }
+  const at = focusables(root).indexOf(el);
+  setTimeout(() => { // the lobby may redraw that row: keep the highlight in the same place
+    const scr = uiScreen();
+    if (scr && !focusables(scr).includes(document.activeElement)) padFocus(focusables(scr)[Math.min(at, focusables(scr).length - 1)]);
+  }, 0);
+  if (el.tagName === 'SELECT') { el.selectedIndex = (el.selectedIndex + 1) % el.options.length; el.dispatchEvent(new Event('change')); }
+  else if (el.tagName === 'BUTTON') el.click();
+  else el.focus();
+}
+addEventListener('mousedown', () => document.body.classList.remove('padnav'));
+let navHeld = { k: null, t: 0, next: 0 };
 function pollPad() {
-  const g = getPad();
+  const pads = getPads(), g = pads[0] || null;
   if (!!g !== padSeen && !$('lobby').classList.contains('hidden')) renderPad();
-  if (!g) { padPrev = []; return; }
-  const now = g.buttons.map((b, i) => padDown(g, i)), pressed = i => now[i] && !padPrev[i];
+  if (!pads.length) { padPrev = []; return; }
+  // every controller can drive the menus: merge them
+  const now = [], dir = { x: 0, y: 0 };
+  for (const p of pads) {
+    p.buttons.forEach((b, i) => { now[i] = now[i] || padDown(p, i); });
+    const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
+    if (ax < -0.5 || padDown(p, 14)) dir.x = -1; else if (ax > 0.5 || padDown(p, 15)) dir.x = 1;
+    if (ay < -0.5 || padDown(p, 12)) dir.y = -1; else if (ay > 0.5 || padDown(p, 13)) dir.y = 1;
+  }
+  const pressed = i => now[i] && !padPrev[i];
   if (padWait) { // remapping: the first button pressed takes the action
     const i = now.findIndex((d, j) => d && !padPrev[j] && j !== PAD_MENU);
     if (i >= 0) { padMap[padWait] = i; padWait = null; try { localStorage.setItem(PAD_KEY, JSON.stringify(padMap)); } catch (e) {} renderPad(); }
-  } else {
-    const endShown = S && S.phase === 'over' && !$('end').classList.contains('hidden');
-    if (pressed(PAD_MENU)) { if (endShown) { if (NET.role !== 'guest') toLobby(); } else if (S) setPaused(!menuOpen()); }
-    if (endShown && pressed(padMap.jump) && NET.role !== 'guest') startMatch();
+    padPrev = now; return;
+  }
+  const endShown = S && S.phase === 'over' && !$('end').classList.contains('hidden'), root = uiScreen();
+  if (pressed(PAD_MENU)) {
+    if (endShown) { if (NET.role !== 'guest') toLobby(); }
+    else if (S) { setPaused(!menuOpen()); if (menuOpen()) padFocus(defaultFocus($('pause'))); }
+    else if (root && root.id === 'lobby' && !$('start').classList.contains('hidden')) $('start').click();
+  } else if (root) {
+    // stick or d-pad moves the highlight: once on the push, then repeating while held
+    const k = dir.x || dir.y ? dir.x + ',' + dir.y : null, t = performance.now();
+    if (k && (k !== navHeld.k || t >= navHeld.next)) {
+      navHeld = { k, t, next: t + (k !== navHeld.k ? 380 : 130) };
+      navMove(dir.y ? 0 : dir.x, dir.y);
+    } else if (!k) navHeld.k = null;
+    if (pressed(0)) navPress(); // ✕ (A) presses, whatever jump is mapped to
+    if (pressed(1) && root.id === 'pause') setPaused(false); // ○ (B) backs out of the menu
   }
   padPrev = now;
 }

@@ -302,6 +302,15 @@ controller has its own jump button, so you can jump while you shoot. When a cont
 connected, the lobby shows a Controller panel: click an action, press a button, and the choice
 is saved.
 
+**Music.** Each map has an original chiptune loop, played by synth voices the way an old console
+would: a pulse-wave lead, a triangle bass, fast arpeggios and noise drums. Canyon, Ring Station
+and Training play *Battle* (A minor, 140 BPM); Frostbite and Deep Lab play *Frozen* (D minor,
+112 BPM); Magma Forge plays *Inferno* (E minor, 168 BPM). Each song plays through twice before it
+repeats, fuller the second time, and a short jingle plays when a match ends. Music is scheduled
+on the audio clock, a fifth of a second ahead, so the beat stays steady when the frame rate
+drops. The lobby has a Music on/off button, and M still mutes everything. There are no audio
+files: every sound is made in the browser.
+
 **Couch play and menus.** Up to four controllers can play on one computer. A controller that
 connects while you are in the lobby takes the first CPU or empty place; any place P2–P4 can also be
 set to Controller 1–4 by hand. P1 plays on the keyboard and Controller 1, unless Controller 1 is

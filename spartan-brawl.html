@@ -173,7 +173,7 @@
       <div class="cards" id="moveCards"></div>
     </div>
     <p id="err"></p>
-    <div class="actions"><button id="start" class="big">Start</button><button id="full">Fullscreen</button></div>
+    <div class="actions"><button id="start" class="big">Start</button><button id="full">Fullscreen</button><button id="musicBtn"></button></div>
   </div>
 </div>
 
@@ -1131,6 +1131,124 @@ function noise(dur, vol, freq) {
 }
 
 // ============================================================================
+// Music: original chiptune loops, played on synth voices like an old console's:
+// a pulse-wave lead, a triangle bass, fast arpeggios and noise drums.
+// ============================================================================
+const NOTE_PC = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 };
+function midi(n) { const m = /^([A-G][#b]?)(\d)$/.exec(n); return 12 * (+m[2] + 1) + NOTE_PC[m[1]]; }
+function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+const bar = s => s.split(' '); // 16 steps a bar: a note, '-' to hold it, '.' for silence
+const SONGS = {
+  battle: { bpm: 140, chords: ['A:A C E', 'F:F A C', 'C:C E G', 'G:G B D', 'A:A C E', 'F:F A C', 'G:G B D', 'E:E G# B'],
+    kick: 'x.......x.x.....', snare: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.', arpFrom: 4,
+    lead: [
+      'A4 - - E5 - - D5 - C5 - B4 - C5 - D5 -', 'C5 - - A4 - - F4 - A4 - C5 - F5 - E5 -',
+      'E5 - - G5 - - E5 - C5 - D5 - E5 - G5 -', 'D5 - - B4 - - G4 - B4 - D5 - . . . .',
+      'A5 - G5 - E5 - - - C5 - D5 - E5 - - -', 'F5 - E5 - C5 - - - A4 - C5 - F5 - - -',
+      'G5 - F5 - D5 - - - B4 - D5 - G5 - - -', 'G#5 - - - E5 - - - B4 - - - G#4 - B4 -'].map(bar) },
+  frozen: { bpm: 112, chords: ['D:D F A', 'Bb:Bb D F', 'F:F A C', 'C:C E G', 'D:D F A', 'Bb:Bb D F', 'C:C E G', 'A:A C# E'],
+    kick: 'x.........x.....', snare: '........x.......', hat: '..x...x...x...x.', arpFrom: 0,
+    lead: [
+      'D5 - - - A4 - F4 - A4 - D5 - E5 - F5 -', 'F5 - - - D5 - Bb4 - D5 - F5 - G5 - F5 -',
+      'E5 - - - C5 - A4 - C5 - F5 - E5 - C5 -', 'D5 - - - E5 - - - C5 - - - . . . .',
+      'A5 - - - F5 - - - D5 - E5 - F5 - A5 -', 'Bb5 - - - F5 - - - D5 - F5 - Bb5 - A5 -',
+      'G5 - - - E5 - - - C5 - E5 - G5 - E5 -', 'C#5 - - - E5 - - - A4 - - - . . . .'].map(bar) },
+  inferno: { bpm: 168, chords: ['E:E G B', 'C:C E G', 'D:D F# A', 'B:B D# F#', 'E:E G B', 'C:C E G', 'D:D F# A', 'B:B D# F#'],
+    kick: 'x...x...x...x...', snare: '....x.......x...', hat: 'xxxxxxxxxxxxxxxx', arpFrom: 4,
+    lead: [
+      'E5 - E5 - G5 - E5 - B5 - A5 - G5 - F#5 -', 'E5 - - - C5 - E5 - G5 - - - E5 - C5 -',
+      'F#5 - F#5 - A5 - F#5 - D6 - C6 - A5 - F#5 -', 'D#5 - - - F#5 - - - B5 - - - A5 - F#5 -',
+      'G5 - F#5 - E5 - B4 - E5 - F#5 - G5 - B5 -', 'C6 - B5 - G5 - E5 - G5 - C6 - B5 - G5 -',
+      'A5 - G5 - F#5 - D5 - F#5 - A5 - D6 - A5 -', 'B5 - - - A5 - - - F#5 - - - D#5 - B4 -'].map(bar) },
+};
+const MAP_SONG = { canyon: 'battle', ring: 'battle', training: 'battle', frost: 'frozen', lab: 'frozen', magma: 'inferno' };
+const MUSIC_KEY = 'spartan-brawl-music';
+const MUSIC = { on: true, song: null, step: 0, next: 0, out: null, pulse: null, timer: null };
+try { MUSIC.on = localStorage.getItem(MUSIC_KEY) !== 'off'; } catch (e) {}
+
+function musicVoice(f, t, dur, wave, vol) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  if (wave === 'pulse') o.setPeriodicWave(MUSIC.pulse); else o.type = wave;
+  o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.005);
+  g.gain.setValueAtTime(vol, t + Math.max(0.01, dur - 0.03));
+  g.gain.linearRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(MUSIC.out);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function musicDrum(kind, t) {
+  if (kind === 'kick') {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+    g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    o.connect(g).connect(MUSIC.out); o.start(t); o.stop(t + 0.16);
+    return;
+  }
+  const src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(), dur = kind === 'snare' ? 0.12 : 0.03;
+  src.buffer = noiseBuf; f.type = kind === 'snare' ? 'bandpass' : 'highpass'; f.frequency.value = kind === 'snare' ? 1800 : 7000;
+  g.gain.setValueAtTime(kind === 'snare' ? 0.22 : 0.07, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.connect(f).connect(g).connect(MUSIC.out); src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.01);
+}
+function musicStep(song, i, t) { // the song plays twice: the second time fuller, with the lead doubled below
+  const len = song.lead.length * 16, second = i >= len, stepLen = 60 / song.bpm / 4;
+  i %= len;
+  const b = Math.floor(i / 16), k = i % 16, lead = song.lead[b];
+  const [root, tones] = song.chords[b].split(':'), pcs = tones.split(' ');
+  const tok = lead[k];
+  if (tok !== '-' && tok !== '.') { // a lead note lasts until the next note or rest
+    let n = 1; while (k + n < 16 && lead[k + n] === '-') n++;
+    musicVoice(hz(midi(tok)), t, n * stepLen, 'pulse', 0.07);
+    if (second) musicVoice(hz(midi(tok) - 12), t, n * stepLen, 'square', 0.025);
+  }
+  if (k % 2 === 0) musicVoice(hz(midi(root + (k % 8 === 4 ? '3' : '2'))), t, stepLen * 1.8, 'triangle', 0.16); // bass
+  if (second || b >= song.arpFrom) musicVoice(hz(midi(pcs[k % 3] + '5')), t, stepLen * 0.9, 'square', 0.018); // arpeggio
+  if (song.kick[k] === 'x') musicDrum('kick', t);
+  if (song.snare[k] === 'x') musicDrum('snare', t);
+  if (song.hat[k] === 'x') musicDrum('hat', t);
+}
+function musicLevel() { return MUSIC.on && !muted ? 0.45 : 0; }
+function musicTick() { // schedule the next eighth of a second, so the beat never waits on the frame rate
+  if (!AC || !MUSIC.song || AC.state !== 'running') return;
+  if (paused) { MUSIC.next = AC.currentTime + 0.05; return; }
+  const song = SONGS[MUSIC.song], stepLen = 60 / song.bpm / 4;
+  if (MUSIC.next < AC.currentTime) MUSIC.next = AC.currentTime + 0.05;
+  while (MUSIC.next < AC.currentTime + 0.15) {
+    musicStep(song, MUSIC.step, MUSIC.next);
+    MUSIC.step = (MUSIC.step + 1) % (song.lead.length * 32);
+    MUSIC.next += stepLen;
+  }
+}
+function musicStart(mapId) {
+  audioInit();
+  musicStop();
+  if (!AC) return;
+  if (!MUSIC.pulse) { // a 25% pulse wave, the classic chiptune lead
+    const n = 32, re = new Float32Array(n), im = new Float32Array(n);
+    for (let i = 1; i < n; i++) re[i] = (2 / (i * Math.PI)) * Math.sin(i * Math.PI * 0.25);
+    MUSIC.pulse = AC.createPeriodicWave(re, im);
+  }
+  MUSIC.out = AC.createGain(); MUSIC.out.gain.value = musicLevel(); MUSIC.out.connect(AC.destination);
+  MUSIC.song = MAP_SONG[mapId] || 'battle'; MUSIC.step = 0; MUSIC.next = AC.currentTime + 0.1;
+  MUSIC.timer = setInterval(musicTick, 25);
+}
+function musicStop() {
+  clearInterval(MUSIC.timer); MUSIC.timer = null; MUSIC.song = null;
+  if (MUSIC.out && AC) { const g = MUSIC.out; g.gain.setTargetAtTime(0, AC.currentTime, 0.05); setTimeout(() => g.disconnect(), 400); }
+  MUSIC.out = null;
+}
+function musicUpdate() { if (MUSIC.out && AC) MUSIC.out.gain.setTargetAtTime(musicLevel(), AC.currentTime, 0.05); }
+function victoryJingle() {
+  if (!AC || muted || !MUSIC.on) return;
+  const out = AC.createGain(); out.gain.value = 0.45; out.connect(AC.destination);
+  const keep = MUSIC.out; MUSIC.out = out;
+  const t = AC.currentTime + 0.05, notes = [['C5', 0, 0.12], ['E5', 0.12, 0.12], ['G5', 0.24, 0.12], ['C6', 0.36, 0.24], ['G5', 0.6, 0.12], ['C6', 0.72, 0.6]];
+  for (const [n, at, d] of notes) { musicVoice(hz(midi(n)), t + at, d, 'pulse', 0.08); musicVoice(hz(midi(n) - 24), t + at, d, 'triangle', 0.14); }
+  musicDrum('kick', t); musicDrum('snare', t + 0.36); musicDrum('kick', t + 0.72);
+  MUSIC.out = keep;
+}
+
+// ============================================================================
 // Drawing. The canvas is drawn at the screen's full resolution. The world is
 // drawn through a camera that pans and zooms; the HUD is drawn on a 480x270 grid.
 // ============================================================================
@@ -1596,7 +1714,7 @@ function handleEvents(evs) {
     case 'count': tone(440, 440, 0.12, 'square', 0.04); break;
     case 'go': tone(660, 1320, 0.3, 'square', 0.05); goT = 50; break;
     case 'sudden': tone(200, 600, 0.5, 'sawtooth', 0.06); break;
-    case 'over': overT = 0; tone(523, 1046, 0.5, 'square', 0.05); break;
+    case 'over': overT = 0; musicStop(); victoryJingle(); break;
   }
 }
 function tickEffects() {
@@ -2154,6 +2272,7 @@ function onlineStart() {
   for (const k in BOT) delete BOT[k];
   resetEffects();
   S = newGame(gcfg);
+  musicStart(S.map.id);
   NET.game++;
   const meta = S.players.map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team, base: p.base, ctrl: p.ctrl === 'cpu' ? 'cpu' : 'net' }));
   for (const id in NET.peers) {
@@ -2241,6 +2360,7 @@ function guestStart(m) {
   Object.assign(NET, { snaps: [], evq: [], pending: [], hist: [0, 0], seq: 0, pred: null, offX: 0, offY: 0, clock: null, lastK: -1,
     playing: true, game: m.g, shots: [] });
   S = NET.view;
+  musicStart(map.id);
   updateCamera(true);
   acc = 0;
   ['lobby', 'pause', 'end'].forEach(id => $(id).classList.add('hidden'));
@@ -2637,12 +2757,13 @@ function startMatch() {
   for (const k in BOT) delete BOT[k];
   resetEffects();
   S = newGame(cfg);
+  musicStart(S.map.id);
   updateCamera(true);
   paused = false; acc = 0;
   ['lobby', 'pause', 'end'].forEach(id => $(id).classList.add('hidden'));
 }
 function showLobbyScreen() {
-  S = null; paused = false;
+  S = null; paused = false; musicStop();
   ['pause', 'end'].forEach(id => $(id).classList.add('hidden'));
   $('lobby').classList.remove('hidden');
   renderLobby();
@@ -2696,6 +2817,12 @@ function fullscreen() {
 
 $('start').onclick = startMatch;
 $('full').onclick = fullscreen;
+function musicLabel() { $('musicBtn').textContent = 'Music: ' + (MUSIC.on ? 'on' : 'off'); }
+$('musicBtn').onclick = () => {
+  MUSIC.on = !MUSIC.on; musicLabel(); musicUpdate();
+  try { localStorage.setItem(MUSIC_KEY, MUSIC.on ? 'on' : 'off'); } catch (e) {}
+};
+musicLabel();
 $('resume').onclick = () => setPaused(false);
 $('quit').onclick = toLobby;
 $('again').onclick = startMatch;
@@ -2714,7 +2841,7 @@ addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT') return;
   const inGame = S && !paused && S.phase !== 'over' && !menuOpen();
   if (inGame && GAME_KEYS.has(e.code)) e.preventDefault();
-  if (e.code === 'KeyM' && S) { muted = !muted; if (menuOpen()) setPaused(true); }
+  if (e.code === 'KeyM' && S) { muted = !muted; musicUpdate(); if (menuOpen()) setPaused(true); }
   if (e.code === 'KeyT' && inGame && S.rule === 'training' && !e.repeat) {
     S.dummyMode = DUMMY_MODES[(DUMMY_MODES.indexOf(S.dummyMode) + 1) % DUMMY_MODES.length];
     for (const k in BOT) delete BOT[k];

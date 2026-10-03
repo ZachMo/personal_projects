@@ -1,7 +1,8 @@
 # personal_projects
 
-Nine pages. Each one is a single HTML file with no build step, no dependencies and no
-network calls. Open any of them in a browser.
+Ten pages. Each one is a single HTML file with no build step and no dependencies. Open any
+of them in a browser. Only two talk to the network: the Hügelland leaderboard, and Spartan
+Brawl when you play it online.
 
 ## fall.html
 
@@ -253,10 +254,32 @@ shot that bends toward a foe and breaks a shield. Melee knocks a foe about 170 p
 ammo refill, damage numbers show, and each move names itself. Press T to make the dummies stand,
 shield, jump, walk or fight.
 
-**Built to go online.** The simulation is plain JavaScript with no drawing in it. It takes the
-buttons each player holds and steps the game 60 times a second. Its random numbers come from
-a seed in the game state. A server can run the same code later and send the state to every
-browser.
+**Online.** Up to four players, each on their own computer. One player presses Create game and
+gets a four-letter code and an invite link. Friends join from the Online tab. The host picks the
+mode, the rules and the map, and can set empty places to CPU. Each player picks their own color.
+
+The host's browser runs the match. The game logic is plain JavaScript with no drawing in it, so
+the host runs exactly the code a local game runs. Guests connect straight to the host over WebRTC
+data channels. They send the keys they hold 60 times a second, three inputs per packet in case one
+is lost. The host sends back the state 30 times a second.
+
+- **Your own spartan** moves the moment you press a key. The guest runs the same movement code
+  on its own spartan, then corrects itself quietly when the host's state arrives, by replaying
+  the keys the host has not seen yet. Your own shots and jumps make their sound at once.
+- **Everyone else** is drawn 83 ms in the past, between two snapshots, so they move smoothly.
+- **If a guest leaves**, a CPU takes over their spartan. If the host leaves, everyone goes back
+  to the lobby with a message. A small background timer keeps the match running if the host's
+  tab is hidden.
+
+The handshake, matching a code to a host, goes through the Supabase project the Hügelland
+leaderboard already uses: a Realtime broadcast channel named after the code, spoken to directly
+over a WebSocket with no library. Gameplay never touches Supabase, so it does not use up any
+message allowance. There is no relay (TURN) server yet. A friend on a network that blocks direct
+connections gets a message saying so.
+
+Tested with a host and a guest in one browser over a real connection: joining takes under a
+second. With 60–100 ms of delay each way and 5% of packets lost, the guest's own spartan needed
+a visible correction in 2 checks out of 60, never more than 11 px.
 
 **Balance.** Four CPUs play a 3-life match in about one and a half to three minutes. With the
 heavier guns, most lives end in a kill rather than a knock-off. CPUs never miss once they line up, so matches between people run differently.

@@ -54,6 +54,14 @@
   .moves { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 12px 0 0; font-size: 12.5px; color: var(--dim); }
   .moves b { color: var(--ink); font-weight: normal; }
   #err { color: var(--bad); min-height: 1.4em; margin: 10px 0 0; }
+  #err.ok { color: var(--dim); }
+  input { font: inherit; font-size: 16px; color: var(--ink); background: #0b0e18; border: 2px solid var(--line);
+    padding: 6px 10px; width: 9em; text-transform: uppercase; letter-spacing: .1em; }
+  input.codebox { width: 6em; }
+  .tabs { margin: 16px 0 6px; }
+  .code { font-size: 28px; letter-spacing: .25em; color: var(--accent); text-shadow: 3px 3px 0 #000; }
+  .slot .who { min-width: 9em; }
+  .slot .you { color: var(--accent); }
   .actions { display: flex; gap: 12px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
   table { border-collapse: collapse; width: 100%; margin: 8px 0 4px; }
   th, td { text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--line); }
@@ -68,23 +76,44 @@
 <div id="lobby" class="screen">
   <div class="box">
     <h1>SPARTAN BRAWL</h1>
-    <p class="sub">Local prototype. Up to two players on one keyboard, plus CPUs.</p>
-    <div class="row"><label>Mode</label><div class="seg" data-key="mode">
-      <button data-v="ffa">Free for all</button><button data-v="team">2 v 2</button>
-      <button data-v="training">Training</button></div></div>
-    <div class="row match-only"><label>Win by</label><div class="seg" data-key="rule">
-      <button data-v="lives">3 lives</button><button data-v="timer">Most kills in 3:00</button></div></div>
-    <div class="row match-only"><label>Map</label><div class="seg" data-key="map">
-      <button data-v="random">Random</button><button data-v="canyon">Canyon</button>
-      <button data-v="ring">Ring Station</button><button data-v="frost">Frostbite</button></div></div>
+    <div class="seg tabs" id="tabs"><button data-tab="local">On this computer</button><button data-tab="online">Online</button></div>
+    <div id="netStart" class="hidden">
+      <div class="row"><label for="nameIn">Name</label>
+        <input id="nameIn" maxlength="6" autocomplete="off" spellcheck="false" placeholder="6 letters"></div>
+      <div class="row"><label></label><button id="create" class="big">Create game</button></div>
+      <div class="row"><label for="codeIn">Or join</label>
+        <input id="codeIn" maxlength="4" autocomplete="off" spellcheck="false" placeholder="CODE" class="codebox">
+        <button id="join">Join</button></div>
+      <p class="note">Up to four players, each on their own computer. Whoever creates the game hosts it:
+        the host's browser runs the match, so keep that tab open and in front until you are done.</p>
+    </div>
+    <div id="room" class="hidden">
+      <div class="row"><label>Code</label><span class="code" id="roomCode"></span>
+        <button id="copyLink">Copy invite link</button><button id="leave">Leave</button></div>
+    </div>
+    <div id="settings">
+      <div class="row"><label>Mode</label><div class="seg" data-key="mode">
+        <button data-v="ffa">Free for all</button><button data-v="team">2 v 2</button>
+        <button data-v="training" class="local-only">Training</button></div></div>
+      <div class="row match-only"><label>Win by</label><div class="seg" data-key="rule">
+        <button data-v="lives">3 lives</button><button data-v="timer">Most kills in 3:00</button></div></div>
+      <div class="row match-only"><label>Map</label><div class="seg" data-key="map">
+        <button data-v="random">Random</button><button data-v="canyon">Canyon</button>
+        <button data-v="ring">Ring Station</button><button data-v="frost">Frostbite</button></div></div>
+    </div>
     <div id="slots"></div>
-    <div class="keys">
+    <div class="keys" id="keysLocal">
       <div><b>Keyboard A</b><br>
         Move <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>W</kbd> · Crouch <kbd>S</kbd><br>
         Shoot <kbd>F</kbd> or <kbd>J</kbd> · Melee <kbd>G</kbd> or <kbd>K</kbd> · Shield <kbd>H</kbd> or <kbd>L</kbd></div>
       <div><b>Keyboard B</b><br>
         Move <kbd>←</kbd> <kbd>→</kbd> · Jump <kbd>↑</kbd> · Crouch <kbd>↓</kbd><br>
         Shoot <kbd>,</kbd> · Melee <kbd>.</kbd> · Shield <kbd>/</kbd></div>
+    </div>
+    <div class="keys hidden" id="keysOnline">
+      <div><b>Controls</b><br>
+        Move <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>W</kbd> · Crouch <kbd>S</kbd>, or the arrow keys<br>
+        Shoot <kbd>J</kbd> · Melee <kbd>K</kbd> · Shield <kbd>L</kbd>, or <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd>, or <kbd>,</kbd> <kbd>.</kbd> <kbd>/</kbd></div>
     </div>
     <div class="moves">
       <b>Jump, jump</b><span>Double jump</span>
@@ -96,7 +125,8 @@
       <b>Crouch on a weapon</b><span>Swap your weapon for it</span>
     </div>
     <p class="note">Melee knocks foes away, and from behind it does double damage. The shield blocks everything
-      except a charged plasma shot, and you can move with it up. The energy sword burns out after 12 seconds. <kbd>Esc</kbd> pauses. <kbd>M</kbd> mutes.</p>
+      except a charged plasma shot, and you can move with it up. The energy sword burns out after 12 seconds.
+      <kbd>Esc</kbd> opens the menu. <kbd>M</kbd> mutes.</p>
     <p id="err"></p>
     <div class="actions"><button id="start" class="big">Start</button><button id="full">Fullscreen</button></div>
   </div>
@@ -104,7 +134,7 @@
 
 <div id="pause" class="screen clear hidden">
   <div class="box" style="width:min(360px,100%);text-align:center">
-    <h2>PAUSED</h2>
+    <h2 id="pauseTitle">PAUSED</h2>
     <div class="actions" style="justify-content:center">
       <button id="resume" class="big">Resume</button><button id="quit">Quit to lobby</button></div>
     <p class="note" id="mutenote"></p>
@@ -116,7 +146,7 @@
     <h2 id="endTitle"></h2>
     <table id="endTable"></table>
     <div class="actions"><button id="again" class="big">Rematch</button><button id="toLobby">Lobby</button>
-      <span class="note">Enter: rematch · Esc: lobby</span></div>
+      <span class="note" id="endNote">Enter: rematch · Esc: lobby</span></div>
   </div>
 </div>
 
@@ -229,8 +259,8 @@ function newGame(cfg) {
   cfg.slots.forEach((sl, i) => {
     if (sl.ctrl === 'off') return;
     const team = i < 2 ? 0 : 1;
-    add({ slot: i, team, color: COLORS[cfg.mode === 'team' ? cfg.teamColors[team] : sl.color].c, ctrl: sl.ctrl,
-      name: sl.ctrl === 'cpu' ? 'CPU' + (i + 1) : 'P' + (i + 1) }, def.spawns[cfg.mode === 'team' ? [0, 2, 1, 3][i] : i]);
+    add({ slot: i, team, color: COLORS[cfg.mode === 'team' ? cfg.teamColors[team] : sl.color].c, ctrl: sl.ctrl, peer: sl.peer,
+      name: sl.name || (sl.ctrl === 'cpu' ? 'CPU' + (i + 1) : 'P' + (i + 1)) }, def.spawns[cfg.mode === 'team' ? [0, 2, 1, 3][i] : i]);
   });
   return S;
 }
@@ -247,6 +277,7 @@ function resetBody(p, x, y) {
 function step(S, inputs) {
   S.events = [];
   if (S.phase === 'countdown') {
+    S.tick++; // the clock runs through the countdown, so guests can lock onto it
     if (S.count % 60 === 0) ev(S, 'count', { n: S.count / 60 });
     if (--S.count <= 0) { S.phase = 'play'; ev(S, 'go', {}); }
     for (const p of S.players) p.prev = inputs[p.id] || NO_INPUT;
@@ -280,12 +311,12 @@ function updatePlayer(S, p, inp) {
   if (ar.reload > 0 && --ar.reload === 0) { const n = Math.min(MAG - ar.ammo, ar.reserve); ar.ammo += n; ar.reserve -= n; }
   if (p.wpn && p.wpn.type === 'sword') {
     p.wpn.ammo -= 100 / SWORD_TIME;
-    if (p.wpn.ammo <= 0 && !p.atk) { p.wpn = null; ev(S, 'empty', { x: p.x, y: p.y - 12 }); }
+    if (p.wpn.ammo <= 0 && !p.atk) { p.wpn = null; ev(S, 'empty', { x: p.x, y: p.y - 12, id: p.id }); }
   }
 
   // Shield: works on the ground and in the air. It shrinks while held and breaks into a long daze.
   if (inp.shield && !stunned && !p.atk && p.slide <= 0 && (p.shielding ? p.shieldHp > 0 : p.shieldHp > 8)) {
-    if (!p.shielding) ev(S, 'shieldup', {});
+    if (!p.shielding) ev(S, 'shieldup', { id: p.id });
     p.shielding = true; p.spin = false; p.jet = false;
     p.shieldHp -= 0.22;
     if (p.shieldHp <= 0) { breakShield(S, p); stunned = true; }
@@ -337,7 +368,7 @@ function updatePlayer(S, p, inp) {
 
   // Jetpack: after the double jump, a fresh press of jump fires it. Hold to keep thrusting.
   if (!p.onGround && p.airJumps === 0 && !stunned && !p.shielding && p.fuel > 0 && inp.up && (p.jet || press('up'))) {
-    if (!p.jet) ev(S, 'jet', { x: p.x, y: p.y });
+    if (!p.jet) ev(S, 'jet', { x: p.x, y: p.y, id: p.id });
     p.jet = true; p.fuel--; p.ff = false; p.spin = false; p.jumping = false;
     p.vy = Math.max(JET_MAX, p.vy - JET_ACC);
   } else p.jet = false;
@@ -367,7 +398,7 @@ function updatePlayer(S, p, inp) {
     else if (wt === 'rifle') {
       if (inp.fire && p.cd <= 0 && !ar.reload) {
         if (ar.ammo > 0) fireRifle(S, p);
-        else if (press('fire')) ev(S, 'dry', {});
+        else if (press('fire')) ev(S, 'dry', { id: p.id });
       }
     } else if (wt === 'shotgun') { if (inp.fire && p.cd <= 0) fireShotgun(S, p); }
     else if (wt === 'sniper') { if (press('fire') && p.cd <= 0) fireSniper(S, p); }
@@ -377,12 +408,12 @@ function updatePlayer(S, p, inp) {
       else if (!inp.fire && p.charge > 0) { if (p.charge >= CHARGE && p.wpn) firePlasma(S, p, true); p.charge = 0; }
     }
   } else p.charge = 0;
-  if (w && w.ammo <= 0 && !p.atk) { p.wpn = null; p.charge = 0; ev(S, 'empty', { x: p.x, y: p.y - 12 }); }
-  if (!p.wpn && ar.ammo === 0 && ar.reserve > 0 && !ar.reload) { ar.reload = RELOAD; ev(S, 'reload', {}); }
+  if (w && w.ammo <= 0 && !p.atk) { p.wpn = null; p.charge = 0; ev(S, 'empty', { x: p.x, y: p.y - 12, id: p.id }); }
+  if (!p.wpn && ar.ammo === 0 && ar.reserve > 0 && !ar.reload) { ar.reload = RELOAD; ev(S, 'reload', { id: p.id }); }
 
   const wasAir = !p.onGround;
   moveBody(S, p, height(p));
-  if (p.onGround) { p.spin = false; p.jet = false; if (wasAir) ev(S, 'land', { x: p.x, y: p.y, vy: p.vy }); }
+  if (p.onGround) { p.spin = false; p.jet = false; if (wasAir) ev(S, 'land', { x: p.x, y: p.y, vy: p.vy, id: p.id }); }
   else if (p.slide > 0) { p.slide = 0; p.slideCd = 16; }
 
   const M = S.map;
@@ -402,7 +433,7 @@ function doJump(S, p, dir, spin, air) {
     ev(S, 'spin', { x: p.x, y: p.y, id: p.id });
   } else {
     p.vy = air ? JUMP2 : JUMP; p.jumping = true; p.spin = false;
-    ev(S, air ? 'jump2' : 'jump', { x: p.x, y: p.y });
+    ev(S, air ? 'jump2' : 'jump', { x: p.x, y: p.y, id: p.id });
   }
 }
 
@@ -436,7 +467,7 @@ function moveBody(S, p, h) {
 function startAtk(S, p, type) {
   p.atk = { type, t: 0, hit: [] };
   if (type === 'sword') p.wpn.ammo -= 8;
-  ev(S, type, {});
+  ev(S, type, { id: p.id });
 }
 
 function runAtk(S, p) {
@@ -465,7 +496,7 @@ function fireRifle(S, p) {
   p.ar.ammo--; p.cd = 5;
   S.bullets.push({ x: p.x + p.face * 6, y: gunY(p), vx: p.face * 7.5, vy: (rnd(S) - 0.5) * 0.7,
     o: p.id, team: p.team, dmg: 6, kbx: 1.2, kby: -0.4, stun: 0, life: 60, k: 'ar' });
-  ev(S, 'ar', {});
+  ev(S, 'ar', { id: p.id });
 }
 function fireShotgun(S, p) {
   p.wpn.ammo--; p.cd = 42;
@@ -474,22 +505,22 @@ function fireShotgun(S, p) {
       o: p.id, team: p.team, dmg: 24, kbx: 2.2, kby: -1.6, stun: 10, life: 15, life0: 15, k: 'sg' });
   }
   p.vx -= p.face * (p.onGround ? 1.5 : 2.5);
-  ev(S, 'shotgun', {});
+  ev(S, 'shotgun', { id: p.id });
 }
 function fireSniper(S, p) {
   p.wpn.ammo--; p.cd = 60;
   S.bullets.push({ x: p.x + p.face * 6, y: gunY(p), vx: p.face * 18, vy: 0,
     o: p.id, team: p.team, dmg: 100, kbx: 3, kby: -1.6, stun: 16, life: 70, k: 'sr' });
-  ev(S, 'sniper', {});
+  ev(S, 'sniper', { id: p.id });
 }
 function firePlasma(S, p, charged) {
   const b = { x: p.x + p.face * 6, y: gunY(p), vy: 0, o: p.id, team: p.team };
   if (charged) {
     S.bullets.push(Object.assign(b, { vx: p.face * 4.6, dmg: 30, kbx: 4.2, kby: -3, stun: 22, life: 110, k: 'pc', breaks: true }));
-    p.wpn.ammo -= 20; p.cd = 20; ev(S, 'pc', {});
+    p.wpn.ammo -= 20; p.cd = 20; ev(S, 'pc', { id: p.id });
   } else {
     S.bullets.push(Object.assign(b, { vx: p.face * 5.5, dmg: 12, kbx: 2, kby: -1.2, stun: 6, life: 75, k: 'pp' }));
-    p.wpn.ammo -= 5; p.cd = 9; ev(S, 'pp', {});
+    p.wpn.ammo -= 5; p.cd = 9; ev(S, 'pp', { id: p.id });
   }
 }
 
@@ -826,8 +857,11 @@ function keyInput(map) {
   for (const k in map) I[k] = map[k].some(c => held.has(c));
   return I;
 }
+KEYMAP.local = {}; // online, each player has the whole keyboard: either layout works
+for (const k in KEYMAP.A) KEYMAP.local[k] = KEYMAP.A[k].concat(KEYMAP.B[k]);
 function gatherInputs() {
-  return S.players.map(p => p.ctrl === 'cpu' ? botInput(S, p) : p.ctrl === 'dummy' ? dummyInput(S, p) : keyInput(KEYMAP[p.ctrl]));
+  return S.players.map(p => p.ctrl === 'cpu' ? botInput(S, p) : p.ctrl === 'dummy' ? dummyInput(S, p)
+    : p.ctrl === 'net' ? netInput(p) : keyInput(KEYMAP[p.ctrl]));
 }
 
 // ============================================================================
@@ -1416,7 +1450,7 @@ function drawPickup(pk) {
   const bob = Math.round(Math.sin(S.tick / 12) * 2), y = pk.y - 10 + bob;
   ctx.globalAlpha = 0.16; ctx.fillStyle = '#4ad8ff'; ctx.fillRect(pk.x - 8, y - 5, 16, 11); ctx.globalAlpha = 1;
   drawPickupIcon(pk.type, pk.x, y);
-  const near = S.players.find(p => !p.dead && !p.out && p.ctrl !== 'cpu' && p.ctrl !== 'dummy' && p.wpn &&
+  const near = S.players.find(p => !p.dead && !p.out && ['A', 'B', 'local'].includes(p.ctrl) && p.wpn &&
     p.wpn.type !== pk.type && MAXAMMO[pk.type] && Math.abs(p.x - pk.x) < 12 && Math.abs(p.y - pk.y) < 20);
   if (near) text('DOWN: SWAP', pk.x, y - 14, '#9ae8ff', 1, 'center');
 }
@@ -1537,14 +1571,425 @@ function render() {
 }
 
 // ============================================================================
+// Online play. The host's browser runs the game. Guests connect to it straight
+// (WebRTC), send their buttons 60 times a second, and draw the state the host
+// sends back 30 times a second. Supabase Realtime only carries the handshake.
+// ============================================================================
+const SIGNAL_URL = 'wss://tnaassoaraijvhswevvp.supabase.co/realtime/v1/websocket' +
+  '?apikey=sb_publishable_KSJZlg0qLmEOak6sP3WX0g_UDo8lz9Z&vsn=1.0.0';
+const ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+const BITS = ['left', 'right', 'up', 'down', 'fire', 'melee', 'shield'];
+const WPN = ['shotgun', 'sniper', 'plasma', 'sword'], ATKS = ['melee', 'sword'], BK = ['ar', 'sg', 'sr', 'pp', 'pc'];
+const PKS = ['health', 'ammo', 'shotgun', 'sniper', 'plasma', 'sword'];
+// Sounds a guest plays for its own spartan at once, instead of waiting for the host.
+const LOCAL_EV = new Set(['jump', 'jump2', 'spin', 'slide', 'jet', 'ar', 'shotgun', 'sniper', 'pp', 'pc', 'sword',
+  'melee', 'dry', 'reload', 'shieldup', 'empty', 'land']);
+const INTERP = 5; // guests draw other players 5 ticks (83 ms) in the past, between two snapshots
+
+const NET = { role: null, code: null, sig: null, me: Math.random().toString(36).slice(2, 10), peers: {},
+  host: null, room: null, mySlot: -1, playing: false, sendN: 0 };
+
+function packInput(I) { let b = 0; BITS.forEach((k, i) => { if (I[k]) b |= 1 << i; }); return b; }
+function unpackInput(b) { const I = {}; BITS.forEach((k, i) => { I[k] = !!(b & (1 << i)); }); return I; }
+const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
+function cleanName(n) { return String(n || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); }
+function makeCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)]; return c; }
+
+// --- the handshake channel: a raw Supabase Realtime broadcast, no library ---
+function openSignal(code, onMsg) {
+  return new Promise((resolve, reject) => {
+    let ws, ref = 1, hb, joined = false;
+    const topic = 'realtime:spartan-' + code;
+    try { ws = new WebSocket(SIGNAL_URL); } catch (e) { reject(e); return; }
+    const sig = {
+      send(o) {
+        if (ws.readyState === 1) ws.send(JSON.stringify({ topic, event: 'broadcast', ref: String(++ref), join_ref: '1',
+          payload: { type: 'broadcast', event: 'sig', payload: o } }));
+      },
+      close() { clearInterval(hb); try { ws.close(); } catch (e) {} },
+    };
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ topic, event: 'phx_join', ref: '1', join_ref: '1',
+        payload: { config: { broadcast: { self: false, ack: false }, presence: { key: '' }, private: false } } }));
+      hb = setInterval(() => { if (ws.readyState === 1) ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) })); }, 25000);
+    };
+    ws.onmessage = e => {
+      let m;
+      try { m = JSON.parse(e.data); } catch (x) { return; }
+      if (m.event === 'phx_reply' && m.ref === '1') {
+        joined = true;
+        if (m.payload && m.payload.status === 'ok') resolve(sig); else reject(new Error('join refused'));
+      } else if (m.event === 'broadcast' && m.payload && m.payload.payload) {
+        const o = m.payload.payload;
+        if (!o.to || o.to === NET.me) onMsg(o);
+      }
+    };
+    ws.onerror = () => { if (!joined) reject(new Error('socket')); };
+    ws.onclose = () => { clearInterval(hb); if (!joined) reject(new Error('closed')); };
+    setTimeout(() => { if (!joined) { reject(new Error('timeout')); sig.close(); } }, 8000);
+  });
+}
+function sendRel(ch, o) { if (ch && ch.readyState === 'open') ch.send(JSON.stringify(o)); }
+
+function status(msg, ok) { $('err').textContent = msg || ''; $('err').classList.toggle('ok', !!ok); }
+
+// Forget the room at once; close its connections a moment later, so a goodbye message can still go out.
+function resetNet(delay = 0) {
+  const old = { sig: NET.sig, peers: NET.peers, host: NET.host, ticker: NET.ticker };
+  clearTimeout(NET.timer);
+  Object.assign(NET, { role: null, code: null, sig: null, peers: {}, host: null, room: null, mySlot: -1, playing: false, ticker: null });
+  setTimeout(() => {
+    if (old.sig) old.sig.close();
+    for (const id in old.peers) { try { old.peers[id].pc.close(); } catch (e) {} }
+    if (old.host) { try { old.host.pc.close(); } catch (e) {} }
+    if (old.ticker) old.ticker.terminate();
+  }, delay);
+}
+
+// --- host ---
+async function createRoom() {
+  audioInit();
+  const name = cleanName($('nameIn').value) || 'HOST';
+  saveName(name);
+  status('Opening a room…', true);
+  const code = makeCode();
+  try { NET.sig = await openSignal(code, hostSignal); }
+  catch (e) { status('Could not reach the lobby service. Check your internet connection and try again.'); return; }
+  NET.role = 'host'; NET.code = code;
+  const mine = cfg.slots[0].color, free = [0, 1, 2, 3, 5, 6, 7].filter(c => c !== mine);
+  NET.room = { cfg: { mode: cfg.mode === 'team' ? 'team' : 'ffa', rule: cfg.rule, map: cfg.map, teamColors: cfg.teamColors.slice() },
+    slots: [{ kind: 'host', name, color: mine }, { kind: 'open', color: free[0] }, { kind: 'open', color: free[1] }, { kind: 'open', color: free[2] }] };
+  NET.ticker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 16)'], { type: 'text/javascript' })));
+  NET.ticker.onmessage = () => { if (document.hidden) advance(); }; // keep the match running if the host's tab is hidden
+  history.replaceState(null, '', location.pathname + '?join=' + code);
+  status('Share the code or the invite link. Friends join from the Online tab.', true);
+  renderLobby();
+}
+
+function publicRoom() { return { cfg: NET.room.cfg, slots: NET.room.slots.map(s => ({ kind: s.kind, name: s.name, color: s.color })) }; }
+function sendLobby() {
+  for (const id in NET.peers) { const pr = NET.peers[id]; if (pr.ready) sendRel(pr.rel, { t: 'lobby', room: publicRoom(), you: NET.room.slots.indexOf(pr.slot) }); }
+}
+
+async function hostSignal(m) {
+  if (m.t === 'hello') {
+    if (NET.peers[m.from]) return;
+    if (NET.playing) { NET.sig.send({ t: 'busy', to: m.from }); return; }
+    const slot = NET.room.slots.find(s => s.kind === 'open');
+    if (!slot) { NET.sig.send({ t: 'full', to: m.from }); return; }
+    const pc = new RTCPeerConnection({ iceServers: ICE });
+    const peer = { id: m.from, pc, slot, ready: false, input: NO_INPUT, queue: [], lastSeq: 0, lastQueued: 0 };
+    NET.peers[m.from] = peer;
+    Object.assign(slot, { kind: 'joining', peer: m.from, name: cleanName(m.name) || 'GUEST' });
+    if (NET.room.slots.some(s => s !== slot && s.color === slot.color && s.kind !== 'open')) {
+      slot.color = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find(c => !NET.room.slots.some(s => s.color === c && s.kind !== 'open'));
+    }
+    renderLobby();
+    peer.rel = pc.createDataChannel('rel', { ordered: true });
+    peer.fast = pc.createDataChannel('fast', { ordered: false, maxRetransmits: 0 });
+    let open = 0;
+    const onOpen = () => { if (++open === 2) { peer.ready = true; slot.kind = 'net'; renderLobby(); sendLobby(); tone(600, 900, 0.1, 'triangle', 0.04); } };
+    peer.rel.onopen = onOpen; peer.fast.onopen = onOpen;
+    peer.rel.onclose = () => dropPeer(peer);
+    peer.rel.onmessage = e => hostRel(peer, JSON.parse(e.data));
+    peer.fast.onmessage = e => hostFast(peer, JSON.parse(e.data));
+    pc.onicecandidate = e => { if (e.candidate) NET.sig.send({ t: 'ice', to: m.from, from: NET.me, c: e.candidate.toJSON() }); };
+    pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') dropPeer(peer); };
+    await pc.setLocalDescription(await pc.createOffer());
+    NET.sig.send({ t: 'offer', to: m.from, from: NET.me, sdp: pc.localDescription.toJSON() });
+    setTimeout(() => { if (!peer.ready && NET.peers[peer.id] === peer) { NET.sig.send({ t: 'fail', to: peer.id }); dropPeer(peer); } }, 15000);
+  } else if (m.t === 'answer') {
+    const pr = NET.peers[m.from];
+    if (pr) await pr.pc.setRemoteDescription(m.sdp).catch(() => {});
+  } else if (m.t === 'ice') {
+    const pr = NET.peers[m.from];
+    if (pr) await pr.pc.addIceCandidate(m.c).catch(() => {});
+  }
+}
+
+function dropPeer(peer) {
+  if (NET.peers[peer.id] !== peer) return;
+  delete NET.peers[peer.id];
+  try { peer.pc.close(); } catch (e) {}
+  if (NET.playing && S) { // a CPU takes over their spartan for the rest of the match
+    const p = S.players.find(q => q.peer === peer.id);
+    if (p) { p.ctrl = 'cpu'; p.peer = null; S.feed.push({ t: S.tick, k: null, v: p, left: true }); }
+  }
+  const slot = peer.slot;
+  Object.assign(slot, { kind: 'open', peer: null, name: undefined });
+  renderLobby(); sendLobby();
+}
+
+function hostRel(peer, m) {
+  if (m.t === 'color' && NET.room.cfg.mode === 'ffa' && Number.isInteger(m.c) && m.c >= 0 && m.c < COLORS.length) {
+    peer.slot.color = m.c; renderLobby(); sendLobby();
+  } else if (m.t === 'bye') dropPeer(peer);
+}
+function hostFast(peer, m) {
+  if (m.t !== 'i') return;
+  for (let k = m.b.length - 1; k >= 0; k--) { // each packet repeats the last three inputs, in case one is lost
+    const seq = m.s - k;
+    if (seq > peer.lastQueued) { peer.queue.push({ s: seq, b: m.b[k] }); peer.lastQueued = seq; }
+  }
+}
+function netInput(p) { const pr = NET.peers[p.peer]; return pr ? pr.input : NO_INPUT; }
+
+function hostBeforeStep() {
+  for (const id in NET.peers) {
+    const pr = NET.peers[id];
+    if (pr.queue.length > 5) pr.queue.splice(0, pr.queue.length - 2); // fell behind: catch up
+    if (pr.queue.length) { const q = pr.queue.shift(); pr.input = unpackInput(q.b); pr.lastSeq = q.s; }
+  }
+}
+function packPlayer(p) {
+  const flags = (p.crouch ? 1 : 0) | (p.spin ? 2 : 0) | (p.jet ? 4 : 0) | (p.shielding ? 8 : 0) | (p.onGround ? 16 : 0) | (p.out ? 32 : 0);
+  return [r1(p.x), r1(p.y), r2(p.vx), r2(p.vy), p.face, Math.round(p.hp), r1(p.shieldHp), p.stun, p.inv, p.dead, flags,
+    p.cd, p.charge, p.lives, p.kills, p.deaths, p.wpn ? WPN.indexOf(p.wpn.type) : -1, p.wpn ? r1(p.wpn.ammo) : 0,
+    p.ar.ammo, p.ar.reserve, p.ar.reload, p.atk ? ATKS.indexOf(p.atk.type) : -1, p.atk ? p.atk.t : 0, p.slide, p.fuel];
+}
+function unpackPlayer(a) {
+  const f = a[10];
+  return { x: a[0], y: a[1], vx: a[2], vy: a[3], face: a[4], hp: a[5], shieldHp: a[6], stun: a[7], inv: a[8], dead: a[9],
+    crouch: !!(f & 1), spin: !!(f & 2), jet: !!(f & 4), shielding: !!(f & 8), onGround: !!(f & 16), out: !!(f & 32),
+    cd: a[11], charge: a[12], lives: a[13], kills: a[14], deaths: a[15],
+    wpn: a[16] >= 0 ? { type: WPN[a[16]], ammo: a[17] } : null, ar: { ammo: a[18], reserve: a[19], reload: a[20] },
+    atk: a[21] >= 0 ? { type: ATKS[a[21]], t: a[22] } : null, slide: a[23], fuel: a[24] };
+}
+let evBuf = [];
+function hostAfterStep() {
+  for (const e of S.events) evBuf.push(e);
+  if (++NET.sendN % 2) return; // 30 snapshots a second
+  const base = { t: 's', k: S.tick, ph: S.phase, n: S.count, tm: S.time, sd: S.sudden ? 1 : 0, w: S.winner,
+    P: S.players.map(packPlayer),
+    B: S.bullets.map(b => [r1(b.x), r1(b.y), r2(b.vx), r2(b.vy), BK.indexOf(b.k)]),
+    K: S.pickups.map(pk => pk.type ? PKS.indexOf(pk.type) : -1),
+    F: S.feed.slice(-4).map(f => [f.t, f.k ? f.k.id : -1, f.v.id, f.left ? 1 : 0]),
+    E: evBuf.slice(-40).map(e => { const o = {}; for (const k in e) o[k] = typeof e[k] === 'number' ? r1(e[k]) : e[k]; return o; }) };
+  evBuf = [];
+  for (const id in NET.peers) {
+    const pr = NET.peers[id];
+    if (!pr.ready || pr.fast.readyState !== 'open' || pr.fast.bufferedAmount > 65536) continue;
+    const me = S.players.find(p => p.peer === pr.id);
+    pr.fast.send(JSON.stringify(Object.assign({ ack: pr.lastSeq, me: me || null }, base)));
+  }
+}
+
+function onlineProblem() {
+  const sl = NET.room.slots, on = s => ['host', 'net', 'cpu'].includes(s.kind);
+  if (sl.some(s => s.kind === 'joining')) return 'Wait for everyone to finish joining.';
+  if (sl.filter(on).length < 2) return 'You need at least two players. Wait for a friend, or set a place to CPU.';
+  if (NET.room.cfg.mode === 'team' && (!sl.slice(0, 2).some(on) || !sl.slice(2).some(on))) return 'Each team needs at least one player.';
+  return null;
+}
+function onlineStart() {
+  const err = onlineProblem();
+  if (err) { status(err); return; }
+  audioInit();
+  if (document.activeElement) document.activeElement.blur();
+  const R = NET.room, gcfg = Object.assign({}, R.cfg, { slots: R.slots.map(sl =>
+    sl.kind === 'host' ? { ctrl: 'local', color: sl.color, name: sl.name }
+    : sl.kind === 'net' ? { ctrl: 'net', color: sl.color, name: sl.name, peer: sl.peer }
+    : sl.kind === 'cpu' ? { ctrl: 'cpu', color: sl.color } : { ctrl: 'off' }) });
+  for (const k in BOT) delete BOT[k];
+  resetEffects();
+  S = newGame(gcfg);
+  const meta = S.players.map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team, ctrl: p.ctrl === 'cpu' ? 'cpu' : 'net' }));
+  for (const id in NET.peers) {
+    const pr = NET.peers[id];
+    pr.queue = []; pr.lastSeq = 0; pr.lastQueued = 0; pr.input = NO_INPUT;
+    const me = S.players.find(p => p.peer === id);
+    sendRel(pr.rel, { t: 'start', map: S.map.id, mode: S.mode, rule: S.rule, meta, you: me ? me.id : -1, teamColors: R.cfg.teamColors });
+  }
+  NET.playing = true; evBuf = [];
+  updateCamera(true);
+  paused = false; acc = 0;
+  ['lobby', 'pause', 'end'].forEach(id => $(id).classList.add('hidden'));
+}
+function hostToLobby() {
+  NET.playing = false; S = null;
+  for (const id in NET.peers) sendRel(NET.peers[id].rel, { t: 'tolobby' });
+  showLobbyScreen();
+  sendLobby();
+}
+
+// --- guest ---
+async function joinRoom() {
+  audioInit();
+  const code = cleanName($('codeIn').value).replace(/[^A-Z]/g, '').slice(0, 4);
+  if (code.length !== 4) { status('A game code is four letters.'); return; }
+  const name = cleanName($('nameIn').value) || 'GUEST';
+  saveName(name);
+  status('Looking for game ' + code + '…', true);
+  try { NET.sig = await openSignal(code, guestSignal); }
+  catch (e) { status('Could not reach the lobby service. Check your internet connection and try again.'); return; }
+  NET.role = 'guest'; NET.code = code;
+  NET.sig.send({ t: 'hello', from: NET.me, name });
+  NET.timer = setTimeout(() => { if (!NET.host) guestFail('No game found with code ' + code + '. Check the code with the host.'); }, 6000);
+}
+function guestFail(msg) { resetNet(); S = null; showLobbyScreen(); status(msg); }
+
+async function guestSignal(m) {
+  if (m.t === 'full') guestFail('That game is full.');
+  else if (m.t === 'busy') guestFail('That game has already started. Try again when the match ends.');
+  else if (m.t === 'fail') guestFail('Could not connect to the host. One of your networks may block direct game connections.');
+  else if (m.t === 'offer' && !NET.host) {
+    clearTimeout(NET.timer);
+    status('Connecting to the host…', true);
+    const pc = new RTCPeerConnection({ iceServers: ICE }), H = { pc, id: m.from, rel: null, fast: null };
+    NET.host = H;
+    let open = 0;
+    pc.ondatachannel = e => {
+      const ch = e.channel;
+      if (ch.label === 'rel') { H.rel = ch; ch.onmessage = ev => guestRel(JSON.parse(ev.data)); ch.onclose = () => { if (NET.host === H) guestFail('The host left the game.'); }; }
+      else { H.fast = ch; ch.onmessage = ev => guestFast(JSON.parse(ev.data)); }
+      ch.onopen = () => { if (++open === 2) status('Connected. Waiting for the host to start.', true); };
+      if (ch.readyState === 'open') ch.onopen();
+    };
+    pc.onicecandidate = e => { if (e.candidate) NET.sig.send({ t: 'ice', to: m.from, from: NET.me, c: e.candidate.toJSON() }); };
+    pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' && NET.host === H) guestFail('Lost the connection to the host.'); };
+    await pc.setRemoteDescription(m.sdp);
+    await pc.setLocalDescription(await pc.createAnswer());
+    NET.sig.send({ t: 'answer', to: m.from, from: NET.me, sdp: pc.localDescription.toJSON() });
+    NET.timer = setTimeout(() => { if (!NET.room) guestFail('Could not connect to the host. One of your networks may block direct game connections.'); }, 15000);
+  } else if (m.t === 'ice' && NET.host && m.from === NET.host.id) {
+    await NET.host.pc.addIceCandidate(m.c).catch(() => {});
+  }
+}
+
+function guestRel(m) {
+  if (m.t === 'lobby') {
+    clearTimeout(NET.timer);
+    NET.room = m.room; NET.mySlot = m.you;
+    if (!NET.playing) renderLobby();
+  } else if (m.t === 'start') guestStart(m);
+  else if (m.t === 'closed') guestFail('The host closed the game.');
+  else if (m.t === 'tolobby') { NET.playing = false; S = null; showLobbyScreen(); status('Waiting for the host to start.', true); }
+}
+
+function guestStart(m) {
+  const map = MAPS.find(x => x.id === m.map);
+  if (NET.room) NET.room.cfg.teamColors = m.teamColors;
+  resetEffects();
+  NET.meta = m.meta; NET.myPid = m.you;
+  NET.view = { phase: 'countdown', count: 180, tick: 0, mode: m.mode, rule: m.rule, time: MATCH_TIME, sudden: false, winner: null,
+    map, players: m.meta.map(x => Object.assign(unpackPlayer(packPlayer(Object.assign({ lives: LIVES, kills: 0, deaths: 0 },
+      { x: -999, y: -999, vx: 0, vy: 0, face: 1, hp: 100, shieldHp: SHIELD_MAX, stun: 0, inv: 0, dead: 1, cd: 0, charge: 0,
+        wpn: null, ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, atk: null, slide: 0, fuel: JET_FUEL }))), x)),
+    bullets: [], pickups: map.pickups.map(([x, y]) => ({ x, y, type: null })), feed: [], events: [] };
+  Object.assign(NET, { snaps: [], evq: [], pending: [], hist: [0, 0], seq: 0, pred: null, offX: 0, offY: 0, clock: null, lastK: -1, playing: true });
+  S = NET.view;
+  updateCamera(true);
+  acc = 0;
+  ['lobby', 'pause', 'end'].forEach(id => $(id).classList.add('hidden'));
+}
+
+function predMini(phase) {
+  return { map: NET.view.map, mode: NET.view.mode, rule: NET.view.rule, players: [], bullets: [], events: [], feed: [],
+    pickups: [], tick: 0, seed: 1, phase };
+}
+function predictStep(input, live) {
+  const P = NET.pred, M = P.S;
+  M.tick++; M.events = []; M.bullets = [];
+  if (M.phase === 'play' && !P.p.out) updatePlayer(M, P.p, input); else P.p.prev = input;
+  if (live) handleEvents(M.events.filter(e => LOCAL_EV.has(e.type)));
+}
+
+function guestFast(s) {
+  if (s.t !== 's' || s.k < NET.lastK) return;
+  NET.lastK = s.k;
+  const now = performance.now(), est = now - s.k * 1000 / 60;
+  // The host's clock, as seen here: the fastest packet sets it, and it drifts slowly toward slower ones.
+  NET.clock = NET.clock === null || est < NET.clock ? est : NET.clock + (est - NET.clock) * 0.02;
+  NET.snaps.push({ k: s.k, P: s.P.map(unpackPlayer), B: s.B });
+  if (NET.snaps.length > 40) NET.snaps.shift();
+  const V = NET.view;
+  V.tick = s.k; V.phase = s.ph; V.count = s.n; V.time = s.tm; V.sudden = !!s.sd; V.winner = s.w;
+  s.K.forEach((t, i) => { if (V.pickups[i]) V.pickups[i].type = t >= 0 ? PKS[t] : null; });
+  V.feed = s.F.map(([t, k, v, left]) => ({ t, k: k >= 0 ? V.players[k] : null, v: V.players[v], left }));
+  NET.evq.push({ k: s.k, E: s.E.filter(e => !(e.id === NET.myPid && LOCAL_EV.has(e.type))) });
+  if (s.me) { // put our own spartan where the host says, then replay the keys the host has not seen yet
+    NET.pending = NET.pending.filter(x => x.s > s.ack);
+    const old = NET.pred && NET.pred.p;
+    if (!NET.pred) NET.pred = { S: predMini(s.ph), p: null };
+    NET.pred.p = s.me; NET.pred.S.players = [s.me]; NET.pred.S.tick = s.k; NET.pred.S.phase = s.ph;
+    for (const x of NET.pending) predictStep(x.input, false);
+    if (old && !old.dead && !s.me.dead) {
+      NET.offX += old.x - s.me.x; NET.offY += old.y - s.me.y;
+      if (Math.abs(NET.offX) > 40 || Math.abs(NET.offY) > 40) NET.offX = NET.offY = 0;
+    }
+  }
+}
+
+function guestTick() {
+  const V = NET.view, inp = keyInput(KEYMAP.local), b = packInput(inp);
+  NET.seq++;
+  NET.pending.push({ s: NET.seq, input: inp });
+  if (NET.pending.length > 120) NET.pending.shift();
+  if (NET.host && NET.host.fast && NET.host.fast.readyState === 'open') NET.host.fast.send(JSON.stringify({ t: 'i', s: NET.seq, b: [b].concat(NET.hist) }));
+  NET.hist = [b, NET.hist[0]];
+  if (NET.pred) predictStep(inp, true);
+  NET.offX *= 0.8; NET.offY *= 0.8;
+  V.tick++;
+  const tt = guestTime();
+  while (NET.evq.length && NET.evq[0].k <= tt) handleEvents(NET.evq.shift().E);
+  buildView();
+  tickEffects();
+  updateCamera(false);
+  if (V.phase === 'over') { if (++overT === 90) showEnd(); } else overT = 0;
+}
+function guestTime() { return NET.clock === null ? 0 : (performance.now() - NET.clock) / (1000 / 60) - INTERP; }
+
+function buildView() {
+  const V = NET.view, sn = NET.snaps;
+  if (!sn.length) return;
+  const tt = guestTime();
+  let a = sn[sn.length - 1], b = a;
+  if (tt <= sn[0].k) a = b = sn[0];
+  else for (let i = sn.length - 1; i > 0; i--) if (sn[i - 1].k <= tt) { a = sn[i - 1]; b = sn[i]; break; }
+  const f = b.k > a.k ? Math.max(0, Math.min(1, (tt - a.k) / (b.k - a.k))) : 1;
+  V.players = b.P.map((pb, i) => {
+    const pa = a.P[i] || pb, q = Object.assign({}, pb, NET.meta[i]);
+    if (!pa.dead && !pb.dead && Math.abs(pb.x - pa.x) < 60) { q.x = pa.x + (pb.x - pa.x) * f; q.y = pa.y + (pb.y - pa.y) * f; }
+    return q;
+  });
+  const me = NET.pred && NET.pred.p, latest = sn[sn.length - 1].P[NET.myPid];
+  if (me && latest) {
+    V.players[NET.myPid] = Object.assign({}, me, NET.meta[NET.myPid], { x: me.x + NET.offX, y: me.y + NET.offY, ctrl: 'local',
+      lives: latest.lives, kills: latest.kills, deaths: latest.deaths, out: latest.out });
+  }
+  const dtk = Math.max(0, Math.min(6, tt - a.k)); // bullets: the older snapshot, carried forward to the same moment
+  V.bullets = a.B.map(([x, y, vx, vy, k]) => ({ x: x + vx * dtk, y: y + vy * dtk, vx, vy, k: BK[k] }));
+  V.feed.forEach(fd => { if (fd.k) fd.k = V.players[fd.k.id]; fd.v = V.players[fd.v.id]; });
+}
+
+function leaveRoom() {
+  if (NET.role === 'host') for (const id in NET.peers) sendRel(NET.peers[id].rel, { t: 'closed' });
+  if (NET.role === 'guest' && NET.host) sendRel(NET.host.rel, { t: 'bye' });
+  resetNet(150);
+  S = null;
+  history.replaceState(null, '', location.pathname);
+  showLobbyScreen();
+  status('');
+}
+addEventListener('beforeunload', () => {
+  if (NET.role === 'host') for (const id in NET.peers) sendRel(NET.peers[id].rel, { t: 'closed' });
+  if (NET.role === 'guest' && NET.host) sendRel(NET.host.rel, { t: 'bye' });
+});
+
+// ============================================================================
 // Lobby, pause, end screen
 // ============================================================================
 const $ = id => document.getElementById(id);
-const CFG_KEY = 'spartan-brawl-lobby';
+const CFG_KEY = 'spartan-brawl-lobby', NAME_KEY = 'spartan-brawl-name';
 let cfg = { mode: 'ffa', rule: 'lives', map: 'random', teamColors: [0, 1],
   slots: [{ ctrl: 'A', color: 2 }, { ctrl: 'cpu', color: 0 }, { ctrl: 'off', color: 1 }, { ctrl: 'off', color: 5 }] };
 try { const saved = JSON.parse(localStorage.getItem(CFG_KEY)); if (saved && saved.slots) cfg = Object.assign(cfg, saved); } catch (e) {}
 function saveCfg() { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} }
+function saveName(n) { try { localStorage.setItem(NAME_KEY, n); } catch (e) {} }
+try { $('nameIn').value = localStorage.getItem(NAME_KEY) || ''; } catch (e) {}
+let tab = 'local';
+const joinParam = new URLSearchParams(location.search).get('join');
+if (joinParam) { tab = 'online'; $('codeIn').value = cleanName(joinParam).slice(0, 4); }
 
 function preview(colorIdx) {
   const c = document.createElement('canvas');
@@ -1585,38 +2030,100 @@ function slotRow(i) {
   if (sl.ctrl === 'off') row.style.opacity = 0.5;
   return row;
 }
-function renderLobby() {
-  document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button').forEach(b => {
-    b.classList.toggle('on', cfg[seg.dataset.key] === b.dataset.v);
+function onlineSlotRow(i) {
+  const R = NET.room, sl = R.slots[i], row = document.createElement('div'), host = NET.role === 'host';
+  const mine = host ? sl.kind === 'host' : NET.mySlot === i;
+  row.className = 'slot';
+  const tag = document.createElement('span');
+  tag.className = 'tag'; tag.textContent = 'P' + (i + 1);
+  row.appendChild(tag);
+  row.appendChild(preview(R.cfg.mode === 'team' ? R.cfg.teamColors[i < 2 ? 0 : 1] : sl.color));
+  const who = document.createElement('span');
+  who.className = 'who' + (mine ? ' you' : '');
+  if (host && ['open', 'cpu', 'off'].includes(sl.kind)) {
+    const sel = document.createElement('select');
+    sel.setAttribute('aria-label', 'Player ' + (i + 1));
+    [['open', 'Open for a friend'], ['cpu', 'CPU'], ['off', 'Off']].forEach(([v, t]) => {
+      const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o);
+    });
+    sel.value = sl.kind;
+    sel.onchange = () => { sl.kind = sel.value; renderLobby(); sendLobby(); };
+    who.appendChild(sel);
+  } else {
+    who.textContent = sl.kind === 'host' ? sl.name + ' (host)' : sl.kind === 'net' ? sl.name : sl.kind === 'joining' ? sl.name + ' joining…'
+      : sl.kind === 'cpu' ? 'CPU' : sl.kind === 'open' ? 'Open' : 'Off';
+    if (mine) who.textContent += ' · you';
+  }
+  row.appendChild(who);
+  if (R.cfg.mode === 'ffa' && mine) row.appendChild(swatches(sl.color, c => {
+    sl.color = c;
+    if (host) sendLobby(); else sendRel(NET.host.rel, { t: 'color', c });
+    renderLobby();
   }));
-  document.querySelectorAll('.match-only').forEach(el => el.classList.toggle('hidden', cfg.mode === 'training'));
+  if (sl.kind === 'off' || sl.kind === 'open') row.style.opacity = 0.6;
+  return row;
+}
+function renderTeams(box, row, colors, canPick, onPick) {
+  [0, 1].forEach(t => {
+    const team = document.createElement('div'), head = document.createElement('div');
+    team.className = 'team'; head.className = 'team-h';
+    head.textContent = 'Team ' + (t + 1) + (canPick ? ' color' : ' · ' + COLORS[colors[t]].n);
+    if (canPick) head.appendChild(swatches(colors[t], c => onPick(t, c)));
+    team.appendChild(head);
+    team.appendChild(row(t * 2)); team.appendChild(row(t * 2 + 1));
+    box.appendChild(team);
+  });
+}
+function renderLobby() {
+  const online = tab === 'online', inRoom = online && !!NET.room, host = NET.role === 'host';
+  const settings = inRoom ? NET.room.cfg : cfg;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  $('netStart').classList.toggle('hidden', !online || inRoom || !!NET.role);
+  $('room').classList.toggle('hidden', !inRoom);
+  $('settings').classList.toggle('hidden', online && !inRoom);
+  $('keysLocal').classList.toggle('hidden', online);
+  $('keysOnline').classList.toggle('hidden', !online);
+  if (inRoom) $('roomCode').textContent = NET.code;
+  $('copyLink').classList.toggle('hidden', !host);
+  document.querySelectorAll('#settings .seg').forEach(seg => {
+    seg.style.pointerEvents = inRoom && !host ? 'none' : '';
+    seg.style.opacity = inRoom && !host ? 0.75 : '';
+    seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', settings[seg.dataset.key] === b.dataset.v));
+  });
+  document.querySelectorAll('.local-only').forEach(el => el.classList.toggle('hidden', online));
+  document.querySelectorAll('.match-only').forEach(el => el.classList.toggle('hidden', settings.mode === 'training'));
   const box = $('slots');
   box.innerHTML = '';
-  if (cfg.mode === 'team') {
-    [0, 1].forEach(t => {
-      const team = document.createElement('div'), head = document.createElement('div');
-      team.className = 'team'; head.className = 'team-h';
-      head.textContent = 'Team ' + (t + 1) + ' color';
-      head.appendChild(swatches(cfg.teamColors[t], c => { cfg.teamColors[t] = c; saveCfg(); renderLobby(); }));
-      team.appendChild(head);
-      team.appendChild(slotRow(t * 2)); team.appendChild(slotRow(t * 2 + 1));
-      box.appendChild(team);
-    });
-  } else if (cfg.mode === 'training') {
+  if (online && !inRoom) { /* nothing yet */ }
+  else if (inRoom) {
+    if (NET.room.cfg.mode === 'team') renderTeams(box, onlineSlotRow, NET.room.cfg.teamColors, host,
+      (t, c) => { NET.room.cfg.teamColors[t] = c; renderLobby(); sendLobby(); });
+    else for (let i = 0; i < 4; i++) box.appendChild(onlineSlotRow(i));
+  } else if (cfg.mode === 'team') renderTeams(box, slotRow, cfg.teamColors, true, (t, c) => { cfg.teamColors[t] = c; saveCfg(); renderLobby(); });
+  else if (cfg.mode === 'training') {
     box.appendChild(slotRow(0));
     const n = document.createElement('p');
     n.className = 'note';
     n.textContent = 'A practice room with every weapon on a rack and two dummies. Press T to change what the dummies do.';
     box.appendChild(n);
   } else for (let i = 0; i < 4; i++) box.appendChild(slotRow(i));
-  $('start').textContent = cfg.mode === 'training' ? 'Start training' : 'Start match';
-  $('err').textContent = '';
+  $('start').classList.toggle('hidden', online && !host);
+  $('start').textContent = online ? 'Start match' : cfg.mode === 'training' ? 'Start training' : 'Start match';
 }
-document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
+document.querySelectorAll('#settings .seg').forEach(seg => seg.addEventListener('click', e => {
   const b = e.target.closest('button');
   if (!b) return;
-  cfg[seg.dataset.key] = b.dataset.v; saveCfg(); renderLobby();
+  if (tab === 'online') {
+    if (NET.role !== 'host') return;
+    NET.room.cfg[seg.dataset.key] = b.dataset.v; renderLobby(); sendLobby();
+  } else { cfg[seg.dataset.key] = b.dataset.v; saveCfg(); renderLobby(); }
 }));
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.dataset.tab === tab) return;
+  if (NET.role) leaveRoom();
+  tab = b.dataset.tab; status(''); renderLobby();
+});
 
 function problem() {
   if (cfg.mode === 'training') return null;
@@ -1631,38 +2138,52 @@ function problem() {
 }
 
 let S = null, paused = false, acc = 0, last = performance.now();
+function resetEffects() { parts = []; rings = []; pops = []; puffs = []; shake = 0; goT = 0; overT = 0; }
 function startMatch() {
+  if (NET.role === 'host') { onlineStart(); return; }
+  if (NET.role) return;
   const err = problem();
-  if (err) { $('err').textContent = err; return; }
+  if (err) { status(err); return; }
   audioInit();
   if (document.activeElement) document.activeElement.blur();
   for (const k in BOT) delete BOT[k];
-  parts = []; rings = []; pops = []; puffs = []; shake = 0; goT = 0;
+  resetEffects();
   S = newGame(cfg);
   updateCamera(true);
   paused = false; acc = 0;
   ['lobby', 'pause', 'end'].forEach(id => $(id).classList.add('hidden'));
 }
-function toLobby() {
+function showLobbyScreen() {
   S = null; paused = false;
   ['pause', 'end'].forEach(id => $(id).classList.add('hidden'));
   $('lobby').classList.remove('hidden');
   renderLobby();
 }
+function toLobby() {
+  if (NET.role === 'host') { hostToLobby(); return; }
+  if (NET.role === 'guest') { leaveRoom(); return; }
+  showLobbyScreen();
+}
 function setPaused(v) {
   if (!S || S.phase === 'over') return;
-  paused = v;
+  const online = !!NET.role;
+  paused = v && !online; // online the match keeps running for everyone
   $('pause').classList.toggle('hidden', !v);
-  $('mutenote').textContent = muted ? 'Sound is off. Press M to turn it on.' : 'Press M to mute.';
+  $('pauseTitle').textContent = online ? 'MENU' : 'PAUSED';
+  $('resume').textContent = online ? 'Back to game' : 'Resume';
+  $('quit').textContent = NET.role === 'host' ? 'End match for everyone' : NET.role === 'guest' ? 'Leave game' : 'Quit to lobby';
+  $('mutenote').textContent = (online ? 'The match keeps going while this menu is open. ' : '') +
+    (muted ? 'Sound is off. Press M to turn it on.' : 'Press M to mute.');
   held.clear();
 }
+function menuOpen() { return !$('pause').classList.contains('hidden'); }
 function showEnd() {
-  const names = { t0: 'Team 1', t1: 'Team 2' };
+  const names = { t0: 'Team 1', t1: 'Team 2' }, tc = NET.room ? NET.room.cfg.teamColors : cfg.teamColors;
   let title = 'DRAW', color = '#eef1f8';
   if (S.winner) {
     const p = S.players.find(q => sideOf(S, q) === S.winner);
     color = p.color;
-    title = S.mode === 'team' ? COLORS[cfg.teamColors[p.team]].n.toUpperCase() + ' TEAM WINS' : p.name + ' WINS';
+    title = S.mode === 'team' ? COLORS[tc[p.team]].n.toUpperCase() + ' TEAM WINS' : p.name + ' WINS';
   }
   $('endTitle').textContent = title;
   $('endTitle').style.color = color;
@@ -1672,6 +2193,10 @@ function showEnd() {
     `<tr><td><span class="chip" style="background:${p.color}"></span>${p.name}</td>` +
     (S.mode === 'team' ? `<td>${names['t' + p.team]}</td>` : '') +
     `<td class="n">${p.kills}</td><td class="n">${p.deaths}</td></tr>`).join('');
+  const guest = NET.role === 'guest';
+  $('again').classList.toggle('hidden', guest);
+  $('toLobby').textContent = guest ? 'Leave game' : 'Lobby';
+  $('endNote').textContent = guest ? 'Waiting for the host to start a rematch.' : 'Enter: rematch · Esc: lobby';
   $('end').classList.remove('hidden');
 }
 function fullscreen() {
@@ -1686,24 +2211,35 @@ $('resume').onclick = () => setPaused(false);
 $('quit').onclick = toLobby;
 $('again').onclick = startMatch;
 $('toLobby').onclick = toLobby;
+$('create').onclick = createRoom;
+$('join').onclick = joinRoom;
+$('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+$('leave').onclick = leaveRoom;
+$('copyLink').onclick = () => {
+  const link = location.origin + location.pathname + '?join=' + NET.code;
+  (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
+    .then(() => status('Invite link copied: ' + link, true), () => status('Invite link: ' + link, true));
+};
 
 addEventListener('keydown', e => {
-  const inGame = S && !paused && S.phase !== 'over';
+  if (e.target && e.target.tagName === 'INPUT') return;
+  const inGame = S && !paused && S.phase !== 'over' && !menuOpen();
   if (inGame && GAME_KEYS.has(e.code)) e.preventDefault();
-  if (e.code === 'KeyM' && S) { muted = !muted; setPaused(paused); }
+  if (e.code === 'KeyM' && S) { muted = !muted; if (menuOpen()) setPaused(true); }
   if (e.code === 'KeyT' && inGame && S.rule === 'training' && !e.repeat) {
     S.dummyMode = DUMMY_MODES[(DUMMY_MODES.indexOf(S.dummyMode) + 1) % DUMMY_MODES.length];
     for (const k in BOT) delete BOT[k];
   }
+  const endShown = S && S.phase === 'over' && !$('end').classList.contains('hidden');
   if (e.code === 'Escape') {
-    if (S && S.phase === 'over' && !$('end').classList.contains('hidden')) toLobby();
-    else if (S) setPaused(!paused);
+    if (endShown) { if (NET.role !== 'guest') toLobby(); }
+    else if (S) setPaused(!menuOpen());
   }
-  if (e.code === 'Enter' && S && S.phase === 'over' && !$('end').classList.contains('hidden')) startMatch();
-  held.add(e.code);
+  if (e.code === 'Enter' && endShown && NET.role !== 'guest') startMatch();
+  if (!menuOpen()) held.add(e.code);
 });
 addEventListener('keyup', e => held.delete(e.code));
-addEventListener('blur', () => { held.clear(); if (S && S.phase !== 'over') setPaused(true); });
+addEventListener('blur', () => { held.clear(); if (S && S.phase !== 'over' && !NET.role) setPaused(true); });
 
 function fit() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1717,21 +2253,30 @@ function fit() {
 addEventListener('resize', fit);
 fit();
 
-function frame(now) {
-  requestAnimationFrame(frame);
-  const dt = Math.min(0.1, (now - last) / 1000);
+// Fixed 60 Hz steps. Called every animation frame, and by the host's background ticker.
+function advance() {
+  const now = performance.now(), dt = Math.min(0.25, (now - last) / 1000);
   last = now;
-  if (S && !paused) {
-    acc += dt;
-    while (acc >= DT) {
-      acc -= DT;
-      step(S, gatherInputs());
-      handleEvents(S.events);
-      tickEffects();
-      updateCamera(false);
-      if (S.phase === 'over' && ++overT === 90) showEnd();
-    }
+  if (!S || paused) return;
+  acc += dt;
+  for (let n = 0; acc >= DT && n < 15; n++) {
+    acc -= DT;
+    if (NET.role === 'guest') { if (NET.playing) guestTick(); continue; }
+    const hosting = NET.role === 'host' && NET.playing;
+    if (hosting) hostBeforeStep();
+    step(S, gatherInputs());
+    handleEvents(S.events);
+    if (hosting) hostAfterStep();
+    tickEffects();
+    updateCamera(false);
+    if (S.phase === 'over' && ++overT === 90) showEnd();
   }
+  if (acc > DT * 15) acc = 0;
+}
+function frame() {
+  requestAnimationFrame(frame);
+  advance();
+  if (NET.role === 'guest' && NET.playing) buildView(); // place other players for this exact moment, not just this tick
   render();
 }
 renderLobby();

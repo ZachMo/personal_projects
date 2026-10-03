@@ -105,15 +105,17 @@
     <div class="keys" id="keysLocal">
       <div><b>Keyboard A</b><br>
         Move <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>W</kbd> · Crouch <kbd>S</kbd><br>
-        Shoot <kbd>F</kbd> or <kbd>J</kbd> · Melee <kbd>G</kbd> or <kbd>K</kbd> · Shield <kbd>H</kbd> or <kbd>L</kbd></div>
+        Shoot <kbd>F</kbd> or <kbd>J</kbd> · Melee <kbd>G</kbd> or <kbd>K</kbd> · Shield <kbd>H</kbd> or <kbd>L</kbd><br>
+        Grenade <kbd>R</kbd> or <kbd>U</kbd></div>
       <div><b>Keyboard B</b><br>
         Move <kbd>←</kbd> <kbd>→</kbd> · Jump <kbd>↑</kbd> · Crouch <kbd>↓</kbd><br>
-        Shoot <kbd>,</kbd> · Melee <kbd>.</kbd> · Shield <kbd>/</kbd></div>
+        Shoot <kbd>,</kbd> · Melee <kbd>.</kbd> · Shield <kbd>/</kbd> · Grenade <kbd>;</kbd></div>
     </div>
     <div class="keys hidden" id="keysOnline">
       <div><b>Controls</b><br>
         Move <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>W</kbd> · Crouch <kbd>S</kbd>, or the arrow keys<br>
-        Shoot <kbd>J</kbd> · Melee <kbd>K</kbd> · Shield <kbd>L</kbd>, or <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd>, or <kbd>,</kbd> <kbd>.</kbd> <kbd>/</kbd></div>
+        Shoot <kbd>J</kbd> · Melee <kbd>K</kbd> · Shield <kbd>L</kbd>, or <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd>, or <kbd>,</kbd> <kbd>.</kbd> <kbd>/</kbd><br>
+        Grenade <kbd>U</kbd>, <kbd>R</kbd> or <kbd>;</kbd></div>
     </div>
     <div class="moves">
       <b>Jump, jump</b><span>Double jump</span>
@@ -123,6 +125,7 @@
       <b>Down, down</b><span>Drop through a thin platform</span>
       <b>Down in the air</b><span>Fall fast</span>
       <b>Crouch on a weapon</b><span>Swap your weapon for it</span>
+      <b>Grenade key</b><span>Throw a frag grenade. You start with 2 and can carry 4.</span>
     </div>
     <p class="note">Melee knocks foes away, and from behind it does double damage. The shield blocks everything
       except a charged plasma shot, and you can move with it up. The energy sword burns out after 12 seconds.
@@ -164,7 +167,8 @@ const PH = 18, PH_C = 11, HALF = 5;
 const SHIELD_MAX = 50, MAG = 32, RESERVE = 128, RELOAD = 70, CHARGE = 40, LIVES = 3, MATCH_TIME = 180 * 60;
 const SWORD_TIME = 720; // the sword burns out after 12 seconds
 const MAXAMMO = { plasma: 100, sword: 100, shotgun: 6, sniper: 4 };
-const DROPS = [['health', 22], ['ammo', 22], ['shotgun', 16], ['sniper', 14], ['plasma', 14], ['sword', 12]];
+const DROPS = [['health', 22], ['ammo', 22], ['grenades', 16], ['shotgun', 16], ['sniper', 14], ['plasma', 14], ['sword', 12]];
+const NADES = 2, NADE_MAX = 4, NADE_FUSE = 90, NADE_R = 52; // frag grenades: carried, thrown, 1.5 s fuse
 
 const COLORS = [
   { n: 'Red', c: '#d8423a' }, { n: 'Blue', c: '#3a72d8' }, { n: 'Olive', c: '#6f8f3a' },
@@ -203,7 +207,7 @@ const MAPS = [
     spawns: [[300, 480]],
     dummies: [[860, 480], [1010, 480]],
     pickups: [[90, 420, 'shotgun'], [150, 420, 'sniper'], [265, 420, 'sword'], [385, 360, 'plasma'],
-              [505, 300, 'ammo'], [625, 240, 'health']] },
+              [505, 300, 'ammo'], [625, 240, 'health'], [560, 480, 'grenades']] },
 ];
 const DUMMY_MODES = ['stand', 'shield', 'jump', 'walk', 'fight'];
 
@@ -217,7 +221,7 @@ const ATK = {
 // Simulation. Pure game state in, game state out. No drawing and no DOM, so the
 // same code can run on a server when the game goes online.
 // ============================================================================
-const NO_INPUT = { left: false, right: false, up: false, down: false, fire: false, melee: false, shield: false };
+const NO_INPUT = { left: false, right: false, up: false, down: false, fire: false, melee: false, shield: false, nade: false };
 
 function rnd(S) { // mulberry32, kept in the state so a server and a client roll the same numbers
   let t = (S.seed = (S.seed + 0x6D2B79F5) | 0);
@@ -240,7 +244,7 @@ function newGame(cfg) {
   const S = {
     phase: training ? 'play' : 'countdown', count: 180, tick: 0, seed: (Math.random() * 2 ** 31) | 0,
     mode: cfg.mode, rule: training ? 'training' : cfg.rule, time: MATCH_TIME, sudden: false, winner: null,
-    map: def, players: [], bullets: [], events: [], feed: [], dummyMode: 'stand',
+    map: def, players: [], bullets: [], nades: [], events: [], feed: [], dummyMode: 'stand',
     pickups: def.pickups.map(([x, y, fixed], i) => ({ x, y, fixed, type: null, ammo: 0, timer: fixed ? 1 : 240 + i * 50 })),
   };
   const add = (props, sp) => {
@@ -269,7 +273,7 @@ function resetBody(p, x, y) {
   Object.assign(p, { x, y, vx: 0, vy: 0, hp: 100, shieldHp: SHIELD_MAX, stun: 0, inv: 0, atk: null,
     shielding: false, crouch: false, onGround: false, onThin: false, jumping: false, ff: false,
     spin: false, slide: 0, slideCd: 0, slideHit: [], jet: false, fuel: JET_FUEL,
-    airJumps: 1, coyote: 0, jbuf: 0, drop: 0, cd: 0, dead: 0, lastHit: null, hurtT: -999,
+    airJumps: 1, coyote: 0, jbuf: 0, drop: 0, cd: 0, dead: 0, lastHit: null, hurtT: -999, nades: NADES, nadeCd: 0,
     downT: -99, dirT: -99, dirD: 0, swap: false, charge: 0,
     ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, wpn: null, face: x < 500 ? 1 : -1 });
 }
@@ -288,6 +292,7 @@ function step(S, inputs) {
   if (S.rule === 'timer' && !S.sudden && --S.time <= 0) { S.time = 0; endByTime(S); if (S.phase !== 'play') return; }
   for (const p of S.players) updatePlayer(S, p, inputs[p.id] || NO_INPUT);
   updateBullets(S);
+  updateNades(S);
   updatePickups(S);
   checkWin(S);
 }
@@ -301,11 +306,13 @@ function updatePlayer(S, p, inp) {
   if (p.cd > 0) p.cd--;
   if (p.drop > 0) p.drop--;
   if (p.slideCd > 0) p.slideCd--;
+  if (p.nadeCd > 0) p.nadeCd--;
   let stunned = p.stun > 0;
   if (stunned) { p.stun--; p.spin = false; p.slide = 0; }
   if (S.rule === 'training') { // practice: health comes back and the rifle never runs dry
     if (S.tick - p.hurtT > 150) p.hp = 100;
     p.ar.reserve = RESERVE;
+    p.nades = NADE_MAX;
   }
   const ar = p.ar;
   if (ar.reload > 0 && --ar.reload === 0) { const n = Math.min(MAG - ar.ammo, ar.reserve); ar.ammo += n; ar.reserve -= n; }
@@ -408,6 +415,7 @@ function updatePlayer(S, p, inp) {
       else if (!inp.fire && p.charge > 0) { if (p.charge >= CHARGE && p.wpn) firePlasma(S, p, true); p.charge = 0; }
     }
   } else p.charge = 0;
+  if (!stunned && !p.shielding && !p.atk && press('nade') && p.nades > 0 && p.nadeCd <= 0) throwNade(S, p);
   if (w && w.ammo <= 0 && !p.atk) { p.wpn = null; p.charge = 0; ev(S, 'empty', { x: p.x, y: p.y - 12, id: p.id }); }
   if (!p.wpn && ar.ammo === 0 && ar.reserve > 0 && !ar.reload) { ar.reload = RELOAD; ev(S, 'reload', { id: p.id }); }
 
@@ -495,7 +503,7 @@ function gunY(p) { return p.y - (p.crouch || p.slide > 0 ? 6 : 12); }
 function fireRifle(S, p) {
   p.ar.ammo--; p.cd = 5;
   S.bullets.push({ x: p.x + p.face * 6, y: gunY(p), vx: p.face * 7.5, vy: (rnd(S) - 0.5) * 0.7,
-    o: p.id, team: p.team, dmg: 6, kbx: 1.2, kby: -0.4, stun: 0, life: 60, k: 'ar' });
+    o: p.id, team: p.team, dmg: 10, kbx: 1.2, kby: -0.4, stun: 0, life: 60, k: 'ar' });
   ev(S, 'ar', { id: p.id });
 }
 function fireShotgun(S, p) {
@@ -521,6 +529,50 @@ function firePlasma(S, p, charged) {
   } else {
     S.bullets.push(Object.assign(b, { vx: p.face * 5.5, dmg: 12, kbx: 2, kby: -1.2, stun: 6, life: 75, k: 'pp' }));
     p.wpn.ammo -= 5; p.cd = 9; ev(S, 'pp', { id: p.id });
+  }
+}
+
+function throwNade(S, p) {
+  p.nades--; p.nadeCd = 30;
+  S.nades.push({ x: p.x + p.face * 6, y: p.y - 14, vx: p.face * 3.6 + p.vx * 0.4, vy: -2.4 + Math.min(0, p.vy) * 0.3,
+    o: p.id, team: p.team, t: NADE_FUSE });
+  ev(S, 'throw', { id: p.id });
+}
+function updateNades(S) {
+  const keep = [];
+  for (const n of S.nades) {
+    n.vy = Math.min(7, n.vy + 0.2);
+    n.x += n.vx;
+    if (solidAt(S.map, n.x, n.y)) { n.x -= n.vx; n.vx *= -0.5; }
+    const py = n.y;
+    n.y += n.vy;
+    let landed = false;
+    if (solidAt(S.map, n.x, n.y)) { n.y = py; landed = n.vy > 0; n.vy *= -0.45; n.vx *= 0.7; }
+    else if (n.vy > 0) for (const s of S.map.plats) {
+      if (s.thin && n.x >= s.x && n.x <= s.x + s.w && py <= s.y && n.y >= s.y) { n.y = s.y - 0.01; n.vy *= -0.45; n.vx *= 0.7; landed = true; }
+    }
+    if (landed && Math.abs(n.vy) < 0.6) n.vy = 0;
+    for (const q of S.players) { // bounce off an enemy, so a direct throw drops at their feet
+      if (q.dead || q.out || q.id === n.o || (teams(S) && q.team === n.team)) continue;
+      if (Math.abs(n.x - q.x) < HALF + 2 && n.y > q.y - height(q) - 12 && n.y < q.y && Math.sign(n.vx) === Math.sign(q.x - n.x)) n.vx *= -0.1;
+    }
+    if (--n.t <= 0) { explode(S, n); continue; }
+    if (n.y < S.map.h + 40 && n.x > -60 && n.x < S.map.w + 60) keep.push(n);
+  }
+  S.nades = keep;
+}
+function explode(S, n) {
+  ev(S, 'boom', { x: n.x, y: n.y });
+  const owner = S.players[n.o];
+  for (const q of S.players) {
+    if (q.dead || q.out) continue;
+    const dx = q.x - n.x, dy = q.y - 9 - n.y, d = Math.hypot(dx, dy);
+    if (d > NADE_R) continue;
+    const self = q.id === n.o;
+    if (!self && owner && !isFoe(S, owner, q)) continue; // teammates are safe; you are not
+    const f = 1 - d / NADE_R, ux = dx / (d || 1), uy = dy / (d || 1);
+    hit(S, q, self ? null : owner, { dmg: Math.round((10 + 60 * f) * (self ? 0.5 : 1)),
+      kbx: ux * 5.5 * f + (Math.sign(dx) || 1) * 0.8, kby: Math.max(-4.5, Math.min(-1.5, uy * 5 * f - 2.5 * f)), stun: Math.round(10 + 22 * f), kind: 'nade' });
   }
 }
 
@@ -573,7 +625,7 @@ function hit(S, t, a, o) {
       if (a) { a.atk = null; a.cd = 24; a.vx = -Math.sign(o.kbx) * 3; a.stun = 10; }
       ev(S, 'clank', { x: t.x + Math.sign(o.kbx) * -8, y: t.y - 9 });
     } else {
-      t.shieldHp -= o.dmg * (o.kind === 'sg' ? 0.25 : o.kind === 'sr' ? 0.3 : 0.7);
+      t.shieldHp -= o.dmg * (o.kind === 'sg' ? 0.25 : o.kind === 'sr' ? 0.3 : o.kind === 'nade' ? 0.5 : 0.7);
       ev(S, 'block', { x: t.x, y: t.y - 9, c: t.color });
     }
     t.vx += Math.sign(o.kbx) * 0.8;
@@ -650,10 +702,13 @@ function updatePickups(S) {
       let took = false;
       if (t === 'health') {
         if (p.hp < 100) { p.hp = Math.min(100, p.hp + 40); took = true; }
+      } else if (t === 'grenades') {
+        if (p.nades < NADE_MAX) { p.nades = Math.min(NADE_MAX, p.nades + 2); took = true; }
       } else if (t === 'ammo') {
         const arFull = p.ar.ammo + p.ar.reserve >= MAG + RESERVE, wFull = !p.wpn || p.wpn.ammo >= MAXAMMO[p.wpn.type];
-        if (!arFull || !wFull) {
+        if (!arFull || !wFull || p.nades < NADES) {
           p.ar.reserve = MAG + RESERVE - p.ar.ammo;
+          p.nades = Math.max(p.nades, NADES);
           if (p.wpn && p.wpn.type !== 'sword') p.wpn.ammo = MAXAMMO[p.wpn.type];
           took = true;
         }
@@ -807,6 +862,7 @@ function botInput(S, p) {
       }
       if (wt === 'sword' && adx < 34 && Math.abs(dy) < 16 && facing) taps.fire = true;
       if (adx < 16 && Math.abs(dy) < 14 && Math.random() < 0.05) taps.melee = true;
+      if (p.nades > 0 && facing && adx > 50 && adx < 170 && Math.abs(dy) < 40 && Math.random() < 0.012) taps.nade = true;
       if (b.shieldT === 0 && p.shieldHp > 20) {
         let threat = t.atk && adx < 40 && Math.abs(dy) < 16;
         for (const bl of S.bullets) {
@@ -846,9 +902,9 @@ function dummyInput(S, p) {
 // ============================================================================
 const KEYMAP = {
   A: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW', 'Space'], down: ['KeyS'],
-       fire: ['KeyF', 'KeyJ'], melee: ['KeyG', 'KeyK'], shield: ['KeyH', 'KeyL'] },
+       fire: ['KeyF', 'KeyJ'], melee: ['KeyG', 'KeyK'], shield: ['KeyH', 'KeyL'], nade: ['KeyR', 'KeyU'] },
   B: { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
-       fire: ['Comma', 'Numpad1'], melee: ['Period', 'Numpad2'], shield: ['Slash', 'Numpad3'] },
+       fire: ['Comma', 'Numpad1'], melee: ['Period', 'Numpad2'], shield: ['Slash', 'Numpad3'], nade: ['Semicolon', 'Numpad4'] },
 };
 const GAME_KEYS = new Set(Object.values(KEYMAP).flatMap(m => Object.values(m).flat()));
 const held = new Set();
@@ -1276,11 +1332,17 @@ function handleEvents(evs) {
     }
     case 'spawn': rings.push({ x: e.x, y: e.y, r: 18, c: '#fff', life: 14, shrink: true }); break;
     case 'wspawn': burst(e.x, e.y, 10, ['#4ad8ff', '#fff'], 1, 20, 0); tone(800, 1000, 0.08, 'triangle', 0.02); break;
+    case 'throw': tone(420, 180, 0.1, 'triangle', 0.035); break;
+    case 'boom':
+      noise(0.7, 0.2, 500); tone(120, 30, 0.5, 'sawtooth', 0.07);
+      burst(e.x, e.y, 36, ['#fff2a0', '#ffb040', '#ff6a2a', '#6a6a6a'], 3, 30, 0.04);
+      rings.push({ x: e.x, y: e.y, r: 4, c: '#ffd27a', life: 14 }); shake = Math.max(shake, 9);
+      break;
     case 'pickup':
       burst(e.x, e.y, 12, ['#4ad8ff', '#fff'], 1.4, 20, 0);
       if (e.w === 'health') tone(500, 1000, 0.2, 'sine', 0.05); else tone(600, 1200, 0.1, 'triangle', 0.05);
       pops.push({ x: e.x, y: e.y - 16, t: { health: '+40 HEALTH', ammo: 'AMMO', shotgun: 'SHOTGUN', sniper: 'SNIPER',
-        plasma: 'PLASMA PISTOL', sword: 'ENERGY SWORD' }[e.w], c: '#9ae8ff', life: 45 });
+        plasma: 'PLASMA PISTOL', sword: 'ENERGY SWORD', grenades: '+2 GRENADES' }[e.w], c: '#9ae8ff', life: 45 });
       break;
     case 'count': tone(440, 440, 0.12, 'square', 0.04); break;
     case 'go': tone(660, 1320, 0.3, 'square', 0.05); goT = 50; break;
@@ -1435,6 +1497,12 @@ function drawBullet(b) {
   }
 }
 
+function drawNade(n) {
+  const x = Math.round(n.x), y = Math.round(n.y);
+  ctx.fillStyle = '#2e3a22'; ctx.fillRect(x - 2, y - 3, 4, 4);
+  ctx.fillStyle = '#6a7e46'; ctx.fillRect(x - 1, y - 3, 2, 1);
+  if (Math.floor(n.t / (n.t < 30 ? 3 : 9)) % 2 === 0) { ctx.fillStyle = '#ff4a3a'; ctx.fillRect(x, y - 4, 1, 1); }
+}
 function drawPickupIcon(type, x, y) {
   const R = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, w, h); };
   if (type === 'sword') { R(-5, 0, 3, 2, '#c0c8d8'); R(-2, -2, 8, 1, '#7ae8ff'); R(-2, 2, 8, 1, '#7ae8ff'); R(-2, -1, 2, 3, '#bff4ff'); }
@@ -1442,6 +1510,7 @@ function drawPickupIcon(type, x, y) {
   else if (type === 'shotgun') { R(-6, 0, 12, 2, '#3a3026'); R(-5, -1, 9, 1, '#6a5a48'); R(1, 2, 3, 1, '#262a32'); }
   else if (type === 'sniper') { R(-7, 0, 15, 2, '#2c3038'); R(-3, -2, 5, 2, '#14161c'); R(-4, 2, 2, 2, '#2c3038'); }
   else if (type === 'health') { R(-4, -3, 9, 7, '#e8ecf4'); R(-1, -2, 3, 5, '#e8423a'); R(-3, -1, 7, 1, '#e8423a'); R(-3, 0, 7, 1, '#e8423a'); }
+  else if (type === 'grenades') { for (const dx of [-4, 1]) { R(dx, -1, 4, 5, '#2e3a22'); R(dx + 1, -1, 2, 1, '#6a7e46'); R(dx + 1, -2, 2, 1, '#9aa0a8'); } }
   else if (type === 'ammo') { R(-5, -2, 10, 6, '#5a6a3a'); R(-5, -2, 10, 1, '#8aa05a'); R(-3, 0, 1, 2, '#ffd25a'); R(-1, 0, 1, 2, '#ffd25a'); R(1, 0, 1, 2, '#ffd25a'); R(3, 0, 1, 2, '#ffd25a'); }
 }
 function drawPickup(pk) {
@@ -1475,6 +1544,7 @@ function drawHud() {
     ctx.fillStyle = hp > 50 ? '#5ce06a' : hp > 25 ? '#f0c040' : '#f04a3a';
     ctx.fillRect(x + 16, y + 12, Math.ceil(bw * hp / 100), 5);
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(x + 16, y + 12, Math.ceil(bw * hp / 100), 1);
+    ctx.fillStyle = '#8aa05a'; for (let k = 0; k < (p.dead ? 0 : p.nades); k++) ctx.fillRect(x + 16 + k * 5, y + 18, 3, 2);
     const w = p.wpn;
     let label;
     if (p.dead) label = 'WAIT';
@@ -1493,7 +1563,7 @@ function drawHud() {
   }
   if (S.rule === 'training') {
     const lines = ['DOWN + JUMP: SPIN JUMP', 'BACK, FORWARD: SLIDE', 'JUMP X3, HOLD: JETPACK', 'DOWN, DOWN: DROP THROUGH',
-      'CROUCH ON WEAPON: SWAP'];
+      'CROUCH ON WEAPON: SWAP', 'R OR U: GRENADE'];
     ctx.fillStyle = 'rgba(8,10,18,0.7)'; ctx.fillRect(4, 4, 104, lines.length * 8 + 6);
     lines.forEach((l, i) => text(l, 8, 8 + i * 8, '#cfd6e6'));
     const m = 'T: DUMMIES ' + S.dummyMode.toUpperCase();
@@ -1536,6 +1606,7 @@ function render() {
   ctx.globalAlpha = 1;
   for (const p of S.players) drawPlayer(p);
   for (const b of S.bullets) drawBullet(b);
+  for (const n of S.nades || []) drawNade(n);
   for (const p of parts) { ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s); }
   for (const r of rings) pixelRing(r.x, r.y, r.r, r.c, 2);
   for (const p of pops) text(p.t, p.x, p.y, p.c, 1, 'center');
@@ -1578,12 +1649,12 @@ function render() {
 const SIGNAL_URL = 'wss://tnaassoaraijvhswevvp.supabase.co/realtime/v1/websocket' +
   '?apikey=sb_publishable_KSJZlg0qLmEOak6sP3WX0g_UDo8lz9Z&vsn=1.0.0';
 const ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
-const BITS = ['left', 'right', 'up', 'down', 'fire', 'melee', 'shield'];
+const BITS = ['left', 'right', 'up', 'down', 'fire', 'melee', 'shield', 'nade'];
 const WPN = ['shotgun', 'sniper', 'plasma', 'sword'], ATKS = ['melee', 'sword'], BK = ['ar', 'sg', 'sr', 'pp', 'pc'];
-const PKS = ['health', 'ammo', 'shotgun', 'sniper', 'plasma', 'sword'];
+const PKS = ['health', 'ammo', 'shotgun', 'sniper', 'plasma', 'sword', 'grenades'];
 // Sounds a guest plays for its own spartan at once, instead of waiting for the host.
 const LOCAL_EV = new Set(['jump', 'jump2', 'spin', 'slide', 'jet', 'ar', 'shotgun', 'sniper', 'pp', 'pc', 'sword',
-  'melee', 'dry', 'reload', 'shieldup', 'empty', 'land']);
+  'melee', 'dry', 'reload', 'shieldup', 'empty', 'land', 'throw']);
 const INTERP = 5; // guests draw other players 5 ticks (83 ms) in the past, between two snapshots
 
 const NET = { role: null, code: null, sig: null, me: Math.random().toString(36).slice(2, 10), peers: {},
@@ -1745,7 +1816,7 @@ function packPlayer(p) {
   const flags = (p.crouch ? 1 : 0) | (p.spin ? 2 : 0) | (p.jet ? 4 : 0) | (p.shielding ? 8 : 0) | (p.onGround ? 16 : 0) | (p.out ? 32 : 0);
   return [r1(p.x), r1(p.y), r2(p.vx), r2(p.vy), p.face, Math.round(p.hp), r1(p.shieldHp), p.stun, p.inv, p.dead, flags,
     p.cd, p.charge, p.lives, p.kills, p.deaths, p.wpn ? WPN.indexOf(p.wpn.type) : -1, p.wpn ? r1(p.wpn.ammo) : 0,
-    p.ar.ammo, p.ar.reserve, p.ar.reload, p.atk ? ATKS.indexOf(p.atk.type) : -1, p.atk ? p.atk.t : 0, p.slide, p.fuel];
+    p.ar.ammo, p.ar.reserve, p.ar.reload, p.atk ? ATKS.indexOf(p.atk.type) : -1, p.atk ? p.atk.t : 0, p.slide, p.fuel, p.nades];
 }
 function unpackPlayer(a) {
   const f = a[10];
@@ -1753,7 +1824,7 @@ function unpackPlayer(a) {
     crouch: !!(f & 1), spin: !!(f & 2), jet: !!(f & 4), shielding: !!(f & 8), onGround: !!(f & 16), out: !!(f & 32),
     cd: a[11], charge: a[12], lives: a[13], kills: a[14], deaths: a[15],
     wpn: a[16] >= 0 ? { type: WPN[a[16]], ammo: a[17] } : null, ar: { ammo: a[18], reserve: a[19], reload: a[20] },
-    atk: a[21] >= 0 ? { type: ATKS[a[21]], t: a[22] } : null, slide: a[23], fuel: a[24] };
+    atk: a[21] >= 0 ? { type: ATKS[a[21]], t: a[22] } : null, slide: a[23], fuel: a[24], nades: a[25] };
 }
 let evBuf = [];
 function hostAfterStep() {
@@ -1762,6 +1833,7 @@ function hostAfterStep() {
   const base = { t: 's', k: S.tick, ph: S.phase, n: S.count, tm: S.time, sd: S.sudden ? 1 : 0, w: S.winner,
     P: S.players.map(packPlayer),
     B: S.bullets.map(b => [r1(b.x), r1(b.y), r2(b.vx), r2(b.vy), BK.indexOf(b.k)]),
+    N: S.nades.map(n => [r1(n.x), r1(n.y), r2(n.vx), r2(n.vy), n.t]),
     K: S.pickups.map(pk => pk.type ? PKS.indexOf(pk.type) : -1),
     F: S.feed.slice(-4).map(f => [f.t, f.k ? f.k.id : -1, f.v.id, f.left ? 1 : 0]),
     E: evBuf.slice(-40).map(e => { const o = {}; for (const k in e) o[k] = typeof e[k] === 'number' ? r1(e[k]) : e[k]; return o; }) };
@@ -1874,8 +1946,8 @@ function guestStart(m) {
   NET.view = { phase: 'countdown', count: 180, tick: 0, mode: m.mode, rule: m.rule, time: MATCH_TIME, sudden: false, winner: null,
     map, players: m.meta.map(x => Object.assign(unpackPlayer(packPlayer(Object.assign({ lives: LIVES, kills: 0, deaths: 0 },
       { x: -999, y: -999, vx: 0, vy: 0, face: 1, hp: 100, shieldHp: SHIELD_MAX, stun: 0, inv: 0, dead: 1, cd: 0, charge: 0,
-        wpn: null, ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, atk: null, slide: 0, fuel: JET_FUEL }))), x)),
-    bullets: [], pickups: map.pickups.map(([x, y]) => ({ x, y, type: null })), feed: [], events: [] };
+        wpn: null, ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, atk: null, slide: 0, fuel: JET_FUEL, nades: NADES }))), x)),
+    bullets: [], nades: [], pickups: map.pickups.map(([x, y]) => ({ x, y, type: null })), feed: [], events: [] };
   Object.assign(NET, { snaps: [], evq: [], pending: [], hist: [0, 0], seq: 0, pred: null, offX: 0, offY: 0, clock: null, lastK: -1, playing: true });
   S = NET.view;
   updateCamera(true);
@@ -1884,12 +1956,12 @@ function guestStart(m) {
 }
 
 function predMini(phase) {
-  return { map: NET.view.map, mode: NET.view.mode, rule: NET.view.rule, players: [], bullets: [], events: [], feed: [],
+  return { map: NET.view.map, mode: NET.view.mode, rule: NET.view.rule, players: [], bullets: [], nades: [], events: [], feed: [],
     pickups: [], tick: 0, seed: 1, phase };
 }
 function predictStep(input, live) {
   const P = NET.pred, M = P.S;
-  M.tick++; M.events = []; M.bullets = [];
+  M.tick++; M.events = []; M.bullets = []; M.nades = [];
   if (M.phase === 'play' && !P.p.out) updatePlayer(M, P.p, input); else P.p.prev = input;
   if (live) handleEvents(M.events.filter(e => LOCAL_EV.has(e.type)));
 }
@@ -1900,7 +1972,7 @@ function guestFast(s) {
   const now = performance.now(), est = now - s.k * 1000 / 60;
   // The host's clock, as seen here: the fastest packet sets it, and it drifts slowly toward slower ones.
   NET.clock = NET.clock === null || est < NET.clock ? est : NET.clock + (est - NET.clock) * 0.02;
-  NET.snaps.push({ k: s.k, P: s.P.map(unpackPlayer), B: s.B });
+  NET.snaps.push({ k: s.k, P: s.P.map(unpackPlayer), B: s.B, N: s.N || [] });
   if (NET.snaps.length > 40) NET.snaps.shift();
   const V = NET.view;
   V.tick = s.k; V.phase = s.ph; V.count = s.n; V.time = s.tm; V.sudden = !!s.sd; V.winner = s.w;
@@ -1959,6 +2031,7 @@ function buildView() {
   }
   const dtk = Math.max(0, Math.min(6, tt - a.k)); // bullets: the older snapshot, carried forward to the same moment
   V.bullets = a.B.map(([x, y, vx, vy, k]) => ({ x: x + vx * dtk, y: y + vy * dtk, vx, vy, k: BK[k] }));
+  V.nades = a.N.map(([x, y, vx, vy, t]) => ({ x, y, vx, vy, t: t - dtk }));
   V.feed.forEach(fd => { if (fd.k) fd.k = V.players[fd.k.id]; fd.v = V.players[fd.v.id]; });
 }
 

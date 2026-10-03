@@ -241,14 +241,21 @@ swing bounces the attacker back. It survives one shotgun blast or sniper round. 
 while you hold it, and if it breaks, you are dazed for over two seconds. There is no meter: the
 bubble itself shrinks. The jetpack has no meter either.
 
-**Weapons.** Everyone carries an assault rifle: 32 rounds, 128 in reserve, and about 1.5 s of
-steady fire to kill. Six pads on each map
-drop health (+40), ammo, a shotgun, a sniper rifle, a plasma pistol or an energy sword. With
+**Weapons.** Everyone carries an assault rifle: 32 rounds, 128 in reserve, and 10 hits (about
+0.9 s of steady fire) to kill. Six pads on each map
+drop health (+40), ammo, grenades, a shotgun, a sniper rifle, a plasma pistol or an energy sword. With
 only the rifle, you take a weapon by walking over it. To trade one weapon for another, crouch
 on it, and your old one stays on the pad. The shotgun kills in one blast inside about 40 px and
 fades fast after that. The sniper kills in one hit. The sword winds up before each swing and burns
 out after 12 seconds. The plasma pistol fires on a tap, and held, it charges a
 shot that bends toward a foe and breaks a shield. Melee knocks a foe about 170 px away from you, and from behind it does double damage.
+
+**Grenades** are a second weapon on their own key (R or U, or ; on keyboard B). You respawn with
+two and carry up to four; a grenade pad gives two more, and an ammo box tops you up to two. A
+grenade flies in a low arc, bounces, and goes off after 1.5 s. It drops at the feet of an enemy it
+hits, so a throw at anyone 20 to 160 px away does 42 to 57 damage. The blast reaches 52 px, throws
+everyone in it away from the center, and hurts you at half strength but never a teammate. A shield
+takes the whole blast.
 
 **Training** is a practice room with every weapon on a rack and two dummies. Health and rifle
 ammo refill, damage numbers show, and each move names itself. Press T to make the dummies stand,

@@ -246,8 +246,8 @@ bubble itself shrinks. The jetpack has no meter either.
 drop health (+40), ammo, grenades, a shotgun, a sniper rifle, a plasma pistol or an energy sword. With
 only the rifle, you take a weapon by walking over it. To trade one weapon for another, crouch
 on it, and your old one stays on the pad. The shotgun kills in one blast inside about 40 px and
-fades fast after that. The sniper kills in one hit. The sword winds up before each swing and burns
-out after 12 seconds. The plasma pistol fires on a tap, and held, it charges a
+fades fast after that. The sniper kills in one hit. The energy sword swings fast, ten times, and each
+hit can send a hurt spartan off the map; only the shield stops it. The plasma pistol fires on a tap, and held, it charges a
 shot that bends toward a foe and breaks a shield. Melee knocks a foe about 170 px away from you, and from behind it does double damage.
 
 **Grenades** are a second weapon on their own key (R or U, or ; on keyboard B). You respawn with

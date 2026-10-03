@@ -128,7 +128,7 @@
       <b>Grenade key</b><span>Throw a frag grenade. You start with 2 and can carry 4.</span>
     </div>
     <p class="note">Melee knocks foes away, and from behind it does double damage. The shield blocks everything
-      except a charged plasma shot, and you can move with it up. The energy sword burns out after 12 seconds.
+      except a charged plasma shot, and you can move with it up. The energy sword has ten swings.
       <kbd>Esc</kbd> opens the menu. <kbd>M</kbd> mutes.</p>
     <p id="err"></p>
     <div class="actions"><button id="start" class="big">Start</button><button id="full">Fullscreen</button></div>
@@ -165,7 +165,6 @@ const JUMP = -6.0, JUMP2 = -5.4, SPIN_V = -8.4, SPIN_G = 0.30, SPIN_SPD = 4.6, S
 const JET_FUEL = 48, JET_ACC = 0.6, JET_MAX = -3.2;
 const PH = 18, PH_C = 11, HALF = 5;
 const SHIELD_MAX = 50, MAG = 32, RESERVE = 128, RELOAD = 70, CHARGE = 40, LIVES = 3, MATCH_TIME = 180 * 60;
-const SWORD_TIME = 720; // the sword burns out after 12 seconds
 const MAXAMMO = { plasma: 100, sword: 100, shotgun: 6, sniper: 4 };
 const DROPS = [['health', 22], ['ammo', 22], ['grenades', 16], ['shotgun', 16], ['sniper', 14], ['plasma', 14], ['sword', 12]];
 const NADES = 2, NADE_MAX = 4, NADE_FUSE = 90, NADE_R = 52; // frag grenades: carried, thrown, 1.5 s fuse
@@ -213,8 +212,8 @@ const DUMMY_MODES = ['stand', 'shield', 'jump', 'walk', 'fight'];
 
 const ATK = {
   melee: { on: 3, off: 7, len: 16, cd: 16, reach: 15, dmg: 12, kbx: 5.6, kby: -2.6, stun: 20 },
-  // Slow to start, so a quick shot or punch stops it, and the shield blocks it.
-  sword: { on: 7, off: 12, len: 28, cd: 20, reach: 22, dmg: 30, kbx: 4.2, kby: -3.2, stun: 22 },
+  // Ten swings, each one able to send a foe off the map. Only the shield stops it.
+  sword: { on: 4, off: 10, len: 24, cd: 10, reach: 24, dmg: 34, kbx: 8.5, kby: -5, stun: 26 },
 };
 
 // ============================================================================
@@ -316,10 +315,6 @@ function updatePlayer(S, p, inp) {
   }
   const ar = p.ar;
   if (ar.reload > 0 && --ar.reload === 0) { const n = Math.min(MAG - ar.ammo, ar.reserve); ar.ammo += n; ar.reserve -= n; }
-  if (p.wpn && p.wpn.type === 'sword') {
-    p.wpn.ammo -= 100 / SWORD_TIME;
-    if (p.wpn.ammo <= 0 && !p.atk) { p.wpn = null; ev(S, 'empty', { x: p.x, y: p.y - 12, id: p.id }); }
-  }
 
   // Shield: works on the ground and in the air. It shrinks while held and breaks into a long daze.
   if (inp.shield && !stunned && !p.atk && p.slide <= 0 && (p.shielding ? p.shieldHp > 0 : p.shieldHp > 8)) {
@@ -474,14 +469,14 @@ function moveBody(S, p, h) {
 
 function startAtk(S, p, type) {
   p.atk = { type, t: 0, hit: [] };
-  if (type === 'sword') p.wpn.ammo -= 8;
+  if (type === 'sword') p.wpn.ammo -= 10;
   ev(S, type, { id: p.id });
 }
 
 function runAtk(S, p) {
   const a = p.atk, D = ATK[a.type];
   a.t++;
-  if (a.type === 'sword' && a.t === D.on - 2) p.vx = p.onGround ? p.face * 3.4 : p.vx + p.face * 1.2;
+  if (a.type === 'sword' && a.t === 1) p.vx = p.onGround ? p.face * 4.2 : p.vx + p.face * 1.5;
   if (a.t >= D.on && a.t <= D.off) {
     const x1 = p.face > 0 ? p.x : p.x - HALF - D.reach, x2 = p.face > 0 ? p.x + HALF + D.reach : p.x;
     const y1 = p.y - height(p) - 4, y2 = p.y + 2;

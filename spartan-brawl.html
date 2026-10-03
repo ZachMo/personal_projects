@@ -79,6 +79,7 @@
   .tabs { margin: 16px 0 6px; }
   .code { font-size: 28px; letter-spacing: .25em; color: var(--accent); text-shadow: 3px 3px 0 #000; }
   .slot .who { min-width: 9em; }
+  .slot .who input { width: 7em; }
   .slot .you { color: var(--accent); }
   .actions { display: flex; gap: 12px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
   table { border-collapse: collapse; width: 100%; margin: 8px 0 4px; }
@@ -1791,11 +1792,20 @@ function resetNet(delay = 0) {
   }, delay);
 }
 
+// Online, everyone plays under their own name: ask for one rather than make one up.
+function askName() {
+  const name = cleanName($('nameIn').value);
+  if (!name) { status('Type your name first: up to 6 letters or numbers.'); $('nameIn').focus(); return null; }
+  $('nameIn').value = name;
+  saveName(name);
+  return name;
+}
+
 // --- host ---
 async function createRoom() {
   audioInit();
-  const name = cleanName($('nameIn').value) || 'HOST';
-  saveName(name);
+  const name = askName();
+  if (!name) return;
   status('Opening a room…', true);
   const code = makeCode();
   try { NET.sig = await openSignal(code, hostSignal); }
@@ -1868,6 +1878,8 @@ function dropPeer(peer) {
 function hostRel(peer, m) {
   if (m.t === 'color' && NET.room.cfg.mode === 'ffa' && Number.isInteger(m.c) && m.c >= 0 && m.c < COLORS.length) {
     peer.slot.color = m.c; renderLobby(); sendLobby();
+  } else if (m.t === 'name' && cleanName(m.n)) {
+    peer.slot.name = cleanName(m.n); renderLobby(); sendLobby();
   } else if (m.t === 'bye') dropPeer(peer);
 }
 function hostFast(peer, m) {
@@ -1968,8 +1980,8 @@ async function joinRoom() {
   audioInit();
   const code = cleanName($('codeIn').value).replace(/[^A-Z]/g, '').slice(0, 4);
   if (code.length !== 4) { status('A game code is four letters.'); return; }
-  const name = cleanName($('nameIn').value) || 'GUEST';
-  saveName(name);
+  const name = askName();
+  if (!name) return;
   status('Looking for game ' + code + '…', true);
   try { NET.sig = await openSignal(code, guestSignal); }
   catch (e) { status('Could not reach the lobby service. Check your internet connection and try again.'); return; }
@@ -2300,6 +2312,19 @@ function onlineSlotRow(i) {
     sel.value = sl.kind;
     sel.onchange = () => { sl.kind = sel.value; renderLobby(); sendLobby(); };
     who.appendChild(sel);
+  } else if (mine) { // your own name, which you can change here
+    const inp = document.createElement('input');
+    inp.maxLength = 6; inp.value = sl.name || ''; inp.spellcheck = false; inp.autocomplete = 'off';
+    inp.dataset.role = 'myname'; inp.setAttribute('aria-label', 'Your name');
+    inp.onchange = () => {
+      const n = cleanName(inp.value);
+      if (!n) { inp.value = sl.name; return; }
+      sl.name = n; inp.value = n; saveName(n); $('nameIn').value = n;
+      if (host) sendLobby(); else sendRel(NET.host.rel, { t: 'name', n });
+    };
+    inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); };
+    who.appendChild(inp);
+    if (host) who.append(' host');
   } else {
     who.textContent = sl.kind === 'host' ? sl.name + ' (host)' : sl.kind === 'net' ? sl.name : sl.kind === 'joining' ? sl.name + ' joining…'
       : sl.kind === 'cpu' ? 'CPU' : sl.kind === 'open' ? 'Open' : 'Off';
@@ -2342,7 +2367,8 @@ function renderLobby() {
   });
   document.querySelectorAll('.local-only').forEach(el => el.classList.toggle('hidden', online));
   document.querySelectorAll('.match-only').forEach(el => el.classList.toggle('hidden', settings.mode === 'training'));
-  const box = $('slots');
+  const box = $('slots'), editing = document.activeElement && document.activeElement.dataset.role === 'myname'
+    ? { v: document.activeElement.value, at: document.activeElement.selectionStart } : null;
   box.innerHTML = '';
   if (online && !inRoom) { /* nothing yet */ }
   else if (inRoom) {
@@ -2357,6 +2383,10 @@ function renderLobby() {
     n.textContent = 'Every weapon on a rack, and two dummies. Press T to change what the dummies do.';
     box.appendChild(n);
   } else for (let i = 0; i < 4; i++) box.appendChild(slotRow(i));
+  if (editing) { // a lobby update arrived while you were typing your name: keep what you typed
+    const inp = box.querySelector('input[data-role=myname]');
+    if (inp) { inp.value = editing.v; inp.focus(); inp.setSelectionRange(editing.at, editing.at); }
+  }
   $('start').classList.toggle('hidden', online && !host);
   $('start').textContent = online ? 'Start match' : cfg.mode === 'training' ? 'Start training' : 'Start match';
 }

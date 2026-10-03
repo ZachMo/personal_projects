@@ -273,8 +273,9 @@ takes the whole blast.
 ammo refill, damage numbers show, and each move names itself. Press T to make the dummies stand,
 shield, jump, walk or fight.
 
-**Online.** Up to four players, each on their own computer. One player presses Create game and
-gets a four-letter code and an invite link. Friends join from the Online tab. The host picks the
+**Online.** Up to four players, each on their own computer. Everyone types a name of up to six
+letters or numbers before they create or join, and can change it in the lobby. One player presses
+Create game and gets a four-letter code and an invite link. Friends join from the Online tab. The host picks the
 mode, the rules and the map, and can set empty places to CPU. Each player picks their own color.
 
 The host's browser runs the match. The game logic is plain JavaScript with no drawing in it, so

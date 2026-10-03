@@ -202,10 +202,11 @@ Mashing the controls gets about 60.
 
 ## spartan-brawl.html
 
-A retro platform brawler in the spirit of old Halo multiplayer and Smash Bros. This is the
-first step of an online game: it plays on one keyboard, for now.
+A retro platform brawler in the spirit of old Halo multiplayer and Smash Bros. Play against CPUs
+on one computer, or online with up to three friends.
 
-Up to four spartans fight. Two people can share a keyboard, and CPUs fill the other places.
+Up to four spartans fight. W A S D move and jump; J shoots, K is melee, L is the shield and U
+throws a grenade. The lobby shows the keys and the special moves as pictures, not text.
 Each player picks an armor color, or each team does in 2 v 2. A match is either 3 lives each,
 last one standing, or most kills in three minutes with sudden death on a tie. The map is one of
 three, or random: Canyon, Ring Station and Frostbite.
@@ -250,7 +251,7 @@ fades fast after that. The sniper kills in one hit. The energy sword swings fast
 hit can send a hurt spartan off the map; only the shield stops it. The plasma pistol fires on a tap, and held, it charges a
 shot that bends toward a foe and breaks a shield. Melee knocks a foe about 170 px away from you, and from behind it does double damage.
 
-**Grenades** are a second weapon on their own key (R or U, or ; on keyboard B). You respawn with
+**Grenades** are a second weapon on their own key, U. You respawn with
 two and carry up to four; a grenade pad gives two more, and an ammo box tops you up to two. A
 grenade flies in a low arc, bounces, and goes off after 1.5 s. It drops at the feet of an enemy it
 hits, so a throw at anyone 20 to 160 px away does 42 to 57 damage. The blast reaches 52 px, throws
@@ -270,9 +271,15 @@ the host runs exactly the code a local game runs. Guests connect straight to the
 data channels. They send the keys they hold 60 times a second, three inputs per packet in case one
 is lost. The host sends back the state 30 times a second.
 
-- **Your own spartan** moves the moment you press a key. The guest runs the same movement code
+- **Your own spartan** moves the moment you press a key, and your own shots appear at once. The guest runs the same movement code
   on its own spartan, then corrects itself quietly when the host's state arrives, by replaying
   the keys the host has not seen yet. Your own shots and jumps make their sound at once.
+- **No key press is lost.** When a guest's keys arrive in a clump, the host catches up by skipping
+  only inputs that repeat the next one, never a press. The host never lets snapshots queue up: if
+  its upload is busy, it skips a snapshot rather than send an old one late.
+- **Every packet carries its match number**, so packets still in flight from the last match are
+  ignored after a rematch.
+- **Guests see their ping** in the corner of the screen.
 - **Everyone else** is drawn 83 ms in the past, between two snapshots, so they move smoothly.
 - **If a guest leaves**, a CPU takes over their spartan. If the host leaves, everyone goes back
   to the lobby with a message. A small background timer keeps the match running if the host's
@@ -285,11 +292,20 @@ message allowance. There is no relay (TURN) server yet. A friend on a network th
 connections gets a message saying so.
 
 Tested with a host and a guest in one browser over a real connection: joining takes under a
-second. With 60–100 ms of delay each way and 5% of packets lost, the guest's own spartan needed
-a visible correction in 2 checks out of 60, never more than 11 px.
+second. With a fake Texas to New Hampshire link (35 ms each way, ±15 ms of jitter, 2% of packets
+lost), the guest's own spartan never needed a correction over 5 px, before or after a rematch.
+Snapshots are about 1 KB each, 27 KB a second per guest.
 
 **Balance.** Four CPUs play a 3-life match in about one and a half to three minutes. With the
-heavier guns, most lives end in a kill rather than a knock-off. CPUs never miss once they line up, so matches between people run differently.
+heavier guns, most lives end in a kill rather than a knock-off.
+
+**CPU skill** has four levels, named after Halo's: Recruit, Normal (the default), Heroic and
+Legendary. A CPU reads the game exactly, so the levels give it human limits rather than worse
+judgment. It sees everyone else where they were a moment ago: 0.4 s ago on Recruit, 0.23 s on
+Normal (about a person's reaction time), 0.12 s on Heroic and not at all on Legendary. Its sense of
+height drifts by up to 14, 8, 4 or 0 px, so it sometimes shoots over or under you. It also
+shields, throws grenades and fires less often at lower levels. In one-on-one CPU matches, each
+level beats each lower one: Legendary beats Normal 28 times in 30.
 
 ## hugelland.html
 

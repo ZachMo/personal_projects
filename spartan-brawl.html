@@ -51,6 +51,24 @@
   kbd { display: inline-block; min-width: 18px; text-align: center; padding: 0 4px; margin: 1px 0;
     background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px; color: var(--ink); }
   .note { color: var(--dim); font-size: 12.5px; margin: 10px 0 0; }
+  .howto { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-top: 16px; }
+  .ctl { display: flex; gap: 18px; padding: 10px; background: #0b0e18; border: 2px solid var(--line); }
+  .keyrows > div { display: flex; justify-content: center; }
+  .keyrows > div:first-child { justify-content: flex-start; padding-left: 26px; }
+  .keyrows:first-child > div:first-child { justify-content: center; padding-left: 0; }
+  .cap { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    width: 46px; height: 46px; margin: 2px; background: var(--panel-2); border: 2px solid var(--line); border-bottom-width: 4px; }
+  .cap b { font-size: 13px; line-height: 1; }
+  .cap i { font-style: normal; color: var(--dim); font-size: 15px; line-height: 1; }
+  .cap canvas { width: 32px; height: 24px; image-rendering: pixelated; }
+  .cap.sm { width: 26px; height: 26px; font-size: 14px; margin: 1px; border-bottom-width: 3px; }
+  .cap.sm.hold { border-bottom-color: var(--accent); }
+  .cards { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 260px; }
+  .mcard { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; width: 92px;
+    background: #0b0e18; border: 2px solid var(--line); }
+  .mcard canvas { width: 64px; height: 52px; image-rendering: pixelated; }
+  .mcard span.ml { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; text-align: center; }
+  .mcard .mk { display: flex; }
   .moves { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 12px 0 0; font-size: 12.5px; color: var(--dim); }
   .moves b { color: var(--ink); font-weight: normal; }
   #err { color: var(--bad); min-height: 1.4em; margin: 10px 0 0; }
@@ -84,8 +102,7 @@
       <div class="row"><label for="codeIn">Or join</label>
         <input id="codeIn" maxlength="4" autocomplete="off" spellcheck="false" placeholder="CODE" class="codebox">
         <button id="join">Join</button></div>
-      <p class="note">Up to four players, each on their own computer. Whoever creates the game hosts it:
-        the host's browser runs the match, so keep that tab open and in front until you are done.</p>
+      <p class="note">The host's browser runs the match. Keep that tab open.</p>
     </div>
     <div id="room" class="hidden">
       <div class="row"><label>Code</label><span class="code" id="roomCode"></span>
@@ -97,39 +114,29 @@
         <button data-v="training" class="local-only">Training</button></div></div>
       <div class="row match-only"><label>Win by</label><div class="seg" data-key="rule">
         <button data-v="lives">3 lives</button><button data-v="timer">Most kills in 3:00</button></div></div>
+      <div class="row"><label>CPUs</label><div class="seg" data-key="skill">
+        <button data-v="recruit">Recruit</button><button data-v="normal">Normal</button>
+        <button data-v="heroic">Heroic</button><button data-v="legendary">Legendary</button></div></div>
       <div class="row match-only"><label>Map</label><div class="seg" data-key="map">
         <button data-v="random">Random</button><button data-v="canyon">Canyon</button>
         <button data-v="ring">Ring Station</button><button data-v="frost">Frostbite</button></div></div>
     </div>
     <div id="slots"></div>
-    <div class="keys" id="keysLocal">
-      <div><b>Keyboard A</b><br>
-        Move <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>W</kbd> · Crouch <kbd>S</kbd><br>
-        Shoot <kbd>F</kbd> or <kbd>J</kbd> · Melee <kbd>G</kbd> or <kbd>K</kbd> · Shield <kbd>H</kbd> or <kbd>L</kbd><br>
-        Grenade <kbd>R</kbd> or <kbd>U</kbd></div>
-      <div><b>Keyboard B</b><br>
-        Move <kbd>←</kbd> <kbd>→</kbd> · Jump <kbd>↑</kbd> · Crouch <kbd>↓</kbd><br>
-        Shoot <kbd>,</kbd> · Melee <kbd>.</kbd> · Shield <kbd>/</kbd> · Grenade <kbd>;</kbd></div>
+    <div class="howto">
+      <div class="ctl">
+        <div class="keyrows" aria-label="Move with W A S D">
+          <div><span class="cap"><b>W</b><i>↑</i></span></div>
+          <div><span class="cap"><b>A</b><i>←</i></span><span class="cap"><b>S</b><i>↓</i></span><span class="cap"><b>D</b><i>→</i></span></div>
+        </div>
+        <div class="keyrows">
+          <div><span class="cap" title="Grenade" aria-label="U: grenade"><b>U</b><canvas data-icon="nade" width="16" height="12"></canvas></span></div>
+          <div><span class="cap" title="Shoot" aria-label="J: shoot"><b>J</b><canvas data-icon="gun" width="16" height="12"></canvas></span><span
+            class="cap" title="Melee" aria-label="K: melee"><b>K</b><canvas data-icon="fist" width="16" height="12"></canvas></span><span
+            class="cap" title="Shield" aria-label="L: shield"><b>L</b><canvas data-icon="shield" width="16" height="12"></canvas></span></div>
+        </div>
+      </div>
+      <div class="cards" id="moveCards"></div>
     </div>
-    <div class="keys hidden" id="keysOnline">
-      <div><b>Controls</b><br>
-        Move <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>W</kbd> · Crouch <kbd>S</kbd>, or the arrow keys<br>
-        Shoot <kbd>J</kbd> · Melee <kbd>K</kbd> · Shield <kbd>L</kbd>, or <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd>, or <kbd>,</kbd> <kbd>.</kbd> <kbd>/</kbd><br>
-        Grenade <kbd>U</kbd>, <kbd>R</kbd> or <kbd>;</kbd></div>
-    </div>
-    <div class="moves">
-      <b>Jump, then jump</b><span>Double jump</span>
-      <b>Jump, jump, hold jump</b><span>Jetpack. A short burst that refills when you land.</span>
-      <b>Jump, jump fast</b><span>Spin jump: a quick double tap. Higher, faster and farther than a double jump.</span>
-      <b>Forward, forward</b><span>Slide: a quick double tap. Ducks shots and trips anyone in the way.</span>
-      <b>Down, down</b><span>Drop through a thin platform</span>
-      <b>Down in the air</b><span>Fall fast</span>
-      <b>Crouch on a weapon</b><span>Swap your weapon for it</span>
-      <b>Grenade key</b><span>Throw a frag grenade. You start with 2 and can carry 4.</span>
-    </div>
-    <p class="note">Melee knocks foes away, and from behind it does double damage. The shield blocks everything
-      except a charged plasma shot, and you can move with it up. The energy sword has ten swings.
-      <kbd>Esc</kbd> opens the menu. <kbd>M</kbd> mutes.</p>
     <p id="err"></p>
     <div class="actions"><button id="start" class="big">Start</button><button id="full">Fullscreen</button></div>
   </div>
@@ -242,7 +249,7 @@ function newGame(cfg) {
     : cfg.map === 'random' ? MAPS.filter(m => !m.training)[Math.floor(Math.random() * 3)] : MAPS.find(m => m.id === cfg.map);
   const S = {
     phase: training ? 'play' : 'countdown', count: 180, tick: 0, seed: (Math.random() * 2 ** 31) | 0,
-    mode: cfg.mode, rule: training ? 'training' : cfg.rule, time: MATCH_TIME, sudden: false, winner: null,
+    mode: cfg.mode, rule: training ? 'training' : cfg.rule, skill: cfg.skill || 'normal', time: MATCH_TIME, sudden: false, winner: null,
     map: def, players: [], bullets: [], nades: [], events: [], feed: [], dummyMode: 'stand',
     pickups: def.pickups.map(([x, y, fixed], i) => ({ x, y, fixed, type: null, ammo: 0, timer: fixed ? 1 : 240 + i * 50 })),
   };
@@ -758,6 +765,14 @@ function endMatch(S, side) { S.phase = 'over'; S.winner = side; ev(S, 'over', {}
 // like a person would.
 // ============================================================================
 const BOT = {};
+// CPU skill, from Halo's difficulty names. react: how many ticks old the CPU's picture of everyone
+// else is. aim: how far off, in px, its sense of height can drift. The rest are how often it acts.
+const BOT_SKILL = {
+  recruit:   { react: 24, aim: 14, duty: 0.25, shield: 0.015, nade: 0.003, melee: 0.02, snipe: 0.02 },
+  normal:    { react: 14, aim: 8,  duty: 0.33, shield: 0.03,  nade: 0.006, melee: 0.03, snipe: 0.03 },
+  heroic:    { react: 7,  aim: 4,  duty: 0.38, shield: 0.05,  nade: 0.009, melee: 0.04, snipe: 0.045 },
+  legendary: { react: 0,  aim: 0,  duty: 0.43, shield: 0.08,  nade: 0.012, melee: 0.05, snipe: 0.06 },
+};
 function groundBelow(map, x, y) {
   let best = null;
   for (const s of map.plats) if (x >= s.x && x <= s.x + s.w && s.y >= y - 2 && (best === null || s.y < best)) best = s.y;
@@ -794,8 +809,14 @@ function navigate(S, p, gx, gy) {
 function botInput(S, p) {
   const I = Object.assign({}, NO_INPUT);
   if (p.out || p.dead || S.phase !== 'play') return I;
-  const b = BOT[p.id] || (BOT[p.id] = { jumpHold: 0, shieldT: 0, charge: 0, prev: NO_INPUT, lastX: p.x, dropSeq: 0 });
-  const M = S.map, taps = {};
+  const b = BOT[p.id] || (BOT[p.id] = { jumpHold: 0, shieldT: 0, charge: 0, prev: NO_INPUT, lastX: p.x, dropSeq: 0, hist: [], err: 0 });
+  const M = S.map, taps = {}, K = BOT_SKILL[S.skill] || BOT_SKILL.normal;
+  // A CPU sees everyone else where they were K.react ticks ago, the way a person reacts late.
+  b.hist.push(S.players.map(q => [q.x, q.y]));
+  if (b.hist.length > 30) b.hist.shift();
+  const old = b.hist[Math.max(0, b.hist.length - 1 - K.react)];
+  const seen = q => (old[q.id] ? { x: old[q.id][0], y: old[q.id][1] } : q);
+  b.err = Math.max(-K.aim, Math.min(K.aim, b.err + (Math.random() - 0.5) * K.aim * 0.3));
   let want = 0, wantJump = false, wantDrop = false;
 
   if (!p.onGround && groundBelow(M, p.x, p.y) === null) { // off the edge: get back
@@ -814,7 +835,7 @@ function botInput(S, p) {
     let t = null, td = 1e9;
     for (const q of S.players) {
       if (!isFoe(S, p, q) || q.dead || q.out) continue;
-      const d = Math.hypot(q.x - p.x, (q.y - p.y) * 1.3);
+      const v = seen(q), d = Math.hypot(v.x - p.x, (v.y - p.y) * 1.3);
       if (d < td) { td = d; t = q; }
     }
     const wt = wtype(p);
@@ -828,9 +849,9 @@ function botInput(S, p) {
     }
     if (pick) { gx = pick.x; gy = pick.y; }
     else if (t) {
-      const dx = t.x - p.x, ideal = { rifle: 110, shotgun: 30, sniper: 220, plasma: 110, sword: 0 }[wt];
-      gx = Math.abs(dx) > ideal + 30 ? t.x - Math.sign(dx) * ideal : Math.abs(dx) < ideal - 40 ? p.x - Math.sign(dx) * 40 : p.x;
-      gy = t.y;
+      const dx = seen(t).x - p.x, ideal = { rifle: 110, shotgun: 30, sniper: 220, plasma: 110, sword: 0 }[wt];
+      gx = Math.abs(dx) > ideal + 30 ? seen(t).x - Math.sign(dx) * ideal : Math.abs(dx) < ideal - 40 ? p.x - Math.sign(dx) * 40 : p.x;
+      gy = seen(t).y;
     }
     const mv = navigate(S, p, gx, gy);
     want = mv.want; wantJump = mv.jump; wantDrop = mv.drop;
@@ -845,20 +866,20 @@ function botInput(S, p) {
     if (p.onGround && want && Math.abs(p.x - b.lastX) < 0.05) wantJump = true; // blocked by a wall
 
     if (t) {
-      const dx = t.x - p.x, dy = t.y - p.y, adx = Math.abs(dx);
-      const aligned = Math.abs(dy) < 10, facing = p.face === Math.sign(dx);
+      const v = seen(t), dx = v.x - p.x, dy = v.y - p.y, adx = Math.abs(dx);
+      const aligned = Math.abs(dy + b.err) < 10, facing = p.face === Math.sign(dx);
       if (aligned && !facing && !want && adx < 400) want = Math.sign(dx);
-      if (wt === 'rifle' && aligned && facing && adx < 330 && (S.tick + p.id * 13) % 60 < 26) I.fire = true;
+      if (wt === 'rifle' && aligned && facing && adx < 330 && (S.tick + p.id * 13) % 60 < K.duty * 60) I.fire = true;
       if (wt === 'shotgun' && aligned && facing && adx < 80) I.fire = true;
-      if (wt === 'sniper' && aligned && facing && adx < 600 && Math.random() < 0.06) taps.fire = true;
+      if (wt === 'sniper' && aligned && facing && adx < 600 && Math.random() < K.snipe) taps.fire = true;
       if (wt === 'plasma' && aligned && facing && adx < 330) {
         if (b.charge > 0) { b.charge--; I.fire = b.charge > 0; }
         else if (Math.random() < 0.03) { b.charge = 50; I.fire = true; }
         else taps.fire = Math.random() < 0.15;
       }
       if (wt === 'sword' && adx < 34 && Math.abs(dy) < 16 && facing) taps.fire = true;
-      if (adx < 16 && Math.abs(dy) < 14 && Math.random() < 0.05) taps.melee = true;
-      if (p.nades > 0 && facing && adx > 50 && adx < 170 && Math.abs(dy) < 40 && Math.random() < 0.012) taps.nade = true;
+      if (adx < 16 && Math.abs(dy) < 14 && Math.random() < K.melee) taps.melee = true;
+      if (p.nades > 0 && facing && adx > 50 && adx < 170 && Math.abs(dy) < 40 && Math.random() < K.nade) taps.nade = true;
       if (b.shieldT === 0 && p.shieldHp > 20) {
         let threat = t.atk && adx < 40 && Math.abs(dy) < 16;
         for (const bl of S.bullets) {
@@ -866,7 +887,7 @@ function botInput(S, p) {
           const ahead = (p.x - bl.x) * Math.sign(bl.vx);
           if (ahead > 0 && ahead < 70 && Math.abs(bl.y - (p.y - 9)) < 10) threat = true;
         }
-        if (threat && Math.random() < 0.08) b.shieldT = 18;
+        if (threat && Math.random() < K.shield) b.shieldT = 18;
       }
     }
   }
@@ -897,10 +918,8 @@ function dummyInput(S, p) {
 // Input
 // ============================================================================
 const KEYMAP = {
-  A: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW', 'Space'], down: ['KeyS'],
-       fire: ['KeyF', 'KeyJ'], melee: ['KeyG', 'KeyK'], shield: ['KeyH', 'KeyL'], nade: ['KeyR', 'KeyU'] },
-  B: { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
-       fire: ['Comma', 'Numpad1'], melee: ['Period', 'Numpad2'], shield: ['Slash', 'Numpad3'], nade: ['Semicolon', 'Numpad4'] },
+  A: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'],
+       fire: ['KeyJ'], melee: ['KeyK'], shield: ['KeyL'], nade: ['KeyU'] },
 };
 const GAME_KEYS = new Set(Object.values(KEYMAP).flatMap(m => Object.values(m).flat()));
 const held = new Set();
@@ -909,8 +928,7 @@ function keyInput(map) {
   for (const k in map) I[k] = map[k].some(c => held.has(c));
   return I;
 }
-KEYMAP.local = {}; // online, each player has the whole keyboard: either layout works
-for (const k in KEYMAP.A) KEYMAP.local[k] = KEYMAP.A[k].concat(KEYMAP.B[k]);
+KEYMAP.local = KEYMAP.A;
 function gatherInputs() {
   return S.players.map(p => p.ctrl === 'cpu' ? botInput(S, p) : p.ctrl === 'dummy' ? dummyInput(S, p)
     : p.ctrl === 'net' ? netInput(p) : keyInput(KEYMAP[p.ctrl]));
@@ -1550,6 +1568,10 @@ function drawHud() {
     ctx.globalAlpha = 1;
   });
 
+  if (NET.role === 'guest' && NET.ping) {
+    const ms = Math.round(NET.ping);
+    text('PING ' + ms, HUD_W - 6, HUD_H - 34, ms < 90 ? '#8b94ad' : ms < 160 ? '#f0c040' : '#ff6a5a', 1, 'right');
+  }
   if (S.rule === 'timer') {
     if (S.sudden) { if ((S.tick >> 4) % 2) text('SUDDEN DEATH', HUD_W / 2, 6, '#ff6a5a', 2, 'center'); }
     else {
@@ -1559,7 +1581,7 @@ function drawHud() {
   }
   if (S.rule === 'training') {
     const lines = ['TAP JUMP X2 FAST: SPIN JUMP', 'TAP FORWARD X2: SLIDE', 'JUMP X3, HOLD: JETPACK', 'DOWN, DOWN: DROP THROUGH',
-      'CROUCH ON WEAPON: SWAP', 'R OR U: GRENADE'];
+      'CROUCH ON WEAPON: SWAP', 'U: GRENADE'];
     ctx.fillStyle = 'rgba(8,10,18,0.7)'; ctx.fillRect(4, 4, 104, lines.length * 8 + 6);
     lines.forEach((l, i) => text(l, 8, 8 + i * 8, '#cfd6e6'));
     const m = 'T: DUMMIES ' + S.dummyMode.toUpperCase();
@@ -1654,7 +1676,7 @@ const LOCAL_EV = new Set(['jump', 'jump2', 'spin', 'slide', 'jet', 'ar', 'shotgu
 const INTERP = 5; // guests draw other players 5 ticks (83 ms) in the past, between two snapshots
 
 const NET = { role: null, code: null, sig: null, me: Math.random().toString(36).slice(2, 10), peers: {},
-  host: null, room: null, mySlot: -1, playing: false, sendN: 0 };
+  host: null, room: null, mySlot: -1, playing: false, sendN: 0, game: 0, ping: 0, shots: [] };
 
 function packInput(I) { let b = 0; BITS.forEach((k, i) => { if (I[k]) b |= 1 << i; }); return b; }
 function unpackInput(b) { const I = {}; BITS.forEach((k, i) => { I[k] = !!(b & (1 << i)); }); return I; }
@@ -1724,7 +1746,7 @@ async function createRoom() {
   catch (e) { status('Could not reach the lobby service. Check your internet connection and try again.'); return; }
   NET.role = 'host'; NET.code = code;
   const mine = cfg.slots[0].color, free = [0, 1, 2, 3, 5, 6, 7].filter(c => c !== mine);
-  NET.room = { cfg: { mode: cfg.mode === 'team' ? 'team' : 'ffa', rule: cfg.rule, map: cfg.map, teamColors: cfg.teamColors.slice() },
+  NET.room = { cfg: { mode: cfg.mode === 'team' ? 'team' : 'ffa', rule: cfg.rule, map: cfg.map, skill: cfg.skill, teamColors: cfg.teamColors.slice() },
     slots: [{ kind: 'host', name, color: mine }, { kind: 'open', color: free[0] }, { kind: 'open', color: free[1] }, { kind: 'open', color: free[2] }] };
   NET.ticker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 16)'], { type: 'text/javascript' })));
   NET.ticker.onmessage = () => { if (document.hidden) advance(); }; // keep the match running if the host's tab is hidden
@@ -1793,7 +1815,8 @@ function hostRel(peer, m) {
   } else if (m.t === 'bye') dropPeer(peer);
 }
 function hostFast(peer, m) {
-  if (m.t !== 'i') return;
+  if (m.t !== 'i' || m.g !== NET.game) return; // keys left over from an earlier match
+  if (m.pt) { peer.pt = m.pt; peer.ptAt = performance.now(); }
   for (let k = m.b.length - 1; k >= 0; k--) { // each packet repeats the last three inputs, in case one is lost
     const seq = m.s - k;
     if (seq > peer.lastQueued) { peer.queue.push({ s: seq, b: m.b[k] }); peer.lastQueued = seq; }
@@ -1804,7 +1827,9 @@ function netInput(p) { const pr = NET.peers[p.peer]; return pr ? pr.input : NO_I
 function hostBeforeStep() {
   for (const id in NET.peers) {
     const pr = NET.peers[id];
-    if (pr.queue.length > 5) pr.queue.splice(0, pr.queue.length - 2); // fell behind: catch up
+    // Behind: catch up by skipping inputs that repeat the next one, so no key press is ever lost.
+    while (pr.queue.length > 3 && pr.queue[0].b === pr.queue[1].b) pr.queue.shift();
+    if (pr.queue.length > 15) pr.queue.splice(0, pr.queue.length - 4); // badly behind: drop the backlog
     if (pr.queue.length) { const q = pr.queue.shift(); pr.input = unpackInput(q.b); pr.lastSeq = q.s; }
   }
 }
@@ -1826,9 +1851,9 @@ let evBuf = [];
 function hostAfterStep() {
   for (const e of S.events) evBuf.push(e);
   if (++NET.sendN % 2) return; // 30 snapshots a second
-  const base = { t: 's', k: S.tick, ph: S.phase, n: S.count, tm: S.time, sd: S.sudden ? 1 : 0, w: S.winner,
+  const base = { t: 's', g: NET.game, k: S.tick, ph: S.phase, n: S.count, tm: S.time, sd: S.sudden ? 1 : 0, w: S.winner,
     P: S.players.map(packPlayer),
-    B: S.bullets.map(b => [r1(b.x), r1(b.y), r2(b.vx), r2(b.vy), BK.indexOf(b.k)]),
+    B: S.bullets.map(b => [r1(b.x), r1(b.y), r2(b.vx), r2(b.vy), BK.indexOf(b.k), b.o]),
     N: S.nades.map(n => [r1(n.x), r1(n.y), r2(n.vx), r2(n.vy), n.t]),
     K: S.pickups.map(pk => pk.type ? PKS.indexOf(pk.type) : -1),
     F: S.feed.slice(-4).map(f => [f.t, f.k ? f.k.id : -1, f.v.id, f.left ? 1 : 0]),
@@ -1836,9 +1861,10 @@ function hostAfterStep() {
   evBuf = [];
   for (const id in NET.peers) {
     const pr = NET.peers[id];
-    if (!pr.ready || pr.fast.readyState !== 'open' || pr.fast.bufferedAmount > 65536) continue;
+    if (!pr.ready || pr.fast.readyState !== 'open' || pr.fast.bufferedAmount > 6000) continue; // never queue old news
     const me = S.players.find(p => p.peer === pr.id);
-    pr.fast.send(JSON.stringify(Object.assign({ ack: pr.lastSeq, me: me || null }, base)));
+    pr.fast.send(JSON.stringify(Object.assign({ ack: pr.lastSeq, me: me || null,
+      pe: pr.pt || 0, pw: pr.pt ? Math.round(performance.now() - pr.ptAt) : 0 }, base)));
   }
 }
 
@@ -1861,12 +1887,13 @@ function onlineStart() {
   for (const k in BOT) delete BOT[k];
   resetEffects();
   S = newGame(gcfg);
+  NET.game++;
   const meta = S.players.map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team, ctrl: p.ctrl === 'cpu' ? 'cpu' : 'net' }));
   for (const id in NET.peers) {
     const pr = NET.peers[id];
-    pr.queue = []; pr.lastSeq = 0; pr.lastQueued = 0; pr.input = NO_INPUT;
+    pr.queue = []; pr.lastSeq = 0; pr.lastQueued = 0; pr.input = NO_INPUT; pr.pt = 0;
     const me = S.players.find(p => p.peer === id);
-    sendRel(pr.rel, { t: 'start', map: S.map.id, mode: S.mode, rule: S.rule, meta, you: me ? me.id : -1, teamColors: R.cfg.teamColors });
+    sendRel(pr.rel, { t: 'start', g: NET.game, map: S.map.id, mode: S.mode, rule: S.rule, meta, you: me ? me.id : -1, teamColors: R.cfg.teamColors });
   }
   NET.playing = true; evBuf = [];
   updateCamera(true);
@@ -1944,7 +1971,8 @@ function guestStart(m) {
       { x: -999, y: -999, vx: 0, vy: 0, face: 1, hp: 100, shieldHp: SHIELD_MAX, stun: 0, inv: 0, dead: 1, cd: 0, charge: 0,
         wpn: null, ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, atk: null, slide: 0, fuel: JET_FUEL, nades: NADES }))), x)),
     bullets: [], nades: [], pickups: map.pickups.map(([x, y]) => ({ x, y, type: null })), feed: [], events: [] };
-  Object.assign(NET, { snaps: [], evq: [], pending: [], hist: [0, 0], seq: 0, pred: null, offX: 0, offY: 0, clock: null, lastK: -1, playing: true });
+  Object.assign(NET, { snaps: [], evq: [], pending: [], hist: [0, 0], seq: 0, pred: null, offX: 0, offY: 0, clock: null, lastK: -1,
+    playing: true, game: m.g, shots: [] });
   S = NET.view;
   updateCamera(true);
   acc = 0;
@@ -1959,11 +1987,30 @@ function predictStep(input, live) {
   const P = NET.pred, M = P.S;
   M.tick++; M.events = []; M.bullets = []; M.nades = [];
   if (M.phase === 'play' && !P.p.out) updatePlayer(M, P.p, input); else P.p.prev = input;
-  if (live) handleEvents(M.events.filter(e => LOCAL_EV.has(e.type)));
+  if (live) {
+    handleEvents(M.events.filter(e => LOCAL_EV.has(e.type)));
+    for (const b of M.bullets) NET.shots.push(b); // our own shots appear at once, without waiting for the host
+  }
+}
+function moveShots() { // our own shots fly on our screen until they hit a wall or someone
+  const V = NET.view;
+  NET.shots = NET.shots.filter(b => {
+    const n = Math.ceil(Math.hypot(b.vx, b.vy) / 3);
+    for (let i = 0; i < n; i++) {
+      b.x += b.vx / n; b.y += b.vy / n;
+      if (solidAt(V.map, b.x, b.y)) { handleEvents([{ type: 'spark', x: b.x, y: b.y, k: b.k }]); return false; }
+      for (const q of V.players) {
+        if (q.id === NET.myPid || q.dead || q.out || q.inv > 0 || (teams(V) && q.team === V.players[NET.myPid].team)) continue;
+        if (b.x > q.x - HALF && b.x < q.x + HALF && b.y > q.y - height(q) && b.y < q.y) return false;
+      }
+    }
+    return --b.life > 0;
+  });
 }
 
 function guestFast(s) {
-  if (s.t !== 's' || s.k < NET.lastK) return;
+  if (s.t !== 's' || s.g !== NET.game || s.k < NET.lastK) return; // ignore anything from an earlier match
+  if (s.pe) { const rtt = performance.now() - s.pe - s.pw; NET.ping = NET.ping ? NET.ping * 0.9 + rtt * 0.1 : rtt; }
   NET.lastK = s.k;
   const now = performance.now(), est = now - s.k * 1000 / 60;
   // The host's clock, as seen here: the fastest packet sets it, and it drifts slowly toward slower ones.
@@ -1993,10 +2040,12 @@ function guestTick() {
   NET.seq++;
   NET.pending.push({ s: NET.seq, input: inp });
   if (NET.pending.length > 120) NET.pending.shift();
-  if (NET.host && NET.host.fast && NET.host.fast.readyState === 'open') NET.host.fast.send(JSON.stringify({ t: 'i', s: NET.seq, b: [b].concat(NET.hist) }));
+  if (NET.host && NET.host.fast && NET.host.fast.readyState === 'open') NET.host.fast.send(JSON.stringify({ t: 'i', g: NET.game, s: NET.seq, b: [b].concat(NET.hist),
+    pt: NET.seq % 10 ? undefined : Math.round(performance.now()) }));
   NET.hist = [b, NET.hist[0]];
   if (NET.pred) predictStep(inp, true);
   NET.offX *= 0.8; NET.offY *= 0.8;
+  moveShots();
   V.tick++;
   const tt = guestTime();
   while (NET.evq.length && NET.evq[0].k <= tt) handleEvents(NET.evq.shift().E);
@@ -2026,7 +2075,8 @@ function buildView() {
       lives: latest.lives, kills: latest.kills, deaths: latest.deaths, out: latest.out });
   }
   const dtk = Math.max(0, Math.min(6, tt - a.k)); // bullets: the older snapshot, carried forward to the same moment
-  V.bullets = a.B.map(([x, y, vx, vy, k]) => ({ x: x + vx * dtk, y: y + vy * dtk, vx, vy, k: BK[k] }));
+  V.bullets = a.B.filter(b => b[5] !== NET.myPid) // our own come from moveShots instead
+    .map(([x, y, vx, vy, k]) => ({ x: x + vx * dtk, y: y + vy * dtk, vx, vy, k: BK[k] })).concat(NET.shots);
   V.nades = a.N.map(([x, y, vx, vy, t]) => ({ x, y, vx, vy, t: t - dtk }));
   V.feed.forEach(fd => { if (fd.k) fd.k = V.players[fd.k.id]; fd.v = V.players[fd.v.id]; });
 }
@@ -2045,14 +2095,81 @@ addEventListener('beforeunload', () => {
   if (NET.role === 'guest' && NET.host) sendRel(NET.host.rel, { t: 'bye' });
 });
 
+// --- pictures for the lobby: key icons and one small scene per special move ---
+function pxDisc(g, x, y, r, c) {
+  g.fillStyle = c;
+  for (let dy = -Math.round(r); dy <= Math.round(r); dy++) { const w = Math.round(Math.sqrt(Math.max(0, r * r - dy * dy))); g.fillRect(Math.round(x) - w, Math.round(y) + dy, w * 2 + 1, 1); }
+}
+function drawKeyIcon(c, kind, color) {
+  const g = c.getContext('2d'), R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  g.clearRect(0, 0, c.width, c.height);
+  if (kind === 'gun') { R(1, 5, 13, 2, '#9aa4b4'); R(3, 4, 7, 1, '#cfd6e6'); R(6, 7, 2, 3, '#9aa4b4'); R(14, 4, 2, 4, '#ffe066'); }
+  else if (kind === 'fist') { R(1, 4, 8, 4, color); R(9, 3, 5, 6, mix(color, 0.35)); R(10, 3, 1, 6, mix(color, -0.3)); R(12, 3, 1, 6, mix(color, -0.3)); }
+  else if (kind === 'shield') { g.globalAlpha = 0.35; pxDisc(g, 8, 6, 5, mix(color, 0.5)); g.globalAlpha = 1;
+    g.fillStyle = mix(color, 0.7); for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2; g.fillRect(Math.round(8 + Math.cos(a) * 5.5), Math.round(6 + Math.sin(a) * 5.5), 1, 1); } }
+  else if (kind === 'nade') { R(5, 4, 6, 7, '#4a5a32'); R(6, 4, 4, 1, '#8aa05a'); R(6, 2, 4, 2, '#9aa0a8'); R(10, 1, 2, 2, '#9aa0a8'); R(8, 7, 1, 1, '#ff4a3a'); }
+}
+function drawMoveIcon(c, kind, color) {
+  const g = c.getContext('2d'), soft = mix(color, 0.3);
+  g.clearRect(0, 0, c.width, c.height);
+  g.fillStyle = '#4a5470'; g.fillRect(0, 24, 32, 2); // the ground
+  const puffs = pts => pts.forEach(([x, y, r]) => { g.globalAlpha = 0.85; pxDisc(g, x, y, r, soft); g.globalAlpha = 1; });
+  if (kind === 'spin') {
+    puffs([[3, 17, 1.2], [7, 14, 1.6], [11, 11, 2]]);
+    g.save(); g.translate(21, 9); g.rotate(Math.PI / 2); g.drawImage(sprite('jump', color, false, false), -6, -9); g.restore();
+  } else if (kind === 'slide') {
+    puffs([[2, 21, 1.4], [6, 20, 1.8], [10, 21, 2.2]]);
+    g.drawImage(sprite('slide', color, false, false), 15, 13);
+  } else if (kind === 'jet') {
+    g.drawImage(sprite('jump', color, false, false), 10, 0);
+    g.fillStyle = '#ffd25a'; g.fillRect(12, 17, 3, 4); g.fillStyle = '#fff'; g.fillRect(13, 17, 1, 2);
+    puffs([[13, 22, 1.5], [9, 21, 1.2], [17, 21, 1.2]]);
+  } else if (kind === 'drop') {
+    g.fillStyle = '#c8d6f0'; g.fillRect(4, 6, 24, 1); g.fillStyle = '#4a5470'; g.fillRect(4, 7, 24, 2);
+    g.fillStyle = '#8b94ad'; for (let y = 0; y < 5; y += 2) { g.fillRect(6, y, 1, 1); g.fillRect(25, y, 1, 1); } // motion lines
+    g.drawImage(sprite('jump', color, false, false), 10, 6);
+  } else if (kind === 'swap') {
+    g.drawImage(sprite('crouch', color, false, false), 4, 13);
+    g.fillStyle = 'rgba(74,216,255,0.35)'; g.fillRect(17, 22, 14, 2);
+    g.fillStyle = '#9aa4b4'; g.fillRect(16, 16, 15, 2); g.fillStyle = '#cfd6e6'; g.fillRect(20, 14, 5, 2); g.fillRect(18, 18, 2, 2);
+  }
+}
+const MOVES = [
+  { kind: 'spin', keys: ['↑', '↑'], name: 'Spin jump', tip: 'Tap jump twice, fast' },
+  { kind: 'slide', keys: ['→', '→'], name: 'Slide', tip: 'Tap forward twice' },
+  { kind: 'jet', keys: ['↑', '↑', '↑'], hold: true, name: 'Jetpack', tip: 'Third jump, held' },
+  { kind: 'drop', keys: ['↓', '↓'], name: 'Drop down', tip: 'Tap down twice on a thin platform' },
+  { kind: 'swap', keys: ['↓'], name: 'Swap gun', tip: 'Crouch on a weapon' },
+];
+let howtoColor = null;
+function buildHowto(colorIdx) {
+  const color = COLORS[colorIdx].c;
+  if (howtoColor === color) return;
+  howtoColor = color;
+  document.querySelectorAll('canvas[data-icon]').forEach(c => drawKeyIcon(c, c.dataset.icon, color));
+  const box = $('moveCards');
+  box.innerHTML = '';
+  for (const m of MOVES) {
+    const card = document.createElement('div'), cv2 = document.createElement('canvas'), keys = document.createElement('div'), name = document.createElement('span');
+    card.className = 'mcard'; card.title = m.tip;
+    cv2.width = 32; cv2.height = 26; drawMoveIcon(cv2, m.kind, color);
+    keys.className = 'mk';
+    m.keys.forEach((k, i) => { const cap = document.createElement('span'); cap.className = 'cap sm' + (m.hold && i === m.keys.length - 1 ? ' hold' : ''); cap.textContent = k; keys.appendChild(cap); });
+    name.className = 'ml'; name.textContent = m.name;
+    card.append(cv2, keys, name);
+    box.appendChild(card);
+  }
+}
+
 // ============================================================================
 // Lobby, pause, end screen
 // ============================================================================
 const $ = id => document.getElementById(id);
 const CFG_KEY = 'spartan-brawl-lobby', NAME_KEY = 'spartan-brawl-name';
-let cfg = { mode: 'ffa', rule: 'lives', map: 'random', teamColors: [0, 1],
+let cfg = { mode: 'ffa', rule: 'lives', map: 'random', skill: 'normal', teamColors: [0, 1],
   slots: [{ ctrl: 'A', color: 2 }, { ctrl: 'cpu', color: 0 }, { ctrl: 'off', color: 1 }, { ctrl: 'off', color: 5 }] };
 try { const saved = JSON.parse(localStorage.getItem(CFG_KEY)); if (saved && saved.slots) cfg = Object.assign(cfg, saved); } catch (e) {}
+cfg.slots.forEach((sl, i) => { sl.ctrl = i === 0 ? 'A' : sl.ctrl === 'off' ? 'off' : 'cpu'; }); // P1 is you; the rest are CPUs
 function saveCfg() { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} }
 function saveName(n) { try { localStorage.setItem(NAME_KEY, n); } catch (e) {} }
 try { $('nameIn').value = localStorage.getItem(NAME_KEY) || ''; } catch (e) {}
@@ -2086,15 +2203,18 @@ function slotRow(i) {
   tag.className = 'tag'; tag.textContent = 'P' + (i + 1);
   row.appendChild(tag);
   row.appendChild(preview(colorIdx));
-  const sel = document.createElement('select');
-  sel.setAttribute('aria-label', 'Player ' + (i + 1) + ' control');
-  const opts = cfg.mode === 'training' ? [['A', 'Keyboard A'], ['B', 'Keyboard B']]
-    : [['A', 'Keyboard A'], ['B', 'Keyboard B'], ['cpu', 'CPU'], ['off', 'Off']];
-  opts.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); });
-  if (cfg.mode === 'training' && (sl.ctrl === 'cpu' || sl.ctrl === 'off')) sl.ctrl = 'A';
-  sel.value = sl.ctrl;
-  sel.onchange = () => { sl.ctrl = sel.value; saveCfg(); renderLobby(); };
-  row.appendChild(sel);
+  if (i === 0) {
+    const you = document.createElement('span');
+    you.className = 'who you'; you.textContent = 'You';
+    row.appendChild(you);
+  } else {
+    const sel = document.createElement('select');
+    sel.setAttribute('aria-label', 'Player ' + (i + 1));
+    [['cpu', 'CPU'], ['off', 'Off']].forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); });
+    sel.value = sl.ctrl;
+    sel.onchange = () => { sl.ctrl = sel.value; saveCfg(); renderLobby(); };
+    row.appendChild(sel);
+  }
   if (cfg.mode !== 'team' && sl.ctrl !== 'off') row.appendChild(swatches(sl.color, c => { sl.color = c; saveCfg(); renderLobby(); }));
   if (sl.ctrl === 'off') row.style.opacity = 0.5;
   return row;
@@ -2150,8 +2270,7 @@ function renderLobby() {
   $('netStart').classList.toggle('hidden', !online || inRoom || !!NET.role);
   $('room').classList.toggle('hidden', !inRoom);
   $('settings').classList.toggle('hidden', online && !inRoom);
-  $('keysLocal').classList.toggle('hidden', online);
-  $('keysOnline').classList.toggle('hidden', !online);
+  buildHowto(inRoom ? NET.room.slots[NET.role === 'host' ? 0 : Math.max(0, NET.mySlot)].color : cfg.slots[0].color);
   if (inRoom) $('roomCode').textContent = NET.code;
   $('copyLink').classList.toggle('hidden', !host);
   document.querySelectorAll('#settings .seg').forEach(seg => {
@@ -2173,7 +2292,7 @@ function renderLobby() {
     box.appendChild(slotRow(0));
     const n = document.createElement('p');
     n.className = 'note';
-    n.textContent = 'A practice room with every weapon on a rack and two dummies. Press T to change what the dummies do.';
+    n.textContent = 'Every weapon on a rack, and two dummies. Press T to change what the dummies do.';
     box.appendChild(n);
   } else for (let i = 0; i < 4; i++) box.appendChild(slotRow(i));
   $('start').classList.toggle('hidden', online && !host);
@@ -2197,8 +2316,7 @@ $('tabs').addEventListener('click', e => {
 function problem() {
   if (cfg.mode === 'training') return null;
   const on = cfg.slots.filter(s => s.ctrl !== 'off');
-  if (on.length < 2) return 'Turn on at least two players.';
-  for (const k of ['A', 'B']) if (on.filter(s => s.ctrl === k).length > 1) return 'Keyboard ' + k + ' can only control one player.';
+  if (on.length < 2) return 'Turn on at least one CPU.';
   if (cfg.mode === 'team') {
     const t0 = cfg.slots.slice(0, 2).some(s => s.ctrl !== 'off'), t1 = cfg.slots.slice(2).some(s => s.ctrl !== 'off');
     if (!t0 || !t1) return 'Each team needs at least one player.';

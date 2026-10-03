@@ -219,16 +219,16 @@ and turn at once.
 
 | Input | Move |
 |---|---|
-| Jump, jump | Double jump |
+| Jump, then jump | Double jump |
 | Jump a third time and hold | Jetpack: about 0.8 s of thrust, refilled when you land |
-| Down + jump | Spin jump: 113 px high and 258 px across, against 83 and 144 for a jump |
-| Back, then forward | Slide: low enough to duck a shot, and it trips anyone in the way |
+| Jump, then jump again fast | Spin jump, in place of the double jump |
+| Forward, forward | Slide: low enough to duck a shot, and it trips anyone in the way |
 | Down, down | Drop through a thin platform |
 | Down in the air | Fall fast |
 | Crouch on a weapon | Swap your weapon for it |
 
-The spin jump works by holding down and pressing jump, or by pressing down and then jump within a
-third of a second. It is the fast way up to a high platform and the weapon on it. Spins, slides and
+Both double taps need the second tap within a quarter of a second. A slower second jump is a
+plain double jump. The spin jump is the fast way up to a high platform and the weapon on it. Spins, slides and
 the jetpack leave smoke in the player's color. A slide into a jump keeps the slide's speed.
 
 **Health and knockback.** Every spartan has 100 health. You lose a life at 0, or when you are

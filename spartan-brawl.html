@@ -118,10 +118,10 @@
         Grenade <kbd>U</kbd>, <kbd>R</kbd> or <kbd>;</kbd></div>
     </div>
     <div class="moves">
-      <b>Jump, jump</b><span>Double jump</span>
+      <b>Jump, then jump</b><span>Double jump</span>
       <b>Jump, jump, hold jump</b><span>Jetpack. A short burst that refills when you land.</span>
-      <b>Down + jump</b><span>Spin jump: higher, faster and farther than a jump</span>
-      <b>Back, then forward</b><span>Slide. Ducks shots and trips anyone in the way.</span>
+      <b>Jump, jump fast</b><span>Spin jump: a quick double tap. Higher, faster and farther than a double jump.</span>
+      <b>Forward, forward</b><span>Slide: a quick double tap. Ducks shots and trips anyone in the way.</span>
       <b>Down, down</b><span>Drop through a thin platform</span>
       <b>Down in the air</b><span>Fall fast</span>
       <b>Crouch on a weapon</b><span>Swap your weapon for it</span>
@@ -273,7 +273,7 @@ function resetBody(p, x, y) {
     shielding: false, crouch: false, onGround: false, onThin: false, jumping: false, ff: false,
     spin: false, slide: 0, slideCd: 0, slideHit: [], jet: false, fuel: JET_FUEL,
     airJumps: 1, coyote: 0, jbuf: 0, drop: 0, cd: 0, dead: 0, lastHit: null, hurtT: -999, nades: NADES, nadeCd: 0,
-    downT: -99, dirT: -99, dirD: 0, swap: false, charge: 0,
+    downT: -99, dirT: -99, dirD: 0, jumpT: -99, swap: false, charge: 0,
     ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, wpn: null, face: x < 500 ? 1 : -1 });
 }
 
@@ -327,11 +327,11 @@ function updatePlayer(S, p, inp) {
     p.shieldHp = Math.min(SHIELD_MAX, p.shieldHp + 0.12);
   }
 
-  // Direction taps: back then forward is a slide. Down, down drops through a thin platform.
+  // Double taps: forward, forward is a slide. Down, down drops through a thin platform.
   let dir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
   for (const d of [-1, 1]) {
     if (!press(d < 0 ? 'left' : 'right')) continue;
-    if (p.onGround && !stunned && !p.shielding && !p.slide && p.slideCd <= 0 && p.dirD === -d && S.tick - p.dirT <= 12) {
+    if (p.onGround && !stunned && !p.shielding && !p.slide && p.slideCd <= 0 && p.dirD === d && S.tick - p.dirT <= 15) {
       p.slide = 24; p.vx = d * SLIDE_V; p.face = d; p.slideHit = []; p.crouch = false;
       ev(S, 'slide', { x: p.x, y: p.y, id: p.id });
     }
@@ -379,9 +379,10 @@ function updatePlayer(S, p, inp) {
   if (p.onGround) { p.coyote = 6; p.airJumps = 1; p.fuel = JET_FUEL; } else if (p.coyote > 0) p.coyote--;
   if (press('up')) p.jbuf = 6; else if (p.jbuf > 0) p.jbuf--;
   if (!stunned && p.jbuf > 0 && !p.jet) {
-    const spin = inp.down || S.tick - p.downT <= 20;
-    if (p.coyote > 0) { p.coyote = 0; doJump(S, p, dir, spin, false); }
-    else if (p.airJumps > 0 && press('up')) { p.airJumps--; doJump(S, p, dir, spin, true); }
+    if (p.coyote > 0) { p.coyote = 0; p.jumpT = S.tick; doJump(S, p, dir, false, false); }
+    else if (p.airJumps > 0 && press('up')) { // a quick second tap is a spin jump; a slow one, a double jump
+      p.airJumps--; doJump(S, p, dir, S.tick - p.jumpT <= 15, true);
+    }
   }
   if (p.jumping && !inp.up && p.vy < -2.4) { p.vy = -2.4; p.jumping = false; }
   if (p.vy >= 0) p.jumping = false;
@@ -431,7 +432,7 @@ function doJump(S, p, dir, spin, air) {
   if (p.slide > 0) { p.slide = 0; p.slideCd = 16; } // a slide jump keeps the slide's speed
   if (spin) {
     const d = dir || p.face;
-    p.vy = air ? SPIN_V * 0.8 : SPIN_V; p.spin = true; p.jumping = false; p.face = d;
+    p.vy = SPIN_V; p.spin = true; p.jumping = false; p.face = d;
     p.vx = d * Math.max(SPIN_SPD, Math.sign(p.vx) === d ? Math.abs(p.vx) : 0);
     ev(S, 'spin', { x: p.x, y: p.y, id: p.id });
   } else {
@@ -1557,7 +1558,7 @@ function drawHud() {
     }
   }
   if (S.rule === 'training') {
-    const lines = ['DOWN + JUMP: SPIN JUMP', 'BACK, FORWARD: SLIDE', 'JUMP X3, HOLD: JETPACK', 'DOWN, DOWN: DROP THROUGH',
+    const lines = ['TAP JUMP X2 FAST: SPIN JUMP', 'TAP FORWARD X2: SLIDE', 'JUMP X3, HOLD: JETPACK', 'DOWN, DOWN: DROP THROUGH',
       'CROUCH ON WEAPON: SWAP', 'R OR U: GRENADE'];
     ctx.fillStyle = 'rgba(8,10,18,0.7)'; ctx.fillRect(4, 4, 104, lines.length * 8 + 6);
     lines.forEach((l, i) => text(l, 8, 8 + i * 8, '#cfd6e6'));

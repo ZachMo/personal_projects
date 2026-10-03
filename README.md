@@ -292,9 +292,12 @@ takes the whole blast.
 ammo refill, damage numbers show, and each move names itself. Press T to make the dummies stand,
 shield, jump, walk or fight.
 
-**A controller works too.** A PS4 controller, or any standard one, drives your spartan alongside
-the keyboard. The left stick or d-pad moves; ✕ jumps, R2 shoots, ○ is melee, L1 the shield and L2
-a grenade; Options opens the menu. Push the stick up or down while shooting to aim at 45°. A
+**A controller works too.** Any controller the browser can read drives your spartan alongside
+the keyboard: PlayStation, Xbox, Switch Pro, 8BitDo and most USB pads, on a computer, or over
+Bluetooth on a phone or tablet. Every standard controller puts its buttons in the same places, so
+one layout fits all; the lobby labels them the way that brand does (✕ on PlayStation is A on Xbox
+and B on Switch), and says plainly when it finds no controller. On a PlayStation controller, the left stick or d-pad moves; ✕ jumps, R2 shoots, ○ is
+melee, L1 the shield and L2 a grenade; Options opens the menu. Push the stick up or down while shooting to aim at 45°. A
 controller has its own jump button, so you can jump while you shoot. When a controller is
 connected, the lobby shows a Controller panel: click an action, press a button, and the choice
 is saved.

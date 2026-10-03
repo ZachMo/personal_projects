@@ -164,8 +164,8 @@
             class="cap" title="Shield" aria-label="L: shield"><b>L</b><canvas data-icon="shield" width="16" height="12"></canvas></span></div>
         </div>
       </div>
-      <div class="ctl padbox hidden" id="padBox">
-        <div class="padhead"><b>Controller</b><button id="padReset" class="tiny">Reset</button></div>
+      <div class="ctl padbox" id="padBox">
+        <div class="padhead"><b id="padTitle">Controller</b><button id="padReset" class="tiny hidden">Reset</button></div>
         <div id="padCaps"></div>
         <p class="note" id="padNote">Click an action, then press a button.</p>
       </div>
@@ -1050,7 +1050,19 @@ KEYMAP.local = KEYMAP.A;
 const PAD_KEY = 'spartan-brawl-pad';
 const PAD_ACTIONS = [['jump', 'Jump'], ['fire', 'Shoot'], ['melee', 'Melee'], ['shield', 'Shield'], ['nade', 'Grenade']];
 const PAD_DEFAULT = { jump: 0, fire: 7, melee: 1, shield: 4, nade: 6 }; // ✕, R2, ○, L1, L2
-const PAD_NAMES = ['✕', '○', '□', '△', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3', 'D↑', 'D↓', 'D←', 'D→', 'PS', 'Pad'];
+// Every standard controller puts its buttons in the same places; only the labels differ by brand.
+const PAD_FAMILIES = [
+  { re: /045e|xbox|xinput/i, name: 'Xbox controller',
+    names: ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'View', 'Menu', 'LS', 'RS', 'D↑', 'D↓', 'D←', 'D→', 'Xbox', ''] },
+  { re: /054c|playstation|dualshock|dualsense|^wireless controller/i, name: 'PlayStation controller',
+    names: ['✕', '○', '□', '△', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3', 'D↑', 'D↓', 'D←', 'D→', 'PS', 'Pad'] },
+  { re: /057e|nintendo|pro controller|joy-con/i, name: 'Switch controller',
+    names: ['B', 'A', 'Y', 'X', 'L', 'R', 'ZL', 'ZR', '−', '+', 'LS', 'RS', 'D↑', 'D↓', 'D←', 'D→', 'Home', 'Cap'] },
+  { re: /./, name: 'Controller',
+    names: ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'View', 'Menu', 'LS', 'RS', 'D↑', 'D↓', 'D←', 'D→', 'Home', ''] },
+];
+function padFamily(g) { return PAD_FAMILIES.find(f => f.re.test(g ? g.id : '')); }
+function padName(g, i) { return padFamily(g).names[i] || '#' + i; }
 const PAD_MENU = 9; // Options opens the menu, like Esc
 let padMap = Object.assign({}, PAD_DEFAULT);
 try { const m = JSON.parse(localStorage.getItem(PAD_KEY)); if (m) for (const k in PAD_DEFAULT) if (Number.isInteger(m[k])) padMap[k] = m[k]; } catch (e) {}
@@ -2738,16 +2750,23 @@ function advance() {
 // The controller panel in the lobby: one cap per action showing its button. Click one, press a button.
 let padWait = null, padPrev = [], padSeen = null;
 function renderPad() {
-  const g = getPad(), box = $('padBox');
-  box.classList.toggle('hidden', !g);
+  const g = getPad(), caps = $('padCaps');
   padSeen = !!g;
-  if (!g) return;
-  const caps = $('padCaps');
   caps.innerHTML = '';
+  $('padReset').classList.toggle('hidden', !g);
+  if (!g) { // say so plainly, so it is clear whether the browser sees a controller at all
+    $('padTitle').textContent = 'Controller';
+    $('padNote').textContent = !navigator.getGamepads || !window.isSecureContext
+      ? 'This browser cannot read controllers on this page.'
+      : 'No controller found. Connect one, then press any button on it.';
+    return;
+  }
+  const fam = padFamily(g);
+  $('padTitle').textContent = fam.name === 'Controller' ? g.id.replace(/\(.*$/, '').trim().slice(0, 28) || 'Controller' : fam.name;
   for (const [k, name] of PAD_ACTIONS) {
     const b = document.createElement('button');
-    b.className = 'cap' + (padWait === k ? ' wait' : ''); b.title = name; b.setAttribute('aria-label', name + ': ' + PAD_NAMES[padMap[k]]);
-    const label = document.createElement('b'); label.textContent = padWait === k ? '…' : PAD_NAMES[padMap[k]] || '#' + padMap[k];
+    b.className = 'cap' + (padWait === k ? ' wait' : ''); b.title = name; b.setAttribute('aria-label', name + ': ' + padName(g, padMap[k]));
+    const label = document.createElement('b'); label.textContent = padWait === k ? '…' : padName(g, padMap[k]);
     b.appendChild(label);
     if (k === 'jump') { const i = document.createElement('i'); i.textContent = '↑'; b.appendChild(i); }
     else { const c = document.createElement('canvas'); c.width = 16; c.height = 12; drawKeyIcon(c, { fire: 'gun', melee: 'fist', shield: 'shield', nade: 'nade' }[k], howtoColor || COLORS[2].c); b.appendChild(c); }

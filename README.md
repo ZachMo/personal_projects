@@ -211,7 +211,15 @@ Each player picks an armor color, or each team does in 2 v 2. A match is either 
 last one standing, or most kills in three minutes with sudden death on a tie. If every person in a
 lives match is out, it ends there rather than leave you watching CPUs: the side with the most
 lives left wins. The map is one of
-three, or random: Canyon, Ring Station and Frostbite.
+five, or random:
+
+- **Canyon**: a desert gulch under a Halo ring, with cliffs at both ends.
+- **Ring Station**: three islands in orbit, joined by steps over the gaps.
+- **Frostbite**: a snowy base with a bunker in the middle and towers at the sides.
+- **Magma Forge**: basalt islands over a lava sea, all reds and oranges, with embers rising.
+  A small pillar on the central floor gives cover.
+- **Deep Lab**: an undersea station in teals and blues, with bubbles rising. A solid lab deck
+  in the middle has to be gone around, not jumped through, and a shallow trench runs under it.
 
 **The camera** follows the fight and zooms out as the players spread apart. The maps are about
 twice the width of the screen, with four or five levels of platforms. Behind them, four or five

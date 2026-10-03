@@ -113,7 +113,7 @@
         <button data-v="ffa">Free for all</button><button data-v="team">2 v 2</button>
         <button data-v="training" class="local-only">Training</button></div></div>
       <div class="row match-only"><label>Win by</label><div class="seg" data-key="rule">
-        <button data-v="lives">3 lives</button><button data-v="timer">Most kills in 3:00</button></div></div>
+        <button data-v="lives">5 lives</button><button data-v="timer">Most kills in 3:00</button></div></div>
       <div class="row"><label>CPUs</label><div class="seg" data-key="skill">
         <button data-v="recruit">Recruit</button><button data-v="normal">Normal</button>
         <button data-v="heroic">Heroic</button><button data-v="legendary">Legendary</button></div></div>
@@ -171,7 +171,7 @@ const GRAV = 0.21, MAXFALL = 5.2, RUN = 2.6, CRAWL = 1.0, ACC_G = 0.9, ACC_A = 0
 const JUMP = -6.0, JUMP2 = -5.4, SPIN_V = -8.4, SPIN_G = 0.30, SPIN_SPD = 4.6, SLIDE_V = 5.8;
 const JET_FUEL = 48, JET_ACC = 0.6, JET_MAX = -3.2;
 const PH = 18, PH_C = 11, HALF = 5;
-const SHIELD_MAX = 50, MAG = 32, RESERVE = 128, RELOAD = 70, CHARGE = 40, LIVES = 3, MATCH_TIME = 180 * 60;
+const SHIELD_MAX = 50, MAG = 32, RESERVE = 128, RELOAD = 70, CHARGE = 40, LIVES = 5, MATCH_TIME = 180 * 60;
 const MAXAMMO = { plasma: 100, sword: 100, shotgun: 6, sniper: 4 };
 const DROPS = [['health', 22], ['ammo', 22], ['grenades', 16], ['shotgun', 16], ['sniper', 14], ['plasma', 14], ['sword', 12]];
 const NADES = 2, NADE_MAX = 4, NADE_FUSE = 90, NADE_R = 52; // frag grenades: carried, thrown, 1.5 s fuse
@@ -786,7 +786,15 @@ function checkWin(S) {
   if (S.phase !== 'play') return;
   if (S.rule === 'lives') {
     const alive = new Set(S.players.filter(p => !p.out).map(p => sideOf(S, p)));
-    if (alive.size <= 1) endMatch(S, alive.size ? [...alive][0] : null);
+    if (alive.size <= 1) { endMatch(S, alive.size ? [...alive][0] : null); return; }
+    // Once every person is out, nobody wants to watch the CPUs finish: the side ahead wins now.
+    const humans = S.players.filter(p => p.ctrl !== 'cpu' && p.ctrl !== 'dummy');
+    if (humans.length && humans.every(p => p.out)) {
+      const score = {};
+      for (const p of S.players) { const k = sideOf(S, p); score[k] = (score[k] || 0) + p.lives * 1000 + p.kills; }
+      const best = Math.max(...Object.values(score)), top = Object.keys(score).filter(k => score[k] === best);
+      endMatch(S, top.length === 1 ? top[0] : null);
+    }
   } else if (S.rule === 'timer' && S.sudden) {
     const l = leaders(S);
     if (l.length === 1) endMatch(S, l[0]);
@@ -1597,7 +1605,7 @@ function drawHud() {
     ctx.drawImage(sprite('idle', p.color, false, false), 1, 0, 10, 7, x + 3, y + 3, 10, 7);
     text(p.name, x + 16, y + 3, mix(p.color, 0.35));
     if (S.rule === 'lives') {
-      for (let k = 0; k < LIVES; k++) { ctx.fillStyle = k < p.lives ? p.color : '#2a2f3c'; ctx.fillRect(x + cw - 6 - k * 5, y + 3, 3, 4); }
+      for (let k = 0; k < LIVES; k++) { ctx.fillStyle = k < p.lives ? p.color : '#2a2f3c'; ctx.fillRect(x + cw - 5 - k * 4, y + 3, 2, 4); }
     } else if (S.rule === 'timer') text(String(p.kills), x + cw - 4, y + 3, '#fff', 1, 'right');
     if (p.out) { text('OUT', x + 50, y + 11, '#ff6a5a'); ctx.globalAlpha = 1; return; }
     const bw = cw - 20;
@@ -1612,7 +1620,7 @@ function drawHud() {
     if (p.dead) label = 'WAIT';
     else if (!w) label = p.ar.reload ? 'AR ..' : 'AR ' + p.ar.ammo + '/' + p.ar.reserve;
     else label = { sword: 'SW ', plasma: 'PP ', shotgun: 'SG ', sniper: 'SR ' }[w.type] + Math.max(0, Math.ceil(w.ammo));
-    text(label, x + cw - (S.rule === 'lives' ? 20 : 12), y + 3, '#cfd6e6', 1, 'right');
+    text(label, x + cw - (S.rule === 'lives' ? 25 : 12), y + 3, '#cfd6e6', 1, 'right');
     ctx.globalAlpha = 1;
   });
 

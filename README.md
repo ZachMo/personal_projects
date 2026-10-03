@@ -207,8 +207,10 @@ on one computer, or online with up to three friends.
 
 Up to four spartans fight. W A S D move and jump; J shoots, K is melee, L is the shield and U
 throws a grenade. The lobby shows the keys and the special moves as pictures, not text.
-Each player picks an armor color, or each team does in 2 v 2. A match is either 3 lives each,
-last one standing, or most kills in three minutes with sudden death on a tie. The map is one of
+Each player picks an armor color, or each team does in 2 v 2. A match is either 5 lives each,
+last one standing, or most kills in three minutes with sudden death on a tie. If every person in a
+lives match is out, it ends there rather than leave you watching CPUs: the side with the most
+lives left wins. The map is one of
 three, or random: Canyon, Ring Station and Frostbite.
 
 **The camera** follows the fight and zooms out as the players spread apart. The maps are about
@@ -305,7 +307,7 @@ second. With a fake Texas to New Hampshire link (35 ms each way, ±15 ms of jitt
 lost), the guest's own spartan never needed a correction over 5 px, before or after a rematch.
 Snapshots are about 1 KB each, 27 KB a second per guest.
 
-**Balance.** Four CPUs play a 3-life match in about one and a half to three minutes. With the
+**Balance.** Four CPUs play a 5-life match in about one and a half to three minutes. With the
 heavier guns, most lives end in a kill rather than a knock-off.
 
 **CPU skill** has four levels, named after Halo's: Recruit, Normal (the default), Heroic and

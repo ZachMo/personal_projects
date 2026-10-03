@@ -113,6 +113,9 @@
       <div class="row"><label>Mode</label><div class="seg" data-key="mode">
         <button data-v="ffa">Free for all</button><button data-v="team">2 v 2</button>
         <button data-v="training" class="local-only">Training</button></div></div>
+      <div class="row match-only"><label>Weapons</label><div class="seg" data-key="set">
+        <button data-v="standard">Standard</button><button data-v="swords">Sword fight</button>
+        <button data-v="shotty">Shotty snipers</button></div></div>
       <div class="row match-only"><label>Win by</label><div class="seg" data-key="rule">
         <button data-v="lives">5 lives</button><button data-v="timer">Most kills in 3:00</button></div></div>
       <div class="row"><label>CPUs</label><div class="seg" data-key="skill">
@@ -174,7 +177,16 @@ const JET_FUEL = 48, JET_ACC = 0.6, JET_MAX = -3.2;
 const PH = 18, PH_C = 11, HALF = 5;
 const SHIELD_MAX = 50, MAG = 32, RESERVE = 128, RELOAD = 70, CHARGE = 40, LIVES = 5, MATCH_TIME = 180 * 60;
 const MAXAMMO = { plasma: 100, sword: 100, shotgun: 6, sniper: 4 };
-const DROPS = [['health', 22], ['ammo', 22], ['grenades', 16], ['shotgun', 16], ['sniper', 14], ['plasma', 14], ['sword', 12]];
+// Weapon sets. base: the weapon everyone carries and falls back to. drops: what the pads give, and how often.
+const SETS = {
+  standard: { name: 'Standard', base: 'rifle',
+    drops: [['health', 22], ['ammo', 22], ['grenades', 16], ['shotgun', 16], ['sniper', 14], ['plasma', 14], ['sword', 12]] },
+  swords: { name: 'Sword fight', base: 'sword', drops: [['health', 50], ['grenades', 50]] },
+  shotty: { name: 'Shotty snipers', base: 'shotgun', drops: [['sniper', 35], ['ammo', 30], ['health', 25], ['grenades', 10]] },
+};
+// The carried weapon's magazine. The sword needs none: as a carried weapon it never runs out.
+const BASES = { rifle: { mag: MAG, reserve: RESERVE, reload: RELOAD, label: 'AR' }, shotgun: { mag: 6, reserve: 18, reload: 80, label: 'SG' },
+  sword: { mag: 0, reserve: 0, reload: 0, label: 'SW' } };
 const NADES = 2, NADE_MAX = 4, NADE_FUSE = 90, NADE_R = 52; // frag grenades: carried, thrown, 1.5 s fuse
 
 const COLORS = [
@@ -242,7 +254,7 @@ function teams(S) { return S.mode !== 'ffa'; }
 function isFoe(S, a, b) { return a !== b && !(teams(S) && a.team === b.team); }
 function sideOf(S, p) { return teams(S) ? 't' + p.team : 'p' + p.id; }
 function height(p) { return p.kd > 0 && p.onGround ? 8 : p.crouch || p.slide > 0 ? PH_C : PH; }
-function wtype(p) { return p.wpn ? p.wpn.type : 'rifle'; }
+function wtype(p) { return p.wpn ? p.wpn.type : p.base || 'rifle'; }
 function approach(v, t, a) { return v < t ? Math.min(t, v + a) : Math.max(t, v - a); }
 
 function newGame(cfg) {
@@ -251,12 +263,12 @@ function newGame(cfg) {
     : cfg.map === 'random' ? MAPS.filter(m => !m.training)[Math.floor(Math.random() * 3)] : MAPS.find(m => m.id === cfg.map);
   const S = {
     phase: training ? 'play' : 'countdown', count: 180, tick: 0, seed: (Math.random() * 2 ** 31) | 0,
-    mode: cfg.mode, rule: training ? 'training' : cfg.rule, skill: cfg.skill || 'normal', time: MATCH_TIME, sudden: false, winner: null,
+    mode: cfg.mode, rule: training ? 'training' : cfg.rule, skill: cfg.skill || 'normal', set: training ? 'standard' : cfg.set || 'standard', time: MATCH_TIME, sudden: false, winner: null,
     map: def, players: [], bullets: [], nades: [], events: [], feed: [], dummyMode: 'stand',
     pickups: def.pickups.map(([x, y, fixed], i) => ({ x, y, fixed, type: null, ammo: 0, timer: fixed ? 1 : 240 + i * 50 })),
   };
   const add = (props, sp) => {
-    const p = Object.assign({ id: S.players.length, lives: LIVES, kills: 0, deaths: 0, out: false, prev: NO_INPUT }, props);
+    const p = Object.assign({ id: S.players.length, base: SETS[S.set].base, lives: LIVES, kills: 0, deaths: 0, out: false, prev: NO_INPUT }, props);
     resetBody(p, sp[0], sp[1]);
     S.players.push(p);
   };
@@ -284,7 +296,7 @@ function resetBody(p, x, y) {
     airJumps: 1, coyote: 0, jbuf: 0, drop: 0, cd: 0, dead: 0, lastHit: null, hurtT: -999, nades: NADES, nadeCd: 0,
     kd: 0, shieldDown: false, spun: false, aim: 0,
     downT: -99, dirT: -99, dirD: 0, jumpT: -99, swap: false, charge: 0,
-    ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, wpn: null, face: x < 500 ? 1 : -1 });
+    ar: { ammo: BASES[p.base || 'rifle'].mag, reserve: BASES[p.base || 'rifle'].reserve, reload: 0 }, wpn: null, face: x < 500 ? 1 : -1 });
 }
 
 function step(S, inputs) {
@@ -330,11 +342,11 @@ function updatePlayer(S, p, inp) {
   p.aim = inp.fire && !stunned ? (inp.up ? -1 : inp.down ? 1 : 0) : 0;
   if (S.rule === 'training') { // practice: health comes back and the rifle never runs dry
     if (S.tick - p.hurtT > 150) p.hp = 100;
-    p.ar.reserve = RESERVE;
+    p.ar.reserve = BASES[p.base].reserve;
     p.nades = NADE_MAX;
   }
   const ar = p.ar;
-  if (ar.reload > 0 && --ar.reload === 0) { const n = Math.min(MAG - ar.ammo, ar.reserve); ar.ammo += n; ar.reserve -= n; }
+  if (ar.reload > 0 && --ar.reload === 0) { const n = Math.min(BASES[p.base].mag - ar.ammo, ar.reserve); ar.ammo += n; ar.reserve -= n; }
 
   // Shield: works on the ground and in the air. It shrinks while held. When it runs out it switches
   // off and recharges, and it comes back once it is half full.
@@ -427,7 +439,12 @@ function updatePlayer(S, p, inp) {
         if (ar.ammo > 0) fireRifle(S, p);
         else if (press('fire')) ev(S, 'dry', { id: p.id });
       }
-    } else if (wt === 'shotgun') { if (inp.fire && p.cd <= 0) fireShotgun(S, p); }
+    } else if (wt === 'shotgun') {
+      if (inp.fire && p.cd <= 0) {
+        if (p.wpn || (ar.ammo > 0 && !ar.reload)) fireShotgun(S, p);
+        else if (press('fire') && !ar.reload) ev(S, 'dry', { id: p.id });
+      }
+    }
     else if (wt === 'sniper') { if (press('fire') && p.cd <= 0) fireSniper(S, p); }
     else if (wt === 'plasma') {
       if (press('fire')) { if (p.cd <= 0) firePlasma(S, p, false); p.charge = 1; }
@@ -437,7 +454,7 @@ function updatePlayer(S, p, inp) {
   } else p.charge = 0;
   if (!stunned && !p.shielding && !p.atk && press('nade') && p.nades > 0 && p.nadeCd <= 0) throwNade(S, p);
   if (w && w.ammo <= 0 && !p.atk) { p.wpn = null; p.charge = 0; ev(S, 'empty', { x: p.x, y: p.y - 12, id: p.id }); }
-  if (!p.wpn && ar.ammo === 0 && ar.reserve > 0 && !ar.reload) { ar.reload = RELOAD; ev(S, 'reload', { id: p.id }); }
+  if (!p.wpn && ar.ammo === 0 && ar.reserve > 0 && !ar.reload) { ar.reload = BASES[p.base].reload; ev(S, 'reload', { id: p.id }); }
 
   const wasAir = !p.onGround;
   moveBody(S, p, height(p));
@@ -494,7 +511,7 @@ function moveBody(S, p, h) {
 
 function startAtk(S, p, type) {
   p.atk = { type, t: 0, hit: [] };
-  if (type === 'sword') p.wpn.ammo -= 10;
+  if (type === 'sword' && p.wpn) p.wpn.ammo -= 10; // a carried sword never runs out
   ev(S, type, { id: p.id });
 }
 
@@ -531,7 +548,8 @@ function fireRifle(S, p) {
   ev(S, 'ar', { id: p.id });
 }
 function fireShotgun(S, p) {
-  p.wpn.ammo--; p.cd = 42;
+  if (p.wpn) p.wpn.ammo--; else p.ar.ammo--;
+  p.cd = 42;
   for (let i = 0; i < 6; i++) {
     S.bullets.push(shot(p, 6.5 + rnd(S), (i - 2.5) * 0.045 + (rnd(S) - 0.5) * 0.03,
       { dmg: 24, kbx: 2.2, kby: -1.6, stun: 10, life: 15, life0: 15, k: 'sg' }));
@@ -720,8 +738,9 @@ function respawn(S, p) {
 }
 
 function rollDrop(S) {
-  let r = rnd(S) * DROPS.reduce((a, d) => a + d[1], 0);
-  for (const [type, w] of DROPS) if ((r -= w) < 0) return type;
+  const drops = SETS[S.set].drops;
+  let r = rnd(S) * drops.reduce((a, d) => a + d[1], 0);
+  for (const [type, w] of drops) if ((r -= w) < 0) return type;
   return 'ammo';
 }
 function updatePickups(S) {
@@ -743,14 +762,15 @@ function updatePickups(S) {
       } else if (t === 'grenades') {
         if (p.nades < NADE_MAX) { p.nades = Math.min(NADE_MAX, p.nades + 2); took = true; }
       } else if (t === 'ammo') {
-        const arFull = p.ar.ammo + p.ar.reserve >= MAG + RESERVE, wFull = !p.wpn || p.wpn.ammo >= MAXAMMO[p.wpn.type];
+        const B = BASES[p.base], arFull = p.ar.ammo + p.ar.reserve >= B.mag + B.reserve, wFull = !p.wpn || p.wpn.ammo >= MAXAMMO[p.wpn.type];
         if (!arFull || !wFull || p.nades < NADES) {
-          p.ar.reserve = MAG + RESERVE - p.ar.ammo;
+          p.ar.reserve = B.mag + B.reserve - p.ar.ammo;
           p.nades = Math.max(p.nades, NADES);
           if (p.wpn && p.wpn.type !== 'sword') p.wpn.ammo = MAXAMMO[p.wpn.type];
           took = true;
         }
-      } else if (!p.wpn) { p.wpn = { type: t, ammo: pk.ammo }; took = true; }
+      } else if (!p.wpn && t === p.base) continue; // you already carry one
+      else if (!p.wpn) { p.wpn = { type: t, ammo: pk.ammo }; took = true; }
       else if (p.wpn.type === t) {
         if (p.wpn.ammo < MAXAMMO[t] && t !== 'sword') { p.wpn.ammo = Math.min(MAXAMMO[t], p.wpn.ammo + pk.ammo); took = true; }
       } else if (p.swap) { // crouch to trade: your old weapon stays on the pad
@@ -886,7 +906,8 @@ function botInput(S, p) {
     for (const pk of S.pickups) {
       if (!pk.type) continue;
       const need = pk.type === 'health' ? p.hp < 50
-        : pk.type === 'ammo' ? !p.wpn && p.ar.ammo + p.ar.reserve < 40 : !p.wpn;
+        : pk.type === 'ammo' ? !p.wpn && p.ar.ammo + p.ar.reserve < (BASES[p.base].mag + BASES[p.base].reserve) / 3
+        : pk.type === 'grenades' ? p.nades < 2 : !p.wpn && pk.type !== p.base;
       const d = Math.hypot(pk.x - p.x, (pk.y - p.y) * 1.5);
       if (need && d < 420 && d < pd) { pd = d; pick = pk; }
     }
@@ -1473,7 +1494,7 @@ function drawWeapon(p, px, hy) {
       box(8, 1 - Math.floor(s / 2), s, s, ready && (p.charge >> 2) % 2 ? '#ffffff' : '#8dff7a');
     }
   } else if (wt === 'sword') {
-    const glow = p.wpn.ammo < 25 && (S.tick >> 2) % 2 ? '#3a7a8a' : '#7ae8ff';
+    const glow = p.wpn && p.wpn.ammo < 25 && (S.tick >> 2) % 2 ? '#3a7a8a' : '#7ae8ff';
     if (p.atk && p.atk.type === 'sword') {
       const t = p.atk.t;
       if (t < ATK.sword.on) { // wind-up: the sword drawn back over the shoulder
@@ -1619,7 +1640,7 @@ function drawHud() {
     const w = p.wpn;
     let label;
     if (p.dead) label = 'WAIT';
-    else if (!w) label = p.ar.reload ? 'AR ..' : 'AR ' + p.ar.ammo + '/' + p.ar.reserve;
+    else if (!w) { const B = BASES[p.base || 'rifle']; label = !B.mag ? B.label : p.ar.reload ? B.label + ' ..' : B.label + ' ' + p.ar.ammo + '/' + p.ar.reserve; }
     else label = { sword: 'SW ', plasma: 'PP ', shotgun: 'SG ', sniper: 'SR ' }[w.type] + Math.max(0, Math.ceil(w.ammo));
     text(label, x + cw - (S.rule === 'lives' ? 25 : 12), y + 3, '#cfd6e6', 1, 'right');
     ctx.globalAlpha = 1;
@@ -1711,7 +1732,7 @@ function render() {
   }
   drawHud();
   if (S.phase === 'countdown') {
-    text(M.name, HUD_W / 2, 70, '#cfd6e6', 2, 'center');
+    text(M.name + (S.set && S.set !== 'standard' ? ' - ' + SETS[S.set].name : ''), HUD_W / 2, 70, '#cfd6e6', 2, 'center');
     text(String(Math.ceil(S.count / 60)), HUD_W / 2, 100, '#ffd25a', 7, 'center');
   } else if (goT > 0) text('FIGHT!', HUD_W / 2, 100, '#ffd25a', 7, 'center');
 }
@@ -1812,7 +1833,7 @@ async function createRoom() {
   catch (e) { status('Could not reach the lobby service. Check your internet connection and try again.'); return; }
   NET.role = 'host'; NET.code = code;
   const mine = cfg.slots[0].color, free = [0, 1, 2, 3, 5, 6, 7].filter(c => c !== mine);
-  NET.room = { cfg: { mode: cfg.mode === 'team' ? 'team' : 'ffa', rule: cfg.rule, map: cfg.map, skill: cfg.skill, teamColors: cfg.teamColors.slice() },
+  NET.room = { cfg: { mode: cfg.mode === 'team' ? 'team' : 'ffa', rule: cfg.rule, map: cfg.map, skill: cfg.skill, set: cfg.set, teamColors: cfg.teamColors.slice() },
     slots: [{ kind: 'host', name, color: mine }, { kind: 'open', color: free[0] }, { kind: 'open', color: free[1] }, { kind: 'open', color: free[2] }] };
   NET.ticker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 16)'], { type: 'text/javascript' })));
   NET.ticker.onmessage = () => { if (document.hidden) advance(); }; // keep the match running if the host's tab is hidden
@@ -1956,12 +1977,12 @@ function onlineStart() {
   resetEffects();
   S = newGame(gcfg);
   NET.game++;
-  const meta = S.players.map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team, ctrl: p.ctrl === 'cpu' ? 'cpu' : 'net' }));
+  const meta = S.players.map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team, base: p.base, ctrl: p.ctrl === 'cpu' ? 'cpu' : 'net' }));
   for (const id in NET.peers) {
     const pr = NET.peers[id];
     pr.queue = []; pr.lastSeq = 0; pr.lastQueued = 0; pr.input = NO_INPUT; pr.pt = 0;
     const me = S.players.find(p => p.peer === id);
-    sendRel(pr.rel, { t: 'start', g: NET.game, map: S.map.id, mode: S.mode, rule: S.rule, meta, you: me ? me.id : -1, teamColors: R.cfg.teamColors });
+    sendRel(pr.rel, { t: 'start', g: NET.game, set: S.set, map: S.map.id, mode: S.mode, rule: S.rule, meta, you: me ? me.id : -1, teamColors: R.cfg.teamColors });
   }
   NET.playing = true; evBuf = [];
   updateCamera(true);
@@ -2034,7 +2055,7 @@ function guestStart(m) {
   if (NET.room) NET.room.cfg.teamColors = m.teamColors;
   resetEffects();
   NET.meta = m.meta; NET.myPid = m.you;
-  NET.view = { phase: 'countdown', count: 180, tick: 0, mode: m.mode, rule: m.rule, time: MATCH_TIME, sudden: false, winner: null,
+  NET.view = { phase: 'countdown', count: 180, tick: 0, mode: m.mode, rule: m.rule, set: m.set || 'standard', time: MATCH_TIME, sudden: false, winner: null,
     map, players: m.meta.map(x => Object.assign(unpackPlayer(packPlayer(Object.assign({ lives: LIVES, kills: 0, deaths: 0 },
       { x: -999, y: -999, vx: 0, vy: 0, face: 1, hp: 100, shieldHp: SHIELD_MAX, stun: 0, inv: 0, dead: 1, cd: 0, charge: 0,
         wpn: null, ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, atk: null, slide: 0, fuel: JET_FUEL, nades: NADES }))), x)),
@@ -2240,7 +2261,7 @@ function buildHowto(colorIdx) {
 // ============================================================================
 const $ = id => document.getElementById(id);
 const CFG_KEY = 'spartan-brawl-lobby', NAME_KEY = 'spartan-brawl-name';
-let cfg = { mode: 'ffa', rule: 'lives', map: 'random', skill: 'normal', teamColors: [0, 1],
+let cfg = { mode: 'ffa', rule: 'lives', map: 'random', skill: 'normal', set: 'standard', teamColors: [0, 1],
   slots: [{ ctrl: 'A', color: 2 }, { ctrl: 'cpu', color: 0 }, { ctrl: 'off', color: 1 }, { ctrl: 'off', color: 5 }] };
 try { const saved = JSON.parse(localStorage.getItem(CFG_KEY)); if (saved && saved.slots) cfg = Object.assign(cfg, saved); } catch (e) {}
 cfg.slots.forEach((sl, i) => { sl.ctrl = i === 0 ? 'A' : sl.ctrl === 'off' ? 'off' : 'cpu'; }); // P1 is you; the rest are CPUs

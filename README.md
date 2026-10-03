@@ -262,6 +262,17 @@ about 270 px away. A slide does 10. Either one leaves the target lying flat for 
 land. Mashing any key gets them up sooner, about 0.5 s, and they blink untouchable for a moment as
 they rise.
 
+**Weapon sets.** A match is played with one of three:
+
+- **Standard**: everyone carries the assault rifle, and the pads drop everything below.
+- **Sword fight**: everyone carries an energy sword that never runs out. The pads drop only
+  health and grenades.
+- **Shotty snipers**: everyone carries a shotgun with six shells loaded and 18 spare, reloaded
+  between. The pads drop sniper rifles, ammo, health and grenades. A sniper you pick up drops you
+  back to the shotgun when it is empty.
+
+All three keep grenades.
+
 **Grenades** are a second weapon on their own key, U. You respawn with
 two and carry up to four; a grenade pad gives two more, and an ammo box tops you up to two. A
 grenade flies in a low arc, bounces, and goes off after 1.5 s. It drops at the feet of an enemy it

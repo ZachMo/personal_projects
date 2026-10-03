@@ -4,6 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spartan Brawl</title>
+<meta name="description" content="A retro Halo-style platform brawler. Rifles, energy swords, grenades and jetpacks, against CPUs or online with friends.">
+<meta name="theme-color" content="#121725">
+<meta name="apple-mobile-web-app-title" content="Spartan Brawl">
+<link rel="icon" href="spartan-brawl-icon.svg" type="image/svg+xml">
+<link rel="icon" href="spartan-brawl-icon-180.png" sizes="180x180" type="image/png">
+<link rel="icon" href="spartan-brawl-icon-512.png" sizes="512x512" type="image/png">
+<link rel="apple-touch-icon" href="spartan-brawl-icon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Spartan Brawl">
+<meta property="og:title" content="Spartan Brawl">
+<meta property="og:description" content="A retro Halo-style platform brawler. Play against CPUs, or online with up to three friends.">
+<meta property="og:url" content="https://zachmo.github.io/personal_projects/spartan-brawl.html">
+<meta property="og:image" content="https://zachmo.github.io/personal_projects/spartan-brawl-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="675">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://zachmo.github.io/personal_projects/spartan-brawl-card.png">
 <style>
   :root {
     color-scheme: dark;
@@ -64,6 +81,13 @@
   .cap.sm { width: 26px; height: 26px; font-size: 14px; margin: 1px; border-bottom-width: 3px; }
   .cap.sm.hold { border-bottom-color: var(--accent); }
   .cards { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 260px; }
+  .padbox { flex-direction: column; gap: 6px; }
+  .padhead { display: flex; justify-content: space-between; align-items: center; color: var(--ink); }
+  button.tiny { font-size: 11px; padding: 2px 8px; box-shadow: 2px 2px 0 #000; }
+  #padCaps { display: flex; flex-wrap: wrap; }
+  button.cap { padding: 0; color: var(--ink); font: inherit; box-shadow: none; cursor: pointer; }
+  button.cap.wait { border-color: var(--accent); }
+  #padNote { margin: 0; font-size: 11px; }
   .mcard { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; width: 92px;
     background: #0b0e18; border: 2px solid var(--line); }
   .mcard canvas { width: 64px; height: 52px; image-rendering: pixelated; }
@@ -139,6 +163,11 @@
             class="cap" title="Melee" aria-label="K: melee"><b>K</b><canvas data-icon="fist" width="16" height="12"></canvas></span><span
             class="cap" title="Shield" aria-label="L: shield"><b>L</b><canvas data-icon="shield" width="16" height="12"></canvas></span></div>
         </div>
+      </div>
+      <div class="ctl padbox hidden" id="padBox">
+        <div class="padhead"><b>Controller</b><button id="padReset" class="tiny">Reset</button></div>
+        <div id="padCaps"></div>
+        <p class="note" id="padNote">Click an action, then press a button.</p>
       </div>
       <div class="cards" id="moveCards"></div>
     </div>
@@ -254,7 +283,9 @@ const ATK = {
 // Simulation. Pure game state in, game state out. No drawing and no DOM, so the
 // same code can run on a server when the game goes online.
 // ============================================================================
-const NO_INPUT = { left: false, right: false, up: false, down: false, fire: false, melee: false, shield: false, nade: false };
+// up is W: jump, or aim up while firing. jump is a controller's jump button. aimU is the stick pushed up: aim only.
+const NO_INPUT = { left: false, right: false, up: false, down: false, fire: false, melee: false, shield: false, nade: false,
+  jump: false, aimU: false };
 const BITS_ALL = Object.keys(NO_INPUT);
 
 function rnd(S) { // mulberry32, kept in the state so a server and a client roll the same numbers
@@ -352,8 +383,9 @@ function updatePlayer(S, p, inp) {
     }
   }
   // Holding fire turns W and S into aim up and aim down, instead of jump and crouch.
-  const pressUp = press('up') && !inp.fire, pressDown = press('down') && !inp.fire;
-  p.aim = inp.fire && !stunned ? (inp.up ? -1 : inp.down ? 1 : 0) : 0;
+  const pressUp = (press('up') && !inp.fire) || press('jump'), pressDown = press('down') && !inp.fire;
+  const jumpHeld = inp.up || inp.jump;
+  p.aim = inp.fire && !stunned ? (inp.up || inp.aimU ? -1 : inp.down ? 1 : 0) : 0;
   if (S.rule === 'training') { // practice: health comes back and the rifle never runs dry
     if (S.tick - p.hurtT > 150) p.hp = 100;
     p.ar.reserve = BASES[p.base].reserve;
@@ -417,7 +449,7 @@ function updatePlayer(S, p, inp) {
   }
 
   // Jetpack: after the double jump, a fresh press of jump fires it. Hold to keep thrusting.
-  if (!p.onGround && p.airJumps === 0 && !stunned && !p.shielding && p.fuel > 0 && inp.up && (p.jet || pressUp)) {
+  if (!p.onGround && p.airJumps === 0 && !stunned && !p.shielding && p.fuel > 0 && jumpHeld && (p.jet || pressUp)) {
     if (!p.jet) ev(S, 'jet', { x: p.x, y: p.y, id: p.id });
     p.jet = true; p.fuel--; p.ff = false; p.spin = false; p.jumping = false;
     p.vy = Math.max(JET_MAX, p.vy - JET_ACC);
@@ -434,7 +466,7 @@ function updatePlayer(S, p, inp) {
       else if (p.airJumps > 0) { p.airJumps--; doJump(S, p, dir, false, true); }
     }
   }
-  if (p.jumping && !inp.up && p.vy < -2.4) { p.vy = -2.4; p.jumping = false; }
+  if (p.jumping && !jumpHeld && p.vy < -2.4) { p.vy = -2.4; p.jumping = false; }
   if (p.vy >= 0) p.jumping = false;
   if (!p.onGround && pressDown && p.vy > -1 && !stunned) p.ff = true;
   if (!p.jet) {
@@ -1014,9 +1046,37 @@ function keyInput(map) {
   return I;
 }
 KEYMAP.local = KEYMAP.A;
+// --- a game controller (PS4 or any standard pad), through the browser's Gamepad API ---
+const PAD_KEY = 'spartan-brawl-pad';
+const PAD_ACTIONS = [['jump', 'Jump'], ['fire', 'Shoot'], ['melee', 'Melee'], ['shield', 'Shield'], ['nade', 'Grenade']];
+const PAD_DEFAULT = { jump: 0, fire: 7, melee: 1, shield: 4, nade: 6 }; // ✕, R2, ○, L1, L2
+const PAD_NAMES = ['✕', '○', '□', '△', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3', 'D↑', 'D↓', 'D←', 'D→', 'PS', 'Pad'];
+const PAD_MENU = 9; // Options opens the menu, like Esc
+let padMap = Object.assign({}, PAD_DEFAULT);
+try { const m = JSON.parse(localStorage.getItem(PAD_KEY)); if (m) for (const k in PAD_DEFAULT) if (Number.isInteger(m[k])) padMap[k] = m[k]; } catch (e) {}
+function getPad() {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for (const g of pads) if (g && g.connected) return g;
+  return null;
+}
+function padDown(g, i) { const b = g && g.buttons[i]; return !!(b && (b.pressed || b.value > 0.4)); }
+function padInput() {
+  const I = Object.assign({}, NO_INPUT), g = getPad();
+  if (!g) return I;
+  const ax = g.axes[0] || 0, ay = g.axes[1] || 0;
+  I.left = ax < -0.35 || padDown(g, 14); I.right = ax > 0.35 || padDown(g, 15);
+  I.down = ay > 0.55 || padDown(g, 13); I.aimU = ay < -0.55 || padDown(g, 12);
+  for (const [k] of PAD_ACTIONS) I[k] = padDown(g, padMap[k]);
+  return I;
+}
+function localInput(map) { // the keyboard and the controller together
+  const a = keyInput(map), b = padInput(), I = {};
+  for (const k in NO_INPUT) I[k] = !!(a[k] || b[k]);
+  return I;
+}
 function gatherInputs() {
   return S.players.map(p => p.ctrl === 'cpu' ? botInput(S, p) : p.ctrl === 'dummy' ? dummyInput(S, p)
-    : p.ctrl === 'net' ? netInput(p) : keyInput(KEYMAP[p.ctrl]));
+    : p.ctrl === 'net' ? netInput(p) : localInput(KEYMAP[p.ctrl]));
 }
 
 // ============================================================================
@@ -1847,7 +1907,7 @@ function render() {
 const SIGNAL_URL = 'wss://tnaassoaraijvhswevvp.supabase.co/realtime/v1/websocket' +
   '?apikey=sb_publishable_KSJZlg0qLmEOak6sP3WX0g_UDo8lz9Z&vsn=1.0.0';
 const ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
-const BITS = ['left', 'right', 'up', 'down', 'fire', 'melee', 'shield', 'nade'];
+const BITS = ['left', 'right', 'up', 'down', 'fire', 'melee', 'shield', 'nade', 'jump', 'aimU'];
 const WPN = ['shotgun', 'sniper', 'plasma', 'sword'], ATKS = ['melee', 'sword'], BK = ['ar', 'sg', 'sr', 'pp', 'pc'];
 const PKS = ['health', 'ammo', 'shotgun', 'sniper', 'plasma', 'sword', 'grenades'];
 // Sounds a guest plays for its own spartan at once, instead of waiting for the host.
@@ -2227,7 +2287,7 @@ function guestFast(s) {
 }
 
 function guestTick() {
-  const V = NET.view, inp = keyInput(KEYMAP.local), b = packInput(inp);
+  const V = NET.view, inp = localInput(KEYMAP.local), b = packInput(inp);
   NET.seq++;
   NET.pending.push({ s: NET.seq, input: inp });
   if (NET.pending.length > 120) NET.pending.shift();
@@ -2675,8 +2735,50 @@ function advance() {
   }
   if (acc > DT * 15) acc = 0;
 }
+// The controller panel in the lobby: one cap per action showing its button. Click one, press a button.
+let padWait = null, padPrev = [], padSeen = null;
+function renderPad() {
+  const g = getPad(), box = $('padBox');
+  box.classList.toggle('hidden', !g);
+  padSeen = !!g;
+  if (!g) return;
+  const caps = $('padCaps');
+  caps.innerHTML = '';
+  for (const [k, name] of PAD_ACTIONS) {
+    const b = document.createElement('button');
+    b.className = 'cap' + (padWait === k ? ' wait' : ''); b.title = name; b.setAttribute('aria-label', name + ': ' + PAD_NAMES[padMap[k]]);
+    const label = document.createElement('b'); label.textContent = padWait === k ? '…' : PAD_NAMES[padMap[k]] || '#' + padMap[k];
+    b.appendChild(label);
+    if (k === 'jump') { const i = document.createElement('i'); i.textContent = '↑'; b.appendChild(i); }
+    else { const c = document.createElement('canvas'); c.width = 16; c.height = 12; drawKeyIcon(c, { fire: 'gun', melee: 'fist', shield: 'shield', nade: 'nade' }[k], howtoColor || COLORS[2].c); b.appendChild(c); }
+    b.onclick = () => { padWait = padWait === k ? null : k; renderPad(); };
+    caps.appendChild(b);
+  }
+  $('padNote').textContent = padWait ? 'Press a button on the controller for ' + PAD_ACTIONS.find(a => a[0] === padWait)[1].toLowerCase() + '.'
+    : 'Click an action, then press a button. Stick: move, and aim while shooting.';
+}
+$('padReset').onclick = () => { padMap = Object.assign({}, PAD_DEFAULT); padWait = null; try { localStorage.setItem(PAD_KEY, JSON.stringify(padMap)); } catch (e) {} renderPad(); };
+addEventListener('gamepadconnected', renderPad);
+addEventListener('gamepaddisconnected', renderPad);
+function pollPad() {
+  const g = getPad();
+  if (!!g !== padSeen && !$('lobby').classList.contains('hidden')) renderPad();
+  if (!g) { padPrev = []; return; }
+  const now = g.buttons.map((b, i) => padDown(g, i)), pressed = i => now[i] && !padPrev[i];
+  if (padWait) { // remapping: the first button pressed takes the action
+    const i = now.findIndex((d, j) => d && !padPrev[j] && j !== PAD_MENU);
+    if (i >= 0) { padMap[padWait] = i; padWait = null; try { localStorage.setItem(PAD_KEY, JSON.stringify(padMap)); } catch (e) {} renderPad(); }
+  } else {
+    const endShown = S && S.phase === 'over' && !$('end').classList.contains('hidden');
+    if (pressed(PAD_MENU)) { if (endShown) { if (NET.role !== 'guest') toLobby(); } else if (S) setPaused(!menuOpen()); }
+    if (endShown && pressed(padMap.jump) && NET.role !== 'guest') startMatch();
+  }
+  padPrev = now;
+}
+
 function frame() {
   requestAnimationFrame(frame);
+  pollPad();
   advance();
   if (NET.role === 'guest' && NET.playing) buildView(); // place other players for this exact moment, not just this tick
   render();

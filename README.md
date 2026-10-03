@@ -292,6 +292,17 @@ takes the whole blast.
 ammo refill, damage numbers show, and each move names itself. Press T to make the dummies stand,
 shield, jump, walk or fight.
 
+**A controller works too.** A PS4 controller, or any standard one, drives your spartan alongside
+the keyboard. The left stick or d-pad moves; ✕ jumps, R2 shoots, ○ is melee, L1 the shield and L2
+a grenade; Options opens the menu. Push the stick up or down while shooting to aim at 45°. A
+controller has its own jump button, so you can jump while you shoot. When a controller is
+connected, the lobby shows a Controller panel: click an action, press a button, and the choice
+is saved.
+
+**Its own look when shared.** The page has its own icon, a pixel spartan helmet, its own theme
+color, and a link preview made from a real match frame (`spartan-brawl-card.png`), so a shared
+link no longer borrows Hügelland's.
+
 **Online.** Up to four players, each on their own computer. Everyone types a name of up to six
 letters or numbers before they create or join, and can change it in the lobby. One player presses
 Create game and gets a four-letter code and an invite link. Friends join from the Online tab. The host picks the

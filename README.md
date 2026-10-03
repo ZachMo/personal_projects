@@ -199,6 +199,68 @@ faster does not make you nimbler.
 A bot that steers for the widest opening gets about 180 m and has reached 570.
 Mashing the controls gets about 60.
 
+## spartan-brawl.html
+
+A retro platform brawler in the spirit of old Halo multiplayer and Smash Bros. This is the
+first step of an online game: it plays on one keyboard, for now.
+
+Up to four spartans fight. Two people can share a keyboard, and CPUs fill the other places.
+Each player picks an armor color, or each team does in 2 v 2. A match is either 3 lives each,
+last one standing, or most kills in three minutes with sudden death on a tie. The map is one of
+three, or random: Canyon, Ring Station and Frostbite.
+
+**The camera** follows the fight and zooms out as the players spread apart. The maps are about
+twice the width of the screen, with four or five levels of platforms. Behind them, four or five
+layers of scenery scroll at different speeds, and one layer passes in front.
+
+**Moves.** Gravity is low and acceleration is fast, so the jumps are big and floaty but you stop
+and turn at once.
+
+| Input | Move |
+|---|---|
+| Jump, jump | Double jump |
+| Jump a third time and hold | Jetpack: about 0.8 s of thrust, refilled when you land |
+| Down + jump | Spin jump: 113 px high and 258 px across, against 83 and 144 for a jump |
+| Back, then forward | Slide: low enough to duck a shot, and it trips anyone in the way |
+| Down, down | Drop through a thin platform |
+| Down in the air | Fall fast |
+| Crouch on a weapon | Swap your weapon for it |
+
+The spin jump works by holding down and pressing jump, or by pressing down and then jump within a
+third of a second. It is the fast way up to a high platform and the weapon on it. Spins, slides and
+the jetpack leave smoke in the player's color. A slide into a jump keeps the slide's speed.
+
+**Health and knockback.** Every spartan has 100 health. You lose a life at 0, or when you are
+knocked off the map. Knockback grows as health falls. The jetpack saves you from a medium hit;
+a big hit at low health still takes you out.
+
+**The shield** works like the shield in Smash, on the ground or in the air, and you can walk at
+60% speed with it up. It blocks everything except a charged plasma shot. A blocked melee or sword
+swing bounces the attacker back. It survives one shotgun blast or sniper round. The shield shrinks
+while you hold it, and if it breaks, you are dazed for over two seconds. There is no meter: the
+bubble itself shrinks. The jetpack has no meter either.
+
+**Weapons.** Everyone carries an assault rifle: 32 rounds, 128 in reserve, and about 1.5 s of
+steady fire to kill. Six pads on each map
+drop health (+40), ammo, a shotgun, a sniper rifle, a plasma pistol or an energy sword. With
+only the rifle, you take a weapon by walking over it. To trade one weapon for another, crouch
+on it, and your old one stays on the pad. The shotgun kills in one blast inside about 40 px and
+fades fast after that. The sniper kills in one hit. The sword winds up before each swing and burns
+out after 12 seconds. The plasma pistol fires on a tap, and held, it charges a
+shot that bends toward a foe and breaks a shield. Melee knocks a foe about 170 px away from you, and from behind it does double damage.
+
+**Training** is a practice room with every weapon on a rack and two dummies. Health and rifle
+ammo refill, damage numbers show, and each move names itself. Press T to make the dummies stand,
+shield, jump, walk or fight.
+
+**Built to go online.** The simulation is plain JavaScript with no drawing in it. It takes the
+buttons each player holds and steps the game 60 times a second. Its random numbers come from
+a seed in the game state. A server can run the same code later and send the state to every
+browser.
+
+**Balance.** Four CPUs play a 3-life match in about one and a half to three minutes. With the
+heavier guns, most lives end in a kill rather than a knock-off. CPUs never miss once they line up, so matches between people run differently.
+
 ## hugelland.html
 
 A town-building board game for a phone. It is a jigsaw puzzle: buildings come in odd shapes,

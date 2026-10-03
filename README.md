@@ -221,15 +221,16 @@ and turn at once.
 | Input | Move |
 |---|---|
 | Jump, then jump | Double jump |
-| Jump a third time and hold | Jetpack: about 0.8 s of thrust, refilled when you land |
-| Jump, then jump again fast | Spin jump, in place of the double jump |
-| Forward, forward | Slide: low enough to duck a shot, and it trips anyone in the way |
+| Jump, then jump again fast | Spin jump. It is a bonus: the double jump still follows |
+| After the double jump, jump and hold | Jetpack: about 0.8 s of thrust, refilled when you land |
+| Forward, forward | Slide: low enough to duck a shot, and it knocks down anyone in the way |
+| Hold J, then W or S | Aim 45° up or down. While J is held, W and S aim instead of jumping and crouching |
 | Down, down | Drop through a thin platform |
 | Down in the air | Fall fast |
 | Crouch on a weapon | Swap your weapon for it |
 
 Both double taps need the second tap within a quarter of a second. A slower second jump is a
-plain double jump. The spin jump is the fast way up to a high platform and the weapon on it. Spins, slides and
+plain double jump. The full chain is jump, spin, double jump, jetpack: about 300 px straight up. The spin jump is the fast way up to a high platform and the weapon on it. Spins, slides and
 the jetpack leave smoke in the player's color. A slide into a jump keeps the slide's speed.
 
 **Health and knockback.** Every spartan has 100 health. You lose a life at 0, or when you are
@@ -239,17 +240,25 @@ a big hit at low health still takes you out.
 **The shield** works like the shield in Smash, on the ground or in the air, and you can walk at
 60% speed with it up. It blocks everything except a charged plasma shot. A blocked melee or sword
 swing bounces the attacker back. It survives one shotgun blast or sniper round. The shield shrinks
-while you hold it, and if it breaks, you are dazed for over two seconds. There is no meter: the
-bubble itself shrinks. The jetpack has no meter either.
+while you hold it. When it runs out it switches off, with no harm to you, and recharges; it comes
+back when it is half full, about two seconds later. There is no meter: the bubble itself shrinks.
+The jetpack has no meter either.
 
 **Weapons.** Everyone carries an assault rifle: 32 rounds, 128 in reserve, and 10 hits (about
 0.9 s of steady fire) to kill. Six pads on each map
 drop health (+40), ammo, grenades, a shotgun, a sniper rifle, a plasma pistol or an energy sword. With
 only the rifle, you take a weapon by walking over it. To trade one weapon for another, crouch
 on it, and your old one stays on the pad. The shotgun kills in one blast inside about 40 px and
-fades fast after that. The sniper kills in one hit. The energy sword swings fast, ten times, and each
-hit can send a hurt spartan off the map; only the shield stops it. The plasma pistol fires on a tap, and held, it charges a
-shot that bends toward a foe and breaks a shield. Melee knocks a foe about 170 px away from you, and from behind it does double damage.
+fades fast after that. The sniper kills in one hit, and its round crosses a whole map in a fifth of a second. The energy sword swings fast, ten times, and each
+hit can send a hurt spartan off the map; only the shield stops it. Plasma pistol shots, tapped or charged, lock onto the
+nearest foe and turn hard after them. In the open they always hit. The only way out is to put
+solid ground or a platform between you and the shot: plasma is the one shot that thin platforms
+stop. A charged shot also switches off a shield.
+
+**Melee and the slide knock you down.** Melee does 20 damage (40 from behind) and throws a foe
+about 270 px away. A slide does 10. Either one leaves the target lying flat for 0.8 s after they
+land. Mashing any key gets them up sooner, about 0.5 s, and they blink untouchable for a moment as
+they rise.
 
 **Grenades** are a second weapon on their own key, U. You respawn with
 two and carry up to four; a grenade pad gives two more, and an ammo box tops you up to two. A

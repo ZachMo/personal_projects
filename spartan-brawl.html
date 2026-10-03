@@ -218,7 +218,7 @@ const MAPS = [
 const DUMMY_MODES = ['stand', 'shield', 'jump', 'walk', 'fight'];
 
 const ATK = {
-  melee: { on: 3, off: 7, len: 16, cd: 16, reach: 15, dmg: 12, kbx: 5.6, kby: -2.6, stun: 20 },
+  melee: { on: 3, off: 7, len: 16, cd: 16, reach: 15, dmg: 20, kbx: 6, kby: -3, stun: 16, knock: true },
   // Ten swings, each one able to send a foe off the map. Only the shield stops it.
   sword: { on: 4, off: 10, len: 24, cd: 10, reach: 24, dmg: 34, kbx: 8.5, kby: -5, stun: 26 },
 };
@@ -228,6 +228,7 @@ const ATK = {
 // same code can run on a server when the game goes online.
 // ============================================================================
 const NO_INPUT = { left: false, right: false, up: false, down: false, fire: false, melee: false, shield: false, nade: false };
+const BITS_ALL = Object.keys(NO_INPUT);
 
 function rnd(S) { // mulberry32, kept in the state so a server and a client roll the same numbers
   let t = (S.seed = (S.seed + 0x6D2B79F5) | 0);
@@ -239,7 +240,7 @@ function ev(S, type, d) { S.events.push(Object.assign({ type }, d)); }
 function teams(S) { return S.mode !== 'ffa'; }
 function isFoe(S, a, b) { return a !== b && !(teams(S) && a.team === b.team); }
 function sideOf(S, p) { return teams(S) ? 't' + p.team : 'p' + p.id; }
-function height(p) { return p.crouch || p.slide > 0 ? PH_C : PH; }
+function height(p) { return p.kd > 0 && p.onGround ? 8 : p.crouch || p.slide > 0 ? PH_C : PH; }
 function wtype(p) { return p.wpn ? p.wpn.type : 'rifle'; }
 function approach(v, t, a) { return v < t ? Math.min(t, v + a) : Math.max(t, v - a); }
 
@@ -280,6 +281,7 @@ function resetBody(p, x, y) {
     shielding: false, crouch: false, onGround: false, onThin: false, jumping: false, ff: false,
     spin: false, slide: 0, slideCd: 0, slideHit: [], jet: false, fuel: JET_FUEL,
     airJumps: 1, coyote: 0, jbuf: 0, drop: 0, cd: 0, dead: 0, lastHit: null, hurtT: -999, nades: NADES, nadeCd: 0,
+    kd: 0, shieldDown: false, spun: false, aim: 0,
     downT: -99, dirT: -99, dirD: 0, jumpT: -99, swap: false, charge: 0,
     ar: { ammo: MAG, reserve: RESERVE, reload: 0 }, wpn: null, face: x < 500 ? 1 : -1 });
 }
@@ -315,6 +317,16 @@ function updatePlayer(S, p, inp) {
   if (p.nadeCd > 0) p.nadeCd--;
   let stunned = p.stun > 0;
   if (stunned) { p.stun--; p.spin = false; p.slide = 0; }
+  if (p.kd > 0) { // knocked down: lie there until the timer runs out. Mashing any key gets you up sooner.
+    stunned = true;
+    if (p.onGround && p.stun <= 0) {
+      p.kd -= 1 + (BITS_ALL.some(press) ? 4 : 0);
+      if (p.kd <= 0) { p.kd = 0; p.inv = Math.max(p.inv, 20); ev(S, 'getup', { x: p.x, y: p.y }); }
+    }
+  }
+  // Holding fire turns W and S into aim up and aim down, instead of jump and crouch.
+  const pressUp = press('up') && !inp.fire, pressDown = press('down') && !inp.fire;
+  p.aim = inp.fire && !stunned ? (inp.up ? -1 : inp.down ? 1 : 0) : 0;
   if (S.rule === 'training') { // practice: health comes back and the rifle never runs dry
     if (S.tick - p.hurtT > 150) p.hp = 100;
     p.ar.reserve = RESERVE;
@@ -323,15 +335,17 @@ function updatePlayer(S, p, inp) {
   const ar = p.ar;
   if (ar.reload > 0 && --ar.reload === 0) { const n = Math.min(MAG - ar.ammo, ar.reserve); ar.ammo += n; ar.reserve -= n; }
 
-  // Shield: works on the ground and in the air. It shrinks while held and breaks into a long daze.
-  if (inp.shield && !stunned && !p.atk && p.slide <= 0 && (p.shielding ? p.shieldHp > 0 : p.shieldHp > 8)) {
+  // Shield: works on the ground and in the air. It shrinks while held. When it runs out it switches
+  // off and recharges, and it comes back once it is half full.
+  if (p.shieldDown && p.shieldHp >= SHIELD_MAX / 2) p.shieldDown = false;
+  if (inp.shield && !stunned && !p.atk && p.slide <= 0 && !p.shieldDown && (p.shielding ? p.shieldHp > 0 : p.shieldHp > 8)) {
     if (!p.shielding) ev(S, 'shieldup', { id: p.id });
     p.shielding = true; p.spin = false; p.jet = false;
     p.shieldHp -= 0.22;
-    if (p.shieldHp <= 0) { breakShield(S, p); stunned = true; }
+    if (p.shieldHp <= 0) breakShield(S, p);
   } else {
     p.shielding = false;
-    p.shieldHp = Math.min(SHIELD_MAX, p.shieldHp + 0.12);
+    p.shieldHp = Math.min(SHIELD_MAX, p.shieldHp + (p.shieldDown ? 0.2 : 0.12));
   }
 
   // Double taps: forward, forward is a slide. Down, down drops through a thin platform.
@@ -344,14 +358,14 @@ function updatePlayer(S, p, inp) {
     }
     p.dirD = d; p.dirT = S.tick;
   }
-  p.swap = press('down');
-  if (press('down')) {
+  p.swap = pressDown;
+  if (pressDown) {
     if (p.onGround && p.onThin && S.tick - p.downT <= 14) { p.drop = 12; p.onGround = false; p.coyote = 0; }
     p.downT = S.tick;
   }
 
   // Run, crouch and slide.
-  p.crouch = !stunned && !p.shielding && !p.slide && inp.down && p.onGround;
+  p.crouch = !stunned && !p.shielding && !p.slide && inp.down && !inp.fire && p.onGround;
   if (stunned) dir = 0;
   if (dir && !p.slide && !(p.atk && p.atk.type === 'sword')) p.face = dir;
   if (stunned) p.vx *= p.onGround ? 0.88 : 0.985;
@@ -364,7 +378,7 @@ function updatePlayer(S, p, inp) {
       if (!isFoe(S, p, q) || q.dead || q.out || p.slideHit.includes(q.id)) continue;
       if (Math.abs(q.x - p.x) < HALF * 2 + 2 && q.y > p.y - PH_C && q.y - height(q) < p.y) {
         p.slideHit.push(q.id);
-        hit(S, q, p, { dmg: 6, kbx: p.face * 1.2, kby: -4.2, stun: 18, kind: 'slide' });
+        hit(S, q, p, { dmg: 10, kbx: p.face * 2, kby: -3.5, stun: 14, kind: 'slide', knock: true });
       }
     }
   } else if (p.atk && p.atk.type === 'sword' && p.atk.t < 16) p.vx *= 0.9;
@@ -376,24 +390,26 @@ function updatePlayer(S, p, inp) {
   }
 
   // Jetpack: after the double jump, a fresh press of jump fires it. Hold to keep thrusting.
-  if (!p.onGround && p.airJumps === 0 && !stunned && !p.shielding && p.fuel > 0 && inp.up && (p.jet || press('up'))) {
+  if (!p.onGround && p.airJumps === 0 && !stunned && !p.shielding && p.fuel > 0 && inp.up && (p.jet || pressUp)) {
     if (!p.jet) ev(S, 'jet', { x: p.x, y: p.y, id: p.id });
     p.jet = true; p.fuel--; p.ff = false; p.spin = false; p.jumping = false;
     p.vy = Math.max(JET_MAX, p.vy - JET_ACC);
   } else p.jet = false;
 
   // Jump, double jump, spin jump, short hop, fast fall.
-  if (p.onGround) { p.coyote = 6; p.airJumps = 1; p.fuel = JET_FUEL; } else if (p.coyote > 0) p.coyote--;
-  if (press('up')) p.jbuf = 6; else if (p.jbuf > 0) p.jbuf--;
+  if (p.onGround) { p.coyote = 6; p.airJumps = 1; p.fuel = JET_FUEL; p.spun = false; } else if (p.coyote > 0) p.coyote--;
+  if (pressUp) p.jbuf = 6; else if (p.jbuf > 0) p.jbuf--;
   if (!stunned && p.jbuf > 0 && !p.jet) {
     if (p.coyote > 0) { p.coyote = 0; p.jumpT = S.tick; doJump(S, p, dir, false, false); }
-    else if (p.airJumps > 0 && press('up')) { // a quick second tap is a spin jump; a slow one, a double jump
-      p.airJumps--; doJump(S, p, dir, S.tick - p.jumpT <= 15, true);
+    else if (pressUp) {
+      // Jump, then a quick tap spins. The spin is a bonus: the double jump and the jetpack still follow.
+      if (!p.spun && S.tick - p.jumpT <= 15) { p.spun = true; doJump(S, p, dir, true, true); }
+      else if (p.airJumps > 0) { p.airJumps--; doJump(S, p, dir, false, true); }
     }
   }
   if (p.jumping && !inp.up && p.vy < -2.4) { p.vy = -2.4; p.jumping = false; }
   if (p.vy >= 0) p.jumping = false;
-  if (!p.onGround && press('down') && p.vy > -1 && !stunned) p.ff = true;
+  if (!p.onGround && pressDown && p.vy > -1 && !stunned) p.ff = true;
   if (!p.jet) {
     const g = p.ff ? 0.5 : p.spin ? SPIN_G : GRAV, mf = p.ff ? 8 : p.spin ? 7 : MAXFALL;
     p.vy = Math.min(mf, p.vy + g);
@@ -494,7 +510,7 @@ function runAtk(S, p) {
         a.hit.push(q.id);
         const back = a.type === 'melee' && q.face === p.face && !q.shielding;
         const away = Math.sign(q.x - p.x) || p.face;
-        hit(S, q, p, { dmg: back ? D.dmg * 2 : D.dmg, kbx: D.kbx * away, kby: D.kby, stun: D.stun, back, kind: a.type });
+        hit(S, q, p, { dmg: back ? D.dmg * 2 : D.dmg, kbx: D.kbx * away, kby: D.kby, stun: D.stun, back, kind: a.type, knock: D.knock });
         if (!p.atk) return; // our swing was stopped by a block
       }
     }
@@ -503,34 +519,36 @@ function runAtk(S, p) {
 }
 
 function gunY(p) { return p.y - (p.crouch || p.slide > 0 ? 6 : 12); }
+// A shot leaves the muzzle at the aim angle: level, or 45 degrees up or down.
+function shot(p, speed, spread, props) {
+  const a = p.aim * Math.PI / 4 + spread, cx = Math.cos(a) * p.face, cy = Math.sin(a);
+  return Object.assign({ x: p.x + cx * 6, y: gunY(p) + cy * 6, vx: cx * speed, vy: cy * speed, o: p.id, team: p.team }, props);
+}
 function fireRifle(S, p) {
   p.ar.ammo--; p.cd = 5;
-  S.bullets.push({ x: p.x + p.face * 6, y: gunY(p), vx: p.face * 7.5, vy: (rnd(S) - 0.5) * 0.7,
-    o: p.id, team: p.team, dmg: 10, kbx: 1.2, kby: -0.4, stun: 0, life: 60, k: 'ar' });
+  S.bullets.push(shot(p, 7.5, (rnd(S) - 0.5) * 0.09, { dmg: 10, kbx: 1.2, kby: -0.4, stun: 0, life: 60, k: 'ar' }));
   ev(S, 'ar', { id: p.id });
 }
 function fireShotgun(S, p) {
   p.wpn.ammo--; p.cd = 42;
   for (let i = 0; i < 6; i++) {
-    S.bullets.push({ x: p.x + p.face * 6, y: gunY(p), vx: p.face * (6.5 + rnd(S)), vy: (i - 2.5) * 0.32 + (rnd(S) - 0.5) * 0.2,
-      o: p.id, team: p.team, dmg: 24, kbx: 2.2, kby: -1.6, stun: 10, life: 15, life0: 15, k: 'sg' });
+    S.bullets.push(shot(p, 6.5 + rnd(S), (i - 2.5) * 0.045 + (rnd(S) - 0.5) * 0.03,
+      { dmg: 24, kbx: 2.2, kby: -1.6, stun: 10, life: 15, life0: 15, k: 'sg' }));
   }
   p.vx -= p.face * (p.onGround ? 1.5 : 2.5);
   ev(S, 'shotgun', { id: p.id });
 }
 function fireSniper(S, p) {
   p.wpn.ammo--; p.cd = 60;
-  S.bullets.push({ x: p.x + p.face * 6, y: gunY(p), vx: p.face * 18, vy: 0,
-    o: p.id, team: p.team, dmg: 100, kbx: 3, kby: -1.6, stun: 16, life: 70, k: 'sr' });
+  S.bullets.push(shot(p, 90, 0, { dmg: 100, kbx: 3, kby: -1.6, stun: 16, life: 16, k: 'sr' })); // crosses a map in 0.2 s
   ev(S, 'sniper', { id: p.id });
 }
 function firePlasma(S, p, charged) {
-  const b = { x: p.x + p.face * 6, y: gunY(p), vy: 0, o: p.id, team: p.team };
   if (charged) {
-    S.bullets.push(Object.assign(b, { vx: p.face * 4.6, dmg: 30, kbx: 4.2, kby: -3, stun: 22, life: 110, k: 'pc', breaks: true }));
+    S.bullets.push(shot(p, 6, 0, { dmg: 30, kbx: 4.2, kby: -3, stun: 22, life: 200, k: 'pc', breaks: true }));
     p.wpn.ammo -= 20; p.cd = 20; ev(S, 'pc', { id: p.id });
   } else {
-    S.bullets.push(Object.assign(b, { vx: p.face * 5.5, dmg: 12, kbx: 2, kby: -1.2, stun: 6, life: 75, k: 'pp' }));
+    S.bullets.push(shot(p, 6.5, 0, { dmg: 12, kbx: 2, kby: -1.2, stun: 6, life: 150, k: 'pp' }));
     p.wpn.ammo -= 5; p.cd = 9; ev(S, 'pp', { id: p.id });
   }
 }
@@ -579,6 +597,10 @@ function explode(S, n) {
   }
 }
 
+function thinAt(map, x, y) {
+  for (const s of map.plats) if (s.thin && x >= s.x && x < s.x + s.w && y >= s.y && y < s.y + 5) return true;
+  return false;
+}
 function solidAt(map, x, y) {
   for (const s of map.plats) if (!s.thin && x >= s.x && x < s.x + s.w && y >= s.y && y < s.y + s.h) return true;
   return false;
@@ -588,20 +610,31 @@ function updateBullets(S) {
   const keep = [];
   for (const b of S.bullets) {
     let alive = true;
-    if (b.k === 'pc') { // a charged plasma shot bends toward the closest foe ahead of it
-      let t = null, bd = 1e9;
-      for (const q of S.players) {
-        if (q.id === b.o || q.dead || q.out || (teams(S) && q.team === b.team)) continue;
-        if (Math.sign(q.x - b.x) !== Math.sign(b.vx)) continue;
-        const d = Math.abs(q.x - b.x) + Math.abs(q.y - b.y);
-        if (d < bd) { bd = d; t = q; }
+    const plasma = b.k === 'pp' || b.k === 'pc';
+    if (plasma) { // plasma locks onto the nearest foe and turns hard toward them
+      let t = S.players[b.tg];
+      if (!t || t.dead || t.out || t.id === b.o || (teams(S) && t.team === b.team)) {
+        t = null; let bd = 1e9;
+        for (const q of S.players) {
+          if (q.id === b.o || q.dead || q.out || (teams(S) && q.team === b.team)) continue;
+          const d = Math.hypot(q.x - b.x, q.y - 9 - b.y);
+          if (d < bd) { bd = d; t = q; }
+        }
+        b.tg = t ? t.id : -1;
       }
-      if (t) b.vy = Math.max(-2.2, Math.min(2.2, b.vy + Math.sign(t.y - 9 - b.y) * 0.09));
+      if (t) {
+        const sp = Math.hypot(b.vx, b.vy), cur = Math.atan2(b.vy, b.vx), want = Math.atan2(t.y - 9 - b.y, t.x - b.x);
+        let d = want - cur;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        const turn = 0.5, a = cur + Math.max(-turn, Math.min(turn, d));
+        b.vx = Math.cos(a) * sp; b.vy = Math.sin(a) * sp;
+      }
     }
     const n = Math.ceil(Math.hypot(b.vx, b.vy) / 3), r = b.k === 'pc' ? 3 : b.k === 'pp' ? 2 : 1;
     for (let i = 0; i < n && alive; i++) {
       b.x += b.vx / n; b.y += b.vy / n;
-      if (solidAt(S.map, b.x, b.y)) { alive = false; ev(S, 'spark', { x: b.x, y: b.y, k: b.k }); break; }
+      if (solidAt(S.map, b.x, b.y) || (plasma && thinAt(S.map, b.x, b.y))) { alive = false; ev(S, 'spark', { x: b.x, y: b.y, k: b.k }); break; }
       for (const q of S.players) {
         if (q.id === b.o || q.dead || q.out || q.inv > 0) continue;
         if (teams(S) && q.team === b.team) continue;
@@ -612,7 +645,7 @@ function updateBullets(S) {
         }
       }
     }
-    if (alive && (--b.life <= 0 || b.x < -40 || b.x > S.map.w + 40)) alive = false;
+    if (alive && (--b.life <= 0 || b.x < -40 || b.x > S.map.w + 40 || b.y < -300 || b.y > S.map.h + 60)) alive = false;
     if (alive) keep.push(b);
   }
   S.bullets = keep;
@@ -645,14 +678,15 @@ function hit(S, t, a, o) {
     t.vy = o.kby * sc;
     t.stun = Math.round(o.stun * (0.7 + 0.3 * sc));
     if (t.vy < 0) t.onGround = false;
+    if (o.knock && !t.kd) { t.kd = 48; t.shielding = false; } // lands and lies there before getting up
   } else t.vx += o.kbx * sc * 0.6;
   if (a) t.lastHit = { by: a.id, tick: S.tick };
   ev(S, 'hit', { x: t.x, y: t.y - 9, c: t.color, dmg: o.dmg, back: o.back });
   if (t.hp <= 0) { t.hp = 0; die(S, t, a, 'shot'); }
 }
 
-function breakShield(S, p) {
-  p.shielding = false; p.shieldHp = 0; p.stun = 150; p.vy = -4; p.onGround = false; p.atk = null;
+function breakShield(S, p) { // the shield switches off and recharges; it does not hurt you
+  p.shielding = false; p.shieldHp = 0; p.shieldDown = true;
   ev(S, 'break', { x: p.x, y: p.y - 9, c: p.color });
 }
 
@@ -867,12 +901,15 @@ function botInput(S, p) {
 
     if (t) {
       const v = seen(t), dx = v.x - p.x, dy = v.y - p.y, adx = Math.abs(dx);
-      const aligned = Math.abs(dy + b.err) < 10, facing = p.face === Math.sign(dx);
+      const dyc = dy + 3 + b.err; // target center relative to our gun
+      const level = Math.abs(dy + b.err) < 10, diag = adx > 24 && adx < 360 && Math.abs(Math.abs(dyc) - adx) < 10;
+      const aligned = level || diag, facing = p.face === Math.sign(dx);
+      b.aimDir = level ? 0 : diag ? Math.sign(dyc) : 0;
       if (aligned && !facing && !want && adx < 400) want = Math.sign(dx);
       if (wt === 'rifle' && aligned && facing && adx < 330 && (S.tick + p.id * 13) % 60 < K.duty * 60) I.fire = true;
       if (wt === 'shotgun' && aligned && facing && adx < 80) I.fire = true;
       if (wt === 'sniper' && aligned && facing && adx < 600 && Math.random() < K.snipe) taps.fire = true;
-      if (wt === 'plasma' && aligned && facing && adx < 330) {
+      if (wt === 'plasma' && facing && adx < 400) { // plasma homes, so any line of sight will do
         if (b.charge > 0) { b.charge--; I.fire = b.charge > 0; }
         else if (Math.random() < 0.03) { b.charge = 50; I.fire = true; }
         else taps.fire = Math.random() < 0.15;
@@ -901,6 +938,7 @@ function botInput(S, p) {
   if (b.jumpHold > 0) { b.jumpHold--; I.up = I.up || b.jumpHold > 0; }
   else if (wantJump) { I.up = true; b.jumpHold = 14; }
   for (const k in taps) if (taps[k]) I[k] = !b.prev[k];
+  if (I.fire) { I.up = b.aimDir < 0; I.down = b.aimDir > 0; } // while firing, up and down aim
   b.prev = I;
   return I;
 }
@@ -1333,8 +1371,8 @@ function handleEvents(evs) {
       break;
     case 'break':
       noise(0.4, 0.12, 900); tone(600, 80, 0.4, 'square', 0.05);
-      burst(e.x, e.y, 24, ['#9ae8ff', '#fff', e.c], 2.6, 30); shake = Math.max(shake, 6);
-      pops.push({ x: e.x, y: e.y - 16, t: 'SHIELD BROKEN', c: '#9ae8ff', life: 70 });
+      burst(e.x, e.y, 24, ['#9ae8ff', '#fff', e.c], 2.6, 30); shake = Math.max(shake, 3);
+      pops.push({ x: e.x, y: e.y - 16, t: 'SHIELD DOWN', c: '#9ae8ff', life: 60 });
       break;
     case 'ko': {
       noise(0.6, 0.14, 600); tone(200, 40, 0.6, 'sawtooth', 0.06);
@@ -1352,6 +1390,7 @@ function handleEvents(evs) {
       burst(e.x, e.y, 36, ['#fff2a0', '#ffb040', '#ff6a2a', '#6a6a6a'], 3, 30, 0.04);
       rings.push({ x: e.x, y: e.y, r: 4, c: '#ffd27a', life: 14 }); shake = Math.max(shake, 9);
       break;
+    case 'getup': tone(300, 500, 0.08, 'triangle', 0.025); break;
     case 'pickup':
       burst(e.x, e.y, 12, ['#4ad8ff', '#fff'], 1.4, 20, 0);
       if (e.w === 'health') tone(500, 1000, 0.2, 'sine', 0.05); else tone(600, 1200, 0.1, 'triangle', 0.05);
@@ -1456,6 +1495,19 @@ function drawPlayer(p) {
   const flash = p.stun > 0 && (p.stun >> 1) % 2 === 0;
   const img = sprite(frame, p.color, p.face < 0, flash);
   const px = Math.round(p.x), py = Math.round(p.y);
+  if (p.kd > 0 && p.onGround) { // knocked down: flat on the ground, stars overhead
+    ctx.save();
+    ctx.translate(px, py - 6);
+    ctx.rotate(-p.face * Math.PI / 2);
+    ctx.drawImage(sprite('idle', p.color, p.face < 0, flash), -6, -9);
+    ctx.restore();
+    for (let i = 0; i < 3; i++) {
+      const a = S.tick / 8 + (i * Math.PI * 2) / 3;
+      ctx.fillStyle = '#ffd25a'; ctx.fillRect(Math.round(px + Math.cos(a) * 8), Math.round(py - 15 + Math.sin(a) * 2), 2, 2);
+    }
+    text(p.name, px, py - 22, mix(p.color, 0.35), 1, 'center');
+    return;
+  }
   if (p.spin) { // a quarter turn every three ticks keeps the pixels square
     ctx.save();
     ctx.translate(px, py - 9);
@@ -1464,16 +1516,15 @@ function drawPlayer(p) {
     ctx.restore();
   } else {
     ctx.drawImage(img, px - 6, py - img.height);
-    drawWeapon(p, px, py - (p.crouch || p.slide > 0 ? 6 : 12));
+    const hy = py - (p.crouch || p.slide > 0 ? 6 : 12);
+    if (p.aim) { // tilt the gun 45 degrees up or down
+      ctx.save(); ctx.translate(px, hy); ctx.rotate(p.aim * p.face * Math.PI / 4); drawWeapon(p, 0, 0); ctx.restore();
+    } else drawWeapon(p, px, hy);
   }
   if (p.jet) { // jetpack flame
     const fx = px - p.face * 5, n = 3 + (S.tick % 3);
     ctx.fillStyle = '#ffd25a'; ctx.fillRect(fx - 1, py - 6, 3, n);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(fx, py - 6, 1, Math.max(1, n - 2));
-  }
-  if (p.stun > 60) for (let i = 0; i < 3; i++) { // dazed after a broken shield
-    const a = S.tick / 10 + (i * Math.PI * 2) / 3;
-    ctx.fillStyle = '#ffd25a'; ctx.fillRect(Math.round(px + Math.cos(a) * 8), Math.round(py - 21 + Math.sin(a) * 2), 2, 2);
   }
   if (p.shielding) {
     const r = 5 + 9 * (p.shieldHp / SHIELD_MAX), cy = py - 9;
@@ -1483,26 +1534,23 @@ function drawPlayer(p) {
     }
   }
   if (wtype(p) === 'sniper' && !p.spin && !p.stun) { // laser sight
-    const y = py - (p.crouch || p.slide > 0 ? 6 : 12);
+    const y0 = py - (p.crouch || p.slide > 0 ? 6 : 12), a = p.aim * Math.PI / 4, ux = Math.cos(a) * p.face, uy = Math.sin(a);
     ctx.fillStyle = 'rgba(255,60,60,0.55)';
     for (let d = 18; d < 420; d += 4) {
-      const x = px + p.face * d;
+      const x = px + ux * d, y = y0 + uy * d;
       if (solidAt(S.map, x, y)) break;
-      ctx.fillRect(Math.round(x), y, 2, 1);
+      ctx.fillRect(Math.round(x), Math.round(y), 2, 1);
     }
   }
   text(p.name, px, py - (p.crouch || p.slide > 0 ? PH_C : PH) - 9, mix(p.color, 0.35), 1, 'center');
 }
 
 function drawBullet(b) {
-  const x = Math.round(b.x), y = Math.round(b.y), f = Math.sign(b.vx);
-  if (b.k === 'ar' || b.k === 'sg') {
-    ctx.fillStyle = '#ffe680'; ctx.fillRect(f > 0 ? x - 3 : x, y, 4, 1);
-    ctx.fillStyle = '#c86a20'; ctx.fillRect(f > 0 ? x - 6 : x + 4, y, 3, 1);
-  } else if (b.k === 'sr') {
-    ctx.fillStyle = 'rgba(160,230,255,0.45)'; ctx.fillRect(f > 0 ? x - 40 : x, y, 40, 1);
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(f > 0 ? x - 10 : x, y, 10, 1);
-  } else if (b.k === 'pp') {
+  const x = Math.round(b.x), y = Math.round(b.y), sp = Math.hypot(b.vx, b.vy) || 1, ux = b.vx / sp, uy = b.vy / sp;
+  const trail = (from, to, c) => { ctx.fillStyle = c; for (let d = from; d < to; d++) ctx.fillRect(Math.round(b.x - ux * d), Math.round(b.y - uy * d), 1, 1); };
+  if (b.k === 'ar' || b.k === 'sg') { trail(0, 4, '#ffe680'); trail(4, 7, '#c86a20'); }
+  else if (b.k === 'sr') { trail(10, 70, 'rgba(160,230,255,0.45)'); trail(0, 10, '#ffffff'); }
+  else if (b.k === 'pp') {
     ctx.fillStyle = '#4ad86a'; ctx.fillRect(x - 1, y - 1, 3, 3);
     ctx.fillStyle = '#e8ffe0'; ctx.fillRect(x, y, 1, 1);
   } else {
@@ -1580,9 +1628,9 @@ function drawHud() {
     }
   }
   if (S.rule === 'training') {
-    const lines = ['TAP JUMP X2 FAST: SPIN JUMP', 'TAP FORWARD X2: SLIDE', 'JUMP X3, HOLD: JETPACK', 'DOWN, DOWN: DROP THROUGH',
+    const lines = ['TAP JUMP X2 FAST: SPIN JUMP', 'TAP FORWARD X2: SLIDE', 'JUMP, SPIN, JUMP, HOLD: JETPACK', 'HOLD J + W OR S: AIM', 'DOWN, DOWN: DROP THROUGH',
       'CROUCH ON WEAPON: SWAP', 'U: GRENADE'];
-    ctx.fillStyle = 'rgba(8,10,18,0.7)'; ctx.fillRect(4, 4, 104, lines.length * 8 + 6);
+    ctx.fillStyle = 'rgba(8,10,18,0.7)'; ctx.fillRect(4, 4, 132, lines.length * 8 + 6);
     lines.forEach((l, i) => text(l, 8, 8 + i * 8, '#cfd6e6'));
     const m = 'T: DUMMIES ' + S.dummyMode.toUpperCase();
     ctx.fillStyle = 'rgba(8,10,18,0.7)'; ctx.fillRect(HUD_W - textW(m) - 12, 4, textW(m) + 8, 14);
@@ -1837,7 +1885,7 @@ function packPlayer(p) {
   const flags = (p.crouch ? 1 : 0) | (p.spin ? 2 : 0) | (p.jet ? 4 : 0) | (p.shielding ? 8 : 0) | (p.onGround ? 16 : 0) | (p.out ? 32 : 0);
   return [r1(p.x), r1(p.y), r2(p.vx), r2(p.vy), p.face, Math.round(p.hp), r1(p.shieldHp), p.stun, p.inv, p.dead, flags,
     p.cd, p.charge, p.lives, p.kills, p.deaths, p.wpn ? WPN.indexOf(p.wpn.type) : -1, p.wpn ? r1(p.wpn.ammo) : 0,
-    p.ar.ammo, p.ar.reserve, p.ar.reload, p.atk ? ATKS.indexOf(p.atk.type) : -1, p.atk ? p.atk.t : 0, p.slide, p.fuel, p.nades];
+    p.ar.ammo, p.ar.reserve, p.ar.reload, p.atk ? ATKS.indexOf(p.atk.type) : -1, p.atk ? p.atk.t : 0, p.slide, p.fuel, p.nades, p.aim, p.kd];
 }
 function unpackPlayer(a) {
   const f = a[10];
@@ -1845,7 +1893,7 @@ function unpackPlayer(a) {
     crouch: !!(f & 1), spin: !!(f & 2), jet: !!(f & 4), shielding: !!(f & 8), onGround: !!(f & 16), out: !!(f & 32),
     cd: a[11], charge: a[12], lives: a[13], kills: a[14], deaths: a[15],
     wpn: a[16] >= 0 ? { type: WPN[a[16]], ammo: a[17] } : null, ar: { ammo: a[18], reserve: a[19], reload: a[20] },
-    atk: a[21] >= 0 ? { type: ATKS[a[21]], t: a[22] } : null, slide: a[23], fuel: a[24], nades: a[25] };
+    atk: a[21] >= 0 ? { type: ATKS[a[21]], t: a[22] } : null, slide: a[23], fuel: a[24], nades: a[25], aim: a[26], kd: a[27] };
 }
 let evBuf = [];
 function hostAfterStep() {
@@ -1989,7 +2037,7 @@ function predictStep(input, live) {
   if (M.phase === 'play' && !P.p.out) updatePlayer(M, P.p, input); else P.p.prev = input;
   if (live) {
     handleEvents(M.events.filter(e => LOCAL_EV.has(e.type)));
-    for (const b of M.bullets) NET.shots.push(b); // our own shots appear at once, without waiting for the host
+    for (const b of M.bullets) if (b.k !== 'pp' && b.k !== 'pc') NET.shots.push(b); // our own shots appear at once (plasma homes, so the host draws it)
   }
 }
 function moveShots() { // our own shots fly on our screen until they hit a wall or someone
@@ -2075,7 +2123,7 @@ function buildView() {
       lives: latest.lives, kills: latest.kills, deaths: latest.deaths, out: latest.out });
   }
   const dtk = Math.max(0, Math.min(6, tt - a.k)); // bullets: the older snapshot, carried forward to the same moment
-  V.bullets = a.B.filter(b => b[5] !== NET.myPid) // our own come from moveShots instead
+  V.bullets = a.B.filter(b => b[5] !== NET.myPid || b[4] >= 3) // our own come from moveShots, except plasma
     .map(([x, y, vx, vy, k]) => ({ x: x + vx * dtk, y: y + vy * dtk, vx, vy, k: BK[k] })).concat(NET.shots);
   V.nades = a.N.map(([x, y, vx, vy, t]) => ({ x, y, vx, vy, t: t - dtk }));
   V.feed.forEach(fd => { if (fd.k) fd.k = V.players[fd.k.id]; fd.v = V.players[fd.v.id]; });
@@ -2128,6 +2176,11 @@ function drawMoveIcon(c, kind, color) {
     g.fillStyle = '#c8d6f0'; g.fillRect(4, 6, 24, 1); g.fillStyle = '#4a5470'; g.fillRect(4, 7, 24, 2);
     g.fillStyle = '#8b94ad'; for (let y = 0; y < 5; y += 2) { g.fillRect(6, y, 1, 1); g.fillRect(25, y, 1, 1); } // motion lines
     g.drawImage(sprite('jump', color, false, false), 10, 6);
+  } else if (kind === 'aim') {
+    g.drawImage(sprite('idle', color, false, false), 6, 6);
+    g.save(); g.translate(12, 12); g.rotate(-Math.PI / 4);
+    g.fillStyle = '#9aa4b4'; g.fillRect(1, 0, 10, 2); g.restore();
+    g.fillStyle = '#ffe680'; for (let i = 0; i < 3; i++) g.fillRect(22 + i * 3, 4 - i * 3, 2, 1);
   } else if (kind === 'swap') {
     g.drawImage(sprite('crouch', color, false, false), 4, 13);
     g.fillStyle = 'rgba(74,216,255,0.35)'; g.fillRect(17, 22, 14, 2);
@@ -2137,7 +2190,8 @@ function drawMoveIcon(c, kind, color) {
 const MOVES = [
   { kind: 'spin', keys: ['↑', '↑'], name: 'Spin jump', tip: 'Tap jump twice, fast' },
   { kind: 'slide', keys: ['→', '→'], name: 'Slide', tip: 'Tap forward twice' },
-  { kind: 'jet', keys: ['↑', '↑', '↑'], hold: true, name: 'Jetpack', tip: 'Third jump, held' },
+  { kind: 'jet', keys: ['↑', '↑', '↑'], hold: true, name: 'Jetpack', tip: 'After the double jump, hold jump' },
+  { kind: 'aim', keys: ['J', '↑'], name: 'Aim up', tip: 'Hold J, then W or S to aim up or down' },
   { kind: 'drop', keys: ['↓', '↓'], name: 'Drop down', tip: 'Tap down twice on a thin platform' },
   { kind: 'swap', keys: ['↓'], name: 'Swap gun', tip: 'Crouch on a weapon' },
 ];

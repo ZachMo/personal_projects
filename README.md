@@ -684,7 +684,8 @@ them in the same section and topic. Only the browser that added a word can delet
 `supabase/README.md`.
 
 **Flashcards.** A card shows a word in English, in Spanish, or a mix of both. Answer by typing,
-by speaking (the browser's speech recognition, in Chrome, Edge and Safari), or by flipping the
+by speaking (the browser's speech recognition, in Chrome, Edge and Safari; the words appear as
+they are heard, and a second tap on the mic checks what it has so far), or by flipping the
 card and saying whether you knew it. The card flips to show the answer. A right answer glows
 green with a chime; a wrong one shakes. The checker accepts any one of the listed answers,
 with or without `el`/`la` or `to`. A missing accent or a one-letter typo still counts, with a
@@ -694,7 +695,8 @@ miss puts it on the practice list. Tap a flipped card to flip it back. In flip-a
 mode, **Got it** or **Missed it** moves straight to the next card.
 
 **Match.** A 4 × 3 grid (3 × 4 on a phone) of six Spanish–English pairs. A 3-2-1 countdown
-starts the clock, and each wrong pair adds a second. The page keeps the ten fastest times
+starts the clock, and each wrong pair adds a second. A pair matched on the first try marks the
+word as known; a word in a wrong pair goes on the practice list. The page keeps the ten fastest times
 and celebrates a new record.
 
 **After each round** every word gets two buttons: ⭐ keep practicing, or ✓ I know it. Missed

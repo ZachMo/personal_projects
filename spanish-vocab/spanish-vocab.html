@@ -2029,20 +2029,27 @@ function startFlash(custom) {
   }
 
   function listen(lang) {
-    const btn = $('#mic'), txt = $('#micTxt');
-    if (rec) { rec.abort(); return; }
-    rec = new SR();
+    const btn = $('#mic'), txt = $('#micTxt'), heard = $('#heard'), inp = $('#ans');
+    // A second tap means "I'm done". stop() keeps what was said and checks it; abort() would throw it away.
+    if (rec) { rec.stop(); txt.textContent = 'Checking…'; return; }
+    const me = rec = new SR();
     rec.lang = lang === 'es' ? (listen.fallback ? 'es-ES' : 'es-MX') : 'en-US';
-    rec.interimResults = false; rec.maxAlternatives = 5;
-    btn.classList.add('listening'); txt.textContent = 'Listening… tap to stop';
+    rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 5;
+    let finals = null, interim = '', retry = false, failed = false;
+    btn.classList.add('listening'); txt.textContent = 'Listening… tap when done';
+    heard.textContent = '🎙 Say it now…';
+    // Words show up as they are heard, in the box too, so she can see (and fix) what it caught.
     rec.onresult = ev => {
-      const alts = [...ev.results[0]].map(a => a.transcript);
-      $('#heard').textContent = `I heard: “${alts[0]}”`;
-      check(alts);
+      interim = [...ev.results].map(r => r[0].transcript).join(' ').trim();
+      if (interim) { heard.textContent = `“${interim}”`; if (inp) inp.value = interim; }
+      const last = ev.results[ev.results.length - 1];
+      if (last.isFinal) { finals = [...last].map(a => a.transcript); me.stop(); }
     };
+    setTimeout(() => { if (rec === me) me.stop(); }, 10000);   // never listen forever
     rec.onerror = ev => {
-      // "aborted" is the page stopping the listener itself after an answer, not a failure
+      // "aborted" is the page stopping the listener itself, not a failure
       if (ev.error === 'aborted') return;
+      failed = true;
       if (ev.error === 'language-not-supported' && lang === 'es' && !listen.fallback) {
         listen.fallback = true;   // some browsers know es-ES but not es-MX: listen again with that
         retry = true;
@@ -2060,9 +2067,17 @@ function startFlash(custom) {
       const h = $('#heard'); if (h) h.textContent = msg;
       toast(msg);
     };
-    let retry = false;
-    rec.onend = () => { rec = null; if (retry && btn.isConnected) { listen(lang); return; } if (btn.isConnected) { btn.classList.remove('listening'); txt.textContent = `Tap and say it in ${lang === 'es' ? 'Spanish' : 'English'}`; } };
-    try { rec.start(); } catch (e) { rec = null; btn.classList.remove('listening'); }
+    rec.onend = () => {
+      if (rec === me) rec = null;
+      if (!btn.isConnected) return;
+      if (retry) { failed = false; listen(lang); return; }
+      btn.classList.remove('listening'); txt.textContent = `Tap and say it in ${lang === 'es' ? 'Spanish' : 'English'}`;
+      // check the final words, or what was heard so far if the browser stopped before finishing
+      const tries = finals || (interim ? [interim] : null);
+      if (tries) check(tries);
+      else if (!failed) heard.textContent = "I didn't catch anything. Tap the button and say it again.";
+    };
+    try { rec.start(); } catch (e) { rec = null; btn.classList.remove('listening'); heard.textContent = 'Could not start the microphone. Try again or type.'; }
   }
 
   function check(tries) {
@@ -2268,6 +2283,9 @@ function startMatch() {
     const ms = Date.now() - t0 + penalty;
     timer.textContent = fmtTime(ms);
     chosen.forEach((e, k) => record(e, !missed.has(k), missed.has(k) ? 'wrong' : 'exact', 'match'));
+    // matched on the first try: known. Part of a wrong pair: practice.
+    chosen.forEach((e, k) => setStatus(e, missed.has(k) ? 'practice' : 'known'));
+    save();
     const prevBest = S.matchTimes[0] ? S.matchTimes[0].ms : Infinity;
     const entry = { ms, at: Date.now() };
     S.matchTimes.push(entry);
@@ -2298,7 +2316,7 @@ function renderSummary(session) {
   items.forEach(x => { byKey.set(x.e.key, x.e); });
   for (const [k, e] of byKey) {
     const miss = items.some(x => x.e.key === k && !x.ok);
-    marks.set(k, miss ? 'practice' : session.mode === 'flash' ? 'known' : statusOf(e));
+    marks.set(k, miss ? 'practice' : 'known');
   }
 
   let mood, line;

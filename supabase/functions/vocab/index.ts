@@ -6,7 +6,7 @@
   Deploy: supabase functions deploy vocab --no-verify-jwt
   Needs: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (both set for you).
 
-  POST { action: "add", device, list, words: [{ es, en }] }  ->  { ok, added: [rows], skipped }
+  POST { action: "add", device, section, list, words: [{ es, en }] }   (section like "High Intermediate 2", list = topic)  ->  { ok, added: [rows], skipped }
   POST { action: "delete", device, id }                      ->  { ok, deleted }
 */
 
@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
   }
 
   if (body.action !== "add") return bad("unknown action");
+  const section = clean(body.section).slice(0, 60) || "Shared words";
   const list = clean(body.list).slice(0, 60) || "Shared words";
   if (!Array.isArray(body.words) || !body.words.length) return bad("no words");
   if (body.words.length > PER_REQUEST) return bad(`at most ${PER_REQUEST} words at a time`);
@@ -75,14 +76,14 @@ Deno.serve(async (req) => {
     const key = norm(es) + "=" + norm(en);
     if (!es || !en || es.length > 120 || en.length > 160 || seen.has(key)) { skipped++; continue; }
     seen.add(key);
-    rows.push({ list, es, en, key, device_hash: hash });
+    rows.push({ section, list, es, en, key, device_hash: hash });
   }
   if (!rows.length) return reply({ ok: true, added: [], skipped });
 
   // A pair someone else already added is skipped, not an error.
   const { data, error } = await db.from("vocab_words")
     .upsert(rows, { onConflict: "key", ignoreDuplicates: true })
-    .select("id, list, es, en, device_hash, made_at");
+    .select("id, section, list, es, en, device_hash, made_at");
   if (error) return bad(error.message, 500);
   return reply({ ok: true, added: data, skipped: skipped + rows.length - data.length });
 });

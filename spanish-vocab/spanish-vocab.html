@@ -141,6 +141,14 @@
   .mini-grid { display: grid; grid-template-columns: repeat(4, 26px); gap: 4px; }
   @media (max-width: 520px) { .play-grid { grid-template-columns: 1fr; } .play-card .art { height: 52px; } }
 
+  .course { border-top: 1px solid var(--line); padding: 12px 0 4px; }
+  .course-head { display: flex; align-items: center; gap: 10px; justify-content: space-between; margin-bottom: 8px; }
+  .course-head b { font-size: .95rem; }
+  .topics { display: flex; flex-wrap: wrap; gap: 6px; }
+  .topic { border: 1.5px solid var(--border); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-size: .86rem; font-weight: 600; color: var(--ink-2);
+    display: inline-flex; gap: 6px; align-items: center; }
+  .topic em { font-style: normal; color: var(--muted); font-weight: 500; font-size: .78rem; }
+  .topic[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
   .linkish { border: 0; background: none; color: var(--accent); font-weight: 650; font-size: .85rem; padding: 4px 2px; }
   .pool-note { font-size: .88rem; color: var(--ink-2); margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
   .pool-note.warn { background: var(--warn-soft); }
@@ -296,10 +304,15 @@
   .add-body textarea { min-height: 150px; resize: vertical; font-size: .95rem; line-height: 1.5; }
   .add-body input:focus, .add-body textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   details.opts > summary { font-size: 1.05rem; }
-  .opts-now { margin-left: auto; color: var(--muted); font-weight: 500; font-size: .84rem; text-align: right; }
+  details.opts > summary > span:first-child { white-space: nowrap; }
+  .opts-now { margin-left: auto; color: var(--muted); font-weight: 500; font-size: .84rem; text-align: right;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 430px) { .opts-now { font-size: .76rem; } }
   .chev { color: var(--muted); transition: transform .2s; }
   details.opts[open] .chev { transform: rotate(180deg); }
   .opts-body { padding: 0 18px 8px; }
+  .add-body select { width: 100%; min-height: 44px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); padding: 0 10px; font: inherit; }
+  .add-body select + input { margin-top: 6px; }
   .add-preview { font-size: .88rem; color: var(--ink-2); background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
   .add-preview ul { margin: 6px 0 0; padding-left: 18px; }
   .add-preview .skip { color: var(--warn); }
@@ -350,7 +363,7 @@
       <button data-go="library">Library</button>
       <button data-go="progress">Progress</button>
     </nav>
-    <button class="icon-btn" id="muteBtn" title="Sound on/off" aria-label="Sound on/off"></button>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off (effects and reading aloud)" aria-label="Sound on/off"></button>
   </div>
 </header>
 
@@ -1224,6 +1237,8 @@ function addEntry(topic, es, en, extra) {
   ENTRIES.push(e);
   return e;
 }
+// A topic's stable name for saved settings: ids change as shared words arrive, names do not.
+const topicKey = t => t.course + '|' + t.name;
 function courses() { return [...new Set(TOPICS.filter(t => t.entries.length).map(t => t.course))]; }
 (function parse() {
   let course = '', topic = null;
@@ -1315,7 +1330,8 @@ function judge(given, expected, lang) {
    STORAGE
    ===================================================================== */
 const STORE_KEY = 'spanish-vocab:v1';
-const DEFAULT_PREFS = { dir: 'mix', answer: 'type', count: 10, showAll: false, muted: false, speakTiles: true };
+// count: cards per round; 0 means every word. 50 keeps a round short when many topics are on.
+const DEFAULT_PREFS = { v: 2, dir: 'mix', answer: 'type', count: 50, showAll: false, muted: false, speakTiles: false, off: [] };
 let S = load();
 function load() {
   let s = null;
@@ -1325,7 +1341,11 @@ function load() {
   s.days = s.days || [];
   s.sessions = s.sessions || [];
   s.matchTimes = s.matchTimes || [];
-  s.prefs = Object.assign({}, DEFAULT_PREFS, s.prefs || {});
+  const saved = s.prefs || {};
+  s.prefs = Object.assign({}, DEFAULT_PREFS, saved);
+  // settings saved before version 2 move to the new defaults: 50 cards a round, tiles read aloud off
+  if (!(saved.v >= 2)) Object.assign(s.prefs, { v: 2, count: 50, speakTiles: false });
+  if (!Array.isArray(s.prefs.off)) s.prefs.off = [];
   s.shared = Array.isArray(s.shared) ? s.shared : [];
   if (!s.device) s.device = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
   return s;
@@ -1354,7 +1374,7 @@ function mountShared(rows) {
     ENTRIES.splice(ENTRIES.indexOf(e), 1);
     e.topic.entries.splice(e.topic.entries.indexOf(e), 1);
   }
-  for (const r of rows) addEntry(topicFor(SHARED_COURSE, r.list), r.es, r.en, { shared: r.id, owner: r.device_hash });
+  for (const r of rows) addEntry(topicFor(r.section || SHARED_COURSE, r.list), r.es, r.en, { shared: r.id, owner: r.device_hash });
 }
 mountShared(S.shared);
 let onWordsChanged = null;   // the open screen sets this to repaint when the shared list changes
@@ -1362,7 +1382,7 @@ async function syncWords() {
   try {
     const rows = [];
     for (let from = 0; ; from += 1000) {
-      const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?select=id,list,es,en,device_hash&order=id`, { headers: { ...cloudHead(), Range: `${from}-${from + 999}` } });
+      const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?select=id,section,list,es,en,device_hash&order=id`, { headers: { ...cloudHead(), Range: `${from}-${from + 999}` } });
       if (!r.ok) throw new Error(r.status);
       const page = await r.json();
       rows.push(...page);
@@ -1381,8 +1401,8 @@ async function callVocab(body) {
   if (!r.ok || !out.ok) throw new Error(out.why || `the server said ${r.status}`);
   return out;
 }
-async function shareWords(list, words) {
-  const out = await callVocab({ action: 'add', list, words });
+async function shareWords(section, list, words) {
+  const out = await callVocab({ action: 'add', section, list, words });
   S.shared = S.shared.concat(out.added); save();
   mountShared(S.shared);
   return out;
@@ -1414,7 +1434,7 @@ function W(e) {
   return S.words[e.key] || (S.words[e.key] = { st: '', seen: 0, right: 0, wrong: 0, slips: {}, dir: {} });
 }
 function statusOf(e) { const w = S.words[e.key]; return w ? w.st : ''; }
-function setStatus(e, st) { W(e).st = st; }
+function setStatus(e, st) { const w = W(e); if (w.st !== st) { w.st = st; w.stAt = Date.now(); queueSync(); } }
 function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function record(e, ok, kind, dir) {
   const w = W(e);
@@ -1423,6 +1443,7 @@ function record(e, ok, kind, dir) {
   const d = w.dir[dir] || (w.dir[dir] = [0, 0]);
   d[ok ? 0 : 1]++;
   w.last = Date.now();
+  queueSync();
   const t = today();
   if (!S.days.includes(t)) S.days.push(t);
   save();
@@ -1444,7 +1465,8 @@ function dayStreak() {
    ===================================================================== */
 function uniq(list) { const seen = new Set(); return list.filter(e => !seen.has(e.key) && seen.add(e.key)); }
 function buildPool(p = S.prefs) {
-  let list = uniq(ENTRIES);
+  const off = new Set(p.off);
+  let list = uniq(ENTRIES.filter(e => !off.has(topicKey(e.topic))));
   const all = list.length;
   const known = list.filter(e => statusOf(e) === 'known').length;
   if (!p.showAll) list = list.filter(e => statusOf(e) !== 'known');
@@ -1477,7 +1499,9 @@ function pickVoice() {
   esVoice = pref.map(l => vs.find(v => v.lang.replace('_', '-') === l)).find(Boolean) || vs.find(v => /^es/i.test(v.lang)) || null;
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-function speakEs(text, btn) {
+// Muted means no speech at all, except when the Hear it button itself is pressed (force).
+function speakEs(text, btn, force = false) {
+  if (S.prefs.muted && !force) return;
   if (!('speechSynthesis' in window)) { toast('This browser cannot read aloud.'); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/\([^)]*\)/g, '').replace(/\+\s*infinitivo/g, ''));
@@ -1565,6 +1589,11 @@ const SAY = {
   low: ['¡La próxima vez lo logras!', '¡No pasa nada, sigue adelante!', '¡Ánimo! Practicar es el secreto.', '¡Calma! Mañana te sale mejor.'],
   record: ['¡Nuevo récord! ¡Qué rapidez!', '¡Más rápido que nunca! ¡Increíble!', '¡Nuevo récord! ¡Muy impresionante!'],
   matchDone: ['¡Bien hecho! ¿Otra ronda?', '¡Rápido! ¿Puedes batir tu récord?', '¡Buen trabajo! ¡Una más!'],
+  // For my wife. Cheeky lines come up only when she does well.
+  cheeky: ['¡Me estoy mojando un poquito solo de pensarlo!', '¡Me gusta cuando me hablas en español!', '¡Inteligente y guapa! ¡Qué suerte tengo!',
+    '¡Ay, mi amor, me vuelves loco cuando hablas así!', '¡Qué lista eres! Eso me pone mucho.', '¡Esta noche lo celebramos, guapa!', '¡La alumna más guapa de toda la clase!'],
+  perfect: ['¡Las acertaste todas! ¡Muy sexy!', '¡Todas bien! ¡Qué sexy eres!', '¡Perfecta, como siempre!'],
+  spoken: ['¡Me gusta cuando me hablas en español!', '¡Dímelo otra vez en español, por favor!', '¡Qué bonito suena en tu boca!'],
   hello: ['¡Hola! ¿Practicamos un poco?', '¡Qué bueno verte! ¿Empezamos?', '¡Hola! Hoy es un buen día para aprender.', '¡Vamos a practicar juntos!'],
 };
 const any = a => a[Math.random() * a.length | 0];
@@ -1617,14 +1646,140 @@ function pct(r, w) { return r + w ? Math.round(100 * r / (r + w)) : 0; }
 // Any [data-say] element reads its Spanish aloud.
 document.addEventListener('click', ev => {
   const s = ev.target.closest('[data-say]');
-  if (s) { ev.stopPropagation(); speakEs(s.dataset.say, s.classList.contains('speak') ? s : null); }
+  if (s) { ev.stopPropagation(); const btn = s.classList.contains('speak'); speakEs(s.dataset.say, btn ? s : null, btn); }
 }, true);
 
 /* mute button */
 const muteBtn = document.getElementById('muteBtn');
 function paintMute() { muteBtn.innerHTML = S.prefs.muted ? ICON.mute : ICON.speaker; muteBtn.setAttribute('aria-pressed', String(!S.prefs.muted)); }
-muteBtn.onclick = () => { S.prefs.muted = !S.prefs.muted; save(); paintMute(); toast(S.prefs.muted ? 'Sound effects off' : 'Sound effects on'); };
+muteBtn.onclick = () => {
+  S.prefs.muted = !S.prefs.muted; save(); paintMute();
+  if (S.prefs.muted && 'speechSynthesis' in window) speechSynthesis.cancel();   // stop anything already talking
+  toast(S.prefs.muted ? 'Sound off' : 'Sound on');
+};
 paintMute();
+
+/* =====================================================================
+   PROGRESS SYNC
+   No accounts: the learner gets a private code like "k7pm-x2qd-9fhr". Every
+   device with the code pulls the saved copy, merges it with its own, and
+   pushes the result (supabase/functions/progress). For each word the copy
+   played most recently keeps its scores, and the newest mark wins; days,
+   rounds and match times are combined.
+   ===================================================================== */
+const SYNC_ABC = 'abcdefghjkmnpqrstuvwxyz23456789';   // no 0/o, 1/l/i look-alikes
+const cleanCode = c => String(c || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const prettyCode = c => { c = cleanCode(c); return `${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8, 12)}`; };
+const validCode = c => /^[a-hj-km-np-z2-9]{12}$/.test(cleanCode(c));
+function newSyncCode() { return prettyCode([...crypto.getRandomValues(new Uint8Array(12))].map(b => SYNC_ABC[b % SYNC_ABC.length]).join('')); }
+const syncLink = () => `${location.origin}${location.pathname}#sync=${S.sync.code}`;
+function progressData() { return { v: 1, words: S.words, days: S.days, sessions: S.sessions, matchTimes: S.matchTimes, resetAt: S.resetAt || 0 }; }
+function mergeProgress(r) {
+  if (!r || typeof r !== 'object') return;
+  const empty = { words: {}, days: [], sessions: [], matchTimes: [] };
+  if ((r.resetAt || 0) > (S.resetAt || 0)) Object.assign(S, empty, { resetAt: r.resetAt });   // reset on the other device
+  else if ((S.resetAt || 0) > (r.resetAt || 0)) r = Object.assign({}, r, empty);              // reset here; drop their older copy
+  for (const [k, rw] of Object.entries(r.words || {})) {
+    const lw = S.words[k];
+    if (!lw) { S.words[k] = rw; continue; }
+    const base = (rw.last || 0) > (lw.last || 0) ? rw : lw;
+    const mark = (rw.stAt || 0) > (lw.stAt || 0) ? rw : lw;
+    S.words[k] = Object.assign({}, base, { st: mark.st, stAt: mark.stAt });
+  }
+  S.days = [...new Set([...S.days, ...(r.days || [])])].sort();
+  const byAt = (a, b) => [...new Map([...a, ...b].filter(Boolean).map(x => [x.at, x])).values()];
+  S.sessions = byAt(S.sessions, r.sessions || []).sort((x, y) => y.at - x.at).slice(0, 50);
+  S.matchTimes = byAt(S.matchTimes, r.matchTimes || []).sort((x, y) => x.ms - y.ms).slice(0, 10);
+}
+async function callProgress(body) {
+  const r = await fetch(`${CLOUD.url}/functions/v1/progress`, { method: 'POST', headers: cloudHead(), body: JSON.stringify(body), keepalive: body.action === 'push' });
+  let out = {};
+  try { out = await r.json(); } catch (e) {}
+  if (!r.ok || !out.ok) throw new Error(out.why || `the server said ${r.status}`);
+  return out;
+}
+let syncing = null, syncTimer = 0, currentScreen = '';
+function syncNow() {
+  clearTimeout(syncTimer); syncTimer = 0;
+  if (!S.sync) return Promise.resolve(false);
+  if (syncing) return syncing;
+  syncing = (async () => {
+    try {
+      const code = S.sync.code;
+      const got = await callProgress({ action: 'pull', code });
+      const before = JSON.stringify(progressData());
+      mergeProgress(got.data);
+      const changed = JSON.stringify(progressData()) !== before;
+      await callProgress({ action: 'push', code, data: progressData() });
+      if (S.sync) Object.assign(S.sync, { at: Date.now(), err: '' });
+      save();
+      // new scores from the other device: redraw a screen that shows them, never a game in progress
+      if (changed && (currentScreen === 'home' || currentScreen === 'progress')) go(currentScreen);
+      else if (currentScreen === 'progress') paintSync();
+      return true;
+    } catch (e) {
+      if (S.sync) { S.sync.err = e.message; save(); }
+      if (currentScreen === 'progress') paintSync();
+      return false;
+    } finally { syncing = null; }
+  })();
+  return syncing;
+}
+function queueSync() { if (!S.sync) return; clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 3000); }
+document.addEventListener('visibilitychange', () => {
+  if (!S.sync) return;
+  if (document.visibilityState === 'hidden' && syncTimer) syncNow();   // leaving: send what is waiting
+  if (document.visibilityState === 'visible') syncNow();               // back: pick up the other device's rounds
+});
+function linkSync(code) { S.sync = { code: prettyCode(code), at: 0, err: '' }; save(); return syncNow(); }
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(t).toLocaleDateString();
+}
+function paintSync() {
+  const el = document.getElementById('syncPanel');
+  if (!el) return;
+  if (!S.sync) {
+    el.innerHTML = `<h2>☁ Sync between devices</h2>
+      <p class="muted" style="margin:0 0 12px;font-size:.92rem">Keep your scores and word marks the same on your phone and laptop. No account: you get a private code instead.</p>
+      <div class="row-btns" style="margin:0 0 12px"><button class="btn primary" id="syncOn">Turn on sync</button></div>
+      <form class="answer-row" id="syncJoin" autocomplete="off"><input id="syncCode" placeholder="Have a code? e.g. k7pm-x2qd-9fhr" autocapitalize="off" spellcheck="false"><button class="btn" type="submit">Link</button></form>`;
+    el.querySelector('#syncOn').onclick = async () => {
+      S.sync = { code: newSyncCode(), at: 0, err: '' }; save(); paintSync();
+      toast((await syncNow()) ? '☁ Sync is on. Open the link on your other device.' : 'Sync is on, but could not reach the server yet.');
+    };
+    el.querySelector('#syncJoin').onsubmit = async ev => {
+      ev.preventDefault();
+      const c = el.querySelector('#syncCode').value;
+      if (!validCode(c)) { toast('That code does not look right. It has 12 letters and numbers, like k7pm-x2qd-9fhr.'); return; }
+      const ok = await linkSync(c);
+      toast(ok ? '☁ Linked! Your progress from the other device is here.' : 'Could not reach the server. Try again in a moment.');
+    };
+    return;
+  }
+  el.innerHTML = `<h2>☁ Synced between devices</h2>
+    <p style="margin:0 0 6px">Your code: <b class="serif" style="font-size:1.2rem;letter-spacing:.04em">${esc(S.sync.code)}</b></p>
+    <p class="muted" style="margin:0 0 12px;font-size:.88rem">On your other device, open the link below, or open this page, go to Progress, and enter the code. Anyone with the code can see and change your progress, so keep it to yourself.</p>
+    <div class="row-btns" style="margin:0 0 10px">
+      <button class="btn small" id="syncCopy">Copy link</button>
+      ${navigator.share ? '<button class="btn small" id="syncShare">Send link…</button>' : ''}
+      <button class="btn small" id="syncNowBtn">Sync now</button>
+    </div>
+    <p class="muted" style="margin:0;font-size:.84rem">${syncing ? 'Syncing…' : S.sync.err ? `⚠ Last try failed: ${esc(S.sync.err)}` : S.sync.at ? `Last synced ${ago(S.sync.at)}.` : 'Not synced yet.'}</p>
+    <button class="linkish" id="syncOff" style="margin-top:8px">Turn off sync on this device</button>`;
+  el.querySelector('#syncCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(syncLink()); toast('Link copied. Open it on your other device.'); }
+    catch (e) { toast(syncLink()); }
+  };
+  const share = el.querySelector('#syncShare');
+  if (share) share.onclick = () => navigator.share({ title: 'Practica con Zach', text: 'My Practica con Zach progress', url: syncLink() }).catch(() => {});
+  el.querySelector('#syncNowBtn').onclick = async () => { const b = el.querySelector('#syncNowBtn'); b.textContent = 'Syncing…'; toast((await syncNow()) ? '☁ Synced.' : 'Could not sync. Check your connection.'); paintSync(); };
+  const off = el.querySelector('#syncOff');
+  off.onclick = () => {
+    if (!off.dataset.armed) { off.dataset.armed = '1'; off.textContent = 'Tap again: this device stops syncing (your progress stays here)'; return; }
+    S.sync = null; save(); paintSync(); toast('Sync is off on this device.');
+  };
+}
 
 /* =====================================================================
    ROUTER
@@ -1632,6 +1787,7 @@ paintMute();
 let cleanup = null;
 function go(screen, arg) {
   if (cleanup) { cleanup(); cleanup = null; }
+  currentScreen = screen;
   onWordsChanged = null;
   hideZach();
   document.querySelectorAll('.confetti').forEach(c => c.remove());
@@ -1664,6 +1820,7 @@ function renderHome() {
           <span class="pill">⭐ ${practice} to practice</span>
           <span class="pill">✓ ${known} known</span>
           ${S.matchTimes.length ? `<span class="pill">⏱ Best ${fmtTime(S.matchTimes[0].ms)}</span>` : ''}
+          ${S.sync ? '<span class="pill">☁ Synced</span>' : ''}
         </div>
       </div>
     </section>
@@ -1685,17 +1842,19 @@ function renderHome() {
       <div class="opts-body">
       <div class="opt-row"><span>Show me</span>${seg('dir', [['en2es', '<span class="lg">English → Spanish</span><span class="sm">EN → ES</span>'], ['es2en', '<span class="lg">Spanish → English</span><span class="sm">ES → EN</span>'], ['mix', 'Mix']], p.dir)}</div>
       <div class="opt-row"><span>I answer by</span>${seg('answer', [['type', 'Typing'], ['speak', 'Speaking'], ['flip', '<span class="lg">Flip &amp; self-check</span><span class="sm">Flip</span>']], p.answer)}</div>
-      <div class="opt-row"><span>Cards per round</span>${seg('count', [[10, '10'], [20, '20'], [30, '30'], [0, 'All']], p.count)}</div>
+      <div class="opt-row"><span>Cards per round</span>${seg('count', [[10, '10'], [20, '20'], [50, '50'], [0, 'All']], p.count)}</div>
       <div class="opt-row"><span>Match</span><label class="switch"><input type="checkbox" data-flag="speakTiles" ${p.speakTiles ? 'checked' : ''}>Read Spanish tiles aloud</label></div>
       </div>
     </details>
 
     <section class="panel">
-      <div class="opt-row" style="padding:0;border:0">
+      <h2>Choose your words</h2>
+      <div class="opt-row" style="padding:0 0 10px;border:0">
         <label class="switch"><input type="checkbox" data-flag="showAll" ${p.showAll ? 'checked' : ''}>Show all words</label>
         <button class="linkish" id="toAdd">＋ Add new words</button>
       </div>
-      <p class="muted" style="margin:8px 0 0;font-size:.86rem">When this is off, words you marked “I know it” stay out of your games.</p>
+      <p class="muted" style="margin:0 0 6px;font-size:.86rem">When “Show all words” is off, words you marked “I know it” stay out of your games.</p>
+      <div id="topicGroups"></div>
     </section>
     <footer class="foot"><a href="../index.html">More projects</a></footer>
   </div>`;
@@ -1704,19 +1863,37 @@ function renderHome() {
     const { list, all, known } = buildPool();
     const el = $('#poolNote');
     if (!list.length) {
-      el.innerHTML = `<div class="pool-note warn">You know every word! Turn on “Show all words”, or add new words in the Library.</div>`;
+      el.innerHTML = `<div class="pool-note warn">${courses().every(c => TOPICS.filter(t => t.course === c && t.entries.length).every(t => p.off.includes(topicKey(t)))) ? 'Pick at least one topic below.' : 'You know every word in these topics! Turn on “Show all words”, or pick more topics.'}</div>`;
     } else {
       el.innerHTML = `<div class="pool-note"><b>${list.length}</b> word${list.length === 1 ? '' : 's'} ready${!p.showAll && known ? ` · ${known} you know ${known === 1 ? 'is' : 'are'} hidden` : ''}.</div>`;
     }
     $$('[data-play]').forEach(b => b.disabled = !list.length || (b.dataset.play === 'match' && matchable(list).length < 6));
     if (list.length && matchable(list).length < 6) el.firstChild.insertAdjacentHTML('beforeend', ' Match needs at least 6 words.');
   };
-  paintPool();
-  onWordsChanged = paintPool;
   const paintOpts = () => {
-    $('#optsNow').textContent = [{ en2es: 'EN → ES', es2en: 'ES → EN', mix: 'Mix' }[p.dir], { type: 'Typing', speak: 'Speaking', flip: 'Flip' }[p.answer], p.count ? `${p.count} cards` : 'All cards'].join(' · ');
+    const n = buildPool().list.length;
+    $('#optsNow').textContent = [{ en2es: 'EN → ES', es2en: 'ES → EN', mix: 'Mix' }[p.dir], { type: 'Typing', speak: 'Speaking', flip: 'Flip' }[p.answer], p.count ? `${Math.min(p.count, n)} cards` : `All ${n} cards`].join(' · ');
   };
-  paintOpts();
+  const paintTopics = () => {
+    const off = new Set(p.off);
+    $('#topicGroups').innerHTML = courses().map(c => {
+      const ts = TOPICS.filter(t => t.course === c && t.entries.length);
+      return `<div class="course"><div class="course-head"><b>${esc(c)}</b><span><button class="linkish" data-all="${esc(c)}">All</button> · <button class="linkish" data-none="${esc(c)}">None</button></span></div>
+        <div class="topics">${ts.map(t => `<button class="topic" data-topic="${esc(topicKey(t))}" aria-pressed="${!off.has(topicKey(t))}">${esc(t.name)} <em>${t.entries.length}</em></button>`).join('')}</div></div>`;
+    }).join('');
+  };
+  const refresh = () => { paintPool(); paintOpts(); };
+  paintTopics(); refresh();
+  onWordsChanged = () => { paintTopics(); refresh(); };
+  $('#topicGroups').addEventListener('click', ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    const off = new Set(p.off);
+    if (b.dataset.topic) off.has(b.dataset.topic) ? off.delete(b.dataset.topic) : off.add(b.dataset.topic);
+    const c = b.dataset.all || b.dataset.none;
+    if (c) TOPICS.filter(t => t.course === c).forEach(t => b.dataset.all ? off.delete(topicKey(t)) : off.add(topicKey(t)));
+    p.off = [...off]; save();
+    paintTopics(); refresh();
+  });
 
   $$('.seg[data-pref]').forEach(sg => sg.addEventListener('click', ev => {
     const b = ev.target.closest('button'); if (!b) return;
@@ -1727,7 +1904,7 @@ function renderHome() {
     paintOpts();
     if (k === 'answer' && v === 'speak' && !SR) toast('Speech input needs Chrome, Edge or Safari. You can still type.');
   }));
-  $$('[data-flag]').forEach(cb => cb.addEventListener('change', () => { p[cb.dataset.flag] = cb.checked; save(); paintPool(); }));
+  $$('[data-flag]').forEach(cb => cb.addEventListener('change', () => { p[cb.dataset.flag] = cb.checked; save(); refresh(); }));
   $('#toAdd').onclick = () => { libState.addOpen = true; go('library'); };
   $$('[data-play]').forEach(b => b.onclick = () => go(b.dataset.play));
 }
@@ -1929,7 +2106,11 @@ function startFlash(custom) {
       sfx('right');
       const s = $('#streak'); paintStreak(); s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop');
       if (kind === 'accent' || kind === 'typo') zach(any(SAY[kind]), 'kind');
-      else if (streak >= 3 && (streak === 3 || streak % 5 === 0)) { zach(any(SAY.streak(streak)), 'grin'); if (streak >= 5) confetti(40); }
+      else if (streak >= 3 && (streak === 3 || streak % 5 === 0)) {
+        zach(streak >= 5 && Math.random() < .4 ? any(SAY.cheeky) : any(SAY.streak(streak)), 'grin', 2800);
+        if (streak >= 5) confetti(40);
+      }
+      else if (p.answer === 'speak' && kind === 'exact' && Math.random() < .3) zach(any(SAY.spoken), 'grin', 2600);
       else if (Math.random() < .4) zach(any(SAY.right), 'happy', 1700);
     } else {
       const was = streak; streak = 0; paintStreak();
@@ -2019,7 +2200,7 @@ function startMatch() {
     const b = ev.target.closest('.tile');
     if (!b || !running || busy || b.classList.contains('ok')) return;
     const t = tiles[+b.dataset.n];
-    if (t.lang === 'es' && S.prefs.speakTiles) speakEs(t.text);
+    if (t.lang === 'es' && S.prefs.speakTiles) speakEs(t.text);   // speakEs stays quiet when muted
     if (!sel) { sel = b; b.classList.add('sel'); return; }
     if (sel === b) { b.classList.remove('sel'); sel = null; return; }
     const a = tiles[+sel.dataset.n];
@@ -2050,7 +2231,7 @@ function startMatch() {
     S.matchTimes.push(entry);
     S.matchTimes.sort((x, y) => x.ms - y.ms);
     S.matchTimes = S.matchTimes.slice(0, 10);
-    save();
+    save(); queueSync();
     const record_ = ms < prevBest;
     const session = { mode: 'match', items: chosen.map((e, k) => ({ e, ok: !missed.has(k), kind: missed.has(k) ? 'wrong' : 'exact', dir: 'match' })), start: t0, ms, record: record_, entryAt: entry.at, prevBest };
     setTimeout(() => go('summary', session), 500);
@@ -2067,7 +2248,7 @@ function renderSummary(session) {
   const score = items.length ? right / items.length : 0;
   S.sessions.unshift({ at: Date.now(), mode: session.mode, n: items.length, right, ms: session.ms || null });
   S.sessions = S.sessions.slice(0, 50);
-  save();
+  save(); queueSync();
 
   // Default marks: missed words go on the practice list; the rest keep their status.
   const marks = new Map();
@@ -2080,11 +2261,13 @@ function renderSummary(session) {
 
   let mood, line;
   if (session.mode === 'match') {
-    line = session.record ? any(SAY.record) : score === 1 ? any(SAY.matchDone) : any(score >= .5 ? SAY.ok : SAY.low);
+    line = session.record ? any(Math.random() < .5 ? SAY.cheeky : SAY.record) : score === 1 ? any(SAY.matchDone) : any(score >= .5 ? SAY.ok : SAY.low);
     mood = session.record || score === 1 ? 'grin' : 'kind';
   } else {
     const bucket = score >= .9 ? 'great' : score >= .7 ? 'good' : score >= .5 ? 'ok' : 'low';
-    line = any(SAY[bucket]);
+    line = score === 1 && items.length >= 5 ? any(SAY.perfect)
+      : bucket === 'great' && Math.random() < .5 ? any(SAY.cheeky)
+      : any(SAY[bucket]);
     mood = bucket === 'great' ? 'grin' : bucket === 'good' ? 'happy' : 'kind';
   }
 
@@ -2155,7 +2338,7 @@ function renderSummary(session) {
   // celebrate
   if (session.record) { sfx('fanfare'); confetti(110); }
   else if (score >= .9 && items.length >= 5) { sfx('fanfare'); confetti(80); }
-  setTimeout(() => { if (!S.prefs.muted) speakEs(line); }, 350);
+  setTimeout(() => speakEs(line), 350);
 }
 
 /* =====================================================================
@@ -2257,17 +2440,21 @@ function renderProgress() {
       ${S.sessions.length ? `<ul class="missed">${S.sessions.slice(0, 8).map(s => `<li><span>${s.mode === 'match' ? 'Match' : 'Flashcards'} · <span class="muted">${new Date(s.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span></span><span><b>${s.mode === 'match' ? fmtTime(s.ms) : `${s.right}/${s.n}`}</b></span></li>`).join('')}</ul>` : '<p class="muted" style="font-size:.9rem">No rounds yet.</p>'}
     </section>
 
+    <section class="panel" id="syncPanel"></section>
+
     <div class="row-btns"><button class="btn ghost small" id="reset">Reset all progress</button></div>
   </div>`;
+  paintSync();
   const drill = $('#drill');
   if (drill) drill.onclick = () => go('flash', missed.map(x => x.e));
   const reset = $('#reset');
   reset.onclick = () => {
     if (reset.dataset.armed) {
       // erase scores and marks; the shared words and this browser's id stay
-      S = Object.assign(load(), { words: {}, days: [], sessions: [], matchTimes: [] });
+      // with sync on, resetAt tells the other devices to erase theirs too
+      S = Object.assign(load(), { words: {}, days: [], sessions: [], matchTimes: [], resetAt: Date.now() });
       S.prefs = Object.assign({}, DEFAULT_PREFS, { muted: S.prefs.muted });
-      save(); toast('Progress reset.'); go('progress');
+      save(); syncNow(); toast('Progress reset.'); go('progress');
     } else { reset.dataset.armed = '1'; reset.textContent = 'Tap again to erase everything'; reset.classList.add('bad'); }
   };
 }
@@ -2277,7 +2464,6 @@ function renderProgress() {
    ===================================================================== */
 let libState = { q: '', filter: 'all', course: 'all', addOpen: false };
 function renderLibrary() {
-  const lists = [...new Set(S.shared.map(r => r.list))];
   app.innerHTML = `<div class="screen stack">
     <h1 class="serif" style="margin:4px 0 0">Word library</h1>
     <p class="muted" style="margin:0">Every word you can practice. Mark words to practice, bring back words you said you knew, or add your own.</p>
@@ -2285,10 +2471,16 @@ function renderLibrary() {
     <details class="add panel" id="addBox" ${libState.addOpen ? 'open' : ''}>
       <summary><span class="plus">+</span> Add new words</summary>
       <div class="add-body">
-        <label class="field">List name
-          <input type="text" id="addList" list="myLists" placeholder="For example: Week 3 – La comida" value="${esc(libState.lastList || '')}">
-          <datalist id="myLists">${lists.map(l => `<option value="${esc(l)}">`).join('')}</datalist>
-        </label>
+        <div class="two-col" style="gap:12px">
+          <label class="field">Section
+            <select id="addSection"></select>
+            <input type="text" id="newSection" placeholder="New section name, e.g. Advanced 3" maxlength="60" hidden>
+          </label>
+          <label class="field">Topic
+            <select id="addTopic"></select>
+            <input type="text" id="newTopic" placeholder="New topic name, e.g. La comida" maxlength="60" hidden>
+          </label>
+        </div>
         <label class="field">Words, one per line
           <textarea id="addText" spellcheck="false" placeholder="el perro = dog&#10;la manzana = apple&#10;correr = to run"></textarea>
         </label>
@@ -2310,7 +2502,31 @@ function renderLibrary() {
   </div>`;
 
   /* ---- add words ---- */
-  const box = $('#addBox'), text = $('#addText'), listIn = $('#addList'), enFirst = $('#enFirst'), btn = $('#addBtn');
+  const box = $('#addBox'), text = $('#addText'), enFirst = $('#enFirst'), btn = $('#addBtn');
+  const secSel = $('#addSection'), secNew = $('#newSection'), topSel = $('#addTopic'), topNew = $('#newTopic');
+  const NEW = '__new__';   // the "new…" choice in each menu
+  const fillSections = () => {
+    const cs = courses();
+    const want = libState.lastSection && cs.includes(libState.lastSection) ? libState.lastSection : cs[0];
+    secSel.innerHTML = cs.map(c => `<option ${c === want ? 'selected' : ''}>${esc(c)}</option>`).join('') + `<option value="${NEW}">＋ New section…</option>`;
+  };
+  const fillTopics = () => {
+    const isNew = secSel.value === NEW;
+    secNew.hidden = !isNew;
+    const ts = isNew ? [] : TOPICS.filter(t => t.course === secSel.value && t.entries.length).map(t => t.name);
+    const want = ts.includes(libState.lastList) ? libState.lastList : ts[0];
+    topSel.innerHTML = ts.map(n => `<option ${n === want ? 'selected' : ''}>${esc(n)}</option>`).join('') + `<option value="${NEW}" ${ts.length ? '' : 'selected'}>＋ New topic…</option>`;
+    topNew.hidden = topSel.value !== NEW;
+  };
+  const target = () => ({
+    section: secSel.value === NEW ? secNew.value.trim() : secSel.value,
+    list: topSel.value === NEW ? topNew.value.trim() : topSel.value,
+  });
+  fillSections(); fillTopics();
+  secSel.addEventListener('change', () => { fillTopics(); if (!secNew.hidden) secNew.focus(); preview(); });
+  topSel.addEventListener('change', () => { topNew.hidden = topSel.value !== NEW; if (!topNew.hidden) topNew.focus(); preview(); });
+  secNew.addEventListener('input', () => preview());
+  topNew.addEventListener('input', () => preview());
   box.addEventListener('toggle', () => { libState.addOpen = box.open; if (box.open) text.focus(); });
   const existing = () => new Set(ENTRIES.map(e => e.key));
   const preview = () => {
@@ -2318,8 +2534,9 @@ function renderLibrary() {
     const have = existing(), seen = new Set();
     const fresh = ok.filter(x => { const k = norm(x.es) + '=' + norm(x.en); if (have.has(k) || seen.has(k)) return false; seen.add(k); return true; });
     const dup = ok.length - fresh.length;
-    btn.disabled = !fresh.length;
-    btn.textContent = fresh.length ? `Add ${fresh.length} word${fresh.length === 1 ? '' : 's'}` : 'Add words';
+    const { section, list } = target();
+    btn.disabled = !fresh.length || !section || !list;
+    btn.textContent = !fresh.length ? 'Add words' : !section ? 'Name the new section' : !list ? 'Name the new topic' : `Add ${fresh.length} word${fresh.length === 1 ? '' : 's'} to ${list}`;
     if (!text.value.trim()) { $('#addPreview').textContent = 'Your words will show up here before you add them.'; return fresh; }
     $('#addPreview').innerHTML = `<b>${fresh.length}</b> new word${fresh.length === 1 ? '' : 's'}${dup ? ` · ${dup} already in the library` : ''}${fresh.length ? `<ul>${fresh.slice(0, 4).map(x => `<li><span class="serif"><b>${esc(x.es)}</b></span> → ${esc(x.en)}</li>`).join('')}${fresh.length > 4 ? `<li class="muted">and ${fresh.length - 4} more</li>` : ''}</ul>` : ''}${bad.length ? `<div class="skip" style="margin-top:6px">Can't read ${bad.length} line${bad.length === 1 ? '' : 's'} (no = or tab): “${esc(bad[0])}”</div>` : ''}`;
     return fresh;
@@ -2329,14 +2546,15 @@ function renderLibrary() {
   btn.onclick = async () => {
     const fresh = preview();
     if (!fresh.length) return;
-    const list = listIn.value.trim() || 'Shared words';
+    const { section, list } = target();
+    if (!section || !list) return;
     btn.disabled = true; btn.textContent = 'Adding…';
     try {
       let added = 0;
-      for (let i = 0; i < fresh.length; i += 100) added += (await shareWords(list, fresh.slice(i, i + 100))).added.length;
+      for (let i = 0; i < fresh.length; i += 100) added += (await shareWords(section, list, fresh.slice(i, i + 100))).added.length;
       toast(added ? `¡Listo! ${added} word${added === 1 ? '' : 's'} added to “${list}”.` : 'Someone already added those words.');
       text.value = '';
-      Object.assign(libState, { q: '', filter: 'all', course: SHARED_COURSE, addOpen: true, lastList: list });
+      Object.assign(libState, { q: '', filter: 'all', course: section, addOpen: true, lastSection: section, lastList: list });
       renderLibrary();
     } catch (e) {
       // keep what they typed so nothing is lost
@@ -2410,6 +2628,13 @@ function renderLibrary() {
 }
 
 go('home');
+(function startSync() {
+  const m = location.hash.match(/sync=([a-z0-9-]+)/i);
+  if (m && validCode(m[1])) {
+    history.replaceState(null, '', location.pathname + location.search);   // keep the code out of the address bar
+    linkSync(m[1]).then(ok => toast(ok ? '☁ Linked! Your progress now follows you between devices.' : 'Could not reach the server to link. Try the link again.'));
+  } else syncNow();
+})();
 </script>
 </body>
 </html>

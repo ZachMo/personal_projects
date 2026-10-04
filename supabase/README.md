@@ -1,7 +1,7 @@
 # Supabase
 
-One free project, `hugelland` (`tnaassoaraijvhswevvp`), holds two things: the Hügelland daily leaderboard and
-the shared word list for Practica con Zach.
+One free project, `hugelland` (`tnaassoaraijvhswevvp`), holds three things: the Hügelland daily leaderboard, and
+for Practica con Zach, the shared word list and progress sync.
 
 # The daily leaderboard
 
@@ -84,7 +84,8 @@ Par is worked out once per day and kept in `daily_par`.
 
 # The shared word list
 
-Words added on `spanish-vocab/spanish-vocab.html` go into `vocab_words`, so every visitor gets them.
+Words added on `spanish-vocab/spanish-vocab.html` go into `vocab_words`, so every visitor gets them. Each word
+has a `section` (such as High Intermediate 2) and a `list`, its topic within that section.
 
 - **Reading:** the page reads the table with the public key, 1,000 rows at a time, and keeps the last copy in
   localStorage so the words load at once and work offline.
@@ -112,3 +113,15 @@ supabase db query --linked "delete from public.vocab_words where id = 123"
 
 What it does not stop: someone determined to add junk a little at a time from many browsers. If that happens,
 the next step is an editor code checked by the function, so only people with the code can add.
+
+# Progress sync
+
+`vocab_progress` keeps one learner's scores in step between devices, without accounts. The page makes a random
+12-character sync code. The `progress` function stores the page's progress under the code's SHA-256 hash, and
+returns it to whoever sends the same code. The table has row level security and no policies at all, so the public
+key can neither read nor write it. Merging happens in the page. One saved copy is at most 600 KB, and there can
+be up to 5,000 codes.
+
+```sh
+supabase functions deploy progress --no-verify-jwt
+```

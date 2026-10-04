@@ -677,9 +677,11 @@ The words come from three class lists (High Intermediate 2, Advanced 1 and Advan
 **Adding words.** The Library has an **Add new words** panel. Paste a list with one pair per
 line, Spanish first, separated by `=`, a dash or a tab. Spreadsheet rows and Quizlet exports
 paste straight in, and a switch handles lists with English first. The panel previews the new
-words and skips lines it cannot read and words already in the library. Added words go into one
-shared list on Supabase, so everyone who opens the page gets them, under **Shared words** in
-the Library. Only the browser that added a word can delete it. See `supabase/README.md`.
+words and skips lines it cannot read and words already in the library. Each list is filed under
+a section and topic: an existing one, such as High Intermediate 2 → La familia extendida, or a
+new one. Added words go into one shared list on Supabase, so everyone who opens the page gets
+them in the same section and topic. Only the browser that added a word can delete it. See
+`supabase/README.md`.
 
 **Flashcards.** A card shows a word in English, in Spanish, or a mix of both. Answer by typing,
 by speaking (the browser's speech recognition, in Chrome, Edge and Safari), or by flipping the
@@ -694,19 +696,31 @@ starts the clock, and each wrong pair adds a second. The page keeps the ten fast
 and celebrates a new record.
 
 **After each round** every word gets two buttons: ⭐ keep practicing, or ✓ I know it. Missed
-words start on the practice list. Games use the whole library, minus the words marked as
-known. **Show all words** puts the known words back in, and the **Library** can bring back
-one word or all of them.
+words start on the practice list. **Choose your words** on the home screen lists each section
+(High Intermediate 2, Advanced 1, Advanced 2 and any added ones) with its topics; every topic
+is on until you turn it off. Words marked as known stay out until **Show all words** is on,
+and the **Library** can bring back one word or all of them. A flashcard round is 50 cards, or
+every card when the chosen topics hold fewer; **All** takes every card.
 Practice-list words and often-missed words come up more often.
 
 **Coach Zach** is a line drawing in the bottom corner. The same drawing, on the page's terracotta,
 is the page icon (`zach-icon.svg`, with 180 and 512 px PNGs for phone home screens). He cheers right answers and streaks,
 and encourages after a miss, always in Spanish (*¡Buen trabajo!*, *¡Sigue así!*, *¡La próxima
-vez lo logras!*). At the end of a round he gives a line that fits the score, and reads it aloud.
+vez lo logras!*). The page is for my wife, so when she does well Zach sometimes turns cheeky
+(*¡Las acertaste todas! ¡Muy sexy!*). At the end of a round he gives a line that fits the score, and reads it aloud.
 
 **Progress** tracks accuracy by word type (verbs, nouns, adjectives, phrases), by topic and by
 direction, the most-missed words, and three kinds of small slip: missing accents, el/la
-mix-ups and typos. Zach turns these into advice in Spanish. Everything stays in localStorage.
+mix-ups and typos. Zach turns these into advice in Spanish.
+
+**Sync between devices** (on Progress) keeps scores, marks and match times the same on a phone
+and a laptop with no account. Turning it on makes a private code like `k7pm-x2qd-9fhr`; opening
+the link, or typing the code under Progress on the other device, links it. Each device merges
+the saved copy with its own after every round and when it comes back into view. Without sync,
+progress stays in that browser's localStorage.
+
+**Sound** off silences everything: effects, Zach reading his line, and tiles read aloud. The
+**Hear it** button still reads a word when pressed.
 
 ## ios-town/
 

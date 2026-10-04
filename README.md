@@ -211,15 +211,22 @@ Each player picks an armor color, or each team does in 2 v 2. A match is either 
 last one standing, or most kills in three minutes with sudden death on a tie. If every person in a
 lives match is out, it ends there rather than leave you watching CPUs: the side with the most
 lives left wins. The map is one of
-five, or random:
+six, or random. The lobby picks it with one card, stepped through with ◀ and ▶, that shows a small
+picture of the layout and whether the map is small or large.
 
 - **Canyon**: a desert gulch under a Halo ring, with cliffs at both ends.
-- **Ring Station**: three islands in orbit, joined by steps over the gaps.
+- **Ring Station** (small): two islands and a raised middle in orbit, all joined, with two short
+  tiers above. Built for close fights.
 - **Frostbite**: a snowy base with a bunker in the middle and towers at the sides.
 - **Magma Forge**: basalt islands over a lava sea, all reds and oranges, with embers rising.
   A small pillar on the central floor gives cover.
 - **Deep Lab**: an undersea station in teals and blues, with bubbles rising. A solid lab deck
   in the middle has to be gone around, not jumped through, and a shallow trench runs under it.
+- **Rooftop** (small): a night-city roof in purples and neon pink, in the rain. Two AC units give
+  cover, a billboard ledge and a water tower stand above, and the street is a long way down.
+
+In Sword fight, Random picks only the small maps. CPU sword fights there take about a minute,
+against two on a large map, and nearly every life ends in a knock-off.
 
 **The camera** follows the fight and zooms out as the players spread apart. The maps are about
 twice the width of the screen, with four or five levels of platforms. Behind them, four or five

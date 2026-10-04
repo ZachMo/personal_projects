@@ -83,6 +83,11 @@
   .cap.sm.hold { border-bottom-color: var(--accent); }
   .cards { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 260px; }
   .padbox { flex-direction: column; gap: 6px; }
+  .mappick { display: flex; align-items: center; gap: 8px; }
+  .mapcard { display: flex; align-items: center; gap: 10px; min-width: 15em; padding: 4px 8px 4px 4px; background: #0b0e18; border: 2px solid var(--line); }
+  .mapcard canvas { width: 96px; height: 54px; image-rendering: pixelated; border: 1px solid #000; }
+  .mapcard span { line-height: 1.25; }
+  .mapcard small { display: block; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
   .padhead { display: flex; justify-content: space-between; align-items: center; color: var(--ink); }
   button.tiny { font-size: 11px; padding: 2px 8px; box-shadow: 2px 2px 0 #000; }
   #padCaps { display: flex; flex-wrap: wrap; }
@@ -146,10 +151,10 @@
       <div class="row"><label>CPUs</label><div class="seg" data-key="skill">
         <button data-v="recruit">Recruit</button><button data-v="normal">Normal</button>
         <button data-v="heroic">Heroic</button><button data-v="legendary">Legendary</button></div></div>
-      <div class="row match-only"><label>Map</label><div class="seg" data-key="map">
-        <button data-v="random">Random</button><button data-v="canyon">Canyon</button>
-        <button data-v="ring">Ring Station</button><button data-v="frost">Frostbite</button>
-        <button data-v="magma">Magma Forge</button><button data-v="lab">Deep Lab</button></div></div>
+      <div class="row match-only"><label>Map</label><div class="mappick" id="mapPick">
+        <button id="mapPrev" aria-label="Previous map">◀</button>
+        <div class="mapcard"><canvas id="mapThumb" width="96" height="54"></canvas><span id="mapName"></span></div>
+        <button id="mapNext" aria-label="Next map">▶</button></div></div>
     </div>
     <div id="slots"></div>
     <div class="howto">
@@ -237,12 +242,12 @@ const MAPS = [
             T_(300, 312, 96), T_(604, 312, 96), T_(452, 248, 96)],
     spawns: [[110, 440], [890, 440], [308, 436], [692, 436]],
     pickups: [[500, 380], [500, 248], [348, 312], [652, 312], [144, 368], [856, 368]] },
-  { id: 'ring', name: 'Ring Station', w: 1040, h: 620,
-    plats: [S_(80, 480, 260, 36), S_(700, 480, 260, 36), S_(440, 430, 160, 30),
-            T_(340, 452, 100), T_(600, 452, 100), T_(140, 410, 100), T_(800, 410, 100), T_(280, 350, 110),
-            T_(650, 350, 110), T_(465, 300, 110), T_(150, 300, 80), T_(810, 300, 80), T_(470, 232, 100)],
-    spawns: [[150, 480], [890, 480], [520, 430], [520, 300]],
-    pickups: [[520, 430], [520, 232], [190, 410], [850, 410], [335, 350], [705, 350]] },
+  // Small: two islands and a raised middle, joined, with two short tiers above. Made for close fights.
+  { id: 'ring', name: 'Ring Station', small: true, w: 680, h: 480,
+    plats: [S_(60, 360, 190, 30), S_(250, 340, 180, 26), S_(430, 360, 190, 30),
+            T_(100, 290, 90), T_(490, 290, 90), T_(290, 268, 100), T_(190, 212, 80), T_(410, 212, 80)],
+    spawns: [[120, 360], [560, 360], [145, 290], [535, 290]],
+    pickups: [[340, 340], [340, 268], [230, 212], [450, 212], [145, 290], [535, 290]] },
   { id: 'frost', name: 'Frostbite', w: 1000, h: 640,
     plats: [S_(120, 540, 760, 60), S_(440, 470, 120, 70), S_(120, 430, 80, 110), S_(800, 430, 80, 110),
             T_(230, 476, 90), T_(680, 476, 90), T_(430, 408, 140), T_(250, 404, 100), T_(650, 404, 100),
@@ -263,6 +268,12 @@ const MAPS = [
             T_(750, 370, 100), T_(300, 330, 100), T_(600, 330, 100), T_(450, 270, 100)],
     spawns: [[230, 540], [770, 540], [275, 470], [725, 470]],
     pickups: [[500, 560], [500, 400], [500, 270], [200, 370], [800, 370], [350, 330]] },
+  // Small: one rooftop, two AC units for cover, a billboard ledge and a water tower.
+  { id: 'roof', name: 'Rooftop', small: true, w: 600, h: 440,
+    plats: [S_(60, 340, 480, 40), S_(150, 318, 40, 22), S_(410, 318, 40, 22),
+            T_(250, 280, 100), T_(90, 252, 80), T_(430, 252, 80), T_(260, 200, 80)],
+    spawns: [[110, 340], [490, 340], [130, 252], [470, 252]],
+    pickups: [[300, 340], [300, 280], [300, 200], [130, 252], [470, 252]] },
   { id: 'training', name: 'Training', w: 1200, h: 600, training: true,
     plats: [S_(60, 480, 1080, 70), S_(640, 420, 30, 60), S_(60, 420, 120, 60),
             T_(220, 420, 90), T_(340, 360, 90), T_(460, 300, 90), T_(580, 240, 90),
@@ -306,7 +317,9 @@ function approach(v, t, a) { return v < t ? Math.min(t, v + a) : Math.max(t, v -
 function newGame(cfg) {
   const training = cfg.mode === 'training';
   const def = training ? MAPS.find(m => m.training)
-    : cfg.map === 'random' ? (arenas => arenas[Math.floor(Math.random() * arenas.length)])(MAPS.filter(m => !m.training)) : MAPS.find(m => m.id === cfg.map);
+    : cfg.map === 'random' ? (arenas => arenas[Math.floor(Math.random() * arenas.length)])(
+        MAPS.filter(m => !m.training && (cfg.set !== 'swords' || m.small))) // a sword fight wants a small map
+    : MAPS.find(m => m.id === cfg.map);
   const S = {
     phase: training ? 'play' : 'countdown', count: 180, tick: 0, seed: (Math.random() * 2 ** 31) | 0,
     mode: cfg.mode, rule: training ? 'training' : cfg.rule, skill: cfg.skill || 'normal', set: training ? 'standard' : cfg.set || 'standard', time: MATCH_TIME, sudden: false, winner: null,
@@ -1161,7 +1174,7 @@ const SONGS = {
       'G5 - F#5 - E5 - B4 - E5 - F#5 - G5 - B5 -', 'C6 - B5 - G5 - E5 - G5 - C6 - B5 - G5 -',
       'A5 - G5 - F#5 - D5 - F#5 - A5 - D6 - A5 -', 'B5 - - - A5 - - - F#5 - - - D#5 - B4 -'].map(bar) },
 };
-const MAP_SONG = { canyon: 'battle', ring: 'battle', training: 'battle', frost: 'frozen', lab: 'frozen', magma: 'inferno' };
+const MAP_SONG = { canyon: 'battle', ring: 'battle', training: 'battle', frost: 'frozen', lab: 'frozen', magma: 'inferno', roof: 'inferno' };
 const MUSIC_KEY = 'spartan-brawl-music';
 const MUSIC = { on: true, song: null, step: 0, next: 0, out: null, pulse: null, timer: null };
 try { MUSIC.on = localStorage.getItem(MUSIC_KEY) !== 'off'; } catch (e) {}
@@ -1339,6 +1352,8 @@ const THEMES = {
     top: '#f4faff', top2: '#c8dcf0', base: '#5e7092', seam: '#4c5c7c', dark: '#263050' },
   magma: { sky: ['#160404', '#240806', '#360c06', '#4e1408', '#6a1e0a', '#8a2c0c', '#a83c10'],
     top: '#ffc04a', top2: '#ff7a24', base: '#4a2a24', seam: '#3a1e1a', dark: '#1a0a08', light: '#ff7a1a' },
+  roof: { sky: ['#0c0618', '#140a26', '#1c0e34', '#261244', '#321656', '#3e1a66', '#4a1e74'],
+    top: '#ff6ae0', top2: '#b040c0', base: '#2c2640', seam: '#201c30', dark: '#0e0a18', light: '#5affff' },
   lab: { sky: ['#0e5a72', '#0b4b63', '#093d53', '#073044', '#052436', '#031a28', '#02121e'],
     top: '#9ff6ff', top2: '#3ab8d0', base: '#2a3c4c', seam: '#1e2e3c', dark: '#0a141e', light: '#4affd0' },
   training: { sky: ['#060b16', '#08101e', '#0a1426', '#0c182e', '#0e1c36'],
@@ -1515,6 +1530,23 @@ function scene(map) {
       }
       columns(g, W, r, 4, '#120404', 280, 320, 16, 30);
     }, true);
+  } else if (map.id === 'roof') {
+    L(0.02, (g, W) => { // stars and a big moon
+      stars(g, W, r, 80);
+      pxDisc(g, W * 0.7, 70, 26, '#f2e6ff'); pxDisc(g, W * 0.7 + 7, 63, 6, '#d8c8f0'); pxDisc(g, W * 0.7 - 9, 78, 4, '#d8c8f0');
+    });
+    const skyline = (g, W, col, win, y0, y1, w0, w1, signs) => {
+      for (let x = 0; x < W;) {
+        const w = Math.round(w0 + r() * (w1 - w0)), top = Math.round(y0 + r() * (y1 - y0));
+        g.fillStyle = col; g.fillRect(x, top, w - 2, LAYER_H);
+        for (let wy = top + 6; wy < LAYER_H; wy += 7) for (let wx = x + 3; wx < x + w - 5; wx += 5) if (r() < 0.3) { g.fillStyle = win[Math.floor(r() * win.length)]; g.fillRect(wx, wy, 2, 3); }
+        if (signs && r() < 0.35) { g.fillStyle = ['#ff5ad8', '#5affff', '#ffd25a'][Math.floor(r() * 3)]; g.fillRect(x + 4, top + 10, Math.max(8, w - 12), 4); }
+        x += w;
+      }
+    };
+    L(0.1, (g, W) => skyline(g, W, '#1a1030', ['#3a2a60', '#5a4a80'], 170, 250, 20, 50, false));
+    L(0.25, (g, W) => skyline(g, W, '#120a22', ['#ffd25a', '#8a6ad0', '#5affff'], 140, 240, 30, 70, true));
+    L(0.5, (g, W) => { skyline(g, W, '#0a0614', ['#ffd25a', '#ff5ad8'], 110, 260, 50, 110, true); ghostPlats(g, W, r, 5, '#4a2a60', '#1a0e2a', 150, 260); });
   } else if (map.id === 'lab') {
     L(0.03, (g, W) => { // light coming down from the surface
       for (let i = 0; i < 9; i++) {
@@ -1580,6 +1612,11 @@ function worldLayer(map) {
   const g = c.getContext('2d'), T = THEMES[map.id], r = seeded(map.w);
   for (const s of map.plats) {
     if (s.thin) continue;
+    if (map.id === 'roof' && s.y === 340) { // the water tower stands on the roof
+      g.fillStyle = '#1a1428'; g.fillRect(268, 250, 3, 90); g.fillRect(329, 250, 3, 90); g.fillRect(268, 296, 64, 2); // legs
+      g.fillStyle = '#2c2640'; g.fillRect(262, 205, 76, 45); // the tank; its lid is the platform you stand on
+      g.fillStyle = '#1a1428'; for (let x = 270; x < 334; x += 10) g.fillRect(x, 210, 1, 36);
+    }
     if (map.id === 'ring' || map.id === 'lab') { g.fillStyle = map.id === 'lab' ? '#0c2230' : '#1a2032'; for (let x = s.x + 14; x < s.x + s.w - 10; x += 40) g.fillRect(x, s.y + s.h, 6, map.h); }
   }
   for (const s of map.plats) {
@@ -1625,6 +1662,7 @@ function updateCamera(snap) {
   h = Math.max(280, Math.min(470, M.h, h));
   const w = h * 16 / 9;
   let cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 - h * 0.14; // more room above than below
+  cy = Math.max(cy, y1 + h * 40 / HUD_H - h / 2); // never let the player cards cover the lowest fighter
   cx = w >= M.w + 80 ? M.w / 2 : Math.max(w / 2 - 40, Math.min(M.w + 40 - w / 2, cx));
   cy = Math.max(h / 2 - 60, Math.min(M.h + 10 - h / 2, cy));
   const k = snap ? 1 : 0.1;
@@ -1993,6 +2031,17 @@ function render() {
   for (const p of pops) text(p.t, p.x, p.y, p.c, 1, 'center');
 
   for (const L of sc.fg) drawLayer(L, ls);
+  if (M.id === 'roof') { // rain, lit pink by the signs
+    ctx.setTransform(ls, 0, 0, ls, 0, 0);
+    const t = performance.now() / 1000;
+    for (let i = 0; i < 80; i++) {
+      const near = i % 3 === 0, pf = near ? 1.4 : 0.7;
+      const x = ((i * 67 - t * 40 - cam.x * pf) % VIEW_LW + VIEW_LW) % VIEW_LW;
+      const y = ((i * 41 + t * (220 + (i % 5) * 30) - cam.y * pf * 0.5) % VIEW_LH + VIEW_LH) % VIEW_LH;
+      ctx.fillStyle = near ? 'rgba(255,170,240,0.55)' : 'rgba(180,160,255,0.35)';
+      for (let k = 0; k < (near ? 6 : 4); k++) ctx.fillRect(Math.round(x - k * 0.3), Math.round(y - k), 1, 1);
+    }
+  }
   if (M.id === 'magma' || M.id === 'lab') { // embers or bubbles rising in front of everything
     ctx.setTransform(ls, 0, 0, ls, 0, 0);
     const t = performance.now() / 1000, lab = M.id === 'lab';
@@ -2603,11 +2652,12 @@ function slotRow(i) {
   } else {
     const sel = document.createElement('select');
     sel.setAttribute('aria-label', 'Player ' + (i + 1));
-    const n = getPads().length;
+    const n = getPads().length; // list only the controllers that are connected, plus this place's own
     [['cpu', 'CPU'], ['pad0', 'Controller 1'], ['pad1', 'Controller 2'], ['pad2', 'Controller 3'], ['pad3', 'Controller 4'], ['off', 'Off']]
       .forEach(([v, t]) => {
-        const o = document.createElement('option'); o.value = v;
-        o.textContent = t + (/^pad/.test(v) && +v[3] >= n ? ' (not connected)' : '');
+        const missing = /^pad/.test(v) && +v[3] >= n;
+        if (missing && sl.ctrl !== v) return;
+        const o = document.createElement('option'); o.value = v; o.textContent = t + (missing ? ' (not connected)' : '');
         sel.appendChild(o);
       });
     sel.value = sl.ctrl;
@@ -2675,6 +2725,34 @@ function renderTeams(box, row, colors, canPick, onPick) {
     box.appendChild(team);
   });
 }
+// The map picker: one card with a small picture of the layout, stepped through with ◀ and ▶.
+const MAP_CHOICES = ['random'].concat(MAPS.filter(m => !m.training).map(m => m.id));
+function drawMapPick(settings, canEdit) {
+  const id = settings.map, m = MAPS.find(x => x.id === id), c = $('mapThumb'), g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.clearRect(0, 0, c.width, c.height);
+  if (!m) {
+    g.fillStyle = '#121725'; g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = '#f0a830'; g.font = 'bold 30px ui-monospace, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('?', 48, 29);
+    $('mapName').innerHTML = 'Random<small>' + (settings.set === 'swords' ? 'a small map, for swords' : 'any map') + '</small>';
+  } else {
+    const T = THEMES[m.id];
+    T.sky.forEach((col, i) => { g.fillStyle = col; g.fillRect(0, Math.floor(i * c.height / T.sky.length), c.width, Math.ceil(c.height / T.sky.length) + 1); });
+    const k = Math.min(c.width / m.w, c.height / m.h), w = m.w * k, h = m.h * k;
+    g.drawImage(scene(m).world, (c.width - w) / 2, (c.height - h) / 2, w, h);
+    $('mapName').innerHTML = m.name + '<small>' + (m.small ? 'small' : 'large') + '</small>';
+  }
+  for (const b of ['mapPrev', 'mapNext']) $(b).disabled = !canEdit;
+}
+function stepMap(d) {
+  const online = tab === 'online', settings = online && NET.room ? NET.room.cfg : cfg;
+  if (online && NET.role !== 'host') return;
+  const i = MAP_CHOICES.indexOf(settings.map);
+  settings.map = MAP_CHOICES[(Math.max(0, i) + d + MAP_CHOICES.length) % MAP_CHOICES.length];
+  if (online) sendLobby(); else saveCfg();
+  renderLobby();
+}
+
 function renderLobby() {
   const online = tab === 'online', inRoom = online && !!NET.room, host = NET.role === 'host';
   const settings = inRoom ? NET.room.cfg : cfg;
@@ -2690,6 +2768,7 @@ function renderLobby() {
     seg.style.opacity = inRoom && !host ? 0.75 : '';
     seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', settings[seg.dataset.key] === b.dataset.v));
   });
+  drawMapPick(settings, !inRoom || host);
   document.querySelectorAll('.local-only').forEach(el => el.classList.toggle('hidden', online));
   document.querySelectorAll('.match-only').forEach(el => el.classList.toggle('hidden', settings.mode === 'training'));
   const box = $('slots'), editing = document.activeElement && document.activeElement.dataset.role === 'myname'
@@ -2817,6 +2896,8 @@ function fullscreen() {
 
 $('start').onclick = startMatch;
 $('full').onclick = fullscreen;
+$('mapPrev').onclick = () => stepMap(-1);
+$('mapNext').onclick = () => stepMap(1);
 function musicLabel() { $('musicBtn').textContent = 'Music: ' + (MUSIC.on ? 'on' : 'off'); }
 $('musicBtn').onclick = () => {
   MUSIC.on = !MUSIC.on; musicLabel(); musicUpdate();

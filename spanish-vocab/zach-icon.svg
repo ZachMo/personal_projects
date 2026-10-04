@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 10 104 104">
+  <!-- Coach Zach, cropped to head and shoulders, on the page's terracotta. Same drawing as zachSVG() in spanish-vocab.html. -->
+  <defs><clipPath id="tile"><rect x="8" y="10" width="104" height="104" rx="24"/></clipPath></defs>
+  <g clip-path="url(#tile)">
+    <rect x="8" y="10" width="104" height="104" fill="#c8553d"/>
+    <circle cx="60" cy="58" r="46" fill="#e07a5f"/>
+    <g fill="none" stroke="#2a221b" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M51 86 L51 110 L69 110 L69 86 Z" fill="#fff3e6" stroke="none"/>
+      <path d="M51 90 L51 107 M69 90 L69 107"/>
+      <path d="M12 140 C16 114 36 106 60 106 C84 106 104 114 108 140 Z" fill="#3f6f9e"/>
+      <path d="M47 106 L60 121 L73 106" fill="#fff"/>
+      <path d="M35 56 C35 34 85 34 85 56 C85 80 75 97 60 97 C45 97 35 80 35 56 Z" fill="#fff3e6"/>
+      <path d="M35 60 C28 57 27 72 36 73" fill="#fff3e6"/>
+      <path d="M85 60 C92 57 93 72 84 73" fill="#fff3e6"/>
+      <path d="M33 62 C26 38 38 15 61 14 C85 13 97 32 88 62 C87 54 85 48 82 43 C70 40 50 40 38 44 C36 50 34 56 33 62 Z" fill="#6b4a2e"/>
+      <path d="M75 18 C56 16 37 27 32 52 L35 49 C37 52 39 56 40 60 C46 50 55 43 63 37 C65 41 68 44 72 45 C77 40 82 35 85 30 C83 24 80 20 75 18 Z" fill="#6b4a2e"/>
+      <path d="M71 22 C58 25 46 34 39 48 M77 27 C69 32 61 38 55 44" stroke-width="1.5" opacity=".55"/>
+      <path d="M65 47 C69 45 75 45 79 49"/>
+      <rect x="39" y="56" width="19" height="14" rx="5" fill="rgba(255,255,255,.4)" stroke-width="3.2"/>
+      <rect x="62" y="56" width="19" height="14" rx="5" fill="rgba(255,255,255,.4)" stroke-width="3.2"/>
+      <path d="M58 61 C59.3 59.5 60.7 59.5 62 61"/>
+      <path d="M39 60 L35 59 M81 60 L85 59"/>
+      <path d="M60 66 C58 72 57 75 61 76" stroke-width="2.2"/>
+    </g>
+    <circle cx="48.5" cy="63.5" r="2.2" fill="#2a221b"/>
+    <circle cx="71.5" cy="63.5" r="2.2" fill="#2a221b"/>
+    <path d="M49 81 C54 90 67 90 72 81 Z" fill="#fff" stroke="#2a221b" stroke-width="2.6" stroke-linejoin="round"/>
+  </g>
+</svg>

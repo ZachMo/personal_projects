@@ -699,7 +699,8 @@ known. **Show all words** puts the known words back in, and the **Library** can 
 one word or all of them.
 Practice-list words and often-missed words come up more often.
 
-**Coach Zach** is a line drawing in the bottom corner. He cheers right answers and streaks,
+**Coach Zach** is a line drawing in the bottom corner. The same drawing, on the page's terracotta,
+is the page icon (`zach-icon.svg`, with 180 and 512 px PNGs for phone home screens). He cheers right answers and streaks,
 and encourages after a miss, always in Spanish (*¡Buen trabajo!*, *¡Sigue así!*, *¡La próxima
 vez lo logras!*). At the end of a round he gives a line that fits the score, and reads it aloud.
 

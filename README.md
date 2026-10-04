@@ -1,10 +1,16 @@
 # personal_projects
 
-Ten pages. Each one is a single HTML file with no build step and no dependencies. Open any
-of them in a browser. Only two talk to the network: the Hügelland leaderboard, and Spartan
-Brawl when you play it online.
+Eleven pages. Each one is a single HTML file with no build step and no dependencies. Open any
+of them in a browser. Only three talk to the network: the Hügelland leaderboard, Spartan
+Brawl when you play it online, and Practica con Zach reads and adds shared words.
 
-## fall.html
+Each project lives in its own folder, with its icons and images beside it. Hügelland stays at
+the root for now, because the leaderboard server downloads `hugelland.html` from that address
+to check scores. The old root addresses (`fall.html`, `spartan-brawl.html` and the rest) are
+small redirect pages, so old links and bookmarks still land in the right place. Each `source/`
+folder holds working files, such as class handouts, and is kept out of git.
+
+## fall/fall.html
 
 Four small games for a phone, played with one thumb. The page is a full-screen app
 shell: a home list, a settings screen and one canvas the games draw into. Nothing leaves
@@ -200,7 +206,7 @@ faster does not make you nimbler.
 A bot that steers for the widest opening gets about 180 m and has reached 570.
 Mashing the controls gets about 60.
 
-## spartan-brawl.html
+## spartan-brawl/spartan-brawl.html
 
 A retro platform brawler in the spirit of old Halo multiplayer and Smash Bros. Play against CPUs
 on one computer, or online with up to three friends.
@@ -503,7 +509,7 @@ about 167 and fits every building about four games in five. A bot that only pack
 plays at random scores about 76. Over 300 decks every deck got a bridge, no building went past
 its limit on copies, and the only pairs were wells, mines, farms, lumber mills and windmills.
 
-## mexico-elections.html
+## mexico-elections/mexico-elections.html
 
 A map of Mexican presidential elections, 2000–2024.
 
@@ -545,7 +551,7 @@ The chart colours follow party convention, but I ran them through a colourblind
 separation check in both light and dark themes. MORENA's dark-mode colour is shifted,
 because the obvious crimson sat too close to Movimiento Ciudadano's orange.
 
-## map-trivia.html
+## map-trivia/map-trivia.html
 
 Five maps to name from memory: the 32 Mexican states, the 50 US states, 44 European
 countries, 54 African countries, and India's 36 states and union territories.
@@ -553,7 +559,7 @@ countries, 54 African countries, and India's 36 states and union territories.
 Easy mode gives you four choices. Hard mode makes you type the name. Miss five and you
 start over. Each map keeps its own best score in the browser. Pinch to zoom, drag to pan.
 
-## metro_city.html
+## metro-city/metro_city.html
 
 A transit sim that runs in real time.
 
@@ -565,7 +571,7 @@ million people. A neglected one thins out.
 
 There is no score and no way to lose. Pause it, speed it up, and it saves as you go.
 
-## manor.html
+## manor/manor.html
 
 A daily game. One run, two or three minutes.
 
@@ -594,7 +600,7 @@ builds a manor worth 38 and gets in **0%** of the time. A player who works out t
 are the gate gets in 36% of the time but only scores 21. A player doing both scores 45 and
 gets in 68%.
 
-## lineup-card.html
+## lineup-card/lineup-card.html
 
 A lineup builder for youth baseball coaches. The chart puts the innings across the top and
 the positions down the side, with a bench row for each player who sits. Print it and take it
@@ -627,7 +633,7 @@ link** puts the roster in the URL fragment, so a coach can send the team to a ph
 assistant coach. The fragment never reaches the server, and the page removes it from the
 address bar once it loads the team.
 
-## isabella-y-el-toro.html
+## isabella-y-el-toro/isabella-y-el-toro.html
 
 A concept page for a game that is not built yet: a Spanish-learning adventure for kids
 aged 8 to 14, planned for RPG Maker MZ. Isabella gets lost in Pamplona during San Fermín,
@@ -642,7 +648,7 @@ MZ's screen size, embedded in the page.
 The fonts are embedded too, so the page makes no network calls. It is built from a separate
 project folder by `tools/build_concept_page.py`, and this file is a copy of its standalone output.
 
-## two-marker.html
+## two-marker/two-marker.html
 
 A planner for coloring a page with only two markers: a light one for where the light falls
 and a dark one for shadow, each laid down in one to four passes for deeper tones. Open a
@@ -660,6 +666,46 @@ cast shadows onto the larger shapes behind them, pointing away from each light.
 legend lists each tone to lay down and how much of the page it covers. **Save reference PNG**
 makes a sheet with the colored page and that list, to keep beside the real page while
 coloring. Settings and lights stay in localStorage. The image never leaves the browser.
+
+## spanish-vocab/spanish-vocab.html
+
+Practica con Zach: Spanish vocabulary practice in the style of Quizlet, with Zach as a coach.
+The words come from three class lists (High Intermediate 2, Advanced 1 and Advanced 2), about
+790 entries in 31 topics. They sit in one plain-text block at the top of the script, one
+`Spanish = English` line per word, so adding a word for everyone does not touch the code.
+
+**Adding words.** The Library has an **Add new words** panel. Paste a list with one pair per
+line, Spanish first, separated by `=`, a dash or a tab. Spreadsheet rows and Quizlet exports
+paste straight in, and a switch handles lists with English first. The panel previews the new
+words and skips lines it cannot read and words already in the library. Added words go into one
+shared list on Supabase, so everyone who opens the page gets them, under **Shared words** in
+the Library. Only the browser that added a word can delete it. See `supabase/README.md`.
+
+**Flashcards.** A card shows a word in English, in Spanish, or a mix of both. Answer by typing,
+by speaking (the browser's speech recognition, in Chrome, Edge and Safari), or by flipping the
+card and saying whether you knew it. The card flips to show the answer. A right answer glows
+green with a chime; a wrong one shakes. The checker accepts any one of the listed answers,
+with or without `el`/`la` or `to`. A missing accent or a one-letter typo still counts, with a
+note. A wrong article (`el cocina`) does not. **I was right** overrides the checker. Tap any
+Spanish word to hear it read aloud.
+
+**Match.** A 4 × 3 grid (3 × 4 on a phone) of six Spanish–English pairs. A 3-2-1 countdown
+starts the clock, and each wrong pair adds a second. The page keeps the ten fastest times
+and celebrates a new record.
+
+**After each round** every word gets two buttons: ⭐ keep practicing, or ✓ I know it. Missed
+words start on the practice list. Games use the whole library, minus the words marked as
+known. **Show all words** puts the known words back in, and the **Library** can bring back
+one word or all of them.
+Practice-list words and often-missed words come up more often.
+
+**Coach Zach** is a line drawing in the bottom corner. He cheers right answers and streaks,
+and encourages after a miss, always in Spanish (*¡Buen trabajo!*, *¡Sigue así!*, *¡La próxima
+vez lo logras!*). At the end of a round he gives a line that fits the score, and reads it aloud.
+
+**Progress** tracks accuracy by word type (verbs, nouns, adjectives, phrases), by topic and by
+direction, the most-missed words, and three kinds of small slip: missing accents, el/la
+mix-ups and typos. Zach turns these into advice in Spanish. Everything stays in localStorage.
 
 ## ios-town/
 

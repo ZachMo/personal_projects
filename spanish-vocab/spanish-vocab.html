@@ -1,0 +1,2411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Practica con Zach</title>
+<meta name="description" content="Spanish vocabulary flashcards and a match game, with Zach as your coach.">
+<meta name="theme-color" content="#c8553d">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23c8553d'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='36' font-weight='700' text-anchor='middle' fill='%23fff'%3E%C2%A1Z!%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --plane: #f7f3ec; --surface: #fffdf9; --surface-2: #f1ebe1;
+    --ink: #1f1b16; --ink-2: #5a5249; --muted: #8b8279;
+    --line: #e6ddd0; --border: rgba(31,27,22,.12); --wash: rgba(31,27,22,.05);
+    --accent: #c8553d; --accent-ink: #fff; --accent-soft: rgba(200,85,61,.12);
+    --good: #2f8a4c; --good-soft: rgba(47,138,76,.13);
+    --bad: #c23a3a; --bad-soft: rgba(194,58,58,.12);
+    --warn: #b7791f; --warn-soft: rgba(183,121,31,.14);
+    --bar: #c8553d;
+    --zach-skin: #fff3e6; --zach-hair: #6b4a2e; --zach-shirt: #3f6f9e; --zach-ink: #2a221b;
+    --shadow: 0 1px 2px rgba(31,27,22,.06), 0 8px 24px rgba(31,27,22,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --plane: #15130f; --surface: #1f1c17; --surface-2: #29251f;
+      --ink: #f6f1e9; --ink-2: #cdc4b8; --muted: #958c80;
+      --line: #332e27; --border: rgba(255,255,255,.12); --wash: rgba(255,255,255,.05);
+      --accent: #e57a5f; --accent-ink: #1b0f0b; --accent-soft: rgba(229,122,95,.16);
+      --good: #5cc07a; --good-soft: rgba(92,192,122,.16);
+      --bad: #ef6b6b; --bad-soft: rgba(239,107,107,.15);
+      --warn: #e0a84a; --warn-soft: rgba(224,168,74,.16);
+      --bar: #e57a5f;
+      --zach-skin: #f3e2cf; --zach-hair: #8a6442; --zach-shirt: #4f86bd; --zach-ink: #1d1712;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; min-width: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--plane); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+  [hidden] { display: none !important; }
+
+  /* ---------- top bar ---------- */
+  header.top {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--plane) 88%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+  }
+  .top-in { max-width: 920px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 700; letter-spacing: -.01em; }
+  .brand .dot { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center; font: 700 15px/1 Georgia, serif; }
+  .brand small { display: block; font-weight: 500; color: var(--muted); font-size: .72rem; letter-spacing: 0; }
+  nav.tabs { margin-left: auto; display: flex; gap: 4px; }
+  nav.tabs button { border: 0; background: none; padding: 7px 11px; border-radius: 999px; color: var(--ink-2); font-weight: 600; font-size: .9rem; }
+  nav.tabs button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+  .icon-btn { border: 1px solid var(--border); background: var(--surface); width: 36px; height: 36px; border-radius: 10px;
+    display: grid; place-items: center; padding: 0; flex: none; }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .sm { display: none; }
+  @media (max-width: 560px) {
+    .brand small { display: none; }
+    .lg { display: none; } .sm { display: inline; }
+    .opt-row .seg button { padding: 7px 10px; }
+    nav.tabs button { padding: 7px 8px; font-size: .84rem; }
+  }
+
+  @media (max-width: 430px) { .brand .name { display: none; } }
+
+  main { max-width: 920px; margin: 0 auto; padding: 20px 16px 120px; }
+  .screen { animation: fadeUp .25s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  h1, h2, h3 { letter-spacing: -.015em; line-height: 1.2; }
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  .muted { color: var(--muted); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
+  .stack > * + * { margin-top: 16px; }
+
+  /* ---------- buttons & controls ---------- */
+  .btn { border: 1px solid var(--border); background: var(--surface); padding: 11px 18px; border-radius: 12px; font-weight: 650;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; transition: transform .08s ease, background .15s; }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+  .btn.good { background: var(--good); border-color: transparent; color: #fff; }
+  .btn.bad { background: var(--bad); border-color: transparent; color: #fff; }
+  .btn.ghost { background: transparent; }
+  .btn.small { min-height: 36px; padding: 6px 12px; font-size: .88rem; border-radius: 10px; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .seg { display: inline-flex; flex-wrap: wrap; background: var(--surface-2); border-radius: 12px; padding: 3px; gap: 2px; }
+  .seg button { border: 0; background: none; padding: 7px 12px; border-radius: 9px; font-weight: 600; font-size: .9rem; color: var(--ink-2); }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .opt-row { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--line); }
+  .opt-row:first-child { border-top: 0; padding-top: 0; }
+  .opt-row > span { font-weight: 600; font-size: .92rem; }
+  .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: .92rem; font-weight: 600; }
+  .switch input { appearance: none; -webkit-appearance: none; width: 42px; height: 25px; border-radius: 999px; background: var(--line);
+    position: relative; transition: background .15s; margin: 0; flex: none; cursor: pointer; }
+  .switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+  .switch input:checked { background: var(--accent); }
+  .switch input:checked::after { transform: translateX(17px); }
+
+  /* ---------- home ---------- */
+  .hero { display: flex; align-items: center; gap: 16px; padding: 6px 0 18px; }
+  .hero .zach-face { width: 92px; flex: none; }
+  .hero h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  .hero p { margin: 0; color: var(--ink-2); }
+  .bubble-static { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); }
+  .bubble-static::before { content: ""; position: absolute; left: -8px; top: 26px; width: 14px; height: 14px; background: var(--surface);
+    border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); transform: rotate(45deg); }
+  .chips-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); font-size: .82rem; font-weight: 600; color: var(--ink-2); }
+  .play-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .play-card { text-align: left; border: 1px solid var(--border); background: var(--surface); border-radius: 18px; padding: 18px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 6px; transition: transform .12s ease, border-color .15s; }
+  .play-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .play-card .art { height: 64px; display: flex; align-items: center; gap: 6px; }
+  .play-card b { font-size: 1.2rem; }
+  .play-card span { color: var(--ink-2); font-size: .9rem; }
+  .play-card .go { color: var(--accent); font-weight: 700; font-size: .9rem; margin-top: 4px; }
+  .mini-card { width: 40px; height: 52px; border-radius: 8px; border: 2px solid var(--accent); background: var(--accent-soft); display: grid; place-items: center; font-weight: 800; color: var(--accent); }
+  .mini-card.b { transform: rotate(8deg); background: var(--surface); }
+  .mini-tile { width: 26px; height: 20px; border-radius: 5px; background: var(--surface-2); border: 1.5px solid var(--border); }
+  .mini-tile.on { background: var(--good-soft); border-color: var(--good); }
+  .mini-grid { display: grid; grid-template-columns: repeat(4, 26px); gap: 4px; }
+  @media (max-width: 520px) { .play-grid { grid-template-columns: 1fr; } .play-card .art { height: 52px; } }
+
+  .linkish { border: 0; background: none; color: var(--accent); font-weight: 650; font-size: .85rem; padding: 4px 2px; }
+  .pool-note { font-size: .88rem; color: var(--ink-2); margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+  .pool-note.warn { background: var(--warn-soft); }
+
+  /* ---------- flashcards ---------- */
+  .game-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .progress { flex: 1; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width .3s ease; }
+  .count { font-weight: 700; font-size: .9rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .streak { font-weight: 800; font-size: .9rem; color: var(--warn); min-width: 46px; text-align: right; transition: transform .2s; }
+  .streak.pop { animation: pop .4s ease; }
+  @keyframes pop { 40% { transform: scale(1.4); } }
+
+  .scene { perspective: 1200px; max-width: 560px; margin: 0 auto; }
+  .card { position: relative; height: clamp(230px, 38vh, 320px); transform-style: preserve-3d; transition: transform .55s cubic-bezier(.3,1.3,.5,1); cursor: pointer; }
+  .card.flipped { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 22px;
+    background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 22px 22px 18px; }
+  .face.back { transform: rotateY(180deg); }
+  .face .tag { position: absolute; top: 14px; left: 16px; font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .face .topic-tag { position: absolute; top: 14px; right: 16px; font-size: .72rem; color: var(--muted); max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .word { font-size: clamp(1.5rem, 5.4vw, 2.3rem); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+  .word.long { font-size: clamp(1.15rem, 4vw, 1.6rem); }
+  .word.es { cursor: pointer; text-decoration: underline dotted color-mix(in srgb, var(--accent) 60%, transparent); text-underline-offset: 6px; text-decoration-thickness: 2px; }
+  .speak { margin-top: 14px; border: 1px solid var(--border); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; display: inline-flex; gap: 6px; align-items: center; font-size: .82rem; font-weight: 650; color: var(--ink-2); }
+  .speak svg { width: 16px; height: 16px; }
+  .speak.talking { color: var(--accent); border-color: var(--accent); }
+  .verdict { margin-top: 12px; font-weight: 700; font-size: .95rem; padding: 6px 12px; border-radius: 10px; }
+  .verdict.ok { color: var(--good); background: var(--good-soft); }
+  .verdict.close { color: var(--warn); background: var(--warn-soft); }
+  .verdict.no { color: var(--bad); background: var(--bad-soft); }
+  .gave { margin-top: 6px; font-size: .86rem; color: var(--ink-2); }
+  .gave s { color: var(--bad); }
+  .card.right .face.back { border-color: var(--good); box-shadow: 0 0 0 3px var(--good-soft), var(--shadow); }
+  .card.wrong .face.back { border-color: var(--bad); box-shadow: 0 0 0 3px var(--bad-soft), var(--shadow); }
+  .shake { animation: shake .45s ease; }
+  @keyframes shake { 15%,55% { translate: -9px 0; } 35%,75% { translate: 9px 0; } }
+  .glow { animation: glow .6s ease; }
+  @keyframes glow { 30% { scale: 1.035; } }
+
+  .answer-area { max-width: 560px; margin: 16px auto 0; }
+  .answer-row { display: flex; gap: 8px; }
+  .answer-row input { flex: 1; min-height: 50px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); padding: 0 14px; font-size: 1.05rem; }
+  .answer-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .accents { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .accents button { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; min-width: 36px; height: 34px; font-weight: 600; }
+  .row-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .row-btns .btn { flex: 1 1 150px; }
+  .mic { width: 100%; min-height: 64px; font-size: 1.02rem; border-radius: 16px; }
+  .mic.listening { background: var(--bad); color: #fff; border-color: transparent; animation: pulse 1.2s ease infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 10px var(--bad-soft); } }
+  .hint { font-size: .82rem; color: var(--muted); text-align: center; margin-top: 10px; }
+  kbd { font: 600 .74rem/1 ui-monospace, monospace; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 2px 5px; background: var(--surface); }
+  @media (hover: none) { .kbd-hint { display: none; } }
+
+  /* ---------- match ---------- */
+  .timer { font: 800 1.5rem/1 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .penalty { color: var(--bad); font-weight: 800; font-size: .9rem; opacity: 0; transition: opacity .2s; }
+  .penalty.show { opacity: 1; }
+  .best-line { font-size: .85rem; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; position: relative; }
+  .tile { border: 1.5px solid var(--border); background: var(--surface); border-radius: 14px; min-height: 104px; padding: 10px; box-shadow: var(--shadow);
+    font-weight: 650; font-size: clamp(.86rem, 2.3vw, 1.02rem); line-height: 1.25; display: grid; place-items: center; text-align: center; overflow-wrap: anywhere;
+    transition: transform .12s ease, background .15s, border-color .15s, opacity .3s; position: relative; }
+  .tile .lang { position: absolute; top: 6px; left: 8px; font-size: .62rem; font-weight: 800; letter-spacing: .08em; color: var(--muted); }
+  .tile.es { font-style: normal; }
+  .tile.sel { border-color: var(--accent); background: var(--accent-soft); transform: scale(1.04); }
+  .tile.ok { border-color: var(--good); background: var(--good-soft); animation: matchPop .45s ease forwards; }
+  @keyframes matchPop { 40% { transform: scale(1.1); } 100% { transform: scale(.6); opacity: 0; visibility: hidden; } }
+  .tile.no { border-color: var(--bad); background: var(--bad-soft); animation: shake .4s ease; }
+  .countdown { position: absolute; inset: 0; display: grid; place-items: center; z-index: 3; font: 900 5rem/1 Georgia, serif; color: var(--accent);
+    background: color-mix(in srgb, var(--plane) 70%, transparent); border-radius: 14px; }
+  .countdown span { animation: cd .7s ease both; }
+  @keyframes cd { from { transform: scale(2); opacity: 0; } 30% { transform: scale(1); opacity: 1; } }
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .tile { min-height: 92px; padding: 8px 6px; }
+  }
+
+  /* ---------- summary ---------- */
+  .result-top { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+  .result-top .zach-face { width: 110px; }
+  .score-big { font: 800 2.6rem/1 Georgia, serif; letter-spacing: -.02em; }
+  .say { font: 700 1.3rem/1.3 "Iowan Old Style", Palatino, Georgia, serif; margin: 6px 0; color: var(--accent); }
+  .review-list { list-style: none; margin: 0; padding: 0; }
+  .review-list li { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .review-list li:first-child { border-top: 0; }
+  .mark { font-weight: 900; text-align: center; }
+  .mark.y { color: var(--good); } .mark.n { color: var(--bad); }
+  .rw-es { font-weight: 700; cursor: pointer; }
+  .rw-en { font-size: .86rem; color: var(--ink-2); }
+  .status-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; flex: none; }
+  .status-seg button { border: 0; background: var(--surface); padding: 6px 10px; font-size: .78rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .status-seg button + button { border-left: 1px solid var(--border); }
+  .status-seg button.on-p { background: var(--warn-soft); color: var(--warn); }
+  .status-seg button.on-k { background: var(--good-soft); color: var(--good); }
+  .times { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .times li { display: flex; justify-content: space-between; padding: 7px 10px; border-radius: 9px; font-variant-numeric: tabular-nums; counter-increment: t; }
+  .times li::before { content: counter(t) "."; width: 24px; color: var(--muted); font-weight: 700; }
+  .times li span:first-of-type { flex: 1; font-weight: 700; }
+  .times li.me { background: var(--accent-soft); }
+  @media (max-width: 520px) {
+    .review-list li { grid-template-columns: 20px 1fr; }
+    .review-list .status-seg { grid-column: 2; justify-self: start; }
+    .result-top .zach-face { width: 84px; }
+  }
+
+  /* ---------- progress ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .stat b { display: block; font-size: 1.55rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .8rem; color: var(--muted); font-weight: 600; }
+  .bars { display: grid; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: minmax(110px, 34%) 1fr 48px; gap: 10px; align-items: center; font-size: .88rem; }
+  .bar-row .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+  .bar-row .lbl small { color: var(--muted); }
+  .track { height: 12px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .track i { display: block; height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; }
+  .bar-row .val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  @media (max-width: 520px) {
+    .bar-row { grid-template-columns: 1fr 44px; row-gap: 4px; }
+    .bar-row .lbl { grid-column: 1 / -1; white-space: normal; }
+  }
+  .coach { display: grid; grid-template-columns: 90px 1fr; gap: 16px; align-items: start; }
+  .coach ul { margin: 0; padding-left: 18px; }
+  .coach li { margin: 4px 0; font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 1.04rem; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 680px) { .two-col { grid-template-columns: 1fr; } .coach { grid-template-columns: 64px 1fr; } }
+  .missed { list-style: none; padding: 0; margin: 0; }
+  .missed li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .92rem; }
+  .missed li:first-child { border-top: 0; }
+  .missed .n { color: var(--bad); font-weight: 700; white-space: nowrap; }
+
+  /* ---------- library ---------- */
+  .lib-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .lib-tools input[type=search] { flex: 1 1 220px; min-height: 42px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); padding: 0 12px; }
+  .lib-tools select { min-height: 42px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); padding: 0 10px; }
+  .lib-topic { margin-top: 18px; }
+  .lib-topic h3 { font-size: .95rem; margin: 0 0 4px; display: flex; justify-content: space-between; gap: 8px; }
+  .lib-topic h3 small { color: var(--muted); font-weight: 500; }
+  .lib-score { font-size: .74rem; color: var(--muted); white-space: nowrap; }
+  .del { border: 0; background: none; color: var(--muted); font-size: .78rem; font-weight: 600; padding: 2px 0; margin-top: 2px; }
+  .del:hover { color: var(--bad); }
+  details.add { padding: 0; }
+  details.add > summary { list-style: none; cursor: pointer; padding: 16px 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  details.add > summary::-webkit-details-marker { display: none; }
+  details.add > summary .plus { width: 26px; height: 26px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 1.1rem; line-height: 1; }
+  details.add[open] > summary .plus { transform: rotate(45deg); }
+  .add-body { padding: 0 18px 18px; display: grid; gap: 12px; }
+  .add-body label.field { display: grid; gap: 4px; font-weight: 600; font-size: .9rem; }
+  .add-body input[type=text], .add-body textarea { width: 100%; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); padding: 10px 12px; font: inherit; }
+  .add-body textarea { min-height: 150px; resize: vertical; font-size: .95rem; line-height: 1.5; }
+  .add-body input:focus, .add-body textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  details.opts > summary { font-size: 1.05rem; }
+  .opts-now { margin-left: auto; color: var(--muted); font-weight: 500; font-size: .84rem; text-align: right; }
+  .chev { color: var(--muted); transition: transform .2s; }
+  details.opts[open] .chev { transform: rotate(180deg); }
+  .opts-body { padding: 0 18px 8px; }
+  .add-preview { font-size: .88rem; color: var(--ink-2); background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+  .add-preview ul { margin: 6px 0 0; padding-left: 18px; }
+  .add-preview .skip { color: var(--warn); }
+
+  /* ---------- Zach pop-up ---------- */
+  .zach-pop { position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); z-index: 50;
+    display: flex; align-items: flex-end; gap: 4px; pointer-events: none;
+    transform: translateY(130%); visibility: hidden; transition: transform .45s cubic-bezier(.3,1.6,.5,1), visibility .45s; }
+  .zach-pop.show { transform: translateY(0); visibility: visible; }
+  .zach-pop .zach-face { width: 104px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.18)); }
+  .zach-pop .bubble { margin-bottom: 70px; max-width: min(240px, 60vw); background: var(--surface); border: 2px solid var(--zach-ink); border-radius: 18px 18px 4px 18px;
+    padding: 9px 13px; font: 700 1.05rem/1.25 "Iowan Old Style", Palatino, Georgia, serif; box-shadow: var(--shadow);
+    transform: scale(.4); transform-origin: bottom right; opacity: 0; transition: transform .3s .15s cubic-bezier(.3,1.6,.5,1), opacity .2s .15s; }
+  @media (prefers-color-scheme: dark) { .zach-pop .bubble { border-color: var(--ink-2); } }
+  .zach-pop.show .bubble { transform: scale(1); opacity: 1; }
+  .zach-pop.show .zach-face { animation: bob .9s ease .2s; }
+  @keyframes bob { 30% { transform: rotate(-6deg); } 60% { transform: rotate(4deg); } }
+  @media (max-width: 560px) { .zach-pop .zach-face { width: 80px; } .zach-pop .bubble { margin-bottom: 56px; font-size: .95rem; } }
+
+  .zach-face .blink { animation: blink 4.5s infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+
+  /* confetti */
+  .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+  .confetti i { position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 2px; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translate3d(var(--dx), 110vh, 0) rotate(var(--rot)); } }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(150%); background: var(--ink); color: var(--plane);
+    padding: 10px 16px; border-radius: 12px; font-weight: 600; font-size: .9rem; z-index: 70; transition: transform .3s ease, visibility .3s; max-width: calc(100vw - 32px);
+    visibility: hidden; transform: translateX(-50%) translateY(calc(100% + 40px)); }
+  .toast.show { transform: translateX(-50%) translateY(0); visibility: visible; }
+
+  footer.foot { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 36px; }
+  footer.foot a { color: var(--ink-2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#" data-go="home"><span class="dot">¡Z!</span><span class="name">Practica con Zach<small>Spanish vocab</small></span></a>
+    <nav class="tabs">
+      <button data-go="home">Practice</button>
+      <button data-go="library">Library</button>
+      <button data-go="progress">Progress</button>
+    </nav>
+    <button class="icon-btn" id="muteBtn" title="Sound on/off" aria-label="Sound on/off"></button>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<div class="zach-pop" id="zachPop" aria-live="polite">
+  <div class="bubble" id="zachSay"></div>
+  <div class="zach-host"></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* =====================================================================
+   VOCABULARY
+   One entry per line: "Spanish = English".  "@ Course" starts a course,
+   "# Topic" starts a topic. Add "| type=adj" to a topic to set the word
+   type for the whole topic. Commas separate answers that each count.
+   ===================================================================== */
+const VOCAB = `
+@ High Intermediate 2
+# La familia extendida
+los parientes = relatives
+la madre, la mamá = mother, mom
+el padre, el papá = father, dad
+los padres = parents
+el abuelo, la abuela = grandfather, grandmother
+los abuelos = grandparents
+el nieto, la nieta = grandson, granddaughter
+los nietos = grandchildren
+el hermano, la hermana = brother, sister
+los hermanos = siblings
+mayor, mayores = older (singular, plural)
+menor, menores = younger (singular, plural)
+el hermano mayor = older brother
+la hermana mayor = older sister
+el hermano menor = younger brother
+la hermana menor = younger sister
+el hijo, la hija = son, daughter
+los hijos = children, sons
+los gemelos = twins (identical)
+los mellizos = twins (fraternal)
+el hijastro, la hijastra = stepson, stepdaughter
+los hijastros = stepchildren
+el tío, la tía = uncle, aunt
+los tíos = uncles and aunts
+el primo, la prima = male cousin, female cousin
+los primos = cousins
+el sobrino, la sobrina = nephew, niece
+los sobrinos = nephews, nieces and nephews
+el esposo, el marido = husband
+la esposa, la mujer = wife
+la pareja = partner, couple
+el suegro, la suegra = father-in-law, mother-in-law
+los suegros = in-laws
+el yerno = son-in-law
+la nuera = daughter-in-law
+el cuñado, la cuñada = brother-in-law, sister-in-law
+las mascotas = pets
+el perro, la perra = dog (male, female)
+el gato, la gata = cat (male, female)
+el pájaro = bird
+# Verbos como gustar
+gustar = to like
+encantar = to love
+repugnar, disgustar = to disgust
+importar = to be important to, to mind
+interesar = to interest
+parecer = to seem (opinions)
+fascinar = to fascinate
+aburrir = to bore
+faltar = to lack, to be short on
+quedar = to have left, remaining
+# Personalidad
+extrovertido = extroverted
+introvertido = introverted
+serio = serious
+tonto = silly
+cómico, gracioso = funny
+intelectual = intellectual
+inteligente = intelligent
+listo = clever
+trabajador, trabajadora = hard-working
+perezoso = lazy
+# Los pasatiempos
+bailar = to dance
+cantar = to sing
+coser = to sew
+cocinar = to cook
+dar una caminata, hacer una caminata = to hike
+hacer cerámica = to make ceramics
+hacer crucigramas, hacer rompecabezas = to do crossword puzzles, to do puzzles
+hacer ejercicio = to work out, to exercise
+escuchar música = to listen to music
+ir de compras = to go shopping
+ir al gimnasio = to go to the gym
+ir a los conciertos = to go to concerts
+jugar los deportes = to play sports
+jugar los videojuegos = to play videogames
+jugar los juegos de mesa = to play board games
+leer = to read
+montar en bicicleta = to ride a bike
+pasear, dar un paseo = to take a walk
+pasear a mi perro = to take my dog for a walk
+tocar un instrumento = to play an instrument
+tomar fotos, sacar fotos = to take photos
+trabajar en el jardín = to work in the garden
+ver televisión, mirar televisión = to watch television
+viajar = to travel
+# Salud y bienestar
+la salud = health
+el bienestar = well-being
+el malestar = discomfort
+el teleadicto, la teleadicta = couch potato
+activo = active
+perezoso, flojo = lazy
+débil = weak
+fuerte = strong
+flexible = flexible
+sedentario = sedentary
+sano, saludable = healthy
+en exceso = in excess, too much
+aliviar el estrés = to reduce stress
+aliviar la tensión = to reduce tension
+apurarse, darse prisa = to hurry, to rush
+disfrutar de = to enjoy
+la depresión = depression
+deprimirse = to get depressed
+fumar = to smoke
+llevar una vida sana = to lead a healthy lifestyle
+sufrir muchas presiones = to be under a lot of pressure
+tratar de + infinitivo = to try to do something
+la cinta caminadora = treadmill
+hacer ejercicios aeróbicos = to do aerobics
+levantar pesas = to lift weights
+hacer yoga = to do yoga
+caminar = to walk
+correr = to run
+calentarse = to warm up
+entrenarse = to train
+estirarse = to stretch
+estar en buena forma = to be in good shape
+mantenerse en forma = to stay in shape
+dejar de + infinitivo = to stop doing something
+sudar = to sweat
+el entrenador, la entrenadora = trainer, coach
+el músculo = muscle
+las agujetas = sore muscles, stiffness
+# La casa
+las escaleras = stairs
+el altillo, el ático = attic
+el sótano = basement
+el balcón = balcony
+el garaje = garage
+los muebles = furniture
+la pared = wall
+el pasillo = hallway
+el techo = ceiling, roof
+el suelo, el piso = floor
+la oficina = office
+el dormitorio, la recámara = bedroom
+la cocina = kitchen
+el comedor = dining room
+el lavaplatos = dishwasher
+el refrigerador, la nevera = refrigerator
+el congelador = freezer
+el fregadero = kitchen sink
+la sala, el salón = living room
+el sillón = armchair
+el sofá = sofa
+la alfombra = carpet, rug
+la mesita = end table
+el lavadero = laundry room, utility room
+la lavadora = washing machine
+la secadora = clothes dryer
+# Los quehaceres
+limpiar la casa = to clean the house
+arreglar = to straighten up
+barrer = to sweep
+fregar el suelo = to mop the floor
+la escoba = broom
+la mopa, la fregona, el trapeador = mop
+quitar el polvo = to dust
+sacudir los muebles = to dust the furniture
+hacer la cama = to make the bed
+fregar los platos, lavar los platos = to wash the dishes
+descargar el lavaplatos = to unload the dishwasher
+poner la mesa = to set the table
+quitar la mesa = to clear the table
+lavar la ropa = to wash clothes
+secar la ropa = to dry the clothes
+doblar la ropa = to fold the laundry
+guardar la ropa = to put away the clothes
+planchar la ropa = to iron the clothes
+pasar la aspiradora, aspirar = to vacuum
+sacar la basura = to take out the trash
+hacer los recados, hacer los mandados = to run errands
+hacer la compra = to do the grocery shopping
+# La ropa
+la moda = style, fashion
+la ropa = clothes
+los zapatos = shoes
+la joyería = jewelry
+los accesorios, los complementos = accessories
+el abrigo = overcoat, heavy coat
+la blusa = blouse
+la bolsa = purse
+las botas = boots
+la bufanda = scarf
+los calcetines = socks
+la camisa = shirt
+la camiseta = T-shirt
+las chancletas = flip-flops
+la chaqueta, la chamarra = light jacket
+el cinturón = belt
+la corbata = tie
+la falda = skirt
+los guantes = gloves
+los pantalones = pants
+los pantalones cortos = shorts
+los vaqueros = jeans
+el saco = suit jacket, sport coat
+las sandalias = sandals
+los tacones = heels
+el sombrero = hat
+la gorra de béisbol = baseball cap
+el suéter = sweater
+el traje de baño = bathing suit
+el vestido = dress
+# De compras
+la marca = brand
+cambiar por = to exchange for
+cobrar = to charge
+costar = to cost
+devolver = to return something
+estar en oferta = to be on sale
+hacer juego = to match, to go with
+llevar = to wear
+probarse = to try on
+regatear = to bargain
+quedar bien = to fit well
+quedar mal = to fit badly
+bonito = pretty
+feo = ugly
+apretado = tight
+flojo = baggy, loose
+largo = long
+corto = short
+caro = expensive
+barato = cheap
+cómodo = comfortable
+incómodo = uncomfortable
+la lana = wool
+el algodón = cotton
+el poliéster = polyester
+la seda = silk
+el cuero = leather
+las rayas = stripes
+estar de última moda = to be in the latest style
+estar pasado de moda = to be out of style
+¡Es una ganga! = It's a bargain!
+¡Qué robo! = What a rip-off!
+# En la ciudad
+el barrio, el vecindario = neighborhood
+la autopista = freeway
+la carretera = highway
+la avenida = avenue
+la calle = street
+el cruce = intersection
+la cuadra = block
+la esquina = corner
+la acera, la vereda = sidewalk
+el paso de peatones, el paso de cebra = crosswalk
+el banco = bank
+el café = café, coffee shop
+el centro = downtown
+el edificio = building
+el restaurante = restaurant
+el hospital = hospital
+el museo = museum
+la biblioteca = library
+la plaza = town square, plaza
+la terraza = terrace
+la zona verde, el parque = green belt, park
+# Direcciones
+norte = north
+sur = south
+este = east
+oeste = west
+noreste = northeast
+noroeste = northwest
+sureste, sudeste = southeast
+suroeste, sudoeste = southwest
+bajar = to walk down (a street)
+caminar, andar = to walk
+subir = to go up (a street)
+doblar, girar = to turn
+buscar = to look for
+encontrar = to find
+parar = to stop
+seguir, continuar = to keep going, to continue
+seguir adelante, seguir derecho = to go straight
+cruzar = to cross
+volver = to return, to go back
+# Preposiciones | type=expr
+cerca de = close to, near
+lejos de = far from
+a la derecha de = to the right of
+a la izquierda de = to the left of
+junto a, al lado de = next to
+enfrente de = facing, opposite
+delante de = in front of
+detrás de = behind
+entre = between
+en = in, on, at
+en la esquina de = on the corner of
+
+@ Advanced 1
+# Verbos comunes
+acabar = to finish
+acordarse = to remember
+acostarse = to go to bed
+almorzar = to eat lunch
+andar = to walk
+apagar = to turn off, to put out
+asistir = to attend
+buscar = to look for, to search for
+caber = to fit
+caer = to fall
+casarse = to get married
+coger = to pick up, to take, to catch (avoid in Mexico)
+comenzar, empezar = to start, to begin
+compartir = to share
+conducir = to drive
+conseguir, obtener = to obtain, to get
+construir = to build
+contar = to count, to tell
+corregir = to correct
+costar = to cost
+crecer = to grow
+creer = to believe
+cruzar = to cross
+dar = to give
+decir = to say, to tell
+despedirse = to say goodbye
+despertarse = to wake up
+destruir = to destroy
+disfrutar = to enjoy
+divertirse = to have fun
+doler = to hurt
+elegir = to choose, to select
+encender = to turn on
+encontrar = to find
+enviar, mandar = to send
+escoger = to choose
+exigir = to demand
+helar = to freeze
+herir = to hurt, to injure
+huir = to run away, to flee, to escape
+llenar = to fill
+llevar = to carry, to wear
+llover = to rain
+mantener = to maintain
+medir = to measure
+mentir = to lie
+morir = to die
+moverse = to move (movement)
+mudarse = to move (locations)
+oler = to smell
+pedir = to ask for, to order
+perder = to lose
+poder = to be able
+poner = to put, to place, to set
+probar = to try, to taste
+quedarse = to stay
+quejarse = to complain
+querer = to want
+quitarse = to remove, to take off
+recoger = to pick up (someone, something)
+reírse = to laugh
+rogar = to beg
+seguir = to follow, to continue
+sonreírse = to smile
+sugerir = to suggest
+traer = to bring
+valer = to be worth
+venir = to come
+volar = to fly
+# El cine y el teatro
+la película = film, movie
+de terror, de miedo = horror (film)
+cómica, de risa = comedy (film)
+de acción, de aventuras = action (film)
+de ciencia ficción = science fiction (film)
+de animación, de dibujos animados = animated (film)
+romántica, de amor = romantic (film)
+policíaca, de misterio = mystery (film)
+extranjera = foreign (film)
+el documental = documentary
+el drama = drama
+la obra de teatro, la obra teatral = play
+el espectador, la espectadora = audience member, spectator
+el estreno = premiere
+la entrada, el boleto = ticket
+la taquilla, la boletería = box office, ticket window
+la butaca = seat (at a theater)
+la fila = row
+hacer cola = to line up, to make a line
+el escenario = stage
+el director, la directora = director
+el papel = role
+el personaje = character
+el actor, la actriz = actor, actress
+el protagonista, la protagonista = protagonist
+la trama, el argumento = plot
+# Verbos de deseo
+querer = to want
+desear = to wish, to desire
+esperar = to hope
+preferir = to prefer
+pedir = to ask
+aconsejar = to advise
+sugerir = to suggest
+recomendar = to recommend
+exigir = to demand
+insistir en = to insist
+mandar = to order
+proponer = to propose
+rogar = to beg
+suplicar = to plead, to request
+# La música
+el rock alternativo = alternative rock
+la música clásica = classical music
+la música acústica = acoustic music
+la música folclórica = folk music
+el metal = metal
+el cantante, la cantante = singer
+la banda, el grupo = band, group
+el concierto = concert
+el festival de música = music festival
+escuchar música en vivo = to listen to live music
+el lugar = venue
+el álbum = album
+la canción = song
+tocar un instrumento = to play an instrument
+el disco, el vinilo = record, vinyl
+el tocadiscos = record player
+el casete = cassette
+el disco compacto = CD
+el reproductor de CD = CD player
+el estéreo = stereo
+los altavoces, las bocinas, los parlantes = speakers
+los audífonos, los auriculares = headphones
+la radio = radio
+la emisora, la estación de radio = radio station
+# Lugares para recomendar
+el bar de vinos = wine bar
+la cervecería = brewery
+el cine = movie theater
+la peluquería, el salón de belleza = hair salon
+el estilista, la estilista = stylist
+la barbería = barber shop
+el barbero, la barbera = barber
+el salón de masajes = massage salon
+el masajista, la masajista = massage therapist
+el salón de uñas = nail salon
+el parque = park
+el hotel = hotel
+el libro = book
+la novela = novel
+el pódcast = podcast
+el programa, la serie = show, series
+# Emociones
+contento, feliz, alegre = happy, content
+triste = sad
+emocionado = excited
+aburrido = bored
+asustado = scared
+enfadado, enojado = angry
+estresado = stressed out
+furioso = furious
+preocupado = worried
+nervioso, ansioso, angustiado = nervous, anxious
+molesto = upset, annoyed
+agobiado = overwhelmed
+decepcionado = disappointed
+avergonzado = embarrassed
+sorprendido = surprised
+sentir = to regret, to be sorry
+sentirse = to feel
+temer = to fear
+tener miedo de = to be scared of
+lamentar = to be sorry
+enfadarse, enojarse = to get angry
+preocuparse = to worry
+extrañarse = to be startled
+sorprenderse = to be surprised
+# Otoño e invierno
+las mangas largas = long sleeves
+el abrigo = overcoat, heavy jacket
+los pantalones de chándal = sweatpants
+las mallas = tights, leggings
+Hace fresco. = It's cool.
+Hace frío. = It's cold.
+Hace viento. = It's windy.
+la hoguera = bonfire
+esquiar en la nieve = to snow ski
+hacer snowboard = to go snowboarding
+acampar, hacer camping = to camp, to go camping
+el Día de Brujas, la Noche de Brujas = Halloween
+el disfraz = costume
+disfrazarse = to wear a costume
+truco o trato = trick or treat
+pedir dulces = to go trick-or-treating
+el Día de Acción de Gracias = Thanksgiving
+la Navidad = Christmas
+el pavo = turkey
+el relleno = stuffing
+las batatas, los camotes = sweet potatoes
+el puré de papas = mashed potatoes
+las calabazas = pumpkins
+el pastel de calabaza, la tarta de calabaza = pumpkin pie
+las manzanas = apples
+el pastel de manzana, la tarta de manzana = apple pie
+las nueces, las pacanas = pecans
+la tarta de nueces, la tarta de pacanas = pecan pie
+# Primavera y verano
+la primavera = spring
+el verano = summer
+las mangas cortas = short sleeves
+la sudadera = sweatshirt
+Hace calor. = It's hot.
+Hace sol. = It's sunny.
+la lluvia = rain
+el helado = ice cream
+la sandía = watermelon
+esquiar en el agua = to water ski
+ir en canoa = to go canoeing
+ir en kayak = to go kayaking
+el bañador, el traje de baño = bathing suit
+el campamento de verano = summer camp
+la hamaca = hammock
+los lentes de sol, las gafas de sol = sunglasses
+el protector solar, la crema solar = sunscreen
+la playa = beach
+nadar, bañarse = to swim
+la piscina = pool
+el lago = lake
+hacer piragüismo = to go kayaking, to go canoeing
+la canoa = canoe
+hacer paddleboard = to go paddleboarding
+ir de vacaciones = to go on vacation
+broncearse, tomar el sol = to tan, to sunbathe
+quemarse = to get a sunburn
+veranear = to vacation in the summer
+# Expresiones impersonales | type=expr
+Es importante = It's important
+Es bueno = It's good
+Es malo = It's bad
+Es necesario = It's necessary
+Es extraño, Es raro = It's odd, It's strange
+Es urgente = It's urgent
+Es mejor = It's better
+Es peor = It's worse
+Es ridículo = It's ridiculous
+Es terrible = It's terrible
+Es una lástima = It's a shame
+Es una pena = It's a pity
+Es increíble = It's incredible
+Es preciso, Es esencial, Es imprescindible = It's essential
+Es preferible = It's preferable
+Es justo = It's fair
+Es injusto = It's unfair
+Es conveniente = It's convenient
+Es cierto = It's certain
+Es verdad = It's true
+Es un hecho = It's a fact
+# Palabras compuestas
+la bienvenida = welcome
+anteayer = the day before yesterday
+los anteojos = glasses
+los antepasados = ancestors
+el baloncesto = basketball
+el paraguas = umbrella
+el aguanieve = sleet
+el aguafiestas = party pooper
+la bocacalle = side street
+la telaraña = spiderweb
+# Duda y certeza | type=expr
+dudar = to doubt
+ser dudoso = to be doubtful
+negar = to deny
+no creer = to not believe
+no es seguro = it's not certain
+no es verdad = it's not true
+no estar seguro de = to not be sure
+no parecer = to not seem
+no suponer = to not suppose
+Es probable = It's probable
+Es posible = It's possible
+Es imposible = It's impossible
+Es falso = It's false
+creer que = to believe that
+pensar que = to think that
+opinar que = to have the opinion that
+suponer = to suppose
+en mi opinión, a mi juicio = in my opinion
+según mi punto de vista = from my point of view
+insistir en que = to insist that
+mantener que = to maintain that
+quiero subrayar que = I want to stress that
+no hay que olvidar que = don't forget that
+no cabe duda que, no hay duda que = there's no doubt that
+# Palabras confusas
+entre = among, between
+hace = ago
+desde = since, from
+desde hace = for (a length of time)
+deber = should, ought to
+deber de = must (an assumption)
+entonces = so, then
+parecerse a = to look like, to resemble
+dejar = to let, to allow
+acabar de + infinitivo = to have just done something
+cualquier = any
+además = also, besides, in addition
+
+@ Advanced 2
+# Ser vs. estar | type=adj
+ser abierto = to be open-minded
+estar abierto = to be open (door, window)
+ser aburrido = to be boring
+estar aburrido = to be bored
+ser alegre = to be happy (by nature)
+estar alegre = to be tipsy
+ser atento = to be considerate
+estar atento = to be attentive, alert
+ser blanco = to be white
+estar blanco = to be pale
+ser borracho = to be a drunk
+estar borracho = to be drunk
+ser callado = to be quiet (by nature)
+estar callado = to be silent
+ser cerrado = to be closed-minded
+estar cerrado = to be closed (door, window)
+ser despierto = to be bright, sharp
+estar despierto = to be awake
+ser divertido = to be fun
+estar divertido = to be amused
+ser frío = to be cold (unaffectionate)
+estar frío = to be cold (temperature)
+ser grave = to be a serious person
+estar grave = to be seriously ill
+ser inquieto = to be restless, active
+estar inquieto = to be worried
+ser listo = to be clever
+estar listo = to be ready
+ser loco = to be scatterbrained
+estar loco = to be crazy
+ser malo = to be evil
+estar malo = to be sick
+ser molesto = to be annoying
+estar molesto = to be annoyed
+ser nuevo = to be brand-new
+estar nuevo = to be like new
+ser orgulloso = to be proud, snobby
+estar orgulloso = to be proud of someone
+ser parado = to be timid, indecisive
+estar parado = to be unemployed
+ser preparado = to be well-educated
+estar preparado = to be ready to do something
+ser rico = to be rich
+estar rico = to be delicious
+ser seco = to be unfriendly
+estar seco = to be thirsty
+ser seguro = to be safe, confident
+estar seguro = to be sure, certain
+ser verde = to be green
+estar verde = to be unripe, inexperienced
+ser viejo = to be old
+estar viejo = to look old
+ser vivo = to be clever, sharp
+estar vivo = to be alive
+# El trabajo
+¿A qué te dedicas? = What do you do?
+el oficio = trade, occupation
+la profesión = profession
+el puesto = position
+la reunión virtual = virtual meeting
+el cliente, la clienta = client
+el jefe, la jefa = boss
+el colega, la colega = colleague, coworker
+el gerente, la gerente = manager
+teletrabajar = to work remotely, to work from home
+el sueldo, el salario = salary
+el aumento de sueldo = raise
+la promoción, el ascenso = promotion
+los beneficios = benefits
+el seguro médico = medical insurance
+el plan de pensiones = retirement plan
+las vacaciones = vacation
+# El liderazgo
+el líder, la líder = leader
+el carácter = character
+el magnetismo = charisma
+el compromiso = commitment
+la confianza = confidence
+la creatividad = creativity
+el crecimiento = growth
+la determinación = determination
+la empatía = empathy
+las expectativas = expectations
+las habilidades = skills
+la independencia = independence
+la iniciativa = initiative
+la lealtad = loyalty
+el logro = achievement
+lograr = to achieve, to attain
+el mentor, la mentora = mentor
+las metas = goals
+la tenacidad = tenacity
+la visión = vision
+valorar = to value
+las herramientas = tools
+tener éxito, ser exitoso = to be successful
+hablar en contra de alguien = to speak badly about someone
+hablar a espaldas de alguien = to talk behind someone's back
+menospreciar = to look down on, to undervalue
+chismear, chismorrear = to gossip
+fracasar = to fail
+despedir a alguien, echar a alguien = to fire someone
+dejar un trabajo = to quit a job
+# Bienes raíces
+el mercado inmobiliario = real estate market
+el agente inmobiliario, la agente inmobiliaria = real estate agent
+el contrato = contract
+pedir un préstamo = to get a loan
+financiar = to finance
+pagar por adelantado = to pay up front
+el pago inicial = down payment
+la deuda = debt
+la tasa de interés = interest rate
+el interés = interest
+la hipoteca = mortgage
+el pago mensual, la mensualidad = monthly payment
+los impuestos de propiedad = property taxes
+el propietario, la propietaria, el dueño, la dueña = owner
+el seguro de propietario de vivienda = homeowner's insurance
+la zona residencial = subdivision
+la casa, el hogar = house, home
+el condominio = condominium
+el apartamento, el departamento, el piso = apartment
+el crecimiento urbano = urban sprawl
+la densidad = density
+los suburbios, las afueras = suburbs
+# Cláusulas adverbiales | type=expr
+en caso de que = in case
+sin que = without
+con tal de que = provided that
+antes de que = before
+para que = so that
+a menos que = unless
+siempre y cuando = as long as, provided that
+después de que = after
+en cuanto, tan pronto como, luego que = as soon as
+aunque = although, even if
+hasta que = until
+cuando = when
+a pesar de que = despite
+mientras que = while
+siempre que = as long as
+# En la cocina
+el plato = plate
+el bol, el tazón, el plato hondo = bowl
+la cuchara = spoon
+la cuchara de madera = wooden spoon
+el cucharón = ladle
+el tenedor = fork
+el cuchillo = knife
+la espátula = spatula
+la sartén = frying pan
+la olla, la cacerola = saucepan, pot
+la asadera, la bandeja para asar = roasting pan
+la bandeja para hornear = cookie sheet
+la licuadora, la batidora = blender, mixer
+la taza = mug
+el vaso = glass (for water, juice)
+la copa = wine glass
+los ingredientes = ingredients
+la receta = recipe
+la taza de medir = measuring cup
+media taza = half cup
+una cucharada = tablespoon
+una cucharadita = teaspoon
+sazonar = to season
+# Especias y fuego
+las especias = spices
+las hierbas = herbs
+la sal = salt
+la pimienta = pepper
+el ajo = garlic
+el diente de ajo = garlic clove
+el comino = cumin
+el chile en polvo = chili powder
+el pimentón dulce = paprika
+el pimentón picante = hot paprika
+la pimienta de cayena = cayenne pepper
+la cúrcuma = turmeric
+el cilantro = cilantro, coriander
+las hojas de laurel = bay leaves
+la canela = cinnamon
+el jengibre = ginger
+la albahaca = basil
+el perejil = parsley
+el orégano = oregano
+el tomillo = thyme
+el romero = rosemary
+el aceite de oliva = olive oil
+el vinagre balsámico = balsamic vinegar
+la salsa de soya = soy sauce
+a fuego lento, a fuego bajo = on low heat
+a fuego medio = on medium heat
+a fuego alto, a fuego fuerte = on high heat
+poco hecho, poco cocido = rare
+a punto, medio hecho = medium rare
+bien hecho, bien cocido = well done
+# El medio ambiente
+la naturaleza = nature
+el medio ambiente = environment
+el bosque tropical = rainforest
+el desierto = desert
+el calentamiento global = global warming
+el cambio climático = climate change
+el efecto invernadero = greenhouse effect
+la conservación = conservation
+la contaminación = pollution
+las emisiones = emissions
+la deforestación = deforestation
+la sequía = drought
+la inundación = flood
+el incendio forestal = forest fire
+la energía renovable = renewable energy
+la energía solar = solar energy
+el peligro de extinción = danger of extinction
+el recurso natural = natural resource
+los carros eléctricos = electric cars
+el transporte público = public transportation
+la ley = law
+renovable = renewable
+el abono = compost
+compostar = to compost
+reciclar = to recycle
+reducir = to reduce
+reusar = to reuse
+contrarrestar = to counteract
+malgastar = to waste
+`;
+
+/* =====================================================================
+   PARSE
+   ===================================================================== */
+const TOPICS = [], ENTRIES = [];
+function topicFor(course, name, type = null) {
+  let t = TOPICS.find(t => t.course === course && t.name === name);
+  if (!t) { t = { id: TOPICS.length, course, name, type, entries: [] }; TOPICS.push(t); }
+  return t;
+}
+function addEntry(topic, es, en, extra) {
+  const e = Object.assign({ es, en, topic, key: norm(es) + '=' + norm(en) }, extra);
+  e.type = topic.type || guessType(e);
+  topic.entries.push(e);
+  ENTRIES.push(e);
+  return e;
+}
+function courses() { return [...new Set(TOPICS.filter(t => t.entries.length).map(t => t.course))]; }
+(function parse() {
+  let course = '', topic = null;
+  for (const raw of VOCAB.split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('@ ')) { course = line.slice(2).trim(); continue; }
+    if (line.startsWith('# ')) {
+      const [name, opt] = line.slice(2).split('|').map(s => s.trim());
+      const type = opt && opt.startsWith('type=') ? opt.slice(5) : null;
+      topic = topicFor(course, name, type);
+      continue;
+    }
+    const i = line.indexOf(' = ');
+    if (i < 0 || !topic) continue;
+    addEntry(topic, line.slice(0, i).trim(), line.slice(i + 3).trim());
+  }
+})();
+
+function guessType(e) {
+  const first = e.es.split(',')[0].replace(/\([^)]*\)/g, '').trim();
+  if (/^\(?to\b/i.test(e.en)) return 'verb';
+  if (/^(el|la|los|las|un|una)\s/i.test(first)) return 'noun';
+  if (/\s/.test(first) || /[.!?¡¿]/.test(first)) return 'expr';
+  if (/(ar|er|ir|ír)(se)?$/.test(first) && /^to /.test(e.en)) return 'verb';
+  return 'adj';
+}
+const TYPE_LABEL = { verb: 'Verbs', noun: 'Nouns', adj: 'Adjectives & other words', expr: 'Phrases & expressions' };
+const TYPE_ES = { verb: 'los verbos', noun: 'los sustantivos', adj: 'los adjetivos', expr: 'las expresiones' };
+
+/* =====================================================================
+   ANSWER CHECKING
+   ===================================================================== */
+function norm(s) {
+  return String(s).toLowerCase()
+    .replace(/[¡!¿?.,;:"“”«»…]/g, ' ').replace(/[’‘`´']/g, '')
+    .replace(/\s+/g, ' ').trim();
+}
+function deaccent(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+const ART_RE = /^(el|la|los|las|un|una) /;
+function article(s) { const m = s.match(ART_RE); return m ? m[1] : ''; }
+function bare(s, lang) {
+  return lang === 'es' ? s.replace(ART_RE, '') : s.replace(/^(to|the|a|an) /, '').replace(/^(its|it is) /, '');
+}
+function answerForms(text, lang) {
+  let s = text.replace(/\+\s*infinitiv[eo]/gi, ' ').replace(/\.\.\./g, ' ');
+  const out = new Set();
+  const forms = [s.replace(/\([^)]*\)/g, ' '), s.replace(/[()]/g, ' ')];
+  for (const f of forms) {
+    out.add(f);
+    for (const p of f.split(/[,\/;]/)) out.add(p);
+  }
+  return [...out].map(norm).filter(a => a && !/^(el|la|los|las|un|una|to|the)$/.test(a));
+}
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+  {
+    d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    if (i > 1 && j > 1 && a[i-1] === b[j-2] && a[i-2] === b[j-1]) d[i][j] = Math.min(d[i][j], d[i-2][j-2] + 1);
+  }
+  return d[a.length][b.length];
+}
+// A wrong article outranks a typo: "la abuelo" is a gender slip, not a spelling one.
+const RANK = { exact: 0, accent: 1, gender: 2, typo: 3, wrong: 4 };
+/* Returns {ok, kind}. kind: exact | accent | typo | gender | wrong */
+function judge(given, expected, lang) {
+  const u = norm(given);
+  if (!u) return { ok: false, kind: 'wrong' };
+  let best = { ok: false, kind: 'wrong' };
+  const take = r => { if (RANK[r.kind] < RANK[best.kind]) best = r; };
+  for (const a of answerForms(expected, lang)) {
+    if (u === a) return { ok: true, kind: 'exact' };
+    const ub = bare(u, lang), ab = bare(a, lang);
+    const ua = article(u), aa = article(a);
+    const sameWord = ub === ab, sameNoAcc = deaccent(ub) === deaccent(ab);
+    if (lang === 'es' && ua && aa && ua !== aa && sameNoAcc) { take({ ok: false, kind: 'gender' }); continue; }
+    if (sameWord) { take({ ok: true, kind: 'exact' }); continue; }
+    if (sameNoAcc) { take({ ok: true, kind: 'accent' }); continue; }
+    const L = deaccent(ab).length, tol = L >= 8 ? 2 : L >= 4 ? 1 : 0;
+    if (tol && lev(deaccent(ub), deaccent(ab)) <= tol) take({ ok: true, kind: 'typo' });
+  }
+  return best;
+}
+
+/* =====================================================================
+   STORAGE
+   ===================================================================== */
+const STORE_KEY = 'spanish-vocab:v1';
+const DEFAULT_PREFS = { dir: 'mix', answer: 'type', count: 10, showAll: false, muted: false, speakTiles: true };
+let S = load();
+function load() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) {}
+  s = s && typeof s === 'object' ? s : {};
+  s.words = s.words || {};
+  s.days = s.days || [];
+  s.sessions = s.sessions || [];
+  s.matchTimes = s.matchTimes || [];
+  s.prefs = Object.assign({}, DEFAULT_PREFS, s.prefs || {});
+  s.shared = Array.isArray(s.shared) ? s.shared : [];
+  if (!s.device) s.device = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
+  return s;
+}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* =====================================================================
+   SHARED WORDS
+   Words anyone adds go to one shared list on Supabase (see supabase/vocab.sql
+   and supabase/functions/vocab). The page reads the table with the public key;
+   adding and deleting go through the vocab function, which checks every word.
+   The last copy is kept in S.shared, so the words load at once and work offline.
+   ===================================================================== */
+const CLOUD = { url: 'https://tnaassoaraijvhswevvp.supabase.co', key: 'sb_publishable_KSJZlg0qLmEOak6sP3WX0g_UDo8lz9Z', table: 'vocab_words', fn: 'vocab' };
+const cloudHead = () => ({ 'Content-Type': 'application/json', apikey: CLOUD.key, Authorization: `Bearer ${CLOUD.key}` });
+const SHARED_COURSE = 'Shared words';
+let myHash = '';   // sha-256 of this browser's id; the table keeps the same hash beside each word it added
+(async () => {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(S.device));
+    myHash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {}
+})();
+function mountShared(rows) {
+  for (const e of ENTRIES.filter(x => x.shared)) {
+    ENTRIES.splice(ENTRIES.indexOf(e), 1);
+    e.topic.entries.splice(e.topic.entries.indexOf(e), 1);
+  }
+  for (const r of rows) addEntry(topicFor(SHARED_COURSE, r.list), r.es, r.en, { shared: r.id, owner: r.device_hash });
+}
+mountShared(S.shared);
+let onWordsChanged = null;   // the open screen sets this to repaint when the shared list changes
+async function syncWords() {
+  try {
+    const rows = [];
+    for (let from = 0; ; from += 1000) {
+      const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?select=id,list,es,en,device_hash&order=id`, { headers: { ...cloudHead(), Range: `${from}-${from + 999}` } });
+      if (!r.ok) throw new Error(r.status);
+      const page = await r.json();
+      rows.push(...page);
+      if (page.length < 1000) break;
+    }
+    const changed = JSON.stringify(rows) !== JSON.stringify(S.shared);
+    S.shared = rows; save();
+    if (changed) { mountShared(rows); if (onWordsChanged) onWordsChanged(); }
+    return true;
+  } catch (e) { return false; }
+}
+async function callVocab(body) {
+  const r = await fetch(`${CLOUD.url}/functions/v1/${CLOUD.fn}`, { method: 'POST', headers: cloudHead(), body: JSON.stringify({ ...body, device: S.device }) });
+  let out = {};
+  try { out = await r.json(); } catch (e) {}
+  if (!r.ok || !out.ok) throw new Error(out.why || `the server said ${r.status}`);
+  return out;
+}
+async function shareWords(list, words) {
+  const out = await callVocab({ action: 'add', list, words });
+  S.shared = S.shared.concat(out.added); save();
+  mountShared(S.shared);
+  return out;
+}
+async function deleteShared(id) {
+  await callVocab({ action: 'delete', id });
+  S.shared = S.shared.filter(r => r.id !== id); save();
+  mountShared(S.shared);
+}
+syncWords();
+
+/* One pair per line: "Spanish = English", or a tab between them (spreadsheets, Quizlet exports), or " - ". */
+function parsePairs(text, enFirst) {
+  const ok = [], bad = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    let parts = null;
+    for (const sep of ['\t', ' = ', '=', ' – ', ' — ', ' - ']) {
+      const i = line.indexOf(sep);
+      if (i > 0) { parts = [line.slice(0, i).trim(), line.slice(i + sep.length).trim()]; break; }
+    }
+    if (!parts || !parts[0] || !parts[1]) { bad.push(line); continue; }
+    ok.push(enFirst ? { es: parts[1], en: parts[0] } : { es: parts[0], en: parts[1] });
+  }
+  return { ok, bad };
+}
+function W(e) {
+  return S.words[e.key] || (S.words[e.key] = { st: '', seen: 0, right: 0, wrong: 0, slips: {}, dir: {} });
+}
+function statusOf(e) { const w = S.words[e.key]; return w ? w.st : ''; }
+function setStatus(e, st) { W(e).st = st; }
+function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function record(e, ok, kind, dir) {
+  const w = W(e);
+  w.seen++; ok ? w.right++ : w.wrong++;
+  if (kind === 'accent' || kind === 'typo' || kind === 'gender') w.slips[kind] = (w.slips[kind] || 0) + 1;
+  const d = w.dir[dir] || (w.dir[dir] = [0, 0]);
+  d[ok ? 0 : 1]++;
+  w.last = Date.now();
+  const t = today();
+  if (!S.days.includes(t)) S.days.push(t);
+  save();
+}
+function dayStreak() {
+  const set = new Set(S.days);
+  let n = 0; const d = new Date();
+  if (!set.has(today())) d.setDate(d.getDate() - 1);
+  for (;;) {
+    const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (!set.has(k)) break;
+    n++; d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+
+/* =====================================================================
+   WORD POOL
+   ===================================================================== */
+function uniq(list) { const seen = new Set(); return list.filter(e => !seen.has(e.key) && seen.add(e.key)); }
+function buildPool(p = S.prefs) {
+  let list = uniq(ENTRIES);
+  const all = list.length;
+  const known = list.filter(e => statusOf(e) === 'known').length;
+  if (!p.showAll) list = list.filter(e => statusOf(e) !== 'known');
+  return { list, all, known };
+}
+function weight(e) {
+  const w = S.words[e.key];
+  if (!w) return 2;
+  let x = 1;
+  if (w.st === 'practice') x += 3;
+  if (w.seen) x += 4 * (w.wrong / w.seen);
+  if (w.last && Date.now() - w.last < 5 * 60e3) x *= .3;
+  return x;
+}
+function pick(list, n) {
+  const items = list.map(e => ({ e, k: Math.pow(Math.random(), 1 / weight(e)) }));
+  items.sort((a, b) => b.k - a.k);
+  return items.slice(0, n).map(i => i.e);
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* =====================================================================
+   SPEECH (text to speech + recognition)
+   ===================================================================== */
+let esVoice = null;
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices();
+  const pref = ['es-MX', 'es-US', 'es-419', 'es-ES'];
+  esVoice = pref.map(l => vs.find(v => v.lang.replace('_', '-') === l)).find(Boolean) || vs.find(v => /^es/i.test(v.lang)) || null;
+}
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speakEs(text, btn) {
+  if (!('speechSynthesis' in window)) { toast('This browser cannot read aloud.'); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/\([^)]*\)/g, '').replace(/\+\s*infinitivo/g, ''));
+  u.lang = esVoice ? esVoice.lang : 'es-MX';
+  if (esVoice) u.voice = esVoice;
+  u.rate = .92;
+  if (btn) { btn.classList.add('talking'); u.onend = u.onerror = () => btn.classList.remove('talking'); }
+  speechSynthesis.speak(u);
+}
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+/* =====================================================================
+   SOUND EFFECTS (Web Audio, no files)
+   ===================================================================== */
+let actx = null;
+function tone(freq, t0, dur, type = 'sine', vol = .16) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, actx.currentTime + t0);
+  g.gain.setValueAtTime(0, actx.currentTime + t0);
+  g.gain.linearRampToValueAtTime(vol, actx.currentTime + t0 + .015);
+  g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + t0 + dur);
+  o.connect(g).connect(actx.destination);
+  o.start(actx.currentTime + t0); o.stop(actx.currentTime + t0 + dur + .05);
+}
+function sfx(kind) {
+  if (S.prefs.muted) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    if (kind === 'right') { tone(660, 0, .14, 'triangle'); tone(990, .09, .22, 'triangle'); }
+    else if (kind === 'wrong') { tone(220, 0, .18, 'sawtooth', .07); tone(165, .12, .26, 'sawtooth', .07); }
+    else if (kind === 'match') { tone(784, 0, .1, 'triangle', .12); tone(1175, .06, .14, 'triangle', .1); }
+    else if (kind === 'flip') { tone(420, 0, .05, 'sine', .05); }
+    else if (kind === 'tick') { tone(880, 0, .07, 'square', .05); }
+    else if (kind === 'fanfare') { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * .1, .3, 'triangle', .13)); tone(1319, .42, .5, 'triangle', .12); }
+  } catch (e) {}
+}
+
+/* =====================================================================
+   COACH ZACH
+   ===================================================================== */
+function zachSVG(mood = 'happy') {
+  const mouths = {
+    happy: '<path d="M49 81 C54 90 67 90 72 81 Z" fill="#fff" stroke="var(--zach-ink)" stroke-width="2.4" stroke-linejoin="round"/>',
+    grin: '<path d="M47 80 C53 93 68 93 74 80 Z" fill="#fff" stroke="var(--zach-ink)" stroke-width="2.4" stroke-linejoin="round"/><path d="M52 86 C57 89 64 89 69 86" fill="none" stroke="var(--zach-ink)" stroke-width="1.4"/>',
+    kind: '<path d="M51 83 C56 87 65 87 70 82" fill="none" stroke="var(--zach-ink)" stroke-width="2.6" stroke-linecap="round"/>',
+  };
+  const brows = mood === 'kind'
+    ? '<path d="M41 51 C45 48 51 48 55 50" /><path d="M65 50 C69 48 75 48 79 51" />'
+    : '<path d="M41 49 C45 45 51 45 55 47" /><path d="M65 47 C69 45 75 45 79 49" />';
+  return `<svg class="zach-face" viewBox="0 0 120 140" role="img" aria-label="Coach Zach">
+  <g fill="none" stroke="var(--zach-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M51 86 L51 110 L69 110 L69 86 Z" fill="var(--zach-skin)" stroke="none"/>
+    <path d="M51 90 L51 107 M69 90 L69 107"/>
+    <path d="M12 140 C16 114 36 106 60 106 C84 106 104 114 108 140 Z" fill="var(--zach-shirt)"/>
+    <path d="M47 106 L60 121 L73 106" fill="#fff"/>
+    <path d="M60 121 L60 140" stroke-width="1.6"/>
+    <path d="M35 56 C35 34 85 34 85 56 C85 80 75 97 60 97 C45 97 35 80 35 56 Z" fill="var(--zach-skin)"/>
+    <path d="M35 60 C28 57 27 72 36 73" fill="var(--zach-skin)"/>
+    <path d="M85 60 C92 57 93 72 84 73" fill="var(--zach-skin)"/>
+    <path d="M33 62 C26 38 38 15 61 14 C85 13 97 32 88 62 C87 54 85 48 82 43 C70 40 50 40 38 44 C36 50 34 56 33 62 Z" fill="var(--zach-hair)"/>
+    <path d="M75 18 C56 16 37 27 32 52 L35 49 C37 52 39 56 40 60 C46 50 55 43 63 37 C65 41 68 44 72 45 C77 40 82 35 85 30 C83 24 80 20 75 18 Z" fill="var(--zach-hair)"/>
+    <path d="M71 22 C58 25 46 34 39 48 M77 27 C69 32 61 38 55 44" stroke-width="1.4" opacity=".55"/>
+    ${brows}
+    <rect x="39" y="56" width="19" height="14" rx="5" fill="rgba(255,255,255,.35)"/>
+    <rect x="62" y="56" width="19" height="14" rx="5" fill="rgba(255,255,255,.35)"/>
+    <path d="M58 61 C59.3 59.5 60.7 59.5 62 61"/>
+    <path d="M39 60 L35 59 M81 60 L85 59"/>
+    <path d="M60 66 C58 72 57 75 61 76" stroke-width="2"/>
+  </g>
+  <g class="blink" fill="var(--zach-ink)"><circle cx="48.5" cy="63.5" r="2"/><circle cx="71.5" cy="63.5" r="2"/></g>
+  ${mouths[mood] || mouths.happy}
+</svg>`;
+}
+const SAY = {
+  right: ['¡Buen trabajo!', '¡Sigue así!', '¡Muy impresionante!', '¡Excelente!', '¡Qué bien!', '¡Eso es!', '¡Perfecto!', '¡Fenomenal!', '¡Bravo!', '¡Así se hace!', '¡Lo estás haciendo genial!', '¡Eres un crack!'],
+  streak: n => [`¡${n} seguidas! ¡Imparable!`, `¡Racha de ${n}! ¡Muy impresionante!`, `¡${n} de ${n}! ¡Qué máquina!`, `¡${n} seguidas! ¡Sigue así!`],
+  wrong: ['¡La próxima vez lo logras!', '¡No pasa nada, sigue adelante!', '¡Calma, tú puedes!', '¡Ánimo! Casi lo tienes.', '¡Poco a poco se llega lejos!', '¡De los errores se aprende!', '¡No te rindas!'],
+  accent: ['¡Bien! Pero ojo con la tilde.', '¡Correcto! Solo falta el acento.'],
+  typo: ['¡Casi perfecto! Revisa la ortografía.', '¡Bien! Ojo con una letrita.'],
+  gender: ['¡Ojo con el artículo: el o la!', '¡Casi! Revisa el artículo.'],
+  great: ['¡Muy impresionante!', '¡Espectacular! ¡Eres un crack!', '¡Perfecto! ¡Qué orgulloso estoy!', '¡Increíble! ¡Sigue así!'],
+  good: ['¡Buen trabajo! ¡Sigue así!', '¡Muy bien! Vas por buen camino.', '¡Bien hecho! Cada día mejor.'],
+  ok: ['¡Nada mal! Sigue practicando.', '¡Vas mejorando! Un poco más y lo dominas.', '¡Bien! La práctica hace al maestro.'],
+  low: ['¡La próxima vez lo logras!', '¡No pasa nada, sigue adelante!', '¡Ánimo! Practicar es el secreto.', '¡Calma! Mañana te sale mejor.'],
+  record: ['¡Nuevo récord! ¡Qué rapidez!', '¡Más rápido que nunca! ¡Increíble!', '¡Nuevo récord! ¡Muy impresionante!'],
+  matchDone: ['¡Bien hecho! ¿Otra ronda?', '¡Rápido! ¿Puedes batir tu récord?', '¡Buen trabajo! ¡Una más!'],
+  hello: ['¡Hola! ¿Practicamos un poco?', '¡Qué bueno verte! ¿Empezamos?', '¡Hola! Hoy es un buen día para aprender.', '¡Vamos a practicar juntos!'],
+};
+const any = a => a[Math.random() * a.length | 0];
+let zachTimer = 0;
+const zachHost = document.querySelector('#zachPop .zach-host');
+function zach(text, mood = 'happy', ms = 2300) {
+  const pop = document.getElementById('zachPop');
+  zachHost.innerHTML = zachSVG(mood);
+  document.getElementById('zachSay').textContent = text;
+  pop.classList.remove('show'); void pop.offsetWidth; pop.classList.add('show');
+  clearTimeout(zachTimer);
+  zachTimer = setTimeout(() => pop.classList.remove('show'), ms);
+}
+function hideZach() { clearTimeout(zachTimer); document.getElementById('zachPop').classList.remove('show'); }
+
+/* =====================================================================
+   SMALL HELPERS
+   ===================================================================== */
+const app = document.getElementById('app');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (sel, root = app) => root.querySelector(sel);
+const $$ = (sel, root = app) => [...root.querySelectorAll(sel)];
+const ICON = {
+  speaker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>',
+  mute: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/></svg>',
+  mic: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>',
+};
+function speakBtn(text) { return `<button class="speak" data-say="${esc(text)}" type="button">${ICON.speaker}<span>Hear it</span></button>`; }
+let toastT = 0;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), Math.max(2600, msg.length * 45)); }
+function confetti(n = 70) {
+  const layer = document.createElement('div'); layer.className = 'confetti';
+  const colors = ['#c8553d', '#2f8a4c', '#e0a84a', '#3f6f9e', '#d96aa7', '#f2c14e'];
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('i');
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty('--dx', (Math.random() * 30 - 15) + 'vw');
+    p.style.setProperty('--rot', (Math.random() * 900 - 450) + 'deg');
+    p.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
+    p.style.animationDelay = Math.random() * .4 + 's';
+    layer.appendChild(p);
+  }
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 3800);
+}
+function fmtTime(ms) { return (ms / 1000).toFixed(1) + 's'; }
+function pct(r, w) { return r + w ? Math.round(100 * r / (r + w)) : 0; }
+
+// Any [data-say] element reads its Spanish aloud.
+document.addEventListener('click', ev => {
+  const s = ev.target.closest('[data-say]');
+  if (s) { ev.stopPropagation(); speakEs(s.dataset.say, s.classList.contains('speak') ? s : null); }
+}, true);
+
+/* mute button */
+const muteBtn = document.getElementById('muteBtn');
+function paintMute() { muteBtn.innerHTML = S.prefs.muted ? ICON.mute : ICON.speaker; muteBtn.setAttribute('aria-pressed', String(!S.prefs.muted)); }
+muteBtn.onclick = () => { S.prefs.muted = !S.prefs.muted; save(); paintMute(); toast(S.prefs.muted ? 'Sound effects off' : 'Sound effects on'); };
+paintMute();
+
+/* =====================================================================
+   ROUTER
+   ===================================================================== */
+let cleanup = null;
+function go(screen, arg) {
+  if (cleanup) { cleanup(); cleanup = null; }
+  onWordsChanged = null;
+  hideZach();
+  document.querySelectorAll('.confetti').forEach(c => c.remove());
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.go === screen || (screen !== 'library' && screen !== 'progress' && b.dataset.go === 'home') ? 'page' : 'false'));
+  window.scrollTo(0, 0);
+  ({ home: renderHome, flash: startFlash, match: startMatch, summary: renderSummary, library: renderLibrary, progress: renderProgress })[screen](arg);
+}
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', ev => { ev.preventDefault(); go(b.dataset.go); }));
+
+/* =====================================================================
+   HOME
+   ===================================================================== */
+function seg(name, opts, val) {
+  return `<div class="seg" data-pref="${name}">${opts.map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${String(v) === String(val)}">${l}</button>`).join('')}</div>`;
+}
+function renderHome() {
+  const p = S.prefs;
+  const streak = dayStreak();
+  const known = Object.values(S.words).filter(w => w.st === 'known').length;
+  const practice = Object.values(S.words).filter(w => w.st === 'practice').length;
+  app.innerHTML = `<div class="screen stack">
+    <section class="hero">
+      ${zachSVG('happy')}
+      <div class="bubble-static">
+        <h1 class="serif">${esc(any(SAY.hello))}</h1>
+        <p>Flip flashcards or race the clock in Match. I'll be cheering you on.</p>
+        <div class="chips-row">
+          ${streak ? `<span class="pill">🔥 ${streak}-day streak</span>` : ''}
+          <span class="pill">⭐ ${practice} to practice</span>
+          <span class="pill">✓ ${known} known</span>
+          ${S.matchTimes.length ? `<span class="pill">⏱ Best ${fmtTime(S.matchTimes[0].ms)}</span>` : ''}
+        </div>
+      </div>
+    </section>
+
+    <div class="play-grid">
+      <button class="play-card" data-play="flash">
+        <div class="art"><div class="mini-card">Aa</div><div class="mini-card b">¡!</div></div>
+        <b>Flashcards</b><span>See a word, give the other language, flip to check.</span><span class="go">Start flashcards →</span>
+      </button>
+      <button class="play-card" data-play="match">
+        <div class="art"><div class="mini-grid">${Array.from({ length: 8 }, (_, i) => `<i class="mini-tile${i === 1 || i === 6 ? ' on' : ''}"></i>`).join('')}</div></div>
+        <b>Match</b><span>Pair 6 Spanish and English words as fast as you can.</span><span class="go">Start match →</span>
+      </button>
+    </div>
+    <div id="poolNote"></div>
+
+    <details class="add panel opts" id="opts">
+      <summary><span>Flashcard options</span><span class="opts-now" id="optsNow"></span><span class="chev" aria-hidden="true">▾</span></summary>
+      <div class="opts-body">
+      <div class="opt-row"><span>Show me</span>${seg('dir', [['en2es', '<span class="lg">English → Spanish</span><span class="sm">EN → ES</span>'], ['es2en', '<span class="lg">Spanish → English</span><span class="sm">ES → EN</span>'], ['mix', 'Mix']], p.dir)}</div>
+      <div class="opt-row"><span>I answer by</span>${seg('answer', [['type', 'Typing'], ['speak', 'Speaking'], ['flip', '<span class="lg">Flip &amp; self-check</span><span class="sm">Flip</span>']], p.answer)}</div>
+      <div class="opt-row"><span>Cards per round</span>${seg('count', [[10, '10'], [20, '20'], [30, '30'], [0, 'All']], p.count)}</div>
+      <div class="opt-row"><span>Match</span><label class="switch"><input type="checkbox" data-flag="speakTiles" ${p.speakTiles ? 'checked' : ''}>Read Spanish tiles aloud</label></div>
+      </div>
+    </details>
+
+    <section class="panel">
+      <div class="opt-row" style="padding:0;border:0">
+        <label class="switch"><input type="checkbox" data-flag="showAll" ${p.showAll ? 'checked' : ''}>Show all words</label>
+        <button class="linkish" id="toAdd">＋ Add new words</button>
+      </div>
+      <p class="muted" style="margin:8px 0 0;font-size:.86rem">When this is off, words you marked “I know it” stay out of your games.</p>
+    </section>
+    <footer class="foot"><a href="../index.html">More projects</a></footer>
+  </div>`;
+
+  const paintPool = () => {
+    const { list, all, known } = buildPool();
+    const el = $('#poolNote');
+    if (!list.length) {
+      el.innerHTML = `<div class="pool-note warn">You know every word! Turn on “Show all words”, or add new words in the Library.</div>`;
+    } else {
+      el.innerHTML = `<div class="pool-note"><b>${list.length}</b> word${list.length === 1 ? '' : 's'} ready${!p.showAll && known ? ` · ${known} you know ${known === 1 ? 'is' : 'are'} hidden` : ''}.</div>`;
+    }
+    $$('[data-play]').forEach(b => b.disabled = !list.length || (b.dataset.play === 'match' && matchable(list).length < 6));
+    if (list.length && matchable(list).length < 6) el.firstChild.insertAdjacentHTML('beforeend', ' Match needs at least 6 words.');
+  };
+  paintPool();
+  onWordsChanged = paintPool;
+  const paintOpts = () => {
+    $('#optsNow').textContent = [{ en2es: 'EN → ES', es2en: 'ES → EN', mix: 'Mix' }[p.dir], { type: 'Typing', speak: 'Speaking', flip: 'Flip' }[p.answer], p.count ? `${p.count} cards` : 'All cards'].join(' · ');
+  };
+  paintOpts();
+
+  $$('.seg[data-pref]').forEach(sg => sg.addEventListener('click', ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    const k = sg.dataset.pref; let v = b.dataset.v;
+    if (k === 'count') v = +v;
+    p[k] = v; save();
+    $$('button', sg).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    paintOpts();
+    if (k === 'answer' && v === 'speak' && !SR) toast('Speech input needs Chrome, Edge or Safari. You can still type.');
+  }));
+  $$('[data-flag]').forEach(cb => cb.addEventListener('change', () => { p[cb.dataset.flag] = cb.checked; save(); paintPool(); }));
+  $('#toAdd').onclick = () => { libState.addOpen = true; go('library'); };
+  $$('[data-play]').forEach(b => b.onclick = () => go(b.dataset.play));
+}
+
+/* =====================================================================
+   FLASHCARDS
+   ===================================================================== */
+function startFlash(custom) {
+  const p = S.prefs;
+  let cards;
+  if (custom && custom.length) cards = shuffle(custom.slice());
+  else { const { list } = buildPool(); cards = pick(list, p.count || list.length); }
+  if (!cards.length) { go('home'); return; }
+  const session = { mode: 'flash', items: [], start: Date.now() };
+  let i = 0, streak = 0, phase = 'ask', dir = 'en2es', judged = null, rec = null;
+
+  app.innerHTML = `<div class="screen">
+    <div class="game-head">
+      <button class="icon-btn" id="quit" title="Back" aria-label="Back to menu">✕</button>
+      <div class="progress"><i id="bar"></i></div>
+      <span class="count" id="count"></span>
+      <span class="streak" id="streak"></span>
+    </div>
+    <div class="scene"><div class="card" id="card">
+      <div class="face front"><span class="tag" id="fTag"></span><span class="topic-tag" id="fTopic"></span><div id="fBody"></div></div>
+      <div class="face back"><span class="tag" id="bTag"></span><span class="topic-tag" id="bTopic"></span><div id="bBody"></div></div>
+    </div></div>
+    <div class="answer-area" id="area"></div>
+  </div>`;
+  const card = $('#card'), area = $('#area');
+  $('#quit').onclick = () => session.items.length ? go('summary', session) : go('home');
+
+  function wordHTML(text, lang) {
+    const long = text.length > 26 ? ' long' : '';
+    return lang === 'es'
+      ? `<div class="word es serif${long}" data-say="${esc(text)}" title="Tap to hear it">${esc(text)}</div>${speakBtn(text)}`
+      : `<div class="word${long}">${esc(text)}</div>`;
+  }
+
+  function show() {
+    const e = cards[i];
+    dir = p.dir === 'mix' ? (Math.random() < .5 ? 'en2es' : 'es2en') : p.dir;
+    phase = 'ask'; judged = null;
+    card.classList.remove('flipped', 'right', 'wrong');
+    const fromLang = dir === 'en2es' ? 'en' : 'es';
+    const front = fromLang === 'es' ? e.es : e.en, back = fromLang === 'es' ? e.en : e.es;
+    $('#fTag').textContent = fromLang === 'es' ? 'Español' : 'English';
+    $('#bTag').textContent = fromLang === 'es' ? 'English' : 'Español';
+    $('#fTopic').textContent = $('#bTopic').textContent = e.topic.name;
+    $('#fBody').innerHTML = wordHTML(front, fromLang);
+    // back face is filled on reveal so it can't be peeked at
+    $('#bBody').innerHTML = '';
+    $('#bar').style.width = (100 * i / cards.length) + '%';
+    $('#count').textContent = `${i + 1} / ${cards.length}`;
+    paintStreak();
+    renderAsk(e, fromLang === 'es' ? 'en' : 'es');
+  }
+
+  function paintStreak() { const s = $('#streak'); s.textContent = streak >= 2 ? `🔥 ${streak}` : ''; }
+
+  function renderAsk(e, toLang) {
+    const langName = toLang === 'es' ? 'Spanish' : 'English';
+    if (p.answer === 'flip') {
+      area.innerHTML = `<div class="row-btns"><button class="btn primary" id="reveal">Show answer</button></div>
+        <p class="hint">Say it in your head, then flip. <span class="kbd-hint"><kbd>Space</kbd> flips</span></p>`;
+      $('#reveal').onclick = () => reveal(null);
+      card.onclick = ev => { if (!ev.target.closest('[data-say]') && phase === 'ask') reveal(null); };
+      return;
+    }
+    const speak = p.answer === 'speak' && SR;
+    area.innerHTML = `
+      ${speak ? `<button class="btn mic" id="mic" type="button">${ICON.mic}<span id="micTxt">Tap and say it in ${langName}</span></button><p class="hint" id="heard"></p>` : ''}
+      <form class="answer-row" id="form" autocomplete="off">
+        <input id="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${speak ? 'Or type' : 'Type'} it in ${langName}…" lang="${toLang}">
+        <button class="btn primary" type="submit">Check</button>
+      </form>
+      ${toLang === 'es' ? `<div class="accents">${['á', 'é', 'í', 'ó', 'ú', 'ñ', 'ü', '¿', '¡'].map(c => `<button type="button" data-ch="${c}">${c}</button>`).join('')}</div>` : ''}
+      <div class="row-btns"><button class="btn ghost small" id="idk" type="button">I don't know — show me</button></div>
+      ${p.answer === 'speak' && !SR ? '<p class="hint">This browser cannot listen. Type your answer instead.</p>' : ''}`;
+    const inp = $('#ans');
+    card.onclick = null;
+    if (!speak && matchMedia('(hover: hover)').matches) inp.focus();
+    $('#form').onsubmit = ev => { ev.preventDefault(); check([inp.value]); };
+    $('#idk').onclick = () => check(['']);
+    $$('[data-ch]').forEach(b => b.onclick = () => {
+      const s = inp.selectionStart ?? inp.value.length, en = inp.selectionEnd ?? s;
+      inp.value = inp.value.slice(0, s) + b.dataset.ch + inp.value.slice(en);
+      inp.focus(); inp.setSelectionRange(s + 1, s + 1);
+    });
+    if (speak) $('#mic').onclick = () => listen(toLang);
+  }
+
+  function listen(lang) {
+    const btn = $('#mic'), txt = $('#micTxt');
+    if (rec) { rec.abort(); return; }
+    rec = new SR();
+    rec.lang = lang === 'es' ? (listen.fallback ? 'es-ES' : 'es-MX') : 'en-US';
+    rec.interimResults = false; rec.maxAlternatives = 5;
+    btn.classList.add('listening'); txt.textContent = 'Listening… tap to stop';
+    rec.onresult = ev => {
+      const alts = [...ev.results[0]].map(a => a.transcript);
+      $('#heard').textContent = `I heard: “${alts[0]}”`;
+      check(alts);
+    };
+    rec.onerror = ev => {
+      // "aborted" is the page stopping the listener itself after an answer, not a failure
+      if (ev.error === 'aborted') return;
+      if (ev.error === 'language-not-supported' && lang === 'es' && !listen.fallback) {
+        listen.fallback = true;   // some browsers know es-ES but not es-MX: listen again with that
+        retry = true;
+        return;
+      }
+      const msg = {
+        'not-allowed': 'The microphone is blocked for this page. Allow it in the address bar, then reload.',
+        'service-not-allowed': "This browser's speech recognition is off. On a Mac or iPhone, turn on Dictation in Settings → Keyboard. Brave and some other browsers do not offer it; Chrome, Edge and Safari do.",
+        'network': "Speech recognition needs the internet: the browser sends your voice to its speech service. Check the connection. Brave, Arc and some other browsers block this service; Chrome, Edge and Safari allow it.",
+        'audio-capture': 'No microphone was found. Check that one is connected and chosen in your system settings.',
+        'no-speech': "I didn't hear anything. Tap the button, then speak.",
+        'language-not-supported': 'This browser cannot listen for Spanish. Type your answer instead.',
+      }[ev.error] || `Could not listen (${ev.error}). Try again or type.`;
+      console.warn('Speech recognition error:', ev.error);
+      const h = $('#heard'); if (h) h.textContent = msg;
+      toast(msg);
+    };
+    let retry = false;
+    rec.onend = () => { rec = null; if (retry && btn.isConnected) { listen(lang); return; } if (btn.isConnected) { btn.classList.remove('listening'); txt.textContent = `Tap and say it in ${lang === 'es' ? 'Spanish' : 'English'}`; } };
+    try { rec.start(); } catch (e) { rec = null; btn.classList.remove('listening'); }
+  }
+
+  function check(tries) {
+    if (phase !== 'ask') return;
+    const e = cards[i];
+    const toLang = dir === 'en2es' ? 'es' : 'en';
+    const expected = toLang === 'es' ? e.es : e.en;
+    let best = { ok: false, kind: 'wrong' }, given = tries[0] || '';
+    for (const t of tries) { const r = judge(t, expected, toLang); if (RANK[r.kind] < RANK[best.kind]) { best = r; given = t; } }
+    judged = { ...best, given };
+    reveal(judged);
+  }
+
+  function reveal(j) {
+    if (phase !== 'ask') return;
+    phase = 'shown';
+    if (rec) { rec.abort(); rec = null; }
+    const e = cards[i];
+    const toLang = dir === 'en2es' ? 'es' : 'en';
+    const back = toLang === 'es' ? e.es : e.en;
+    let verdict = '';
+    if (j) {
+      const cls = j.ok ? (j.kind === 'exact' ? 'ok' : 'close') : 'no';
+      const label = j.ok
+        ? ({ exact: '✓ ¡Correcto!', accent: '✓ Correct — mind the accents', typo: '✓ Correct — check the spelling' }[j.kind])
+        : j.kind === 'gender' ? '✗ Check the article (el / la)' : j.given.trim() ? '✗ Not quite' : 'Here it is';
+      verdict = `<div class="verdict ${cls}">${label}</div>${j.given.trim() && j.kind !== 'exact' ? `<div class="gave">You said: ${j.ok ? esc(j.given) : `<s>${esc(j.given)}</s>`}</div>` : ''}`;
+    }
+    $('#bBody').innerHTML = wordHTML(back, toLang) + verdict;
+    card.classList.add('flipped');
+    sfx('flip');
+    if (j) finish(j.ok, j.kind, j.given);
+    else {
+      area.innerHTML = `<div class="row-btns"><button class="btn bad" id="no">✗ Missed it</button><button class="btn good" id="yes">✓ Got it</button></div>
+        <p class="hint kbd-hint"><kbd>←</kbd> missed · <kbd>→</kbd> got it</p>`;
+      $('#no').onclick = () => finish(false, 'wrong', '');
+      $('#yes').onclick = () => finish(true, 'exact', '');
+      card.onclick = null;
+    }
+  }
+
+  function finish(ok, kind, given) {
+    if (phase === 'done') return;
+    phase = 'done';
+    const e = cards[i];
+    record(e, ok, kind, dir);
+    const item = { e, ok, kind, given, dir };
+    session.items.push(item);
+    feedback(ok, kind);
+    area.innerHTML = `<div class="row-btns">
+        ${!ok && p.answer !== 'flip' ? '<button class="btn ghost" id="override">I was right</button>' : ''}
+        <button class="btn primary" id="next">${i + 1 < cards.length ? 'Next' : 'See results'} →</button></div>
+      <p class="hint kbd-hint"><kbd>Enter</kbd> next</p>`;
+    $('#next').onclick = next;
+    const ov = $('#override');
+    if (ov) ov.onclick = () => {
+      // undo the miss and count it as right
+      const w = W(e); w.wrong--; w.right++; const d = w.dir[dir]; if (d) { d[1]--; d[0]++; } save();
+      item.ok = true; item.kind = 'exact'; streak++;
+      card.classList.remove('wrong'); card.classList.add('right');
+      const v = $('.verdict', card); if (v) { v.className = 'verdict ok'; v.textContent = '✓ Counted as correct'; }
+      sfx('right'); paintStreak(); ov.remove();
+    };
+    $('#next').focus({ preventScroll: true });
+  }
+
+  function feedback(ok, kind) {
+    if (ok) {
+      streak++;
+      card.classList.add('right');
+      card.classList.remove('glow'); void card.offsetWidth; card.classList.add('glow');
+      sfx('right');
+      const s = $('#streak'); paintStreak(); s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop');
+      if (kind === 'accent' || kind === 'typo') zach(any(SAY[kind]), 'kind');
+      else if (streak >= 3 && (streak === 3 || streak % 5 === 0)) { zach(any(SAY.streak(streak)), 'grin'); if (streak >= 5) confetti(40); }
+      else if (Math.random() < .4) zach(any(SAY.right), 'happy', 1700);
+    } else {
+      const was = streak; streak = 0; paintStreak();
+      card.classList.add('wrong');
+      const sc = $('.scene'); sc.classList.remove('shake'); void sc.offsetWidth; sc.classList.add('shake');
+      sfx('wrong');
+      if (kind === 'gender') zach(any(SAY.gender), 'kind');
+      else if (was >= 3 || Math.random() < .55) zach(any(SAY.wrong), 'kind');
+    }
+  }
+
+  function next() {
+    if (phase !== 'done') return;
+    hideZach();
+    i++;
+    if (i >= cards.length) { $('#bar').style.width = '100%'; go('summary', session); return; }
+    show();
+  }
+
+  const onKey = ev => {
+    if (ev.target.tagName === 'INPUT' && phase === 'ask') return;
+    if (phase === 'done' && ev.key === 'Enter') { ev.preventDefault(); next(); }
+    else if (p.answer === 'flip' && phase === 'ask' && (ev.key === ' ' || ev.key === 'Enter')) { ev.preventDefault(); reveal(null); }
+    else if (p.answer === 'flip' && phase === 'shown' && ev.key === 'ArrowLeft') finish(false, 'wrong', '');
+    else if (p.answer === 'flip' && phase === 'shown' && ev.key === 'ArrowRight') finish(true, 'exact', '');
+  };
+  document.addEventListener('keydown', onKey);
+  cleanup = () => { document.removeEventListener('keydown', onKey); if (rec) rec.abort(); };
+  show();
+}
+
+/* =====================================================================
+   MATCH
+   ===================================================================== */
+function matchable(list) {
+  const es = new Set(), en = new Set(), out = [];
+  for (const e of list) {
+    const a = norm(e.es), b = norm(e.en);
+    if (es.has(a) || en.has(b)) continue;
+    es.add(a); en.add(b); out.push(e);
+  }
+  return out;
+}
+function startMatch() {
+  const { list } = buildPool();
+  // choose 6 words whose Spanish and English are all different, so every pair has one answer
+  const chosen = [];
+  const seenEs = new Set(), seenEn = new Set();
+  for (const e of pick(list, list.length)) {
+    const a = norm(e.es), b = norm(e.en);
+    if (seenEs.has(a) || seenEn.has(b)) continue;
+    seenEs.add(a); seenEn.add(b); chosen.push(e);
+    if (chosen.length === 6) break;
+  }
+  if (chosen.length < 6) { go('home'); return; }
+  const tiles = shuffle(chosen.flatMap((e, k) => [{ k, lang: 'es', text: e.es }, { k, lang: 'en', text: e.en }]));
+  const missed = new Set();
+  let sel = null, done = 0, t0 = 0, penalty = 0, raf = 0, running = false, busy = false;
+  const best = S.matchTimes[0];
+
+  app.innerHTML = `<div class="screen">
+    <div class="game-head">
+      <button class="icon-btn" id="quit" title="Back" aria-label="Back to menu">✕</button>
+      <div style="flex:1"><div class="timer" id="timer">0.0s</div><div class="best-line">${best ? `Best: ${fmtTime(best.ms)} — beat it!` : 'Set your first record!'}</div></div>
+      <span class="penalty" id="pen">+1s</span>
+    </div>
+    <div class="grid" id="grid">
+      ${tiles.map((t, n) => `<button class="tile ${t.lang}" data-n="${n}"><span class="lang">${t.lang === 'es' ? 'ES' : 'EN'}</span><span class="${t.lang === 'es' ? 'serif' : ''}">${esc(t.text)}</span></button>`).join('')}
+      <div class="countdown" id="cd"></div>
+    </div>
+    <p class="hint">Tap a word, then tap its match. A wrong pair adds 1 second.</p>
+  </div>`;
+  $('#quit').onclick = () => go('home');
+  const timer = $('#timer');
+  const tick = () => { timer.textContent = fmtTime(Date.now() - t0 + penalty); raf = requestAnimationFrame(tick); };
+
+  // 3 · 2 · 1 · ¡Ya!
+  const cd = $('#cd'); let c = 3;
+  const step = () => {
+    if (!cd.isConnected) return;
+    if (c === 0) { cd.innerHTML = '<span>¡Ya!</span>'; sfx('match'); setTimeout(() => { cd.remove(); running = true; t0 = Date.now(); tick(); }, 450); return; }
+    cd.innerHTML = `<span>${c}</span>`; sfx('tick'); c--; setTimeout(step, 650);
+  };
+  step();
+
+  $('#grid').addEventListener('click', ev => {
+    const b = ev.target.closest('.tile');
+    if (!b || !running || busy || b.classList.contains('ok')) return;
+    const t = tiles[+b.dataset.n];
+    if (t.lang === 'es' && S.prefs.speakTiles) speakEs(t.text);
+    if (!sel) { sel = b; b.classList.add('sel'); return; }
+    if (sel === b) { b.classList.remove('sel'); sel = null; return; }
+    const a = tiles[+sel.dataset.n];
+    if (a.lang === t.lang) { sel.classList.remove('sel'); sel = b; b.classList.add('sel'); return; }
+    const first = sel; sel = null;
+    first.classList.remove('sel');
+    if (a.k === t.k) {
+      first.classList.add('ok'); b.classList.add('ok'); sfx('match');
+      done++;
+      if (done === 6) win();
+    } else {
+      busy = true;
+      missed.add(a.k); missed.add(t.k);
+      first.classList.add('no'); b.classList.add('no'); sfx('wrong');
+      penalty += 1000;
+      const pen = $('#pen'); pen.classList.add('show'); setTimeout(() => pen.classList.remove('show'), 700);
+      setTimeout(() => { first.classList.remove('no'); b.classList.remove('no'); busy = false; }, 420);
+    }
+  });
+
+  function win() {
+    running = false; cancelAnimationFrame(raf);
+    const ms = Date.now() - t0 + penalty;
+    timer.textContent = fmtTime(ms);
+    chosen.forEach((e, k) => record(e, !missed.has(k), missed.has(k) ? 'wrong' : 'exact', 'match'));
+    const prevBest = S.matchTimes[0] ? S.matchTimes[0].ms : Infinity;
+    const entry = { ms, at: Date.now() };
+    S.matchTimes.push(entry);
+    S.matchTimes.sort((x, y) => x.ms - y.ms);
+    S.matchTimes = S.matchTimes.slice(0, 10);
+    save();
+    const record_ = ms < prevBest;
+    const session = { mode: 'match', items: chosen.map((e, k) => ({ e, ok: !missed.has(k), kind: missed.has(k) ? 'wrong' : 'exact', dir: 'match' })), start: t0, ms, record: record_, entryAt: entry.at, prevBest };
+    setTimeout(() => go('summary', session), 500);
+  }
+  cleanup = () => cancelAnimationFrame(raf);
+}
+
+/* =====================================================================
+   SUMMARY + MARK WORDS
+   ===================================================================== */
+function renderSummary(session) {
+  const items = session.items;
+  const right = items.filter(x => x.ok).length;
+  const score = items.length ? right / items.length : 0;
+  S.sessions.unshift({ at: Date.now(), mode: session.mode, n: items.length, right, ms: session.ms || null });
+  S.sessions = S.sessions.slice(0, 50);
+  save();
+
+  // Default marks: missed words go on the practice list; the rest keep their status.
+  const marks = new Map();
+  const byKey = new Map();
+  items.forEach(x => { byKey.set(x.e.key, x.e); });
+  for (const [k, e] of byKey) {
+    const miss = items.some(x => x.e.key === k && !x.ok);
+    marks.set(k, miss ? 'practice' : statusOf(e));
+  }
+
+  let mood, line;
+  if (session.mode === 'match') {
+    line = session.record ? any(SAY.record) : score === 1 ? any(SAY.matchDone) : any(score >= .5 ? SAY.ok : SAY.low);
+    mood = session.record || score === 1 ? 'grin' : 'kind';
+  } else {
+    const bucket = score >= .9 ? 'great' : score >= .7 ? 'good' : score >= .5 ? 'ok' : 'low';
+    line = any(SAY[bucket]);
+    mood = bucket === 'great' ? 'grin' : bucket === 'good' ? 'happy' : 'kind';
+  }
+
+  const missedCards = [...byKey.values()].filter(e => marks.get(e.key) === 'practice');
+  app.innerHTML = `<div class="screen stack">
+    <section class="panel result-top">
+      ${zachSVG(mood)}
+      <div>
+        <div class="score-big">${session.mode === 'match' ? fmtTime(session.ms) : `${right} / ${items.length}`}</div>
+        <div class="say" data-say="${esc(line)}" title="Tap to hear Zach">${esc(line)}</div>
+        <div class="muted">${session.mode === 'match'
+          ? (session.record ? (isFinite(session.prevBest) ? `New record! You beat ${fmtTime(session.prevBest)}.` : 'Your first record!') : `Your best is ${fmtTime(S.matchTimes[0].ms)}.`)
+          : `${Math.round(score * 100)}% correct`}</div>
+      </div>
+    </section>
+
+    ${session.mode === 'match' ? `<section class="panel"><h2>Fastest times</h2><ol class="times">${S.matchTimes.slice(0, 5).map(t => `<li class="${t.at === session.entryAt ? 'me' : ''}"><span>${fmtTime(t.ms)}</span><span class="muted">${new Date(t.at).toLocaleDateString()}</span></li>`).join('')}</ol></section>` : ''}
+
+    <section class="panel">
+      <h2>How did these feel?</h2>
+      <p class="muted" style="margin:-4px 0 10px;font-size:.9rem">Mark words to keep practicing, or that you know. Words you know stop showing up, unless you turn on “Show all words”.</p>
+      <ul class="review-list">${[...byKey.values()].map(e => {
+        const ok = items.filter(x => x.e.key === e.key).every(x => x.ok);
+        const m = marks.get(e.key);
+        return `<li data-k="${esc(e.key)}"><span class="mark ${ok ? 'y' : 'n'}">${ok ? '✓' : '✗'}</span>
+          <div><div class="rw-es serif" data-say="${esc(e.es)}">${esc(e.es)}</div><div class="rw-en">${esc(e.en)}</div></div>
+          <div class="status-seg"><button data-s="practice" class="${m === 'practice' ? 'on-p' : ''}">⭐ Keep practicing</button><button data-s="known" class="${m === 'known' ? 'on-k' : ''}">✓ I know it</button></div></li>`;
+      }).join('')}</ul>
+      <div class="row-btns" style="margin-top:14px">
+        <button class="btn small" id="allKnown">Mark all correct as known</button>
+      </div>
+    </section>
+
+    <div class="row-btns">
+      <button class="btn" id="home">Save &amp; menu</button>
+      ${session.mode === 'flash' ? `<button class="btn" id="retry" ${missedCards.length ? '' : 'hidden'}>Practice these again</button>` : ''}
+      <button class="btn primary" id="again">Save &amp; play again</button>
+    </div>
+  </div>`;
+
+  $$('.review-list li').forEach(li => li.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-s]'); if (!b) return;
+    const k = li.dataset.k, s = b.dataset.s;
+    const nowOn = marks.get(k) === s ? '' : s;
+    marks.set(k, nowOn);
+    $$('[data-s]', li).forEach(x => x.className = x.dataset.s === nowOn ? (nowOn === 'practice' ? 'on-p' : 'on-k') : '');
+  }));
+  $('#allKnown').onclick = () => {
+    $$('.review-list li').forEach(li => {
+      const k = li.dataset.k;
+      if (items.filter(x => x.e.key === k).every(x => x.ok)) {
+        marks.set(k, 'known');
+        $$('[data-s]', li).forEach(x => x.className = x.dataset.s === 'known' ? 'on-k' : '');
+      }
+    });
+  };
+  const commit = () => {
+    let k = 0, pr = 0;
+    for (const [key, m] of marks) { const e = byKey.get(key); setStatus(e, m); if (m === 'known') k++; if (m === 'practice') pr++; }
+    save();
+    return { k, pr };
+  };
+  $('#home').onclick = () => { commit(); go('home'); };
+  $('#again').onclick = () => { commit(); go(session.mode); };
+  const retry = $('#retry');
+  if (retry) retry.onclick = () => { commit(); go('flash', [...byKey.values()].filter(e => marks.get(e.key) === 'practice')); };
+
+  // celebrate
+  if (session.record) { sfx('fanfare'); confetti(110); }
+  else if (score >= .9 && items.length >= 5) { sfx('fanfare'); confetti(80); }
+  setTimeout(() => { if (!S.prefs.muted) speakEs(line); }, 350);
+}
+
+/* =====================================================================
+   PROGRESS
+   ===================================================================== */
+function aggregate() {
+  const byType = {}, byTopic = new Map(), dir = { en2es: [0, 0], es2en: [0, 0], match: [0, 0] }, slips = { accent: 0, gender: 0, typo: 0 };
+  let seenWords = 0, right = 0, wrong = 0;
+  const words = [];
+  for (const e of uniq(ENTRIES)) {
+    const w = S.words[e.key];
+    if (!w || !w.seen) continue;
+    seenWords++; right += w.right; wrong += w.wrong;
+    const t = byType[e.type] || (byType[e.type] = [0, 0]); t[0] += w.right; t[1] += w.wrong;
+    const tp = byTopic.get(e.topic) || [0, 0]; tp[0] += w.right; tp[1] += w.wrong; byTopic.set(e.topic, tp);
+    for (const d in w.dir) { if (dir[d]) { dir[d][0] += w.dir[d][0]; dir[d][1] += w.dir[d][1]; } }
+    for (const s in w.slips) slips[s] = (slips[s] || 0) + w.slips[s];
+    words.push({ e, w });
+  }
+  return { byType, byTopic, dir, slips, seenWords, right, wrong, words };
+}
+function advice(a) {
+  const tips = [];
+  if (a.right + a.wrong < 15) return ['¡Juega unas rondas más y te daré consejos personalizados!'];
+  const types = Object.entries(a.byType).filter(([, v]) => v[0] + v[1] >= 6).map(([k, v]) => [k, pct(...v)]).sort((x, y) => x[1] - y[1]);
+  if (types.length) {
+    const top = types[types.length - 1];
+    if (top[1] >= 80) tips.push(`¡${TYPE_ES[top[0]][0].toUpperCase() + TYPE_ES[top[0]].slice(1)} te salen genial! (${top[1]}% de aciertos)`);
+    const low = types[0];
+    if (low[1] < 75 && low[0] !== top[0]) tips.push({
+      verb: `Los verbos son tu reto (${low[1]}%). Di cada verbo en voz alta y úsalo en una frase.`,
+      noun: `Los sustantivos te cuestan (${low[1]}%). Apréndelos siempre con su artículo: el, la, los, las.`,
+      adj: `Los adjetivos te cuestan (${low[1]}%). Piensa en una persona o cosa que cada uno describa.`,
+      expr: `Las expresiones largas te cuestan (${low[1]}%). Repítelas en voz alta como una frase completa.`,
+    }[low[0]]);
+  }
+  const topics = [...a.byTopic].filter(([, v]) => v[0] + v[1] >= 5).map(([t, v]) => [t, pct(...v)]).sort((x, y) => x[1] - y[1]);
+  if (topics.length && topics[0][1] < 70) tips.push(`Repasa el tema «${topics[0][0].name}»: ahí fallas más (${topics[0][1]}%).`);
+  const e2s = a.dir.en2es, s2e = a.dir.es2en;
+  if (e2s[0] + e2s[1] >= 8 && s2e[0] + s2e[1] >= 8) {
+    const d = pct(...e2s) - pct(...s2e);
+    if (d <= -12) tips.push('Te cuesta más pasar del inglés al español. Elige «English → Spanish» unas rondas.');
+    else if (d >= 12) tips.push('Te cuesta más entender el español. Elige «Spanish → English» y escucha cada palabra.');
+  }
+  if (a.slips.accent >= 3) tips.push('Ojo con las tildes: á, é, í, ó, ú y la ñ también cuentan.');
+  if (a.slips.gender >= 2) tips.push('A veces confundes el y la. Di siempre el artículo junto con la palabra.');
+  const worst = a.words.filter(x => x.w.wrong >= 2).sort((x, y) => y.w.wrong - x.w.wrong)[0];
+  if (worst) tips.push(`Tu palabra más difícil es «${worst.e.es}». ¡Practícala hoy!`);
+  if (!tips.length) tips.push('¡Vas muy bien! Sigue practicando un poco cada día.');
+  return tips.slice(0, 5);
+}
+function barRows(rows) {
+  if (!rows.length) return '<p class="muted" style="font-size:.9rem">Not enough answers yet.</p>';
+  return `<div class="bars">${rows.map(r => `<div class="bar-row" title="${esc(r.label)}: ${r.p}% correct over ${r.n} answers">
+    <span class="lbl">${esc(r.label)} <small>· ${r.n}</small></span><span class="track"><i style="width:${r.p}%"></i></span><span class="val">${r.p}%</span></div>`).join('')}</div>`;
+}
+function renderProgress() {
+  const a = aggregate();
+  const known = Object.values(S.words).filter(w => w.st === 'known').length;
+  const practice = Object.values(S.words).filter(w => w.st === 'practice').length;
+  const typeRows = Object.entries(a.byType).map(([k, v]) => ({ label: TYPE_LABEL[k], p: pct(...v), n: v[0] + v[1] })).sort((x, y) => x.p - y.p);
+  const topicRows = [...a.byTopic].map(([t, v]) => ({ label: t.name, p: pct(...v), n: v[0] + v[1] })).filter(r => r.n >= 3).sort((x, y) => x.p - y.p).slice(0, 8);
+  const dirRows = [['en2es', 'English → Spanish'], ['es2en', 'Spanish → English'], ['match', 'Match game']].filter(([k]) => a.dir[k][0] + a.dir[k][1]).map(([k, l]) => ({ label: l, p: pct(...a.dir[k]), n: a.dir[k][0] + a.dir[k][1] }));
+  const missed = a.words.filter(x => x.w.wrong).sort((x, y) => y.w.wrong - x.w.wrong || x.w.right - y.w.right).slice(0, 10);
+
+  app.innerHTML = `<div class="screen stack">
+    <h1 class="serif" style="margin:4px 0 0">Your progress</h1>
+    <div class="tiles">
+      <div class="stat"><b>${dayStreak()}</b><span>Day streak 🔥</span></div>
+      <div class="stat"><b>${a.seenWords}</b><span>Words practiced</span></div>
+      <div class="stat"><b>${a.right + a.wrong ? pct(a.right, a.wrong) + '%' : '—'}</b><span>Accuracy</span></div>
+      <div class="stat"><b>${S.matchTimes.length ? fmtTime(S.matchTimes[0].ms) : '—'}</b><span>Best match time</span></div>
+      <div class="stat"><b>${known}</b><span>Words you know</span></div>
+      <div class="stat"><b>${practice}</b><span>On practice list</span></div>
+    </div>
+
+    <section class="panel coach">
+      ${zachSVG('happy')}
+      <div><h2>Los consejos de Zach</h2><ul>${advice(a).map(t => `<li data-say="${esc(t)}">${esc(t)}</li>`).join('')}</ul></div>
+    </section>
+
+    <div class="two-col">
+      <section class="panel"><h2>Accuracy by word type</h2>${barRows(typeRows)}</section>
+      <section class="panel"><h2>Accuracy by direction</h2>${barRows(dirRows)}
+        <h2 style="margin-top:18px">Small slips</h2>
+        <div class="tiles"><div class="stat"><b>${a.slips.accent}</b><span>Missing accents</span></div><div class="stat"><b>${a.slips.gender}</b><span>el / la mix-ups</span></div><div class="stat"><b>${a.slips.typo}</b><span>Typos</span></div></div>
+      </section>
+    </div>
+
+    <div class="two-col">
+      <section class="panel"><h2>Topics to review</h2>${barRows(topicRows)}</section>
+      <section class="panel"><h2>Most missed words</h2>
+        ${missed.length ? `<ul class="missed">${missed.map(x => `<li><span><b class="serif" data-say="${esc(x.e.es)}" style="cursor:pointer">${esc(x.e.es)}</b> <span class="muted">${esc(x.e.en)}</span></span><span class="n">✗ ${x.w.wrong}</span></li>`).join('')}</ul>
+        <div class="row-btns"><button class="btn primary small" id="drill">Practice ${missed.length === 1 ? 'this word' : `these ${missed.length}`}</button></div>` : '<p class="muted" style="font-size:.9rem">No misses yet. ¡Muy bien!</p>'}
+      </section>
+    </div>
+
+    <section class="panel"><h2>Recent rounds</h2>
+      ${S.sessions.length ? `<ul class="missed">${S.sessions.slice(0, 8).map(s => `<li><span>${s.mode === 'match' ? 'Match' : 'Flashcards'} · <span class="muted">${new Date(s.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span></span><span><b>${s.mode === 'match' ? fmtTime(s.ms) : `${s.right}/${s.n}`}</b></span></li>`).join('')}</ul>` : '<p class="muted" style="font-size:.9rem">No rounds yet.</p>'}
+    </section>
+
+    <div class="row-btns"><button class="btn ghost small" id="reset">Reset all progress</button></div>
+  </div>`;
+  const drill = $('#drill');
+  if (drill) drill.onclick = () => go('flash', missed.map(x => x.e));
+  const reset = $('#reset');
+  reset.onclick = () => {
+    if (reset.dataset.armed) {
+      // erase scores and marks; the shared words and this browser's id stay
+      S = Object.assign(load(), { words: {}, days: [], sessions: [], matchTimes: [] });
+      S.prefs = Object.assign({}, DEFAULT_PREFS, { muted: S.prefs.muted });
+      save(); toast('Progress reset.'); go('progress');
+    } else { reset.dataset.armed = '1'; reset.textContent = 'Tap again to erase everything'; reset.classList.add('bad'); }
+  };
+}
+
+/* =====================================================================
+   LIBRARY
+   ===================================================================== */
+let libState = { q: '', filter: 'all', course: 'all', addOpen: false };
+function renderLibrary() {
+  const lists = [...new Set(S.shared.map(r => r.list))];
+  app.innerHTML = `<div class="screen stack">
+    <h1 class="serif" style="margin:4px 0 0">Word library</h1>
+    <p class="muted" style="margin:0">Every word you can practice. Mark words to practice, bring back words you said you knew, or add your own.</p>
+
+    <details class="add panel" id="addBox" ${libState.addOpen ? 'open' : ''}>
+      <summary><span class="plus">+</span> Add new words</summary>
+      <div class="add-body">
+        <label class="field">List name
+          <input type="text" id="addList" list="myLists" placeholder="For example: Week 3 – La comida" value="${esc(libState.lastList || '')}">
+          <datalist id="myLists">${lists.map(l => `<option value="${esc(l)}">`).join('')}</datalist>
+        </label>
+        <label class="field">Words, one per line
+          <textarea id="addText" spellcheck="false" placeholder="el perro = dog&#10;la manzana = apple&#10;correr = to run"></textarea>
+        </label>
+        <p class="muted" style="margin:-6px 0 0;font-size:.84rem">Put Spanish first, then English. Separate them with <b>=</b>, a dash, or a tab. Pasting from a spreadsheet or a Quizlet export works. Use commas for answers that all count: <i>el auto, el carro = car</i>.</p>
+        <label class="switch"><input type="checkbox" id="enFirst">English is first on each line</label>
+        <p class="muted" style="margin:0;font-size:.84rem">🌎 New words go into the shared list, for everyone who uses this page.</p>
+        <div class="add-preview" id="addPreview">Your words will show up here before you add them.</div>
+        <div class="row-btns" style="margin:0"><button class="btn primary" id="addBtn" disabled>Add words</button></div>
+      </div>
+    </details>
+
+    <div class="lib-tools">
+      <input type="search" id="q" placeholder="Search Spanish or English…" value="${esc(libState.q)}">
+      <select id="course"><option value="all">All lists</option>${courses().map(c => `<option ${libState.course === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+      ${seg('libfilter', [['all', 'All'], ['practice', '⭐ Practice'], ['known', '✓ Known'], ['new', 'Not seen']], libState.filter)}
+    </div>
+    <div id="libActions"></div>
+    <div id="libList"></div>
+  </div>`;
+
+  /* ---- add words ---- */
+  const box = $('#addBox'), text = $('#addText'), listIn = $('#addList'), enFirst = $('#enFirst'), btn = $('#addBtn');
+  box.addEventListener('toggle', () => { libState.addOpen = box.open; if (box.open) text.focus(); });
+  const existing = () => new Set(ENTRIES.map(e => e.key));
+  const preview = () => {
+    const { ok, bad } = parsePairs(text.value, enFirst.checked);
+    const have = existing(), seen = new Set();
+    const fresh = ok.filter(x => { const k = norm(x.es) + '=' + norm(x.en); if (have.has(k) || seen.has(k)) return false; seen.add(k); return true; });
+    const dup = ok.length - fresh.length;
+    btn.disabled = !fresh.length;
+    btn.textContent = fresh.length ? `Add ${fresh.length} word${fresh.length === 1 ? '' : 's'}` : 'Add words';
+    if (!text.value.trim()) { $('#addPreview').textContent = 'Your words will show up here before you add them.'; return fresh; }
+    $('#addPreview').innerHTML = `<b>${fresh.length}</b> new word${fresh.length === 1 ? '' : 's'}${dup ? ` · ${dup} already in the library` : ''}${fresh.length ? `<ul>${fresh.slice(0, 4).map(x => `<li><span class="serif"><b>${esc(x.es)}</b></span> → ${esc(x.en)}</li>`).join('')}${fresh.length > 4 ? `<li class="muted">and ${fresh.length - 4} more</li>` : ''}</ul>` : ''}${bad.length ? `<div class="skip" style="margin-top:6px">Can't read ${bad.length} line${bad.length === 1 ? '' : 's'} (no = or tab): “${esc(bad[0])}”</div>` : ''}`;
+    return fresh;
+  };
+  text.addEventListener('input', preview);
+  enFirst.addEventListener('change', preview);
+  btn.onclick = async () => {
+    const fresh = preview();
+    if (!fresh.length) return;
+    const list = listIn.value.trim() || 'Shared words';
+    btn.disabled = true; btn.textContent = 'Adding…';
+    try {
+      let added = 0;
+      for (let i = 0; i < fresh.length; i += 100) added += (await shareWords(list, fresh.slice(i, i + 100))).added.length;
+      toast(added ? `¡Listo! ${added} word${added === 1 ? '' : 's'} added to “${list}”.` : 'Someone already added those words.');
+      text.value = '';
+      Object.assign(libState, { q: '', filter: 'all', course: SHARED_COURSE, addOpen: true, lastList: list });
+      renderLibrary();
+    } catch (e) {
+      // keep what they typed so nothing is lost
+      toast(`Could not add the words: ${e.message}. Check your connection and try again.`);
+      preview();
+    }
+  };
+
+  /* ---- word list ---- */
+  const paint = () => {
+    const q = deaccent(norm(libState.q));
+    const knownShown = [];
+    const html = TOPICS.filter(t => libState.course === 'all' || t.course === libState.course).map(t => {
+      const rows = t.entries.filter(e => {
+        const st = statusOf(e), w = S.words[e.key];
+        if (libState.filter === 'practice' && st !== 'practice') return false;
+        if (libState.filter === 'known' && st !== 'known') return false;
+        if (libState.filter === 'new' && w && w.seen) return false;
+        return !q || deaccent(norm(e.es)).includes(q) || deaccent(norm(e.en)).includes(q);
+      });
+      if (!rows.length) return '';
+      knownShown.push(...rows.filter(e => statusOf(e) === 'known'));
+      return `<div class="lib-topic panel"><h3><span>${esc(t.name)}</span><small>${esc(t.course)}</small></h3><ul class="review-list">${rows.map(e => {
+        const st = statusOf(e), w = S.words[e.key];
+        return `<li data-k="${esc(e.key)}"><span class="mark ${st === 'known' ? 'y' : ''}" style="color:var(--warn)">${st === 'practice' ? '⭐' : st === 'known' ? '<span style="color:var(--good)">✓</span>' : ''}</span>
+          <div><div class="rw-es serif" data-say="${esc(e.es)}">${esc(e.es)}</div><div class="rw-en">${esc(e.en)}${w && w.seen ? ` <span class="lib-score">· ✓${w.right} ✗${w.wrong}</span>` : ''}</div>${e.shared && myHash && e.owner === myHash ? `<button class="del" data-del="${e.shared}">Added by you · Delete</button>` : ''}</div>
+          <div class="status-seg"><button data-s="practice" class="${st === 'practice' ? 'on-p' : ''}">⭐ Practice</button><button data-s="known" class="${st === 'known' ? 'on-k' : ''}">✓ Known</button></div></li>`;
+      }).join('')}</ul></div>`;
+    }).join('');
+    $('#libList').innerHTML = html || '<p class="muted">No words match.</p>';
+    $('#libActions').innerHTML = knownShown.length ? `<button class="btn small" id="restore">Bring back all ${knownShown.length} known word${knownShown.length === 1 ? '' : 's'} shown</button>` : '';
+    const r = $('#restore');
+    if (r) r.onclick = () => { knownShown.forEach(e => setStatus(e, '')); save(); toast(`${knownShown.length} word${knownShown.length === 1 ? '' : 's'} back in your games.`); paint(); };
+  };
+  paint();
+  // new shared words: redraw the whole screen (new lists join the menu), unless they are typing
+  onWordsChanged = () => text.value.trim() ? paint() : renderLibrary();
+  syncWords();
+  $('#q').addEventListener('input', ev => { libState.q = ev.target.value; paint(); });
+  $('#course').addEventListener('change', ev => { libState.course = ev.target.value; paint(); });
+  $('.seg[data-pref="libfilter"]').addEventListener('click', ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    libState.filter = b.dataset.v;
+    $$('.seg[data-pref="libfilter"] button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    paint();
+  });
+  $('#libList').addEventListener('click', ev => {
+    const d = ev.target.closest('[data-del]');
+    if (d) {
+      // first tap arms, second tap deletes
+      if (!d.dataset.armed) { d.dataset.armed = '1'; d.textContent = 'Tap again to delete'; d.style.color = 'var(--bad)'; return; }
+      d.textContent = 'Deleting…';
+      deleteShared(+d.dataset.del).then(() => {
+        toast('Word deleted.');
+        if (!courses().includes(libState.course)) libState.course = 'all';
+        paint();
+      }, e => { toast(`Could not delete: ${e.message}`); paint(); });
+      return;
+    }
+    const b = ev.target.closest('[data-s]'); if (!b) return;
+    const li = b.closest('li'), key = li.dataset.k;
+    const e = ENTRIES.find(x => x.key === key);
+    const st = statusOf(e) === b.dataset.s ? '' : b.dataset.s;
+    // the same word can sit in two topics; they share one status
+    setStatus(e, st); save();
+    $$(`li[data-k="${CSS.escape(key)}"]`).forEach(row => {
+      $$('[data-s]', row).forEach(x => x.className = x.dataset.s === st ? (st === 'practice' ? 'on-p' : 'on-k') : '');
+      $('.mark', row).innerHTML = st === 'practice' ? '⭐' : st === 'known' ? '<span style="color:var(--good)">✓</span>' : '';
+    });
+  });
+}
+
+go('home');
+</script>
+</body>
+</html>

@@ -1,3 +1,8 @@
+# Supabase
+
+One free project, `hugelland` (`tnaassoaraijvhswevvp`), holds two things: the Hügelland daily leaderboard and
+the shared word list for Practica con Zach.
+
 # The daily leaderboard
 
 A top ten for each day's map in `hugelland.html`, on a free Supabase project.
@@ -76,3 +81,34 @@ supabase db query --linked -f supabase/schema.sql
 
 A free project covers this easily: a row is about 60 bytes, and one function call per finished town.
 Par is worked out once per day and kept in `daily_par`.
+
+# The shared word list
+
+Words added on `spanish-vocab/spanish-vocab.html` go into `vocab_words`, so every visitor gets them.
+
+- **Reading:** the page reads the table with the public key, 1,000 rows at a time, and keeps the last copy in
+  localStorage so the words load at once and work offline.
+- **Writing:** only the `vocab` function writes. The table has row level security and no insert policy, so the
+  public key cannot add a row directly.
+- **Checks:** anyone may add words, so the function checks every word. Spanish can be up to 120 characters, English
+  up to 160 and a list name up to 60. One request can add up to 100 words, and one browser up to 300 words an
+  hour. The whole list stops at 20,000 words. A pair already in the list (same words, ignoring case and
+  punctuation) is skipped.
+- **Deleting:** each browser keeps a random id. The table stores only its SHA-256 hash beside each word, and the
+  function deletes a word only for the browser whose id matches.
+
+Set up (done):
+
+```sh
+supabase db query --linked -f supabase/vocab.sql
+supabase functions deploy vocab --no-verify-jwt
+```
+
+Removing a word by hand, such as spam:
+
+```sh
+supabase db query --linked "delete from public.vocab_words where id = 123"
+```
+
+What it does not stop: someone determined to add junk a little at a time from many browsers. If that happens,
+the next step is an editor code checked by the function, so only people with the code can add.

@@ -689,7 +689,9 @@ card and saying whether you knew it. The card flips to show the answer. A right 
 green with a chime; a wrong one shakes. The checker accepts any one of the listed answers,
 with or without `el`/`la` or `to`. A missing accent or a one-letter typo still counts, with a
 note. A wrong article (`el cocina`) does not. **I was right** overrides the checker. Tap any
-Spanish word to hear it read aloud.
+Spanish word to hear it read aloud. A right answer marks the word as known on the spot, and a
+miss puts it on the practice list. Tap a flipped card to flip it back. In flip-and-self-check
+mode, **Got it** or **Missed it** moves straight to the next card.
 
 **Match.** A 4 × 3 grid (3 × 4 on a phone) of six Spanish–English pairs. A 3-2-1 countdown
 starts the clock, and each wrong pair adds a second. The page keeps the ten fastest times

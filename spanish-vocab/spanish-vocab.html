@@ -181,6 +181,7 @@
   .verdict.ok { color: var(--good); background: var(--good-soft); }
   .verdict.close { color: var(--warn); background: var(--warn-soft); }
   .verdict.no { color: var(--bad); background: var(--bad-soft); }
+  .marked { margin-top: 8px; font-size: .78rem; font-weight: 700; color: var(--muted); }
   .gave { margin-top: 6px; font-size: .86rem; color: var(--ink-2); }
   .gave s { color: var(--bad); }
   .card.right .face.back { border-color: var(--good); box-shadow: 0 0 0 3px var(--good-soft), var(--shadow); }
@@ -1636,7 +1637,7 @@ function zach(text, mood = 'happy', ms = 2300) {
   document.getElementById('zachSay').textContent = text;
   pop.classList.remove('show'); void pop.offsetWidth; pop.classList.add('show');
   clearTimeout(zachTimer);
-  zachTimer = setTimeout(() => pop.classList.remove('show'), ms);
+  zachTimer = setTimeout(() => pop.classList.remove('show'), Math.max(ms, 3000 + text.length * 60));
 }
 function hideZach() { clearTimeout(zachTimer); document.getElementById('zachPop').classList.remove('show'); }
 
@@ -1949,7 +1950,7 @@ function startFlash(custom) {
   else { const { list } = buildPool(); cards = pick(list, p.count || list.length); }
   if (!cards.length) { go('home'); return; }
   const session = { mode: 'flash', items: [], start: Date.now() };
-  let i = 0, streak = 0, phase = 'ask', dir = 'en2es', judged = null, rec = null;
+  let i = 0, streak = 0, phase = 'ask', dir = 'en2es', judged = null, rec = null, autoNext = 0;
 
   app.innerHTML = `<div class="screen">
     <div class="game-head">
@@ -2099,8 +2100,8 @@ function startFlash(custom) {
         <p class="hint kbd-hint"><kbd>←</kbd> missed · <kbd>→</kbd> got it</p>`;
       $('#no').onclick = () => finish(false, 'wrong', '');
       $('#yes').onclick = () => finish(true, 'exact', '');
-      card.onclick = null;
     }
+    card.onclick = ev => { if (!ev.target.closest('[data-say]')) { card.classList.toggle('flipped'); sfx('flip'); } };
   }
 
   function finish(ok, kind, given) {
@@ -2110,7 +2111,16 @@ function startFlash(custom) {
     record(e, ok, kind, dir);
     const item = { e, ok, kind, given, dir };
     session.items.push(item);
+    setStatus(e, ok ? 'known' : 'practice'); save();
+    const back = $('#bBody');
+    back.insertAdjacentHTML('beforeend', `<div class="marked">${ok ? '✓ Marked as known' : '⭐ Added to practice'}</div>`);
     feedback(ok, kind);
+    if (p.answer === 'flip') {
+      // self-check: the answer was the choice, so go straight on to the next card
+      area.innerHTML = `<p class="hint">${i + 1 < cards.length ? 'Next card…' : 'Your results…'}</p>`;
+      autoNext = setTimeout(next, 900);
+      return;
+    }
     area.innerHTML = `<div class="row-btns">
         ${!ok && p.answer !== 'flip' ? '<button class="btn ghost" id="override">I was right</button>' : ''}
         <button class="btn primary" id="next">${i + 1 < cards.length ? 'Next' : 'See results'} →</button></div>
@@ -2121,6 +2131,8 @@ function startFlash(custom) {
       // undo the miss and count it as right
       const w = W(e); w.wrong--; w.right++; const d = w.dir[dir]; if (d) { d[1]--; d[0]++; } save();
       item.ok = true; item.kind = 'exact'; streak++;
+      setStatus(e, 'known'); save();
+      const m = $('.marked', card); if (m) m.textContent = '✓ Marked as known';
       card.classList.remove('wrong'); card.classList.add('right');
       const v = $('.verdict', card); if (v) { v.className = 'verdict ok'; v.textContent = '✓ Counted as correct'; }
       sfx('right'); paintStreak(); ov.remove();
@@ -2154,7 +2166,7 @@ function startFlash(custom) {
 
   function next() {
     if (phase !== 'done') return;
-    hideZach();
+    clearTimeout(autoNext);
     i++;
     if (i >= cards.length) { $('#bar').style.width = '100%'; go('summary', session); return; }
     show();
@@ -2168,7 +2180,7 @@ function startFlash(custom) {
     else if (p.answer === 'flip' && phase === 'shown' && ev.key === 'ArrowRight') finish(true, 'exact', '');
   };
   document.addEventListener('keydown', onKey);
-  cleanup = () => { document.removeEventListener('keydown', onKey); if (rec) rec.abort(); };
+  cleanup = () => { document.removeEventListener('keydown', onKey); clearTimeout(autoNext); if (rec) rec.abort(); };
   show();
 }
 
@@ -2286,7 +2298,7 @@ function renderSummary(session) {
   items.forEach(x => { byKey.set(x.e.key, x.e); });
   for (const [k, e] of byKey) {
     const miss = items.some(x => x.e.key === k && !x.ok);
-    marks.set(k, miss ? 'practice' : statusOf(e));
+    marks.set(k, miss ? 'practice' : session.mode === 'flash' ? 'known' : statusOf(e));
   }
 
   let mood, line;

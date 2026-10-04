@@ -707,7 +707,9 @@ Practice-list words and often-missed words come up more often.
 is the page icon (`zach-icon.svg`, with 180 and 512 px PNGs for phone home screens). He cheers right answers and streaks,
 and encourages after a miss, always in Spanish (*¡Buen trabajo!*, *¡Sigue así!*, *¡La próxima
 vez lo logras!*). The page is for my wife, so when she does well Zach sometimes turns cheeky
-(*¡Las acertaste todas! ¡Muy sexy!*). At the end of a round he gives a line that fits the score, and reads it aloud.
+(*¡Las acertaste todas! ¡Muy sexy!*). His hello on the home screen fits the moment: the time of
+day, how long since the last round, a streak to keep, or new words waiting, mixed with everyday
+lines and an Austin FC *¡Listos Verde!* At the end of a round he gives a line that fits the score, and reads it aloud.
 
 **Progress** tracks accuracy by word type (verbs, nouns, adjectives, phrases), by topic and by
 direction, the most-missed words, and three kinds of small slip: missing accents, el/la

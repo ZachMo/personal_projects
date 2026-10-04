@@ -1374,7 +1374,7 @@ function mountShared(rows) {
     ENTRIES.splice(ENTRIES.indexOf(e), 1);
     e.topic.entries.splice(e.topic.entries.indexOf(e), 1);
   }
-  for (const r of rows) addEntry(topicFor(r.section || SHARED_COURSE, r.list), r.es, r.en, { shared: r.id, owner: r.device_hash });
+  for (const r of rows) addEntry(topicFor(r.section || SHARED_COURSE, r.list), r.es, r.en, { shared: r.id, owner: r.device_hash, madeAt: r.made_at });
 }
 mountShared(S.shared);
 let onWordsChanged = null;   // the open screen sets this to repaint when the shared list changes
@@ -1382,7 +1382,7 @@ async function syncWords() {
   try {
     const rows = [];
     for (let from = 0; ; from += 1000) {
-      const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?select=id,section,list,es,en,device_hash&order=id`, { headers: { ...cloudHead(), Range: `${from}-${from + 999}` } });
+      const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?select=id,section,list,es,en,device_hash,made_at&order=id`, { headers: { ...cloudHead(), Range: `${from}-${from + 999}` } });
       if (!r.ok) throw new Error(r.status);
       const page = await r.json();
       rows.push(...page);
@@ -1594,9 +1594,40 @@ const SAY = {
     '¡Ay, mi amor, me vuelves loco cuando hablas así!', '¡Qué lista eres! Eso me pone mucho.', '¡Esta noche lo celebramos, guapa!', '¡La alumna más guapa de toda la clase!'],
   perfect: ['¡Las acertaste todas! ¡Muy sexy!', '¡Todas bien! ¡Qué sexy eres!', '¡Perfecta, como siempre!'],
   spoken: ['¡Me gusta cuando me hablas en español!', '¡Dímelo otra vez en español, por favor!', '¡Qué bonito suena en tu boca!'],
-  hello: ['¡Hola! ¿Practicamos un poco?', '¡Qué bueno verte! ¿Empezamos?', '¡Hola! Hoy es un buen día para aprender.', '¡Vamos a practicar juntos!'],
+  hello: ['¡Vamos a practicar juntos!', '¡Hola! ¿Practicamos un poco?', '¡Qué bueno verte! ¿Empezamos?', '¡Hola! Hoy es un buen día para aprender.',
+    '¡Listos Verde! ¡A practicar!', '¡Listos Verde! Hoy marcamos goles en español.'],
 };
 const any = a => a[Math.random() * a.length | 0];
+
+/* Zach's hello on the home screen fits the moment: the hour, how long since the
+   last round, a streak to keep, or new words waiting. Everyday lines mix in too. */
+function greeting() {
+  const h = new Date().getHours();
+  const lines = [];   // [weight, text]
+  const add = (w, list) => list.forEach(t => lines.push([w, t]));
+  add(1, SAY.hello);
+  add(1.2, h < 5 ? ['¿Practicando a estas horas? ¡Qué dedicación!', '¿No puedes dormir? Practica conmigo.', 'Una rondita de medianoche… muy sexy.']
+    : h < 12 ? ['¡Buenos días! ¿Un cafecito y unas palabras?', '¡Buenos días, guapa! Empecemos el día en español.']
+    : h < 19 ? ['¡Buenas tardes! ¿Una rondita rápida?', '¡Buenas tardes! Hora de un descanso en español.']
+    : ['¡Buenas noches! Unas palabras antes de dormir.', '¡Buenas noches, guapa! ¿Practicamos un ratito?']);
+  const last = S.sessions[0] && S.sessions[0].at;
+  if (!last) add(3, ['¡Hola! Soy Zach, tu entrenador. ¡Vamos a practicar juntos!']);
+  else {
+    const days = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(last).setHours(0, 0, 0, 0)) / 864e5);
+    if (days === 0) add(1.5, ['¡Otra vez por aquí! ¡Me encanta!', '¿Otra ronda? ¡Así me gusta!']);
+    else if (days === 1) add(1.5, ['¡Hola de nuevo! ¿Seguimos donde lo dejamos?']);
+    else if (days < 7) add(3, [`¡Te extrañé! Hace ${days} días que no practicamos.`]);
+    else add(4, ['¡Por fin volviste! Te extrañé muchísimo.', `¡${days} días sin vernos! ¡Vamos a ponernos al día!`]);
+  }
+  const streak = dayStreak();
+  if (streak >= 2 && !S.days.includes(today())) add(3, [`¡Llevas ${streak} días seguidos! ¡No rompas la racha!`]);
+  // shared words from the last week she has not met yet
+  const fresh = uniq(ENTRIES.filter(e => e.madeAt && Date.now() - Date.parse(e.madeAt) < 7 * 864e5 && !(S.words[e.key] && S.words[e.key].seen))).length;
+  if (fresh) add(4, [fresh === 1 ? '¡Hay una palabra nueva esperándote!' : `¡Hay ${fresh} palabras nuevas esperándote!`]);
+  let r = Math.random() * lines.reduce((t, [w]) => t + w, 0);
+  for (const [w, t] of lines) if ((r -= w) <= 0) return t;
+  return SAY.hello[0];
+}
 let zachTimer = 0;
 const zachHost = document.querySelector('#zachPop .zach-host');
 function zach(text, mood = 'happy', ms = 2300) {
@@ -1813,8 +1844,7 @@ function renderHome() {
     <section class="hero">
       ${zachSVG('happy')}
       <div class="bubble-static">
-        <h1 class="serif">${esc(any(SAY.hello))}</h1>
-        <p>Flip flashcards or race the clock in Match. I'll be cheering you on.</p>
+        <h1 class="serif">${esc(greeting())}</h1>
         <div class="chips-row">
           ${streak ? `<span class="pill">🔥 ${streak}-day streak</span>` : ''}
           <span class="pill">⭐ ${practice} to practice</span>

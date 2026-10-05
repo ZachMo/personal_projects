@@ -12,7 +12,7 @@ folder holds working files, such as class handouts, and is kept out of git.
 
 ## fall/fall.html
 
-Four small games for a phone, played with one thumb. The page is a full-screen app
+Five small games for a phone, all but one played with one thumb. The page is a full-screen app
 shell: a home list, a settings screen and one canvas the games draw into. Nothing leaves
 the browser. Best scores and settings live in localStorage.
 
@@ -205,6 +205,87 @@ faster does not make you nimbler.
 
 A bot that steers for the widest opening gets about 180 m and has reached 570.
 Mashing the controls gets about 60.
+
+### Frisbee Fall
+
+Disc golf in first person, in a 3D park. Six holes, par 23, and none of them can be
+reached in one throw. You stay where you threw from and turn to watch the disc go,
+zooming in as it gets further away. When it stops, the view fades and you are standing
+where it landed, facing the basket.
+
+The park is drawn with WebGL by a small renderer inside the page, since the page has no
+dependencies: one shader, vertex colours, a sun, and haze that fades the far trees into
+the sky. Trees, the basket, the cars and the disc are low-poly shapes built when a hole
+loads. A disc 80 m away is smaller than a pixel, so the flight also gets a trail, a dot
+and a shadow on the ground, drawn on the 2D canvas over the 3D one.
+
+**The throw** takes three things:
+
+- **Angle**: the pad in the corner. Drag up and down for the launch angle, and left and
+  right to lean the disc onto hyzer or anhyzer. The disc in your hand leans with it.
+  Double tap the pad to go back to flat.
+- **Power**: hold the disc button and pull down. Let go to throw.
+- **Spin**: while you hold the button, swipe left or right with a second finger. Right
+  is clockwise, a right-handed backhand. Left is anticlockwise, a forehand. With a mouse,
+  flick sideways across the button first, then pull. Spin goes back to nothing after
+  every throw.
+
+Drag anywhere else to look around and aim. Hold a finger down during a flight to watch
+it at triple speed. On a keyboard: arrows aim, W and S set the angle, Q and E the lean,
+Z and X the spin, and holding space builds power until you let go.
+
+**The flight is a model, not a canned curve.** The disc is a wing: lift and drag both
+depend on the angle of attack. The air also gives it a pitching moment. On a spinning
+disc a pitching moment does not pitch it. It rolls it, the way a top leans, at a rate of
+moment ÷ (inertia × spin). Fast and nose-down early in a flight, a driver rolls a little
+away from the hand: that is the turn. Slow and nose-up at the end, it rolls hard the
+other way: that is the fade. Wind is real wind, so a headwind makes a disc turn more.
+
+Spin is what stops it rolling, so it matters:
+
+| driver, full power, 10°, flat | distance | ends up |
+|---|---|---|
+| full spin | 111 m | an S: out right, back to the middle |
+| 40% spin | 63 m | rolls over early and drops |
+| full spin, 20° hyzer | 92 m | 24 m left |
+| full spin, 20° anhyzer | 69 m | 16 m right |
+
+| full power, full spin | distance |
+|---|---|
+| **Driver** | 111 m |
+| **Mid** | 72 m |
+| **Putter** | 39 m |
+
+The disc picks itself when you arrive at a new spot (putter inside 22 m, mid inside
+60 m), and the bar at the bottom changes it.
+
+**What it lands on.** Fairway and the circle round the basket let it skid on. Rough
+grabs it. Sand stops it dead, and throwing out of sand costs a third of your power
+(rough costs a tenth). A disc that lands on its edge with pace rolls, curving the way it
+leans. Water and roads are out of bounds: one penalty throw, played from the last place
+the disc was over playable ground. Trunks are solid. A crown is a gamble: each metre
+inside one is a chance of a branch, which takes most of the pace and knocks it off line.
+The cars on the roads are solid too, and they honk.
+
+**The basket catches what reaches the chains.** A disc that arrives between the tray
+and the top band is caught if it is not going too hard. Square on, the chains hold up
+to 16 m/s. That limit falls toward the edge of the chains, so a fast disc that clips
+them goes straight through. The pole, the tray and the band all knock it away.
+
+| hole | | par | length |
+|---|---|---|---|
+| 1 | Meadow | 3 | 108 m, open, one bunker |
+| 2 | The Pond | 4 | 172 m, a pond across the middle, room on the left |
+| 3 | Crossing | 4 | 198 m, a road with traffic at 110 m, two bunkers by the basket |
+| 4 | The Tunnel | 4 | 172 m, a dogleg right through thick woods |
+| 5 | Long Water | 5 | 277 m, a long lake down the right, a road near the end |
+| 6 | Island | 3 | 90 m, a basket on an island, with a causeway round the left |
+
+The tees stand on a rise, as they often do, so the water and the road ahead look like
+water and road and not like a line on the horizon. The course is the same every round,
+and so is the wind on each hole, so the best score means something.
+
+A bot that tries every disc, power and line before each throw goes round in 17.
 
 ## spartan-brawl/spartan-brawl.html
 

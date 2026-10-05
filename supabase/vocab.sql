@@ -1,4 +1,4 @@
--- Shared word list for spanish-vocab/spanish-vocab.html.
+-- Shared word list for spanish-vocab.html.
 -- Run once: supabase db query --linked -f supabase/vocab.sql   (safe to run again)
 
 create table if not exists public.vocab_words (

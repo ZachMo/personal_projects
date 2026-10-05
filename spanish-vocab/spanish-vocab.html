@@ -1898,8 +1898,10 @@ function renderHome() {
     } else {
       el.innerHTML = `<div class="pool-note"><b>${list.length}</b> word${list.length === 1 ? '' : 's'} ready${!p.showAll && known ? ` · ${known} you know ${known === 1 ? 'is' : 'are'} hidden` : ''}.</div>`;
     }
-    $$('[data-play]').forEach(b => b.disabled = !list.length || (b.dataset.play === 'match' && matchable(list).length < 6));
-    if (list.length && matchable(list).length < 6) el.firstChild.insertAdjacentHTML('beforeend', ' Match needs at least 6 words.');
+    const forMatch = matchable(matchCandidates()).length;
+    $$('[data-play]').forEach(b => b.disabled = b.dataset.play === 'match' ? forMatch < 6 : !list.length);
+    if (forMatch < 6) el.firstChild.insertAdjacentHTML('beforeend', ' Match needs at least 6 words in your topics.');
+    else if (matchable(list).length < 6) el.firstChild.insertAdjacentHTML('beforeend', ' Match fills in with words you know.');
   };
   const paintOpts = () => {
     const n = buildPool().list.length;
@@ -1950,7 +1952,7 @@ function startFlash(custom) {
   else { const { list } = buildPool(); cards = pick(list, p.count || list.length); }
   if (!cards.length) { go('home'); return; }
   const session = { mode: 'flash', items: [], start: Date.now() };
-  let i = 0, streak = 0, phase = 'ask', dir = 'en2es', judged = null, rec = null, autoNext = 0;
+  let i = 0, streak = 0, phase = 'ask', dir = 'en2es', judged = null, rec = null, autoNext = 0, lastZach = -9;
 
   app.innerHTML = `<div class="screen">
     <div class="game-head">
@@ -2162,21 +2164,28 @@ function startFlash(custom) {
       card.classList.remove('glow'); void card.offsetWidth; card.classList.add('glow');
       sfx('right');
       const s = $('#streak'); paintStreak(); s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop');
-      if (kind === 'accent' || kind === 'typo') zach(any(SAY[kind]), 'kind');
-      else if (streak >= 3 && (streak === 3 || streak % 5 === 0)) {
-        zach(streak >= 5 && Math.random() < .4 ? any(SAY.cheeky) : any(SAY.streak(streak)), 'grin', 2800);
-        if (streak >= 5) confetti(40);
+      if (streak >= 5 && streak % 5 === 0) {
+        say(true, Math.random() < .4 ? any(SAY.cheeky) : any(SAY.streak(streak)), 'grin');
+        confetti(40);
       }
-      else if (p.answer === 'speak' && kind === 'exact' && Math.random() < .3) zach(any(SAY.spoken), 'grin', 2600);
-      else if (Math.random() < .4) zach(any(SAY.right), 'happy', 1700);
+      else if (kind === 'accent' || kind === 'typo') { if (Math.random() < .5) say(false, any(SAY[kind]), 'kind'); }
+      else if (p.answer === 'speak' && kind === 'exact' && Math.random() < .2) say(false, any(SAY.spoken), 'grin');
+      else if (Math.random() < .2) say(false, any(SAY.right), 'happy');
     } else {
       const was = streak; streak = 0; paintStreak();
       card.classList.add('wrong');
       const sc = $('.scene'); sc.classList.remove('shake'); void sc.offsetWidth; sc.classList.add('shake');
       sfx('wrong');
-      if (kind === 'gender') zach(any(SAY.gender), 'kind');
-      else if (was >= 3 || Math.random() < .55) zach(any(SAY.wrong), 'kind');
+      if (kind === 'gender') { if (Math.random() < .6) say(false, any(SAY.gender), 'kind'); }
+      else if (was >= 5) say(true, any(SAY.wrong), 'kind');   // a long streak just broke: always cheer her on
+      else if (Math.random() < .3) say(false, any(SAY.wrong), 'kind');
     }
+  }
+  // Zach waits at least 3 cards between pop-ups, unless the moment is big (force).
+  function say(force, text, mood) {
+    if (!force && i - lastZach < 3) return;
+    lastZach = i;
+    zach(text, mood);
   }
 
   function next() {
@@ -2211,12 +2220,20 @@ function matchable(list) {
   }
   return out;
 }
-function startMatch() {
+// Match needs six words. When fewer are left to practice, it fills in with words she already
+// knows from her chosen topics, then with any word from them.
+function matchCandidates() {
   const { list } = buildPool();
+  const inList = new Set(list.map(e => e.key));
+  const rest = buildPool(Object.assign({}, S.prefs, { showAll: true })).list.filter(e => !inList.has(e.key));
+  const known = shuffle(rest.filter(e => statusOf(e) === 'known')), other = shuffle(rest.filter(e => statusOf(e) !== 'known'));
+  return [...pick(list, list.length), ...known, ...other];
+}
+function startMatch() {
   // choose 6 words whose Spanish and English are all different, so every pair has one answer
   const chosen = [];
   const seenEs = new Set(), seenEn = new Set();
-  for (const e of pick(list, list.length)) {
+  for (const e of matchCandidates()) {
     const a = norm(e.es), b = norm(e.en);
     if (seenEs.has(a) || seenEn.has(b)) continue;
     seenEs.add(a); seenEn.add(b); chosen.push(e);

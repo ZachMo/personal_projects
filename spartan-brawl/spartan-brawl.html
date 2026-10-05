@@ -918,10 +918,14 @@ function navigate(S, p, gx, gy) {
       if (s.thin) {
         want = Math.abs(best.cx - p.x) > 6 ? Math.sign(best.cx - p.x) : 0;
         if (p.onGround && Math.abs(best.cx - p.x) < 50) jump = true;
-      } else {
+      } else { // a solid block: climb up beside it, and only step over once your feet clear the top
         const edge = best.cx < s.x + s.w / 2 ? s.x - 8 : s.x + s.w + 8;
-        if (p.x > s.x - 6 && p.x < s.x + s.w + 6 && p.y > s.y + s.h) want = Math.sign(edge - p.x) || 1;
-        else { want = Math.sign(best.cx - p.x); if (p.onGround && Math.abs(p.x - edge) < 36) jump = true; }
+        const outside = p.x <= s.x - HALF - 1 || p.x >= s.x + s.w + HALF + 1;
+        if (p.y - 2 > s.y) {
+          if (!outside) want = Math.sign(edge - p.x) || 1; // get out from under it
+          else if (p.onGround) { want = Math.abs(p.x - edge) > 6 ? Math.sign(edge - p.x) : 0; if (Math.abs(p.x - edge) < 20) jump = true; }
+          else want = 0; // rising straight up beside it
+        } else want = Math.sign(best.cx - p.x);
       }
       if (!p.onGround && p.vy > -0.5 && p.y > s.y - 6 && p.airJumps > 0) jump = true;
     }
@@ -932,7 +936,7 @@ function navigate(S, p, gx, gy) {
 function botInput(S, p) {
   const I = Object.assign({}, NO_INPUT);
   if (p.out || p.dead || S.phase !== 'play') return I;
-  const b = BOT[p.id] || (BOT[p.id] = { jumpHold: 0, shieldT: 0, charge: 0, prev: NO_INPUT, lastX: p.x, dropSeq: 0, hist: [], err: 0 });
+  const b = BOT[p.id] || (BOT[p.id] = { jumpHold: 0, shieldT: 0, charge: 0, prev: NO_INPUT, lastX: p.x, dropSeq: 0, hist: [], err: 0, stuck: 0, lastWant: 0 });
   const M = S.map, taps = {}, K = BOT_SKILL[S.skill] || BOT_SKILL.normal;
   // A CPU sees everyone else where they were K.react ticks ago, the way a person reacts late.
   b.hist.push(S.players.map(q => [q.x, q.y]));
@@ -987,7 +991,10 @@ function botInput(S, p) {
         if (ahead) wantJump = true; else want = 0;
       }
     }
-    if (p.onGround && want && Math.abs(p.x - b.lastX) < 0.05) wantJump = true; // blocked by a wall
+    // Blocked by a wall: pushing the same way for a quarter second without moving. (Just starting to
+    // walk also shows no movement for a tick, which used to make CPUs hop every time they set off.)
+    b.stuck = p.onGround && want && want === b.lastWant && Math.abs(p.x - b.lastX) < 0.05 ? b.stuck + 1 : 0;
+    if (b.stuck > 15) { wantJump = true; b.stuck = 0; }
 
     if (t) {
       const v = seen(t), dx = v.x - p.x, dy = v.y - p.y, adx = Math.abs(dx);
@@ -995,9 +1002,9 @@ function botInput(S, p) {
       const level = Math.abs(dy + b.err) < 10, diag = adx > 24 && adx < 360 && Math.abs(Math.abs(dyc) - adx) < 10;
       const aligned = level || diag, facing = p.face === Math.sign(dx);
       b.aimDir = level ? 0 : diag ? Math.sign(dyc) : 0;
-      // Can't line up a shot from here: close in, and hop up if they stand a little higher.
-      if (!aligned && !want && adx > 20 && !pick) want = Math.sign(dx);
-      if (!aligned && dy < -8 && p.onGround && Math.random() < 0.05) wantJump = true;
+      // Can't line up a shot from here: walk toward them, even if that is closer than we like. A small
+      // step in the way gets climbed by the stuck-against-a-wall rule. (Hopping in place never helps.)
+      if (!aligned && adx > 20 && !pick && Math.abs(dy) < 60) want = Math.sign(dx);
       if (aligned && !facing && !want && adx < 400) want = Math.sign(dx);
       if (wt === 'rifle' && aligned && facing && adx < 330 && (S.tick + p.id * 13) % 60 < K.duty * 60) I.fire = true;
       if (wt === 'shotgun' && aligned && facing && adx < 80) I.fire = true;
@@ -1021,7 +1028,7 @@ function botInput(S, p) {
       }
     }
   }
-  b.lastX = p.x;
+  b.lastX = p.x; b.lastWant = want;
 
   if (b.shieldT > 0) { b.shieldT--; I.shield = true; want = 0; I.fire = false; }
   if (want > 0) I.right = true; else if (want < 0) I.left = true;

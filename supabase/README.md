@@ -84,7 +84,7 @@ Par is worked out once per day and kept in `daily_par`.
 
 # The shared word list
 
-Words added on `spanish-vocab/spanish-vocab.html` go into `vocab_words`, so every visitor gets them. Each word
+Words added on `spanish-vocab.html` go into `vocab_words`, so every visitor gets them. Each word
 has a `section` (such as High Intermediate 2) and a `list`, its topic within that section.
 
 - **Reading:** the page reads the table with the public key, 1,000 rows at a time, and keeps the last copy in

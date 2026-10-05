@@ -4,13 +4,15 @@ Eleven pages. Each one is a single HTML file with no build step and no dependenc
 of them in a browser. Only three talk to the network: the Hügelland leaderboard, Spartan
 Brawl when you play it online, and Practica con Zach reads and adds shared words.
 
-Each project lives in its own folder, with its icons and images beside it. Hügelland stays at
-the root for now, because the leaderboard server downloads `hugelland.html` from that address
-to check scores. The old root addresses (`fall.html`, `spartan-brawl.html` and the rest) are
-small redirect pages, so old links and bookmarks still land in the right place. Each `source/`
-folder holds working files, such as class handouts, and is kept out of git.
+Every page lives at the root, with its icons and images beside it, so each one has a short
+address. For a while each project had its own folder; those folder addresses are now small
+redirect pages, so links shared in that time still land in the right place. A `source/` folder
+holds working files, such as class handouts, and is kept out of git.
 
-## fall/fall.html
+The index lists seven of the pages. Manor, Isabella y el Toro, Two Marker Studio and Metro City
+are still here and still work, but are not linked from it.
+
+## fall.html
 
 Five small games for a phone, all but one played with one thumb. The page is a full-screen app
 shell: a home list, a settings screen and one canvas the games draw into. Nothing leaves
@@ -287,7 +289,7 @@ and so is the wind on each hole, so the best score means something.
 
 A bot that tries every disc, power and line before each throw goes round in 17.
 
-## spartan-brawl/spartan-brawl.html
+## spartan-brawl.html
 
 A retro platform brawler in the spirit of old Halo multiplayer and Smash Bros. Play against CPUs
 on one computer, or online with up to three friends.
@@ -590,7 +592,7 @@ about 167 and fits every building about four games in five. A bot that only pack
 plays at random scores about 76. Over 300 decks every deck got a bridge, no building went past
 its limit on copies, and the only pairs were wells, mines, farms, lumber mills and windmills.
 
-## mexico-elections/mexico-elections.html
+## mexico-elections.html
 
 A map of Mexican presidential elections, 2000–2024.
 
@@ -632,7 +634,7 @@ The chart colours follow party convention, but I ran them through a colourblind
 separation check in both light and dark themes. MORENA's dark-mode colour is shifted,
 because the obvious crimson sat too close to Movimiento Ciudadano's orange.
 
-## map-trivia/map-trivia.html
+## map-trivia.html
 
 Five maps to name from memory: the 32 Mexican states, the 50 US states, 44 European
 countries, 54 African countries, and India's 36 states and union territories.
@@ -640,7 +642,7 @@ countries, 54 African countries, and India's 36 states and union territories.
 Easy mode gives you four choices. Hard mode makes you type the name. Miss five and you
 start over. Each map keeps its own best score in the browser. Pinch to zoom, drag to pan.
 
-## metro-city/metro_city.html
+## metro_city.html
 
 A transit sim that runs in real time.
 
@@ -652,7 +654,7 @@ million people. A neglected one thins out.
 
 There is no score and no way to lose. Pause it, speed it up, and it saves as you go.
 
-## manor/manor.html
+## manor.html
 
 A daily game. One run, two or three minutes.
 
@@ -681,7 +683,7 @@ builds a manor worth 38 and gets in **0%** of the time. A player who works out t
 are the gate gets in 36% of the time but only scores 21. A player doing both scores 45 and
 gets in 68%.
 
-## lineup-card/lineup-card.html
+## lineup-card.html
 
 A lineup builder for youth baseball coaches. The chart puts the innings across the top and
 the positions down the side, with a bench row for each player who sits. Print it and take it
@@ -714,7 +716,7 @@ link** puts the roster in the URL fragment, so a coach can send the team to a ph
 assistant coach. The fragment never reaches the server, and the page removes it from the
 address bar once it loads the team.
 
-## isabella-y-el-toro/isabella-y-el-toro.html
+## isabella-y-el-toro.html
 
 A concept page for a game that is not built yet: a Spanish-learning adventure for kids
 aged 8 to 14, planned for RPG Maker MZ. Isabella gets lost in Pamplona during San Fermín,
@@ -729,7 +731,7 @@ MZ's screen size, embedded in the page.
 The fonts are embedded too, so the page makes no network calls. It is built from a separate
 project folder by `tools/build_concept_page.py`, and this file is a copy of its standalone output.
 
-## two-marker/two-marker.html
+## two-marker.html
 
 A planner for coloring a page with only two markers: a light one for where the light falls
 and a dark one for shadow, each laid down in one to four passes for deeper tones. Open a
@@ -748,7 +750,7 @@ legend lists each tone to lay down and how much of the page it covers. **Save re
 makes a sheet with the colored page and that list, to keep beside the real page while
 coloring. Settings and lights stay in localStorage. The image never leaves the browser.
 
-## spanish-vocab/spanish-vocab.html
+## spanish-vocab.html
 
 Practica con Zach: Spanish vocabulary practice in the style of Quizlet, with Zach as a coach.
 The words come from three class lists (High Intermediate 2, Advanced 1 and Advanced 2), about

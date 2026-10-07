@@ -294,7 +294,7 @@ A bot that tries every disc, power and line before each throw goes round in 17.
 A retro platform brawler in the spirit of old Halo multiplayer and Smash Bros. Play against CPUs
 on one computer, or online with up to three friends.
 
-Up to four spartans fight. W A S D move and jump; J shoots, K is melee, L is the shield and U
+Up to four spartans fight. W A S D or the arrow keys move and jump; J shoots, K is melee, L is the shield and U
 throws a grenade. The lobby shows the keys and the special moves as pictures, not text.
 Each player picks an armor color, or each team does in 2 v 2. A match is either 5 lives each,
 last one standing, or most kills in three minutes with sudden death on a tie. If every person in a

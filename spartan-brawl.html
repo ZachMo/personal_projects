@@ -72,6 +72,7 @@
   .howto { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-top: 16px; }
   .ctl { display: flex; gap: 18px; padding: 10px; background: #0b0e18; border: 2px solid var(--line); }
   .keyrows > div { display: flex; justify-content: center; }
+  .keyrows > .keyalt { color: var(--dim); font-size: 11px; margin-top: 4px; }
   .keyrows > div:first-child { justify-content: flex-start; padding-left: 26px; }
   .keyrows:first-child > div:first-child { justify-content: center; padding-left: 0; }
   .cap { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
@@ -159,9 +160,10 @@
     <div id="slots"></div>
     <div class="howto">
       <div class="ctl">
-        <div class="keyrows" aria-label="Move with W A S D">
+        <div class="keyrows" aria-label="Move with W A S D or the arrow keys">
           <div><span class="cap"><b>W</b><i>↑</i></span></div>
           <div><span class="cap"><b>A</b><i>←</i></span><span class="cap"><b>S</b><i>↓</i></span><span class="cap"><b>D</b><i>→</i></span></div>
+          <div class="keyalt">or the arrow keys</div>
         </div>
         <div class="keyrows">
           <div><span class="cap" title="Grenade" aria-label="U: grenade"><b>U</b><canvas data-icon="nade" width="16" height="12"></canvas></span></div>
@@ -1056,7 +1058,7 @@ function dummyInput(S, p) {
 // Input
 // ============================================================================
 const KEYMAP = {
-  A: { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'],
+  A: { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], // WASD or arrows
        fire: ['KeyJ'], melee: ['KeyK'], shield: ['KeyL'], nade: ['KeyU'] },
 };
 const GAME_KEYS = new Set(Object.values(KEYMAP).flatMap(m => Object.values(m).flat()));

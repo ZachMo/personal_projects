@@ -92,7 +92,7 @@ has a `section` (such as High Intermediate 2) and a `list`, its topic within tha
 - **Writing:** only the `vocab` function writes. The table has row level security and no insert policy, so the
   public key cannot add a row directly.
 - **Checks:** anyone may add words, so the function checks every word. Spanish can be up to 120 characters, English
-  up to 160 and a list name up to 60. One request can add up to 100 words, and one browser up to 300 words an
+  up to 160 and a list name up to 60. One request can add up to 100 words, and one browser up to 3,000 words an
   hour. The whole list stops at 20,000 words. A pair already in the list (same words, ignoring case and
   punctuation) is skipped.
 - **Deleting:** each browser keeps a random id. The table stores only its SHA-256 hash beside each word, and the

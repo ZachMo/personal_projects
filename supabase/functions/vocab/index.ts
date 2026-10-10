@@ -12,8 +12,8 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const PER_REQUEST = 100;     // words in one paste
-const PER_HOUR = 300;        // words one browser may add in an hour
+const PER_REQUEST = 100;     // words in one request; the page sends a long paste in batches of this size
+const PER_HOUR = 3000;       // words one browser may add in an hour: room for several whole class lists
 const TOTAL = 20000;         // the whole list; past this, adding stops until someone looks
 
 const cors = {
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
 
   const since = new Date(Date.now() - 3600e3).toISOString();
   const recent = await db.from("vocab_words").select("id", { count: "exact", head: true }).eq("device_hash", hash).gte("made_at", since);
-  if ((recent.count ?? 0) + body.words.length > PER_HOUR) return bad("that is a lot of words for one hour; try again later", 429);
+  if ((recent.count ?? 0) + body.words.length > PER_HOUR) return bad(`one browser can add ${PER_HOUR} words an hour; try the rest later`, 429);
   const all = await db.from("vocab_words").select("id", { count: "exact", head: true });
   if ((all.count ?? 0) >= TOTAL) return bad("the shared list is full", 507);
 

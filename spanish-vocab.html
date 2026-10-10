@@ -2626,17 +2626,27 @@ function renderLibrary() {
     const { section, list } = target();
     if (!section || !list) return;
     btn.disabled = true; btn.textContent = 'Adding…';
+    // Long lists go up 100 at a time, with progress on the button. If a batch fails, the words
+    // already sent stay added; the box keeps everything, and a retry skips what is now in the library.
+    let added = 0, sent = 0;
     try {
-      let added = 0;
-      for (let i = 0; i < fresh.length; i += 100) added += (await shareWords(section, list, fresh.slice(i, i + 100))).added.length;
+      for (let i = 0; i < fresh.length; i += 100) {
+        btn.textContent = `Adding… ${Math.min(i + 100, fresh.length)} of ${fresh.length}`;
+        added += (await shareWords(section, list, fresh.slice(i, i + 100))).added.length;
+        sent = Math.min(i + 100, fresh.length);
+      }
       toast(added ? `¡Listo! ${added} word${added === 1 ? '' : 's'} added to “${list}”.` : 'Someone already added those words.');
       text.value = '';
       Object.assign(libState, { q: '', filter: 'all', course: section, addOpen: true, lastSection: section, lastList: list });
       renderLibrary();
     } catch (e) {
-      // keep what they typed so nothing is lost
-      toast(`Could not add the words: ${e.message}. Check your connection and try again.`);
+      Object.assign(libState, { lastSection: section, lastList: list });
+      const msg = sent
+        ? `Added ${sent} of ${fresh.length} words, then: ${e.message}. Tap Add again to send the other ${fresh.length - sent}.`
+        : `Could not add the words: ${e.message}. Check your connection and try again.`;
+      toast(msg);
       preview();
+      $('#addPreview').insertAdjacentHTML('afterbegin', `<div class="skip" style="margin-bottom:6px">${esc(msg)}</div>`);
     }
   };
 

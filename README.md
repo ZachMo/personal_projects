@@ -1,15 +1,15 @@
 # personal_projects
 
-Eleven pages. Each one is a single HTML file with no build step and no dependencies. Open any
-of them in a browser. Only three talk to the network: the Hügelland leaderboard, Spartan
-Brawl when you play it online, and Practica con Zach reads and adds shared words.
+Twelve pages. Each one is a single HTML file with no build step and no dependencies. Open any
+of them in a browser. Only four talk to the network: the Hügelland leaderboard, Spartan
+Brawl and Burger Barons when you play them online, and Practica con Zach reads and adds shared words.
 
 Every page lives at the root, with its icons and images beside it, so each one has a short
 address. For a while each project had its own folder; those folder addresses are now small
 redirect pages, so links shared in that time still land in the right place. A `source/` folder
 holds working files, such as class handouts, and is kept out of git.
 
-The index lists seven of the pages. Manor, Isabella y el Toro, Two Marker Studio and Metro City
+The index lists eight of the pages. Manor, Isabella y el Toro, Two Marker Studio and Metro City
 are still here and still work, but are not linked from it.
 
 ## fall.html
@@ -288,6 +288,105 @@ water and road and not like a line on the horizon. The course is the same every 
 and so is the wind on each hole, so the best score means something.
 
 A bot that tries every disc, power and line before each throw goes round in 17.
+
+## burger-barons.html
+
+A fan-made take on the board game Food Chain Magnate, for 2 to 5 players. You run a 1950s
+restaurant chain: hire people, advertise to make the town hungry, then feed it. Play the
+computer, or friends online. The map and the art are new. The rules follow the rulebook.
+
+**The front page is a game box.** It sits closed on a checked tablecloth. Click the lid and it
+lifts, slides off and lies beside the box, while the view moves in over the open box. It is
+the same box the whole time: only CSS classes change, so nothing cuts. A click on the lid puts
+it back by the same path. Inside, each well of the insert holds one thing to pick up: the
+rulebook, a hand of cards for a practice game, map tiles and money for a real game, and a
+postcard for playing friends online. A saved game shows as a bookmark. The title, the banner
+words and the seal on the lid are type laid over the picture, so they stay sharp.
+
+**Things arrive the way real ones would.** Pick something up and the box slides away while a
+paper placemat is laid down. The name tag is stuck on, pawns drop into their seats, and the
+rule cards are dealt from off the table. When a game starts, the board comes down folded and
+its right half flaps open, the player chips are set down, and the side panel slides in. A
+person you hire is dealt into your hand, and one you train flips over. Help, dinnertime and the
+final scores slide in like paper; dinnertime is a guest check. A redraw part-way through the
+opening carries on from where it was, and the computer waits until the table is laid. All of
+it switches off for anyone who asks their device for reduced motion.
+
+**Three kinds of game.** *First game* and *Second game* are the rulebook's learning games:
+$75 a player in the bank, no reserve cards, no salaries, and the game ends when the bank first
+runs dry. The first has no milestones and the second has them. *Full game* is the real thing:
+$50 a player, secret reserve cards, $5 salaries, and the bank must break twice.
+
+**A round** has the seven phases of the board game: restructuring, order of business, working
+9 to 5, dinnertime, payday, marketing and clean up. All 32 jobs and all 18 milestones are in,
+with the card counts, the training paths and the one-per-player jobs taken from the card list
+and the chart on page 5 of the rulebook.
+
+**The Coach.** With tips on, a box explains the step you are on and suggests one move, with a
+gold mark on the map where it matters. The suggestion is the move the computer would make in
+your seat. One button takes it. Tips are on by default and the choice is remembered. Under the
+suggestion it lists plain facts about the town: which houses you are the best deal for, which
+prefer a rival and by how much, and what a house wants that you cannot supply.
+
+**Relaxed and Sharp rivals.** The Coach and the computer share one brain, so following every
+tip against Sharp rivals is a mirror match: over 60 games the Coach's seat won about as often
+as chance. Relaxed rivals hire in two rounds of three and train every other round. Against
+them the Coach's seat won 60% to 90% of games, depending on the kind of game.
+
+**Help** has five pages: a first game guide with an opening to follow round by round, a
+strategy page on how real players win, the rules in plain words with a worked dinnertime example, a chart of every job and what it trains
+into, and the milestones.
+
+**The look** borrows the feel of the box and copies none of it: a brick-red starburst, chunky
+slanted headings over a serif text face, black name bands on pastel cards, and food and drink
+drawn as flat painted-wood shapes.
+
+**The card pictures** are in `barons-art/`, one for each job and one for the CEO, named by the
+job's key in the `EMP` table. They are 1950s-style ink drawings on white, made with an image
+generator from a shared style brief, so they are ours to publish. The page lays each one over
+the card's department color with a multiply blend, which turns the white paper into that
+color. The files there are 420 pixels wide. The full-size originals are in
+`source/barons-art/`, out of git.
+
+Three more pictures came from the same generator. `barons-art/box.jpg` is the lid of the box. The
+mascot, a burger in a top hat, is the tab icon (`burger-barons-icon-180.png` and `-512.png`)
+and sits beside the name in the game. `barons-art/winner.jpg` is on the final scores.
+`burger-barons-card.jpg` is the link preview: the box art with the title burst beside it, drawn
+in the browser at 1200 x 675 and saved as a screenshot.
+
+**The engine** is one block of plain JavaScript with no drawing and no network in it. The
+whole game is one JSON object. `act(G, player, move)` either changes it or returns the reason
+it refused. A solo game, an online host and the tests all call the same function.
+
+**The computer** plays by rules of thumb. It advertises near its own restaurants, makes what
+the houses want, hires what it lacks, and trains someone only when a dry run of dinnertime
+says the salary is well under its income. It hires errand boys for drinks its drivers cannot
+reach; without that, a town could fill with demand nobody could serve and the game never ended.
+
+**Online.** One player creates a game and gets a four-letter code and a link. The host's
+browser runs the game. A guest sends each move to the host, and the host sends back only what
+that guest may see, so secret picks stay secret. Moves are rare, so everything rides on the
+Supabase Realtime broadcast channel that Spartan Brawl uses for its handshake. There is no
+WebRTC here. A guest asks again every four seconds, so a lost message heals itself. If a
+guest leaves, the computer takes the seat. If the host leaves, the game ends.
+
+A solo game saves itself in localStorage after every move.
+
+**Where it differs from the box**
+
+- The map tiles are new. Each is 5 x 5 and roads leave through the middle of a side.
+- Every billboard, mailbox and radio takes one square.
+- A driver takes drinks from every source beside a road in range of one restaurant. There is
+  no route to trace, so a driver can collect in two directions at once.
+- You may do your actions in any order within your turn.
+- The game picks the entrance side of a restaurant, and nobody may pass on the first one.
+- A freezer keeps the first ten items; you do not choose which.
+- A milestone never runs out of cards.
+
+Tested with 150 computer-only games across the three kinds of game and 2 to 5 players, which
+all ran to the end with no refused move, and with screenshots from headless Chrome. Nothing
+has been clicked in a live browser by the author, and online play has not been tested between
+two real machines yet.
 
 ## spartan-brawl.html
 

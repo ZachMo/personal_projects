@@ -1,0 +1,1919 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Burger Barons</title>
+<meta name="description" content="A fan-made online take on the board game Food Chain Magnate. Play the computer or friends.">
+<meta name="theme-color" content="#a3403f">
+<link rel="icon" href="burger-barons-icon-180.png" sizes="180x180" type="image/png">
+<link rel="icon" href="burger-barons-icon-512.png" sizes="512x512" type="image/png">
+<link rel="apple-touch-icon" href="burger-barons-icon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Burger Barons">
+<meta property="og:title" content="Burger Barons">
+<meta property="og:description" content="A 1950s restaurant-chain strategy game. Play the computer, or up to four friends online.">
+<meta property="og:url" content="https://zachmo.github.io/personal_projects/burger-barons.html">
+<meta property="og:image" content="https://zachmo.github.io/personal_projects/burger-barons-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="675">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://zachmo.github.io/personal_projects/burger-barons-card.jpg">
+<style>
+  :root {
+    --cream: #fcefd5; --paper: #fff8ea; --ink: #1d1a17; --ink2: #5e554b; --red: #a3403f; --teal: #3f8f8c;
+    --mustard: #eebf45; --line: rgba(29,26,23,.2);
+    --display: "Futura", "Century Gothic", "Gill Sans", "Trebuchet MS", sans-serif;
+    --chunk: "Arial Black", "Impact", "Haettenschweiler", "Franklin Gothic Heavy", sans-serif;
+    --text: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --script: "Snell Roundhand", "Brush Script MT", "Segoe Script", cursive;
+  }
+  * { box-sizing: border-box; min-width: 0; }
+  html, body { margin: 0; }
+  body {
+    background: var(--cream) radial-gradient(rgba(29,26,23,.06) 1px, transparent 1.4px) 0 0 / 9px 9px;
+    color: var(--ink); font: 15px/1.45 var(--text); -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .gi { width: 1.15em; height: 1.15em; vertical-align: -0.22em; }
+  .chunk { font: italic 900 1em/1 var(--chunk); text-transform: uppercase; letter-spacing: .01em; }
+  .btn {
+    background: var(--paper); border: 2px solid var(--ink); border-radius: 999px; padding: 6px 14px; color: var(--ink);
+    font: 700 12px var(--display); box-shadow: 2px 2px 0 var(--ink); text-transform: uppercase; letter-spacing: .05em;
+  }
+  .btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); }
+  .btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn.red { background: var(--red); color: #fff; } .btn.teal { background: var(--teal); color: #fff; } .btn.gold { background: var(--mustard); }
+  .btn.on { background: var(--ink); color: var(--cream); }
+  .btn.sm { padding: 3px 9px; font-size: 11px; box-shadow: 1px 1px 0 var(--ink); }
+  .btn:disabled { opacity: .4; cursor: default; transform: none; box-shadow: 2px 2px 0 var(--ink); }
+  input, select { font: 14px var(--display); padding: 6px 9px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); color: var(--ink); }
+
+  /* the starburst the rulebook loves */
+  .burstw { display: inline-block; filter: drop-shadow(4px 4px 0 var(--ink)); }
+  .burst { display: inline-block; background: var(--red); color: var(--cream); clip-path: var(--burst); padding: 44px 60px; transform: rotate(-5deg); text-align: center; }
+  .burst b { display: block; font: italic 900 38px/0.95 var(--chunk); text-transform: uppercase; }
+  .burst i { display: block; font: 700 11px var(--display); letter-spacing: .26em; text-transform: uppercase; color: var(--mustard); margin-top: 8px; font-style: normal; }
+  .burst.sm { padding: 26px 40px; } .burst.sm b { font-size: 24px; }
+
+  /* home */
+  .home { max-width: 580px; margin: 0 auto; padding: 22px 16px 60px; text-align: center; }
+  /* The front page: a game box on a diner table. One box stays on screen the whole time. The lid lifts
+     off and lies beside it, the view moves in over the open box, and the pieces sit in its wells. */
+  .table { min-height: 100vh; padding: 10px 14px 40px; text-align: center; overflow: hidden;
+    background: conic-gradient(#f6ddd2 25%, #fcefd5 0 50%, #f6ddd2 0 75%, #fcefd5 0) 0 0 / 72px 72px; }
+  .boxscene { perspective: 1500px; display: flex; justify-content: center; padding: 1vh 0 12px; }
+  .gamebox { position: relative; width: min(94vw, 620px, calc((100vh - 70px) * .8)); aspect-ratio: 4 / 5; transform-style: preserve-3d;
+    transform: rotateX(26deg) rotateZ(-4deg) scale(.64); transition: transform .95s cubic-bezier(.5,0,.2,1); }
+  .gamebox:not(.is-open):not(.closing):hover { transform: rotateX(22deg) rotateZ(-2deg) scale(.66) translateY(-10px); transition-duration: .3s; }
+  .gamebox.is-open { transform: none; }
+  .gamebox.away { transform: translate(-70vw, -30vh) rotate(-14deg) scale(.3); opacity: 0; transition: transform .42s ease-in, opacity .42s; }
+  .gamebox.back { animation: boxback .55s cubic-bezier(.2,.8,.3,1); }
+  @keyframes boxback { from { transform: translate(-70vw, -30vh) rotate(-14deg) scale(.3); opacity: 0; } }
+  .gamebox .shadow { position: absolute; inset: 4% -3% -12% 3%; background: rgba(29,26,23,.3); filter: blur(18px); transform: translateZ(-50px); transition: opacity .9s; }
+  .gamebox.is-open .shadow { opacity: .55; }
+  .base { position: absolute; inset: 0; container-type: inline-size; background: #8a3534; border: 3px solid var(--ink); border-radius: 8px; padding: 3cqw; display: flex; flex-direction: column;
+    box-shadow: inset 0 0 0 .7cqw #6e2a29, inset 0 0 7cqw rgba(0,0,0,.4); pointer-events: none; }
+  .gamebox.is-open.settled .base { pointer-events: auto; }
+  .base h1 { margin: 1.4cqw 0 2.8cqw 30%; text-align: left; color: var(--cream); font: italic 900 5.2cqw/1 var(--chunk); text-transform: uppercase; text-shadow: .4cqw .4cqw 0 var(--ink); }
+  .base h1 small { display: block; font: 400 2.9cqw var(--text); text-transform: none; font-style: normal; color: #f3d6c6; text-shadow: none; margin-top: 1cqw; }
+  .wells { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 2.4cqw; }
+  /* each well of the insert holds one thing you can pick up */
+  .comp { position: relative; min-height: 0; background: #2a2420; border: 3px solid var(--ink); border-radius: 2.4cqw; padding: 1.6cqw; display: flex; flex-direction: column;
+    box-shadow: inset 0 1.6cqw 3.4cqw rgba(0,0,0,.65); color: var(--cream); font: inherit; }
+  .comp:hover { background: #3a302a; }
+  .comp .slot { position: relative; flex: 1; min-height: 0; display: block; }
+  .comp .thing { position: absolute; left: 50%; top: 50%; width: 150px; height: 160px; margin: -80px 0 0 -75px; display: block; transform: scale(var(--k, 1)); transition: transform .22s; }
+  .comp:hover .thing { transform: translateY(-9%) rotate(-3deg) scale(calc(var(--k, 1) * 1.08)); }
+  .comp:active .thing { transform: translateY(-16%) rotate(2deg) scale(calc(var(--k, 1) * 1.14)); }
+  .comp .lab { display: block; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 4px; padding: 1.1cqw 1.4cqw 1.3cqw; box-shadow: 2px 2px 0 var(--ink); transform: rotate(-1deg); }
+  .comp .lab b { display: block; font: italic 900 max(3.1cqw, 12px)/1.1 var(--chunk); text-transform: uppercase; color: var(--red); }
+  .comp .lab small { display: block; font-size: max(2.35cqw, 10px); line-height: 1.25; margin-top: .4cqw; }
+  .savedrow { margin-top: 2.4cqw; display: flex; align-items: center; gap: 2cqw; background: #2a2420; border: 3px solid var(--ink); border-radius: 2.4cqw; padding: 1.4cqw 2cqw; color: var(--cream); font: inherit; text-align: left; box-shadow: inset 0 1cqw 2.4cqw rgba(0,0,0,.65); }
+  .savedrow .lab { flex: 1; display: block; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 4px; padding: 1cqw 1.4cqw; }
+  .savedrow .lab b { font: italic 900 3cqw/1.1 var(--chunk); text-transform: uppercase; color: var(--red); margin-right: 1cqw; } .savedrow .lab small { font-size: 2.35cqw; }
+  .ribbon { width: 5.5cqw; height: 7.5cqw; background: var(--mustard); border: 2px solid var(--ink); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%); flex: none; }
+  .gamebox.opening .comp .thing { animation: rise .5s cubic-bezier(.3,1.5,.5,1) backwards; animation-delay: calc(var(--i) * 110ms + 620ms); }
+  @keyframes rise { from { transform: translateY(26%) scale(calc(var(--k, 1) * .6)); opacity: 0; } }
+  /* the lid */
+  .lid { position: absolute; inset: 0; padding: 0; border: 0; background: none; display: block; transform-style: preserve-3d; transform-origin: 0 0; transform: translateZ(2px); color: inherit; }
+  .lid > span { position: absolute; display: block; }
+  .lid-top { inset: 0; container-type: inline-size; border: 3px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--paper); }
+  .lid-top img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .lid-top > span { position: absolute; display: block; text-transform: uppercase; }
+  .lt-title { left: 4.5%; top: 26.5%; filter: drop-shadow(.9cqw .9cqw 0 var(--ink)); }
+  .lt-title .burst { padding: 8.4cqw 8cqw; } .lt-title .burst b { font-size: 7.6cqw; }
+  .lt-b1 { left: 9%; top: 12.2%; width: 40%; text-align: center; transform: rotate(-10deg); color: var(--cream); font: italic 900 3.5cqw/1 var(--chunk); }
+  .lt-b2 { left: 47.5%; top: 77.2%; width: 40%; text-align: center; transform: rotate(-24deg); color: var(--cream); font: italic 900 3.3cqw/1 var(--chunk); }
+  .lt-seal { left: 76%; top: 81.6%; width: 15%; text-align: center; color: var(--ink); font: 800 2.2cqw/1.1 var(--display); transform: rotate(-8deg); }
+  .lt-seal b { display: block; font: italic 900 5.4cqw/1 var(--chunk); }
+  .lid-front { left: 0; right: 0; top: 100%; height: 62px; background: #8a3534; border: 3px solid var(--ink); border-top: 0; border-radius: 0 0 6px 6px; transform-origin: top; transform: rotateX(-90deg);
+    color: var(--cream); font: italic 900 22px/60px var(--chunk); text-transform: uppercase; letter-spacing: .04em; }
+  .lid-side { top: 0; bottom: 0; left: 100%; width: 62px; background: #6e2a29; border: 3px solid var(--ink); border-left: 0; transform-origin: left; transform: rotateY(90deg); }
+  .gamebox.is-open.settled .lid { transform: translate(-7%, -6%) rotateZ(-13deg) scale(.27); transition: transform .2s; }
+  .gamebox.is-open.settled .lid:hover { transform: translate(-7%, -7.5%) rotateZ(-9deg) scale(.29); }
+  .gamebox.is-open .lid-top { box-shadow: 18px 22px 0 rgba(29,26,23,.4); }
+  .gamebox.opening .lid { animation: lidoff 1.1s cubic-bezier(.45,.05,.3,1) forwards; }
+  .gamebox.closing .lid { animation: lidoff 1.05s cubic-bezier(.45,.05,.3,1) reverse both; }
+  .gamebox.opening, .gamebox.closing { pointer-events: none; }
+  @keyframes lidoff {
+    0% { transform: translateZ(2px); }
+    9% { transform: translateZ(2px) rotateZ(-1.2deg); } 18% { transform: translateZ(2px) rotateZ(1.2deg); }
+    55% { transform: translateZ(240px) rotateX(-9deg) rotateZ(-3deg); }
+    100% { transform: translate(-7%, -6%) rotateZ(-13deg) scale(.27); }
+  }
+  @media (prefers-reduced-motion: reduce) { .gamebox, .gamebox *, .mat, .mat *, .intro *, .card, .modal > div { animation: none !important; transition: none !important; } }
+  /* the things in the wells */
+  .booklet { position: absolute; inset: 4px 18px 0 14px; background: var(--cream); border: 2.5px solid var(--ink); border-radius: 3px 8px 8px 3px; transform: rotate(-5deg); box-shadow: 3px 3px 0 #d8c7a4, 5px 5px 0 var(--ink); overflow: hidden; display: block; }
+  .booklet::before { content: ""; position: absolute; left: 9px; top: 0; bottom: 0; border-left: 2px dashed var(--line); }
+  .booklet img { position: absolute; left: 12%; bottom: -4%; width: 88%; mix-blend-mode: multiply; }
+  .booklet .burstw { position: absolute; left: 14px; top: 2px; filter: drop-shadow(2px 2px 0 var(--ink)); } .booklet .burst { padding: 12px 17px; } .booklet .burst b { font-size: 17px; }
+  .fan .mc { position: absolute; left: 30px; top: 12px; width: 92px; height: 128px; border: 2.5px solid var(--ink); border-radius: 7px; overflow: hidden; background: var(--paper); box-shadow: 2px 2px 0 var(--ink); transform-origin: 50% 120%; display: block; transition: transform .22s; }
+  .fan .mc i { display: block; height: 22px; background: var(--ink); } .fan .mc img { width: 100%; aspect-ratio: 1; object-fit: cover; object-position: 50% 0; display: block; mix-blend-mode: multiply; }
+  .fan .mc:nth-child(1) { transform: rotate(-20deg); } .fan .mc:nth-child(2) { transform: rotate(-3deg); } .fan .mc:nth-child(3) { transform: rotate(15deg); }
+  .comp:hover .fan .mc:nth-child(1) { transform: rotate(-32deg); } .comp:hover .fan .mc:nth-child(3) { transform: rotate(27deg); }
+  .bits svg.tile { position: absolute; width: 96px; height: 96px; border: 2.5px solid var(--ink); border-radius: 4px; box-shadow: 3px 3px 0 var(--ink); }
+  .bits svg.tile:nth-child(1) { left: 2px; top: 2px; transform: rotate(-9deg); } .bits svg.tile:nth-child(2) { left: 48px; top: 20px; transform: rotate(7deg); }
+  .bits .tok { position: absolute; width: 38px; height: 38px; filter: drop-shadow(2px 2px 0 var(--ink)); }
+  .note { position: absolute; width: 74px; height: 36px; background: #9cc59a; border: 2px solid var(--ink); border-radius: 3px; font: 800 15px/32px var(--display); color: #24512a; box-shadow: 2px 2px 0 var(--ink); text-align: center; display: block; }
+  .postcard { position: absolute; inset: 26px 2px 34px 6px; background: var(--paper); border: 2.5px solid var(--ink); border-radius: 3px; transform: rotate(-6deg); box-shadow: 4px 4px 0 var(--ink); display: block; }
+  .postcard img { position: absolute; right: 6px; top: 6px; width: 34px; height: 34px; border: 2px dashed var(--ink); padding: 2px; }
+  .postcard::before { content: ""; position: absolute; left: 10px; right: 52px; top: 16px; height: 44px; background: repeating-linear-gradient(var(--ink) 0 2px, transparent 2px 13px); opacity: .55; }
+  .postcard::after { content: "wish you were here!"; position: absolute; left: 10px; bottom: 8px; font: 700 15px var(--script); color: var(--red); }
+  svg.pawn { width: 34px; height: 46px; filter: drop-shadow(2px 2px 0 rgba(29,26,23,.5)); }
+
+  /* setting up: a paper placemat with real things on it */
+  .mat { max-width: 640px; margin: 8px auto 0; background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 8px 10px 0 rgba(29,26,23,.3); padding: 18px 20px 24px; text-align: left; position: relative;
+    outline: 2px dashed var(--red); outline-offset: -11px; }
+  .mat h2 { margin: 4px 0 2px; font: italic 900 28px/1 var(--chunk); text-transform: uppercase; color: var(--red); text-align: center; }
+  .mat h3 { margin: 20px 0 8px; font: italic 900 14px/1 var(--chunk); text-transform: uppercase; color: var(--ink); }
+  .mat > p { margin: 4px 0; text-align: center; }
+  .nametag { background: var(--red); border: 3px solid var(--ink); border-radius: 12px; padding: 6px 10px 10px; max-width: 300px; margin: 14px auto 0; transform: rotate(-2deg); box-shadow: 3px 3px 0 var(--ink); text-align: center; }
+  .nametag b { display: block; color: #fff; font: italic 900 20px/1 var(--chunk); letter-spacing: .06em; } .nametag small { display: block; color: #fff; font: 700 10px var(--display); letter-spacing: .2em; text-transform: uppercase; margin: 1px 0 6px; }
+  .nametag input { width: 100%; border: 0; border-radius: 6px; background: #fff; font: 700 26px var(--script); text-align: center; padding: 4px 6px; color: var(--ink); }
+  .seats { display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap; }
+  .seats button { background: none; border: 0; padding: 4px 6px; border-radius: 10px; text-align: center; font: 700 11px var(--display); text-transform: uppercase; color: var(--ink2); }
+  .seats button:hover { background: rgba(238,191,69,.35); }
+  .seats .out svg { opacity: .22; filter: none; } .seats svg.pawn { width: 44px; height: 58px; display: block; margin: 0 auto 2px; }
+  .picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .pick { display: flex; flex-direction: column; background: var(--paper); border: 2.5px solid var(--ink); border-radius: 10px; padding: 0; overflow: hidden; text-align: center; box-shadow: 2px 2px 0 var(--ink); opacity: .62; font: inherit; color: var(--ink); }
+  .pick.on { opacity: 1; box-shadow: 0 0 0 4px var(--mustard), 4px 4px 0 4px var(--ink); transform: rotate(-1.2deg); }
+  .pick i { display: block; background: var(--ink); color: var(--cream); font: italic 900 13px/1 var(--chunk); text-transform: uppercase; padding: 7px 4px; }
+  .pick span.im { display: block; } .pick img { width: 100%; aspect-ratio: 5 / 3; object-fit: cover; object-position: 50% 8%; display: block; mix-blend-mode: multiply; }
+  .pick small { display: block; padding: 6px 8px 8px; font-size: 13px; line-height: 1.25; }
+  .bell { display: block; margin: 22px auto 0; background: var(--red); color: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 12px 30px; box-shadow: 4px 4px 0 var(--ink); font: italic 900 22px/1 var(--chunk); text-transform: uppercase; transform: rotate(-1.5deg); }
+  .bell:hover { transform: rotate(-1.5deg) translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); } .bell.teal { background: var(--teal); }
+  .bell small { display: block; font: 700 10px var(--display); letter-spacing: .22em; margin-top: 4px; font-style: normal; color: var(--mustard); }
+  .backb { position: absolute; left: 12px; top: 10px; z-index: 2; display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 0; font: 700 11px var(--display); text-transform: uppercase; letter-spacing: .05em; color: var(--ink); }
+  .backb img { width: 44px; aspect-ratio: 4 / 5; object-fit: cover; border: 2px solid var(--ink); border-radius: 3px; box-shadow: 2px 2px 0 var(--ink); transform: rotate(-9deg); transition: transform .2s; }
+  .backb:hover img { transform: rotate(-3deg) scale(1.12); }
+  /* things arrive the way real ones would: the mat is laid down, the tag is stuck on, pawns drop, cards are dealt */
+  .mat.deal { animation: matin .55s cubic-bezier(.2,.9,.3,1.05) backwards; }
+  .mat.leave { animation: matout .3s ease-in forwards; }
+  @keyframes matin { from { transform: translateY(80vh) rotate(7deg); } }
+  @keyframes matout { to { transform: translateY(90vh) rotate(-6deg); opacity: 0; } }
+  .deal .nametag { animation: slap .32s cubic-bezier(.3,1.6,.5,1) .5s backwards; }
+  @keyframes slap { from { transform: scale(1.7) rotate(-16deg); opacity: 0; } }
+  .deal .seats button { animation: drop .4s cubic-bezier(.3,1.7,.5,1) backwards; animation-delay: calc(var(--i) * 80ms + 700ms); }
+  @keyframes drop { from { transform: translateY(-70px); opacity: 0; } }
+  .deal .pick { animation: dealt .45s cubic-bezier(.2,.8,.3,1) backwards; animation-delay: calc(var(--i) * 140ms + 950ms); }
+  @keyframes dealt { from { transform: translate(70vw, -50vh) rotate(50deg); opacity: 0; } }
+  .deal .bell, .deal .ticket { animation: swing .5s cubic-bezier(.3,1.6,.5,1) 1.5s backwards; }
+  @keyframes swing { from { transform: translateY(-40px) rotate(-24deg); opacity: 0; } }
+  .deal h3, .deal > p { animation: fadein .4s .6s backwards; }
+  @keyframes fadein { from { opacity: 0; } }
+  /* in the game: the board folds out, chips are set down, cards are dealt, paper slides in */
+  .board.unfold { perspective: 1600px; animation: boarddown .5s cubic-bezier(.2,.8,.3,1) backwards; animation-delay: calc(0ms - var(--t, 0ms)); }
+  @keyframes boarddown { from { transform: translateY(-60vh) rotate(-8deg) scale(.7); opacity: 0; } }
+  .board.unfold .half { display: block; clip-path: inset(0 50% 0 0); }
+  .board.unfold .half.r { position: absolute; left: 6px; right: 6px; top: 6px; clip-path: inset(0 0 0 50%); transform-origin: 50% 50%; backface-visibility: hidden;
+    animation: flap .75s cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(450ms - var(--t, 0ms)); }
+  .board.unfold .half svg { display: block; width: 100%; height: auto; max-height: 80vh; }
+  .board.unfold .spine { position: absolute; left: 50%; top: 6px; bottom: 34px; width: 0; border-left: 2px solid rgba(29,26,23,.25); animation: fadeout .4s 1.3s forwards; }
+  @keyframes flap { from { transform: rotateY(-180deg); } }
+  @keyframes fadeout { to { opacity: 0; } }
+  .intro .chip { animation: drop .4s cubic-bezier(.3,1.7,.5,1) backwards; animation-delay: calc(var(--i) * 120ms + 1150ms - var(--t, 0ms)); }
+  .intro .panel > * { animation: paperin .45s cubic-bezier(.2,.8,.3,1) backwards; animation-delay: calc(1450ms - var(--t, 0ms)); }
+  .intro .steps, .intro .legend { animation: fadein .4s backwards; animation-delay: calc(1300ms - var(--t, 0ms)); }
+  @keyframes paperin { from { transform: translateX(60px) rotate(2deg); opacity: 0; } }
+  .card.dealt { animation: dealt .5s cubic-bezier(.2,.8,.3,1) backwards; animation-delay: calc(var(--i, 0) * 110ms); z-index: 2; }
+  .card.flipped { animation: flip .6s ease-in-out backwards; }
+  @keyframes flip { from { transform: rotateY(180deg) scale(1.15); } 50% { transform: rotateY(90deg) scale(1.15); } }
+  .modal.in > div { animation: slipin .38s cubic-bezier(.2,.9,.3,1.1) backwards; }
+  .modal.in { animation: fadein .25s backwards; }
+  @keyframes slipin { from { transform: translateY(70vh) rotate(-4deg); } }
+  /* dinnertime comes as a guest check */
+  .modal.dinner > div { background: #e4efe0; border-radius: 3px; max-width: 560px; font-family: "American Typewriter", "Courier New", monospace; font-size: 14px; padding-bottom: 34px;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), 96% 100%, 92% calc(100% - 12px), 88% 100%, 84% calc(100% - 12px), 80% 100%, 76% calc(100% - 12px), 72% 100%, 68% calc(100% - 12px), 64% 100%, 60% calc(100% - 12px), 56% 100%, 52% calc(100% - 12px), 48% 100%, 44% calc(100% - 12px), 40% 100%, 36% calc(100% - 12px), 32% 100%, 28% calc(100% - 12px), 24% 100%, 20% calc(100% - 12px), 16% 100%, 12% calc(100% - 12px), 8% 100%, 4% calc(100% - 12px), 0 100%); }
+  .modal.dinner h2 { text-align: center; border-bottom: 3px double var(--ink); padding-bottom: 8px; } .modal.dinner h2::before { content: "GUEST CHECK"; display: block; font: 800 11px var(--display); letter-spacing: .3em; color: var(--ink); }
+  .coach { position: relative; } .coach::before { content: ""; position: absolute; left: 50%; top: -11px; width: 84px; height: 20px; margin-left: -42px; background: rgba(238,191,69,.75); border: 1px solid rgba(29,26,23,.25); transform: rotate(-2deg); }
+  .ticket { max-width: 290px; margin: 12px auto 0; background: #dfeee0; border: 2.5px solid var(--ink); padding: 10px 14px 14px; text-align: center; box-shadow: 3px 3px 0 var(--ink); transform: rotate(1.5deg);
+    clip-path: polygon(0 0, 100% 0, 100% 96%, 95% 100%, 90% 96%, 85% 100%, 80% 96%, 75% 100%, 70% 96%, 65% 100%, 60% 96%, 55% 100%, 50% 96%, 45% 100%, 40% 96%, 35% 100%, 30% 96%, 25% 100%, 20% 96%, 15% 100%, 10% 96%, 5% 100%, 0 96%); }
+  .ticket b { display: block; font: 800 11px var(--display); letter-spacing: .2em; text-transform: uppercase; border-bottom: 2px dashed var(--ink); padding-bottom: 5px; margin-bottom: 8px; }
+  .ticket input { width: 150px; text-align: center; text-transform: uppercase; letter-spacing: .3em; font: 800 26px var(--display); background: #fff; }
+  .tag { color: var(--ink2); margin: 4px 0 14px; font-size: 16px; }
+  .crew { display: flex; justify-content: center; gap: 8px; margin: 0 0 20px; }
+  .crew span { width: 76px; height: 76px; border-radius: 50%; border: 2px solid var(--ink); overflow: hidden; box-shadow: 2px 2px 0 var(--ink); }
+  .crew img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; transform: scale(1.5); transform-origin: 50% 12%; display: block; mix-blend-mode: multiply; }
+  .sheet { background: var(--paper); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 4px 4px 0 var(--ink); padding: 16px 18px; margin: 0 0 16px; text-align: left; }
+  .sheet h2, .panel h3, .help h4 { margin: 0 0 10px; font: italic 900 15px/1.1 var(--chunk); text-transform: uppercase; color: var(--red); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .row + .row { margin-top: 10px; }
+  .opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 2px solid var(--line); border-radius: 10px; margin-top: 8px; cursor: pointer; background: none; width: 100%; text-align: left; font: inherit; }
+  .opt.on { border-color: var(--ink); background: rgba(238,191,69,.28); }
+  .opt b { font-family: var(--display); } .opt small { display: block; color: var(--ink2); font-size: 13px; }
+  .opt .rad { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink); flex: none; margin-top: 3px; background: var(--paper); }
+  .opt.on .rad { background: var(--ink); box-shadow: inset 0 0 0 3px var(--paper); }
+  .seat svg.pawn { width: 24px; height: 32px; }
+  .seat { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-family: var(--display); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; flex: none; }
+  .code { font: 800 34px var(--display); letter-spacing: .3em; }
+  .fine { color: var(--ink2); font-size: 13px; }
+
+  /* game */
+  .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 14px; background: var(--red); color: var(--cream); border-bottom: 3px solid var(--ink); }
+  .top .name { font: italic 900 20px/1 var(--chunk); text-transform: uppercase; margin-right: 6px; text-shadow: 2px 2px 0 var(--ink); }
+  .top .mascot { width: 30px; height: 30px; border-radius: 8px; border: 2px solid var(--ink); }
+  .top .pill { background: rgba(0,0,0,.25); border-radius: 999px; padding: 3px 11px; font: 700 12px var(--display); letter-spacing: .05em; text-transform: uppercase; }
+  .top .sp { flex: 1; }
+  .steps { display: flex; gap: 4px; padding: 8px 14px 0; flex-wrap: wrap; font: 700 11px var(--display); text-transform: uppercase; letter-spacing: .04em; }
+  .steps span { padding: 3px 9px; border-radius: 999px; border: 1.5px solid var(--line); color: var(--ink2); }
+  .steps span.now { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+  .steps span.done { color: var(--ink); border-color: var(--ink2); }
+  .players { display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; }
+  .chip { flex: 1 0 150px; max-width: 270px; background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; padding: 6px 9px; border-left-width: 10px; font-family: var(--display); }
+  .chip.act { box-shadow: 0 0 0 3px var(--mustard), 3px 3px 0 3px var(--ink); }
+  .chip .n { font-weight: 800; display: flex; justify-content: space-between; gap: 6px; }
+  .chip .s { font-size: 12px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(340px, 1fr); gap: 14px; padding: 0 14px 30px; align-items: start; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+  .board { background: var(--paper); border: 2px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); padding: 6px; position: sticky; top: 8px; }
+  @media (max-width: 900px) { .board { position: static; } }
+  .board > svg { display: block; width: 100%; height: auto; max-height: 80vh; touch-action: manipulation; }
+  .legend { display: flex; gap: 4px 12px; flex-wrap: wrap; padding: 6px 6px 2px; font: 12px var(--display); color: var(--ink2); }
+  .hint { background: var(--mustard); border: 2px solid var(--ink); border-radius: 10px; padding: 8px 12px; font: 700 14px var(--display); margin-bottom: 10px; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+  .coach { display: flex; gap: 12px; background: #dfeee0; border: 2px solid var(--ink); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; box-shadow: 3px 3px 0 var(--ink); }
+  .coach .face { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--ink); overflow: hidden; flex: none; background: #b9b0a8; }
+  .coach .face img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; transform: scale(1.5); transform-origin: 50% 10%; display: block; mix-blend-mode: multiply; }
+  .coach h4 { margin: 0 0 2px; font: italic 900 13px var(--chunk); text-transform: uppercase; color: var(--teal); }
+  .coach ul { margin: 2px 0 0; padding-left: 18px; font-size: 14px; } .coach li { margin: 3px 0; } .coach a { color: var(--teal); font-weight: 700; }
+  .coach p { margin: 0 0 6px; } .coach p.do { font-weight: 700; font-family: var(--display); }
+  .panel h3 { margin: 14px 0 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .panel h3 span { color: var(--ink2); font: 400 13px var(--text); text-transform: none; }
+  .box { background: var(--paper); border: 2px solid var(--ink); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+  .box > h3:first-child { margin-top: 0; }
+  .box p { margin: 0 0 8px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .cards { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+
+  /* a staff card: black name band, a picture on the department color, what the person does */
+  .card { width: 118px; background: var(--paper); border: 2px solid var(--ink); border-radius: 9px; box-shadow: 2px 2px 0 var(--ink); overflow: hidden; position: relative; display: flex; flex-direction: column; text-align: left; padding: 0; }
+  .card .hd { background: var(--ink); color: var(--cream); font: italic 900 10.5px/1.05 var(--chunk); text-transform: uppercase; padding: 5px 4px; min-height: 32px; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .card .pic { position: relative; line-height: 0; }
+  .card .pic svg { width: 100%; height: auto; display: block; }
+  .card .pic img { width: 100%; aspect-ratio: 6 / 5; object-fit: cover; object-position: 50% 0; display: block; mix-blend-mode: multiply; }
+  .card .rng { position: absolute; left: 3px; top: 3px; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 999px; font: 800 9px/1 var(--display); padding: 2px 5px; }
+  .card .bd { padding: 5px 6px 4px; font-size: 11.5px; line-height: 1.22; flex: 1; text-align: center; }
+  .card .ft { display: flex; gap: 3px; padding: 0 5px 5px; align-items: center; min-height: 19px; }
+  .card .ic { background: var(--ink); color: var(--cream); border-radius: 999px; font: 800 9px/1 var(--display); padding: 3px 5px; }
+  .card .ic.sal { background: #5d8a57; margin-left: auto; }
+  .card .tagc { font: 800 9px var(--display); text-transform: uppercase; color: var(--red); }
+  .card.sel { outline: 4px solid var(--teal); outline-offset: 1px; }
+  .card.dim { opacity: .5; }
+  button.card:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); }
+  .d-mgmt .pic { background: var(--ink); } .d-ceo .pic { background: var(--mustard); } .d-kitchen .pic { background: #8aa063; } .d-buyer .pic { background: #a3c78a; }
+  .d-market .pic { background: #93bcbf; } .d-price .pic { background: #e3a28c; } .d-hr .pic { background: #b9b0a8; }
+  .d-plum .pic { background: #a58bb0; } .d-brick .pic { background: #d98e84; }
+  .line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 0; border-top: 1px dashed var(--line); }
+  .line:first-child { border-top: 0; }
+  .line b { flex: 1 1 120px; font-family: var(--display); }
+  .ms { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .ms div { padding: 8px; border-radius: 9px; border: 2px solid var(--ink); background: #93bcbf; font-size: 12.5px; line-height: 1.25; text-align: center; }
+  .ms div b { display: block; font: italic 900 11px/1.1 var(--chunk); text-transform: uppercase; margin-bottom: 4px; }
+  .ms div:nth-child(3n+1) { background: #a58bb0; } .ms div:nth-child(3n+2) { background: #a3c78a; }
+  .ms .closed { opacity: .45; } .ms .mine { box-shadow: 0 0 0 3px var(--mustard); opacity: 1; }
+  .log { max-height: 280px; overflow-y: auto; font-size: 13.5px; }
+  .log div { padding: 2px 0; }
+  .modal { position: fixed; inset: 0; background: rgba(29,26,23,.6); display: flex; align-items: center; justify-content: center; padding: 14px; z-index: 20; }
+  .modal > div { background: var(--cream); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 6px 6px 0 var(--ink); max-width: 760px; width: 100%; max-height: 92vh; overflow-y: auto; padding: 18px 22px 22px; }
+  .modal h2 { margin: 0 0 6px; font: italic 900 30px/1 var(--chunk); text-transform: uppercase; color: var(--red); }
+  .winpic { float: right; width: 42%; max-width: 250px; margin: 0 0 8px 14px; background: var(--mustard); border: 3px solid var(--ink); border-radius: 14px; overflow: hidden; }
+  .winpic img { display: block; width: 100%; mix-blend-mode: multiply; }
+  .modal table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  .modal td, .modal th { padding: 6px 6px; border-top: 1px dashed var(--line); text-align: left; vertical-align: top; }
+  .modal th { font: 700 12px var(--display); text-transform: uppercase; letter-spacing: .05em; }
+  .modal td.r, .modal th.r { text-align: right; white-space: nowrap; }
+  .help { font-size: 16px; line-height: 1.5; }
+  .help h4 { margin: 20px 0 4px; font-size: 17px; }
+  .help p { margin: 6px 0; } .help ul, .help ol { margin: 6px 0; padding-left: 22px; } .help li { margin: 4px 0; }
+  .help .eg { background: var(--paper); border-left: 5px solid var(--mustard); padding: 8px 12px; margin: 8px 0; border-radius: 0 8px 8px 0; }
+  .help .step { display: flex; gap: 12px; align-items: flex-start; margin: 10px 0; }
+  .help .step > b { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--cream); display: flex; align-items: center; justify-content: center; font: 800 15px var(--display); }
+  .help .step > div { flex: 1; } .help .step p:first-child { margin-top: 3px; }
+  .help .path { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 8px 0 14px; }
+  .help .path > i { font: 800 20px var(--display); font-style: normal; }
+  .help .head { display: flex; align-items: center; gap: 14px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; position: sticky; top: -18px; background: var(--cream); padding: 8px 0; z-index: 2; border-bottom: 2px solid var(--ink); }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: var(--cream); padding: 9px 16px; border-radius: 999px; font: 700 14px var(--display); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 30; max-width: 92vw; }
+  #toast.on { opacity: 1; }
+  svg text { font-family: var(--display); pointer-events: none; }
+  .spot { fill: rgba(63,143,140,.4); stroke: #3f8f8c; stroke-width: 1.5; cursor: pointer; }
+  .dotspot { fill: #3f8f8c; opacity: .6; }
+</style>
+</head>
+<body>
+<!-- The food and drink tokens: flat shapes, like painted wood. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="g-burger" viewBox="0 0 24 24"><path d="M3 12Q3 4.5 12 4.5Q21 4.5 21 12Z" fill="#8a6537"/><path d="M2 13.2H22L20.5 15.4L18 14L15 15.6L12 14L9 15.6L6 14L3.5 15.4Z" fill="#5d8a57"/><rect x="2.5" y="15.2" width="19" height="3" rx="1.5" fill="#4a2f1a"/><path d="M3 19H21V19.5Q21 21.5 19 21.5H5Q3 21.5 3 19.5Z" fill="#8a6537"/></symbol>
+  <symbol id="g-pizza" viewBox="0 0 24 24"><path d="M2.5 7Q12 1.5 21.5 7L12 22.5Z" fill="#d9772f"/><path d="M2.5 7Q12 1.5 21.5 7" fill="none" stroke="#a8531a" stroke-width="2.4" stroke-linecap="round"/><circle cx="9" cy="9.5" r="1.8" fill="#8c2a2a"/><circle cx="14.5" cy="10.5" r="1.8" fill="#8c2a2a"/><circle cx="12" cy="15.5" r="1.6" fill="#8c2a2a"/></symbol>
+  <symbol id="g-soda" viewBox="0 0 24 24"><path d="M10 1.5H14V5.5Q17.5 8.5 17.5 12Q17.5 14 16.5 15.5Q17.8 18.5 16.5 22.5H7.5Q6.2 18.5 7.5 15.5Q6.5 14 6.5 12Q6.5 8.5 10 5.5Z" fill="#8c2a2a"/><rect x="9.6" y="1" width="4.8" height="2" rx=".6" fill="#5e1b1b"/></symbol>
+  <symbol id="g-beer" viewBox="0 0 24 24"><path d="M10.3 1.5H13.7V8Q17 10 17 13V22.5H7V13Q7 10 10.3 8Z" fill="#1f4a3d"/><rect x="9.9" y="1" width="4.2" height="2" rx=".6" fill="#12302a"/><rect x="7" y="14" width="10" height="5" fill="#eebf45"/></symbol>
+  <symbol id="g-lemon" viewBox="0 0 24 24"><circle cx="17.5" cy="6" r="4.2" fill="#eebf45" stroke="#c9972a" stroke-width="1"/><path d="M5 7H18L16 22.5H7Z" fill="#f2cf5b" stroke="#c9972a" stroke-width="1" stroke-linejoin="round"/><path d="M12 2L10.5 12" stroke="#a3403f" stroke-width="1.4" stroke-linecap="round"/></symbol>
+</defs></svg>
+<div id="app"></div>
+<div id="toast"></div>
+
+<script id="engine">
+'use strict';
+// ============================================================================
+// The game itself. Plain data in, plain data out: no drawing and no network in
+// this block, so the host's browser, a solo game and the tests all run the
+// same rules. The whole game is one JSON object, G.
+// ============================================================================
+const TS = 5; // squares along one side of a map tile
+const GOODS = ['burger', 'pizza', 'beer', 'lemon', 'soda'], DRINKS = ['beer', 'lemon', 'soda'];
+const GOODNAME = { burger: 'burger', pizza: 'pizza', beer: 'beer', lemon: 'lemonade', soda: 'soft drink' };
+
+// d: department (sets the card color). entry: can be hired. sal: draws a $5 salary.
+// slots: people a manager can hold. to: what one step of training makes. uniq: one per player.
+const EMP = {
+  mt:    { n: 'Management Trainee', d: 'mgmt', entry: 1, slots: 2, to: ['jvp', 'nbd', 'lux'], x: 'Manages 2 people.' },
+  jvp:   { n: 'Junior Vice President', d: 'mgmt', sal: 1, slots: 3, to: ['vp', 'lm', 'dm', 'rmgr', 'co'], x: 'Manages 3 people.' },
+  vp:    { n: 'Vice President', d: 'mgmt', sal: 1, slots: 4, to: ['svp', 'rm', 'gu'], x: 'Manages 4 people.' },
+  svp:   { n: 'Senior Vice President', d: 'mgmt', sal: 1, slots: 5, to: ['evp', 'cfo', 'hr'], x: 'Manages 5 people.' },
+  evp:   { n: 'Executive Vice President', d: 'mgmt', sal: 1, slots: 10, uniq: 1, x: 'Manages 10 people.' },
+  nbd:   { n: 'New Business Developer', d: 'plum', sal: 1, x: 'Builds a new house with a garden, or adds a garden to a house.' },
+  lux:   { n: 'Luxuries Manager', d: 'price', sal: 1, uniq: 1, x: 'Your price goes up $10.' },
+  lm:    { n: 'Local Manager', d: 'brick', sal: 1, x: 'New restaurant within 3 tiles by road. Opens next round. Drive-in.' },
+  dm:    { n: 'Discount Manager', d: 'price', sal: 1, x: 'Your price drops $3.' },
+  rmgr:  { n: 'Recruiting Manager', d: 'hr', sal: 1, x: 'Hire 2 people. Each hire you skip saves $5 in salary.' },
+  co:    { n: 'Coach', d: 'hr', sal: 1, x: 'Train 2 steps. Both may go to one person.' },
+  rm:    { n: 'Regional Manager', d: 'brick', sal: 1, uniq: 1, x: 'Open or move a restaurant anywhere. Opens at once. Drive-in.' },
+  gu:    { n: 'Guru', d: 'hr', sal: 1, uniq: 1, x: 'Train 3 steps. All may go to one person.' },
+  cfo:   { n: 'CFO', d: 'plum', sal: 1, uniq: 1, x: 'You earn 50% more at dinnertime.' },
+  hr:    { n: 'HR Director', d: 'hr', sal: 1, uniq: 1, x: 'Hire 4 people. Each hire you skip saves $5 in salary.' },
+  wa:    { n: 'Waitress', d: 'plum', entry: 1, x: 'Earns $3 each round. Wins ties for customers.' },
+  pm:    { n: 'Pricing Manager', d: 'price', entry: 1, x: 'Your price drops $1.' },
+  rg:    { n: 'Recruiting Girl', d: 'hr', entry: 1, x: 'Hire 1 more person.' },
+  tr:    { n: 'Trainer', d: 'hr', entry: 1, x: 'Train 1 person who is on the beach.' },
+  kt:    { n: 'Kitchen Trainee', d: 'kitchen', entry: 1, to: ['bc', 'pc'], x: 'Makes 1 burger or 1 pizza.' },
+  bc:    { n: 'Burger Cook', d: 'kitchen', sal: 1, to: ['bch'], x: 'Makes 3 burgers.' },
+  bch:   { n: 'Burger Chef', d: 'kitchen', sal: 1, uniq: 1, x: 'Makes 8 burgers.' },
+  pc:    { n: 'Pizza Cook', d: 'kitchen', sal: 1, to: ['pch'], x: 'Makes 3 pizzas.' },
+  pch:   { n: 'Pizza Chef', d: 'kitchen', sal: 1, uniq: 1, x: 'Makes 8 pizzas.' },
+  eb:    { n: 'Errand Boy', d: 'buyer', entry: 1, to: ['cart'], x: 'Fetches 1 drink of any kind.' },
+  cart:  { n: 'Cart Operator', d: 'buyer', sal: 1, to: ['truck'], range: '2', x: 'Takes 2 drinks from each source within 2 tiles by road.' },
+  truck: { n: 'Truck Driver', d: 'buyer', sal: 1, to: ['zep'], range: '3', x: 'Takes 3 drinks from each source within 3 tiles by road.' },
+  zep:   { n: 'Zeppelin Pilot', d: 'buyer', sal: 1, uniq: 1, range: '4', x: 'Takes 2 drinks from each source within 4 tiles. Ignores roads.' },
+  mk:    { n: 'Marketing Trainee', d: 'market', entry: 1, to: ['cm'], range: '2', x: 'Billboard. Lasts up to 2 rounds.' },
+  cm:    { n: 'Campaign Manager', d: 'market', sal: 1, to: ['bm'], range: '3', x: 'Mailbox or billboard. Lasts up to 3 rounds.' },
+  bm:    { n: 'Brand Manager', d: 'market', sal: 1, to: ['bd'], range: '∞', x: 'Airplane, mailbox or billboard. Lasts up to 4 rounds.' },
+  bd:    { n: 'Brand Director', d: 'market', sal: 1, uniq: 1, range: '∞', x: 'Radio or any campaign. Lasts up to 5 rounds.' },
+};
+const MARKETER = {
+  mk: { kinds: ['bill'], dur: 2, range: 2 },
+  cm: { kinds: ['bill', 'mail'], dur: 3, range: 3 },
+  bm: { kinds: ['bill', 'mail', 'air'], dur: 4, range: 99 },
+  bd: { kinds: ['bill', 'mail', 'air', 'radio'], dur: 5, range: 99 },
+};
+const KINDNAME = { bill: 'Billboard', mail: 'Mailbox', air: 'Airplane', radio: 'Radio' };
+// Campaigns run in number order, lowest first.
+const CAMPNUM = { radio: [1, 2, 3], air: [4, 5, 6], mail: [7, 8, 9, 10], bill: [11, 12, 13, 14, 15, 16] };
+const AIRSIZE = { 4: 1, 5: 3, 6: 5 };
+// With fewer players, some billboards stay in the box.
+const NOBILL = { 2: [12, 15, 16], 3: [15, 16], 4: [16] };
+const MS = {
+  billboard: { n: 'First billboard placed', r: 'Your marketers draw no salary. Your campaigns never end.' },
+  train:     { n: 'First to train someone', r: '$15 off your salaries, every round.' },
+  hire3:     { n: 'First to hire 3 people in one turn', r: 'Two free Management Trainees.' },
+  burgerMade:{ n: 'First burger made', r: 'A free Burger Cook.' },
+  pizzaMade: { n: 'First pizza made', r: 'A free Pizza Cook.' },
+  errand:    { n: 'First Errand Boy played', r: 'Your drivers take 1 more drink from each source.' },
+  cart:      { n: 'First Cart Operator played', r: 'Your drivers go 1 tile further.' },
+  waitress:  { n: 'First Waitress played', r: 'Your waitresses earn $5, not $3.' },
+  lower:     { n: 'First to lower prices', r: 'Your prices stay $1 lower for the whole game.' },
+  throw:     { n: 'First to throw away food or drink', r: 'A freezer. Keep up to 10 items between rounds.' },
+  pay20:     { n: 'First to pay $20 in salaries', r: 'Several trainers may train the same person.' },
+  have20:    { n: 'First to have $20', r: 'You may look at the bank reserve cards.' },
+  have100:   { n: 'First to have $100', r: 'Your CEO works as a CFO too: 50% more income.' },
+  mBurger:   { n: 'First burger advertised', r: '$5 more for each burger you sell.' },
+  mPizza:    { n: 'First pizza advertised', r: '$5 more for each pizza you sell.' },
+  mDrink:    { n: 'First drink advertised', r: '$5 more for each drink you sell.' },
+  airplane:  { n: 'First airplane campaign', r: 'Count 2 more open slots when turn order is set.' },
+  radio:     { n: 'First radio campaign', r: 'Your radios add 2 demand each round, not 1.' },
+};
+
+// Map tiles, 5 x 5, read row by row. # road, H house, B beer, L lemonade, S soft drink.
+// A road leaves a tile only through the middle of a side, so any two tiles fit together.
+const TILES = [
+  ['HH#..HH#..#####..#....#..', 3], ['..#....#..#####..#....#..', 3],
+  ['..#....#.B#####..#....#..', 1], ['..#....#.L#####..#....#..', 1], ['..#....#.S#####..#....#..', 1],
+  ['.HH...HH..#####..#....#..', 2],
+  ['..#....#..###....#.B..#..', 1], ['..#....#..###....#.L..#..', 1], ['..#....#..###....#.S..#..', 1],
+  ['..#....#HH..#HH..#....#..', 2], ['..#....#..HH###HH........', 1],
+  ['........S.###....#....#..', 1], ['........B.###....#....#..', 1],
+  ['..........#####..........', 1],
+];
+const MAPSIZE = { 2: [3, 3], 3: [4, 3], 4: [4, 4], 5: [5, 4] };
+
+function mkRng(G) {
+  return function () {
+    G.rs = (G.rs + 0x6D2B79F5) | 0; let t = G.rs;
+    t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function shuffle(a, r) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function log(G, s) { G.log.push(s); if (G.log.length > 70) G.log.shift(); }
+const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+function inB(G, x, y) { return x >= 0 && y >= 0 && x < G.W && y < G.H; }
+function isRoad(G, x, y) { return inB(G, x, y) && G.road[y * G.W + x] === '1'; }
+function tileKey(x, y) { return Math.floor(x / TS) + ',' + Math.floor(y / TS); }
+
+function buildMap(G, r) {
+  const [tw, th] = MAPSIZE[G.np]; G.W = tw * TS; G.H = th * TS;
+  const rot = t => { const o = []; for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) o[y * 5 + x] = t[(4 - x) * 5 + y]; return o; };
+  for (let tries = 0; tries < 300; tries++) {
+    const pool = []; TILES.forEach(([s, n]) => { for (let i = 0; i < n; i++) pool.push(s); }); shuffle(pool, r);
+    const g = new Array(G.W * G.H).fill('.');
+    for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) {
+      let t = pool[ty * tw + tx].split('');
+      for (let k = Math.floor(r() * 4); k > 0; k--) t = rot(t);
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) g[(ty * 5 + y) * G.W + tx * 5 + x] = t[y * 5 + x];
+    }
+    G.road = g.map(c => c === '#' ? '1' : '0').join('');
+    G.houses = []; G.drinks = [];
+    const seen = {};
+    for (let y = 0; y < G.H; y++) for (let x = 0; x < G.W; x++) {
+      const c = g[y * G.W + x];
+      if (c === 'H' && !seen[x + ',' + y]) {
+        [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([dx, dy]) => { seen[(x + dx) + ',' + (y + dy)] = 1; });
+        G.houses.push({ x, y, g: null, demand: [] });
+      } else if (c === 'B' || c === 'L' || c === 'S') G.drinks.push({ x, y, t: { B: 'beer', L: 'lemon', S: 'soda' }[c] });
+    }
+    // One road network should hold nearly every road square and reach every house.
+    const first = G.road.indexOf('1'), comp = new Set([first]), q = [first];
+    while (q.length) {
+      const i = q.pop(), x = i % G.W, y = (i - x) / G.W;
+      N4.forEach(([dx, dy]) => { const j = (y + dy) * G.W + x + dx; if (isRoad(G, x + dx, y + dy) && !comp.has(j)) { comp.add(j); q.push(j); } });
+    }
+    const total = G.road.split('1').length - 1;
+    const housesOk = G.houses.every(h => houseSq(h).some(([x, y]) => N4.some(([dx, dy]) => isRoad(G, x + dx, y + dy) && comp.has((y + dy) * G.W + x + dx))));
+    const kinds = new Set(G.drinks.map(d => d.t)).size;
+    if (comp.size >= total * 0.85 && housesOk && G.houses.length >= Math.max(3, G.np) && kinds >= 2) break;
+  }
+  shuffle(G.houses, r).forEach((h, i) => { h.id = i; h.num = i + 1; });
+}
+
+// mode: 'full', or the rulebook's introductory game: 'intro' (no milestones) and 'introms' (with them).
+// Both introductory games have $75 a player, no reserve cards and no salaries, and end when the bank first breaks.
+function newGame(seats, seed, mode, easy) {
+  const np = seats.length; mode = mode || 'full';
+  const G = { v: 1, mode, easy: !!easy, rs: seed | 0, np, round: 0, phase: 'place', bank: (mode === 'full' ? 50 : 75) * np, breaks: 0, ceoSlots: 3, nextCeo: 3, nid: 1,
+    players: seats.map(s => ({ name: s.name, bot: !!s.bot, cash: 0, cards: [], work: [], pick: null, rests: [],
+      stock: { burger: 0, pizza: 0, beer: 0, lemon: 0, soda: 0 }, ms: [], reserve: 0, u: null, disc: 0, firePick: null })),
+    houses: [], drinks: [], camps: [], ms: {}, supply: {}, order: [], turn: 0, pi: 0, done: [], log: [], last: null,
+    choosers: [], ci: 0, newOrder: [] };
+  const r = mkRng(G);
+  buildMap(G, r);
+  const uniq = np <= 3 ? 1 : np - 2;
+  for (const t in EMP) G.supply[t] = EMP[t].uniq ? uniq : t === 'mt' ? 18 : t === 'jvp' || EMP[t].entry ? 12 : 6;
+  for (const m in MS) G.ms[m] = { own: [], closed: mode === 'intro' };
+  G.order = shuffle(seats.map((_, i) => i), r);
+  G.pi = np - 1;
+  log(G, 'A new town. Each baron opens a first restaurant, last in line first.');
+  return G;
+}
+
+// ---- the map ---------------------------------------------------------------
+function houseSq(h) { const s = [[h.x, h.y], [h.x + 1, h.y], [h.x, h.y + 1], [h.x + 1, h.y + 1]]; return h.g ? s.concat(h.g) : s; }
+function restSq(r) { return [[r.x, r.y], [r.x + 1, r.y], [r.x, r.y + 1], [r.x + 1, r.y + 1]]; }
+// What stands on each square: 'r' road, or an object for anything built there.
+function occ(G) {
+  const o = new Array(G.W * G.H).fill(null);
+  for (let i = 0; i < o.length; i++) if (G.road[i] === '1') o[i] = 'r';
+  G.houses.forEach(h => houseSq(h).forEach(([x, y]) => { o[y * G.W + x] = h; }));
+  G.drinks.forEach(d => { o[d.y * G.W + d.x] = d; });
+  G.players.forEach(P => P.rests.forEach(r => restSq(r).forEach(([x, y]) => { o[y * G.W + x] = r; })));
+  G.camps.forEach(c => { if (c.kind !== 'air') o[c.y * G.W + c.x] = c; });
+  return o;
+}
+// Steps by road from a set of road squares. A step is one tile border crossed.
+function roadDist(G, starts) {
+  const d = new Array(G.W * G.H).fill(Infinity), dq = [];
+  starts.forEach(([x, y]) => { d[y * G.W + x] = 0; dq.push([x, y]); });
+  while (dq.length) {
+    const [x, y] = dq.shift(), c = d[y * G.W + x];
+    for (const [dx, dy] of N4) {
+      const nx = x + dx, ny = y + dy; if (!isRoad(G, nx, ny)) continue;
+      const w = tileKey(x, y) === tileKey(nx, ny) ? 0 : 1, j = ny * G.W + nx;
+      if (c + w < d[j]) { d[j] = c + w; if (w) dq.push([nx, ny]); else dq.unshift([nx, ny]); }
+    }
+  }
+  return d;
+}
+// The road squares a restaurant opens onto. With a drive-in, every corner is an entrance.
+function restStarts(G, r, all) {
+  const out = [];
+  (all ? restSq(r) : [[r.ex, r.ey]]).forEach(([a, b]) => N4.forEach(([dx, dy]) => { if (isRoad(G, a + dx, b + dy)) out.push([a + dx, b + dy]); }));
+  return out;
+}
+function distFor(G, p, openOnly) {
+  const P = G.players[p], drive = cnt(P, 'lm') + cnt(P, 'rm') > 0; // a working local or regional manager gives a drive-in
+  let s = []; P.rests.forEach(r => { if (r.open || !openOnly) s = s.concat(restStarts(G, r, drive)); });
+  return roadDist(G, s);
+}
+function nearRoad(G, d, squares) {
+  let m = Infinity;
+  squares.forEach(([x, y]) => N4.forEach(([dx, dy]) => { if (isRoad(G, x + dx, y + dy)) m = Math.min(m, d[(y + dy) * G.W + x + dx]); }));
+  return m;
+}
+function houseDist(G, h, d) { return nearRoad(G, d, houseSq(h)); }
+
+// Where a restaurant may go. Returns { "x,y": [entranceX, entranceY] } by top-left square.
+function legalRests(G, p, kind) {
+  const o = occ(G), out = {}, d = kind === 'lm' ? distFor(G, p, false) : null;
+  const taken = {}; if (kind === 'init') G.players.forEach(P => P.rests.forEach(r => { taken[tileKey(r.ex, r.ey)] = 1; }));
+  for (let y = 0; y < G.H - 1; y++) for (let x = 0; x < G.W - 1; x++) {
+    const sq = [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]];
+    if (sq.some(([a, b]) => o[b * G.W + a])) continue;
+    const e = sq.find(([a, b]) => N4.some(([dx, dy]) => isRoad(G, a + dx, b + dy)) &&
+      (kind !== 'init' || !taken[tileKey(a, b)]) && (kind !== 'lm' || nearRoad(G, d, [[a, b]]) <= 3));
+    if (e) out[x + ',' + y] = e;
+  }
+  return out;
+}
+function legalHouses(G) {
+  const o = occ(G), out = {};
+  for (let y = 0; y < G.H - 1; y++) for (let x = 0; x < G.W - 1; x++) {
+    const sq = [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]];
+    if (sq.some(([a, b]) => o[b * G.W + a])) continue;
+    if (sq.some(([a, b]) => N4.some(([dx, dy]) => isRoad(G, a + dx, b + dy)))) out[x + ',' + y] = 1;
+  }
+  return out;
+}
+// A garden is 2 x 1 along one full side of a house. Returns [{h, o, sq}].
+function legalGardens(G) {
+  const o = occ(G), out = [];
+  G.houses.forEach(h => {
+    if (h.g) return;
+    [[[h.x, h.y - 1], [h.x + 1, h.y - 1]], [[h.x, h.y + 2], [h.x + 1, h.y + 2]],
+     [[h.x - 1, h.y], [h.x - 1, h.y + 1]], [[h.x + 2, h.y], [h.x + 2, h.y + 1]]].forEach((sq, i) => {
+      if (sq.every(([x, y]) => inB(G, x, y) && !o[y * G.W + x])) out.push({ h: h.id, o: i, sq });
+    });
+  });
+  return out;
+}
+function legalCampSpots(G, p, kind, range) {
+  const o = occ(G), out = {}, d = distFor(G, p, false);
+  for (let y = 0; y < G.H; y++) for (let x = 0; x < G.W; x++) {
+    if (o[y * G.W + x] || !N4.some(([dx, dy]) => isRoad(G, x + dx, y + dy))) continue;
+    if (range >= 99 || nearRoad(G, d, [[x, y]]) <= range) out[x + ',' + y] = 1;
+  }
+  return out;
+}
+function freeNums(G, kind) { return CAMPNUM[kind].filter(n => !G.camps.some(c => c.num === n) && (NOBILL[G.np] || []).indexOf(n) < 0); }
+// The houses a campaign talks to.
+function campReach(G, c) {
+  if (c.kind === 'bill') return G.houses.filter(h => houseSq(h).some(([x, y]) => Math.abs(x - c.x) + Math.abs(y - c.y) === 1));
+  if (c.kind === 'radio') {
+    const tx = Math.floor(c.x / TS), ty = Math.floor(c.y / TS);
+    return G.houses.filter(h => houseSq(h).some(([x, y]) => Math.abs(Math.floor(x / TS) - tx) <= 1 && Math.abs(Math.floor(y / TS) - ty) <= 1));
+  }
+  if (c.kind === 'air') return G.houses.filter(h => houseSq(h).some(([x, y]) => { const v = c.axis === 'row' ? y : x; return v >= c.start && v < c.start + c.size; }));
+  // A mailbox reaches every house in its block: all it can get to without crossing a road.
+  const seen = new Set([c.y * G.W + c.x]), q = [[c.x, c.y]];
+  while (q.length) {
+    const [x, y] = q.pop();
+    N4.forEach(([dx, dy]) => { const nx = x + dx, ny = y + dy, j = ny * G.W + nx; if (inB(G, nx, ny) && !isRoad(G, nx, ny) && !seen.has(j)) { seen.add(j); q.push([nx, ny]); } });
+  }
+  return G.houses.filter(h => houseSq(h).some(([x, y]) => seen.has(y * G.W + x)));
+}
+
+// ---- companies -------------------------------------------------------------
+function has(P, m) { return P.ms.indexOf(m) >= 0; }
+function cardOf(P, id) { return P.cards.find(c => c.id === id); }
+function workCards(P) { return P.work.map(id => cardOf(P, id)).filter(Boolean); }
+function cnt(P, t) { return workCards(P).filter(c => c.t === t).length; }
+function give(G, p, t) {
+  if (!(G.supply[t] > 0)) return null;
+  G.supply[t]--; const c = { id: G.nid++, t, busy: 0 }; G.players[p].cards.push(c); return c;
+}
+function award(G, p, m) {
+  const s = G.ms[m], P = G.players[p];
+  if (s.closed || s.own.indexOf(p) >= 0) return false;
+  s.own.push(p); P.ms.push(m);
+  log(G, '★ ' + P.name + ': ' + MS[m].n + '. ' + MS[m].r);
+  if (m === 'hire3') { give(G, p, 'mt'); give(G, p, 'mt'); }
+  if (m === 'burgerMade') give(G, p, 'bc');
+  if (m === 'pizzaMade') give(G, p, 'pc');
+  return true;
+}
+// Managers report to the CEO. Everyone else fills the slots that are left.
+function capacity(G, types) {
+  let m = 0, s = 0, n = 0;
+  types.forEach(t => { if (EMP[t].slots) { m++; s += EMP[t].slots; } else n++; });
+  const cap = G.ceoSlots - m + s;
+  return { ok: m <= G.ceoSlots && n <= cap, open: cap - n, m, n, cap };
+}
+function priceOf(G, p) {
+  const P = G.players[p];
+  return 10 - cnt(P, 'pm') - 3 * cnt(P, 'dm') + (cnt(P, 'lux') ? 10 : 0) - (has(P, 'lower') ? 1 : 0);
+}
+function recruitsOf(P) { return 1 + cnt(P, 'rg') + 2 * cnt(P, 'rmgr') + 4 * cnt(P, 'hr'); }
+function trainsOf(P) { return cnt(P, 'tr') + 2 * cnt(P, 'co') + 3 * cnt(P, 'gu'); }
+function trainCapPerCard(P) { return has(P, 'pay20') ? 99 : cnt(P, 'gu') ? 3 : cnt(P, 'co') ? 2 : 1; }
+function salary(G, p, fired) {
+  if (G.mode !== 'full') return 0;
+  const P = G.players[p]; let n = 0;
+  P.cards.forEach(c => { if (fired && fired.indexOf(c.id) >= 0) return; if (EMP[c.t].sal && !(MARKETER[c.t] && has(P, 'billboard'))) n++; });
+  return Math.max(0, n * 5 - (has(P, 'train') ? 15 : 0) - P.disc);
+}
+function checkCash(G, p) { if (G.players[p].cash >= 20) award(G, p, 'have20'); }
+function pay(G, p, amt) {
+  if (amt <= 0) return;
+  let need = amt;
+  while (need > 0 && G.breaks < 2) {
+    if (G.bank >= need) { G.bank -= need; need = 0; break; }
+    need -= G.bank; G.bank = 0;
+    if (G.breaks === 0 && G.mode === 'full') {
+      G.breaks = 1;
+      const tally = {}; let sum = 0;
+      G.players.forEach(P => { sum += P.reserve; tally[P.reserve] = (tally[P.reserve] || 0) + 1; });
+      let best = 0; [100, 200, 300].forEach(v => { if ((tally[v] || 0) >= (tally[best] || 0) && tally[v]) best = v; });
+      G.bank = sum; G.nextCeo = best / 100 + 1;
+      log(G, 'The bank breaks. The reserve adds $' + sum + '. CEOs hold ' + G.nextCeo + ' slots from next round.');
+    } else { G.breaks = 2; log(G, G.mode === 'full' ? 'The bank breaks again. This is the last dinner.' : 'The bank is empty. This is the last dinner.'); }
+  }
+  G.players[p].cash += amt; checkCash(G, p);
+}
+
+// ---- the round -------------------------------------------------------------
+function newRound(G) {
+  G.round++; G.ceoSlots = G.nextCeo; G.phase = 'restructure'; G.done = [];
+  G.players.forEach((P, p) => { P.pick = null; if (!P.cards.some(c => !c.busy)) { P.pick = []; G.done[p] = 1; } });
+  log(G, '— Round ' + G.round + ' —');
+  if (G.players.every((P, p) => G.done[p])) reveal(G);
+}
+function reveal(G) {
+  G.players.forEach(P => { P.work = P.pick || []; P.pick = null; });
+  G.order.forEach(p => {
+    const P = G.players[p];
+    if (cnt(P, 'eb')) award(G, p, 'errand');
+    if (cnt(P, 'cart')) award(G, p, 'cart');
+    if (cnt(P, 'wa')) award(G, p, 'waitress');
+    if (cnt(P, 'pm') || cnt(P, 'dm')) award(G, p, 'lower');
+  });
+  const open = G.players.map((P, p) => capacity(G, workCards(P).map(c => c.t)).open + (has(P, 'airplane') ? 2 : 0));
+  G.choosers = G.order.slice().sort((a, b) => open[b] - open[a] || G.order.indexOf(a) - G.order.indexOf(b));
+  G.ci = 0; G.newOrder = new Array(G.np).fill(-1); G.phase = 'order';
+}
+function startTurn(G) {
+  const p = G.order[G.turn], P = G.players[p];
+  P.u = { rec: 0, tr: 0, tc: {}, done: {} };
+  const made = { burger: 3 * cnt(P, 'bc') + 8 * cnt(P, 'bch'), pizza: 3 * cnt(P, 'pc') + 8 * cnt(P, 'pch') };
+  if (made.burger) { P.stock.burger += made.burger; award(G, p, 'burgerMade'); }
+  if (made.pizza) { P.stock.pizza += made.pizza; award(G, p, 'pizzaMade'); }
+  const got = collectDrinks(G, p);
+  DRINKS.forEach(d => { P.stock[d] += got[d]; });
+  const parts = GOODS.filter(g => (made[g] || got[g])).map(g => (made[g] || got[g]) + ' ' + GOODNAME[g]);
+  if (parts.length) log(G, P.name + ' stocks ' + parts.join(', ') + '.');
+}
+// Each driver starts at one of your restaurants. A cart or truck takes drinks from every source that sits
+// beside a road in range. A zeppelin takes them from every source on a tile in range, roads or not.
+function collectDrinks(G, p) {
+  const P = G.players[p], got = { beer: 0, lemon: 0, soda: 0 }, drive = cnt(P, 'lm') + cnt(P, 'rm') > 0;
+  const run = (n, range, amt, air) => {
+    for (; n > 0; n--) {
+      let best = null;
+      P.rests.forEach(r => {
+        const d = air ? null : roadDist(G, restStarts(G, r, drive));
+        const src = G.drinks.filter(s => air
+          ? Math.abs(Math.floor(s.x / TS) - Math.floor(r.ex / TS)) + Math.abs(Math.floor(s.y / TS) - Math.floor(r.ey / TS)) <= range
+          : nearRoad(G, d, [[s.x, s.y]]) <= range);
+        if (!best || src.length > best.length) best = src;
+      });
+      (best || []).forEach(s => { got[s.t] += amt; });
+    }
+  };
+  const xr = has(P, 'cart') ? 1 : 0, xa = has(P, 'errand') ? 1 : 0;
+  run(cnt(P, 'cart'), 2 + xr, 2 + xa, false);
+  run(cnt(P, 'truck'), 3 + xr, 3 + xa, false);
+  run(cnt(P, 'zep'), 4 + xr, 2 + xa, true);
+  return got;
+}
+function endTurn(G) {
+  const P = G.players[G.order[G.turn]];
+  P.disc = 5 * Math.min(recruitsOf(P) - P.u.rec, 2 * cnt(P, 'rmgr') + 4 * cnt(P, 'hr'));
+  G.turn++;
+  if (G.turn < G.np) { startTurn(G); return; }
+  dinner(G);
+  if (G.breaks >= 2) { G.phase = 'over'; log(G, 'The game is over.'); return; }
+  G.phase = 'payday'; G.done = [];
+  G.players.forEach((P2, p) => { P2.firePick = null; if (G.mode !== 'full' || !P2.cards.some(c => EMP[c.t].sal)) { P2.firePick = []; G.done[p] = 1; } });
+  if (G.players.every((P2, p) => G.done[p])) payday(G);
+}
+function dinner(G) {
+  const dist = G.players.map((P, p) => distFor(G, p, true));
+  const price = G.players.map((P, p) => priceOf(G, p)), wait = G.players.map(P => cnt(P, 'wa'));
+  const earned = G.players.map(() => 0);
+  const L = G.last = { round: G.round, sales: [], tips: [], bonus: [] };
+  G.houses.slice().sort((a, b) => a.num - b.num).forEach(h => {
+    if (!h.demand.length) return;
+    const need = {}; h.demand.forEach(g => { need[g] = (need[g] || 0) + 1; });
+    let best = -1, bs = 0, bd = 0;
+    G.order.forEach(p => {
+      const d = houseDist(G, h, dist[p]);
+      if (d === Infinity || Object.keys(need).some(g => G.players[p].stock[g] < need[g])) return;
+      const s = price[p] + d;
+      if (best < 0 || s < bs || (s === bs && wait[p] > wait[best])) { best = p; bs = s; bd = d; }
+    });
+    if (best < 0) { L.sales.push({ num: h.num, p: -1, items: h.demand.slice() }); return; }
+    const P = G.players[best]; let amt = 0;
+    h.demand.forEach(g => {
+      P.stock[g]--;
+      amt += Math.max(0, price[best]) * (h.g ? 2 : 1);
+      if (has(P, g === 'burger' ? 'mBurger' : g === 'pizza' ? 'mPizza' : 'mDrink')) amt += 5;
+    });
+    L.sales.push({ num: h.num, p: best, items: h.demand.slice(), amt, price: price[best], dist: bd, garden: !!h.g });
+    h.demand = []; earned[best] += amt; pay(G, best, amt);
+  });
+  G.order.forEach(p => {
+    const P = G.players[p], tip = wait[p] * (has(P, 'waitress') ? 5 : 3);
+    if (tip) { L.tips.push({ p, amt: tip }); earned[p] += tip; pay(G, p, tip); }
+  });
+  G.order.forEach(p => {
+    const P = G.players[p];
+    if ((cnt(P, 'cfo') || has(P, 'have100')) && earned[p] > 0) { const b = Math.ceil(earned[p] / 2); L.bonus.push({ p, amt: b }); earned[p] += b; pay(G, p, b); }
+  });
+  G.order.forEach(p => { if (G.players[p].cash >= 100) award(G, p, 'have100'); }); // it starts to pay next round
+  L.earned = earned;
+  const sold = L.sales.filter(s => s.p >= 0).length;
+  log(G, 'Dinnertime: ' + (sold ? sold + ' house' + (sold > 1 ? 's eat' : ' eats') + ' out.' : 'nobody eats out.'));
+}
+function fire(G, p, id) {
+  const P = G.players[p], c = cardOf(P, id); if (!c) return;
+  P.cards = P.cards.filter(k => k.id !== id); G.supply[c.t]++;
+}
+function payday(G) {
+  G.order.forEach(p => {
+    const P = G.players[p];
+    if (has(P, 'have100')) P.cards.filter(c => c.t === 'cfo').forEach(c => fire(G, p, c.id)); // the CEO does that job now
+    (P.firePick || []).forEach(id => fire(G, p, id));
+    if (P.firePick && P.firePick.length) log(G, P.name + ' lets ' + P.firePick.length + ' go.');
+    P.firePick = null;
+    const cost = Math.min(P.cash, salary(G, p));
+    if (cost >= 20) award(G, p, 'pay20');
+    P.cash -= cost; G.bank += cost;
+  });
+  // Marketing: every campaign runs, lowest number first.
+  G.camps.sort((a, b) => a.num - b.num);
+  G.camps.forEach(c => {
+    campReach(G, c).forEach(h => { for (let n = c.kind === 'radio' && has(G.players[c.owner], 'radio') ? 2 : 1; n > 0 && h.demand.length < (h.g ? 5 : 3); n--) h.demand.push(c.good); });
+    if (!c.eternal) c.left--;
+  });
+  G.camps = G.camps.filter(c => {
+    if (c.eternal || c.left > 0) return true;
+    const k = cardOf(G.players[c.owner], c.card); if (k) k.busy = 0; return false;
+  });
+  // Clean up.
+  G.order.forEach(p => {
+    const P = G.players[p]; let tot = GOODS.reduce((s, g) => s + P.stock[g], 0);
+    if (has(P, 'throw')) { for (const g of GOODS) while (tot > 10 && P.stock[g] > 0) { P.stock[g]--; tot--; } }
+    else if (tot > 0) { GOODS.forEach(g => { P.stock[g] = 0; }); award(G, p, 'throw'); }
+    P.rests.forEach(r => { r.open = 1; }); P.work = []; P.disc = 0; P.u = null;
+  });
+  for (const m in G.ms) if (G.ms[m].own.length) G.ms[m].closed = true;
+  newRound(G);
+}
+
+// Who has to do something right now.
+function needs(G, p) {
+  switch (G.phase) {
+    case 'reserve': return !G.players[p].reserve;
+    case 'place': return G.order[G.pi] === p;
+    case 'restructure': case 'payday': return !G.done[p];
+    case 'order': return G.choosers[G.ci] === p;
+    case 'work': return G.order[G.turn] === p;
+  }
+  return false;
+}
+
+// One move by one player. Returns '' when it worked, or the reason it did not.
+function act(G, p, a) { const e = act_(G, p, a) || ''; if (!e) G.v++; return e; }
+function act_(G, p, a) {
+  const P = G.players[p]; if (!P || !a) return 'No such player.';
+  if (!needs(G, p)) return 'It is not your move.';
+  if (G.phase === 'reserve') {
+    if (a.k !== 'reserve' || [100, 200, 300].indexOf(a.v) < 0) return 'Pick a reserve card.';
+    P.reserve = a.v;
+    if (G.players.every(q => q.reserve)) newRound(G);
+    return;
+  }
+  if (G.phase === 'place') {
+    if (a.k !== 'rest') return 'Place your restaurant.';
+    const e = legalRests(G, p, 'init')[a.x + ',' + a.y]; if (!e) return 'You cannot build there.';
+    P.rests.push({ x: a.x, y: a.y, ex: e[0], ey: e[1], open: 1 });
+    log(G, P.name + ' opens a restaurant.');
+    if (--G.pi < 0) { if (G.mode === 'full') { G.phase = 'reserve'; log(G, 'Each baron secretly picks a bank reserve card.'); } else newRound(G); }
+    return;
+  }
+  if (G.phase === 'restructure') {
+    if (a.k !== 'structure' || !Array.isArray(a.ids)) return 'Choose who works.';
+    const ids = a.ids.filter((id, i) => a.ids.indexOf(id) === i), cs = ids.map(id => cardOf(P, id));
+    if (cs.some(c => !c || c.busy)) return 'One of those people cannot work.';
+    if (!capacity(G, cs.map(c => c.t)).ok) return 'That many people do not fit under your managers.';
+    P.pick = ids; G.done[p] = 1;
+    if (G.players.every((q, i) => G.done[i])) reveal(G);
+    return;
+  }
+  if (G.phase === 'order') {
+    if (a.k !== 'order' || G.newOrder[a.pos] !== -1) return 'Pick a free place in line.';
+    G.newOrder[a.pos] = p;
+    if (++G.ci >= G.np) { G.order = G.newOrder.slice(); G.phase = 'work'; G.turn = 0; startTurn(G); }
+    return;
+  }
+  if (G.phase === 'payday') {
+    if (a.k !== 'fire' || !Array.isArray(a.ids)) return 'Choose who to let go.';
+    let ids = a.ids.filter(id => cardOf(P, id));
+    if (ids.some(id => cardOf(P, id).busy)) return 'A marketer with a running campaign cannot be let go.';
+    if (salary(G, p, ids) > P.cash) {
+      if (P.cards.some(c => EMP[c.t].sal && !c.busy && ids.indexOf(c.id) < 0 && !(MARKETER[c.t] && has(P, 'billboard')))) return 'You cannot pay everyone. Let more people go.';
+      // Nobody left to let go but busy marketers: they go too. Their campaigns stay on the map.
+      P.cards.forEach(c => { if (c.busy && EMP[c.t].sal && salary(G, p, ids) > P.cash) ids.push(c.id); });
+    }
+    P.firePick = ids; G.done[p] = 1;
+    if (G.players.every((q, i) => G.done[i])) payday(G);
+    return;
+  }
+  if (G.phase !== 'work') return 'The game is over.';
+  const u = P.u, wc = id => { const c = cardOf(P, id); return c && P.work.indexOf(id) >= 0 && !u.done[id] ? c : null; };
+  switch (a.k) {
+    case 'end': endTurn(G); return;
+    case 'recruit': {
+      if (!EMP[a.t] || !EMP[a.t].entry) return 'You can only hire entry-level people.';
+      if (u.rec >= recruitsOf(P)) return 'No hires left this turn.';
+      if (!give(G, p, a.t)) return 'Nobody of that kind is left to hire.';
+      u.rec++; log(G, P.name + ' hires a ' + EMP[a.t].n + '.');
+      if (u.rec === 3) award(G, p, 'hire3');
+      return;
+    }
+    case 'train': {
+      const c = cardOf(P, a.id);
+      if (!c || c.busy || P.work.indexOf(c.id) >= 0) return 'Only people on the beach can train.';
+      if ((EMP[c.t].to || []).indexOf(a.to) < 0) return 'That is not the next step for this person.';
+      if (u.tr >= trainsOf(P)) return 'No training left this turn.';
+      if ((u.tc[c.id] || 0) >= trainCapPerCard(P)) return 'This person cannot train further this turn.';
+      if (!(G.supply[a.to] > 0)) return 'No ' + EMP[a.to].n + ' card is left.';
+      if (EMP[a.to].uniq && P.cards.some(k => k.t === a.to)) return 'You may have only one ' + EMP[a.to].n + '.';
+      if (a.to === 'cfo' && has(P, 'have100')) return 'Your CEO already does the work of a CFO.';
+      log(G, P.name + ' trains a ' + EMP[c.t].n + ' into a ' + EMP[a.to].n + '.');
+      G.supply[c.t]++; G.supply[a.to]--; c.t = a.to; u.tr++; u.tc[c.id] = (u.tc[c.id] || 0) + 1;
+      award(G, p, 'train');
+      return;
+    }
+    case 'make': {
+      const c = wc(a.id); if (!c) return 'That person is not free.';
+      let n = 1;
+      if (c.t === 'kt' && (a.good === 'burger' || a.good === 'pizza')) { P.stock[a.good]++; award(G, p, a.good === 'burger' ? 'burgerMade' : 'pizzaMade'); }
+      else if (c.t === 'eb' && DRINKS.indexOf(a.good) >= 0) { n = has(P, 'errand') ? 2 : 1; P.stock[a.good] += n; }
+      else return 'That person cannot make that.';
+      u.done[c.id] = 1; log(G, P.name + ' stocks ' + n + ' ' + GOODNAME[a.good] + '.');
+      return;
+    }
+    case 'market': {
+      const c = wc(a.id), M = c && MARKETER[c.t];
+      if (!M || c.busy) return 'That person is not free.';
+      if (M.kinds.indexOf(a.kind) < 0) return 'This person cannot run that kind of campaign.';
+      if (GOODS.indexOf(a.good) < 0) return 'Pick something to advertise.';
+      const dur = Math.floor(a.dur); if (!(dur >= 1 && dur <= M.dur)) return 'Pick a length this person can manage.';
+      let nums = freeNums(G, a.kind); const k = { kind: a.kind, good: a.good, owner: p, card: c.id };
+      if (a.kind === 'air') {
+        nums = nums.filter(n => AIRSIZE[n] === a.size);
+        const lim = a.axis === 'row' ? G.H : a.axis === 'col' ? G.W : -1;
+        if (!Number.isInteger(a.start) || a.start < 0 || a.start + a.size > lim) return 'The airplane does not fit there.';
+        k.axis = a.axis; k.start = a.start; k.size = a.size;
+      } else {
+        if (!legalCampSpots(G, p, a.kind, M.range)[a.x + ',' + a.y]) return 'You cannot place it there.';
+        k.x = a.x; k.y = a.y;
+      }
+      if (!nums.length) return 'No ' + KINDNAME[a.kind].toLowerCase() + ' of that kind is left.';
+      k.num = nums[0];
+      if (a.kind === 'bill') award(G, p, 'billboard');
+      if (a.kind === 'air') award(G, p, 'airplane');
+      if (a.kind === 'radio') award(G, p, 'radio');
+      award(G, p, a.good === 'burger' ? 'mBurger' : a.good === 'pizza' ? 'mPizza' : 'mDrink');
+      k.eternal = has(P, 'billboard'); k.left = dur;
+      G.camps.push(k); c.busy = 1; u.done[c.id] = 1;
+      log(G, P.name + ' starts a ' + KINDNAME[a.kind].toLowerCase() + ' for ' + GOODNAME[a.good] + (k.eternal ? ', for good.' : ', ' + dur + ' round' + (dur > 1 ? 's.' : '.')));
+      return;
+    }
+    case 'house': {
+      const c = wc(a.id); if (!c || c.t !== 'nbd') return 'That person is not free.';
+      if (!legalHouses(G)[a.x + ',' + a.y]) return 'A house does not fit there.';
+      const num = Math.max(0, ...G.houses.map(h => h.num)) + 1;
+      G.houses.push({ id: G.houses.length, num, x: a.x, y: a.y, g: [], demand: [] }); // a new house comes with its garden
+      u.done[c.id] = 1; log(G, P.name + ' builds house ' + num + ', with a garden.');
+      return;
+    }
+    case 'garden': {
+      const c = wc(a.id); if (!c || c.t !== 'nbd') return 'That person is not free.';
+      const o = legalGardens(G).find(g => g.h === a.h && g.o === a.o); if (!o) return 'A garden does not fit there.';
+      const h = G.houses.find(k => k.id === a.h); h.g = o.sq;
+      u.done[c.id] = 1; log(G, P.name + ' gives house ' + h.num + ' a garden.');
+      return;
+    }
+    case 'rest': {
+      const c = wc(a.id); if (!c || (c.t !== 'lm' && c.t !== 'rm')) return 'That person is not free.';
+      let old = null;
+      if (c.t === 'rm' && a.move != null) { if (!P.rests[a.move]) return 'No such restaurant.'; old = P.rests.splice(a.move, 1)[0]; }
+      else if (P.rests.length >= 3) return 'You already have three restaurants.';
+      const e = legalRests(G, p, c.t)[a.x + ',' + a.y];
+      if (!e) { if (old) P.rests.splice(a.move, 0, old); return 'You cannot build there.'; }
+      P.rests.push({ x: a.x, y: a.y, ex: e[0], ey: e[1], open: c.t === 'rm' ? 1 : 0 });
+      u.done[c.id] = 1; log(G, P.name + (old ? ' moves a restaurant.' : ' builds a restaurant.'));
+      return;
+    }
+  }
+  return 'Unknown move.';
+}
+
+// What one player is allowed to see. Other players' secret picks and the reserve stay hidden.
+function view(G, p) {
+  const V = JSON.parse(JSON.stringify(G));
+  const peek = G.breaks > 0 || G.phase === 'over' || (G.players[p] && has(G.players[p], 'have20'));
+  V.players.forEach((P, i) => { if (i !== p) { P.pick = null; P.firePick = null; if (!peek) P.reserve = P.reserve ? -1 : 0; } });
+  delete V.rs;
+  return V;
+}
+
+// ============================================================================
+// The computer baron. It plays by rules of thumb: advertise near home, make
+// what is wanted, hire what is missing, and never promise a salary it cannot pay.
+// ============================================================================
+const FAM = { mk: ['mk', 'cm', 'bm', 'bd'], kt: ['kt', 'bc', 'bch', 'pc', 'pch'], rg: ['rg', 'rmgr', 'hr'], tr: ['tr', 'co', 'gu'],
+  eb: ['eb', 'cart', 'truck', 'zep'], mt: ['mt', 'jvp', 'vp', 'svp', 'evp'], wa: ['wa'], pm: ['pm', 'dm', 'lux', 'cfo'] };
+const MAKES = { kt: ['burger', 'pizza'], bc: ['burger'], bch: ['burger'], pc: ['pizza'], pch: ['pizza'], eb: DRINKS, cart: DRINKS, truck: DRINKS, zep: DRINKS };
+function botDemand(G, p) {
+  const d = distFor(G, p, false), out = { burger: 0, pizza: 0, beer: 0, lemon: 0, soda: 0, all: 0 };
+  G.houses.forEach(h => { if (houseDist(G, h, d) < Infinity) h.demand.forEach(g => { out[g]++; out.all++; }); });
+  return out;
+}
+function dryIncome(G, p) {
+  const C = JSON.parse(JSON.stringify(G)); C.log = []; const before = C.players[p].cash;
+  dinner(C); return C.players[p].cash - before;
+}
+function botValue(G, p, c, dem, running) {
+  const t = c.t, P = G.players[p];
+  if (MAKES[t]) {
+    const want = MAKES[t].reduce((s, g) => s + dem[g], 0);
+    return want ? 10 + Math.min(want, 4) : running.some(g => MAKES[t].indexOf(g) >= 0) ? 3 : 1;
+  }
+  if (MARKETER[t]) return MARKETER[t].kinds.some(k => freeNums(G, k).length) ? (G.camps.some(k => k.owner === p) ? 7 : 12) : 0;
+  if (FAM.rg.indexOf(t) >= 0) return P.cards.length < 12 ? 7 : 2;
+  if (FAM.tr.indexOf(t) >= 0) return 6;
+  if (t === 'wa') return 5;
+  if (t === 'pm' || t === 'dm') return dem.all ? 6 : 0;
+  if (t === 'cfo') return 9;
+  return 0;
+}
+function botStructure(G, p) {
+  const P = G.players[p], dem = botDemand(G, p), running = G.camps.filter(k => k.owner === p).map(k => k.good);
+  const free = P.cards.filter(c => !c.busy);
+  const mgrs = free.filter(c => EMP[c.t].slots).sort((a, b) => EMP[b.t].slots - EMP[a.t].slots);
+  const rest = free.filter(c => !EMP[c.t].slots).map(c => ({ c, v: botValue(G, p, c, dem, running) })).filter(o => o.v > 0).sort((a, b) => b.v - a.v);
+  let best = [], bv = -1;
+  for (let k = 0; k <= Math.min(mgrs.length, G.ceoSlots); k++) {
+    const m = mgrs.slice(0, k), cap = G.ceoSlots - k + m.reduce((s, c) => s + EMP[c.t].slots, 0);
+    const pickd = rest.slice(0, cap), v = pickd.reduce((s, o) => s + o.v, 0);
+    if (v > bv) { bv = v; best = m.concat(pickd.map(o => o.c)); }
+  }
+  return best.map(c => c.id);
+}
+function botCampaign(G, p, c) {
+  const P = G.players[p], M = MARKETER[c.t];
+  const mine = distFor(G, p, false), others = G.players.map((q, i) => i === p ? null : distFor(G, i, false));
+  const w = h => {
+    const d = houseDist(G, h, mine); if (d === Infinity) return 0;
+    const lead = others.every(o => !o || houseDist(G, h, o) >= d);
+    return (h.demand.length < (h.g ? 5 : 3) ? 1 : 0.2) * (lead ? 1.5 : 0.6) * (h.g ? 1.5 : 1);
+  };
+  const score = k => campReach(G, k).reduce((s, h) => s + w(h), 0);
+  let best = null, bs = 0.01;
+  const tryIt = k => { const s = score(k) + Math.random() * 0.05; if (s > bs) { bs = s; best = k; } };
+  M.kinds.forEach(kind => {
+    const nums = freeNums(G, kind); if (!nums.length) return;
+    if (kind === 'air') {
+      nums.forEach(n => { const size = AIRSIZE[n]; ['row', 'col'].forEach(axis => { const lim = axis === 'row' ? G.H : G.W; for (let s = 0; s + size <= lim; s++) tryIt({ kind, axis, start: s, size }); }); });
+    } else Object.keys(legalCampSpots(G, p, kind, M.range)).forEach(key => { const [x, y] = key.split(',').map(Number); tryIt({ kind, x, y }); });
+  });
+  if (!best) return null;
+  let can = []; P.cards.forEach(k => (MAKES[k.t] || []).forEach(g => { if (can.indexOf(g) < 0) can.push(g); }));
+  if (!can.length) can = ['burger'];
+  // Advertise what is still worth a milestone first, then what we already advertise least.
+  const open = g => !G.ms[g === 'burger' ? 'mBurger' : g === 'pizza' ? 'mPizza' : 'mDrink'].closed && !has(P, g === 'burger' ? 'mBurger' : g === 'pizza' ? 'mPizza' : 'mDrink');
+  const runs = g => G.camps.filter(k => k.owner === p && k.good === g).length;
+  can.sort((a, b) => (open(b) - open(a)) || (runs(a) - runs(b)) || (GOODS.indexOf(a) - GOODS.indexOf(b)));
+  return Object.assign({ k: 'market', id: c.id, good: can[0], dur: M.dur }, best);
+}
+function botWork(G, p) {
+  const P = G.players[p], u = P.u, dem = botDemand(G, p), fam = f => P.cards.filter(c => FAM[f].indexOf(c.t) >= 0).length;
+  const short = g => dem[g] - P.stock[g];
+  // A relaxed computer baron builds slowly: one hire in two rounds of three, and training every other round.
+  const lazy = G.easy && P.bot;
+  for (const c of workCards(P)) {
+    if (u.done[c.id]) continue;
+    if (c.t === 'kt') return { k: 'make', id: c.id, good: short('pizza') > short('burger') ? 'pizza' : 'burger' };
+    if (c.t === 'eb') return { k: 'make', id: c.id, good: DRINKS.slice().sort((a, b) => short(b) - short(a))[0] };
+    if (MARKETER[c.t] && !c.busy) { const a = botCampaign(G, p, c); if (a) return a; }
+  }
+  if (u.rec < (lazy ? (G.round % 3 ? 1 : 0) : recruitsOf(P))) {
+    const nonMgr = P.cards.filter(c => !EMP[c.t].slots).length, mgr = P.cards.filter(c => EMP[c.t].slots);
+    const cap = G.ceoSlots - mgr.length + mgr.reduce((s, c) => s + EMP[c.t].slots, 0);
+    const drinkWant = dem.beer + dem.lemon + dem.soda, drv = collectDrinks(G, p);
+    // Drinks no driver of ours can reach must come from errand boys, or those houses never eat.
+    const ebNeed = Math.ceil(DRINKS.reduce((n, d) => n + Math.max(0, dem[d] - drv[d]), 0) / (has(P, 'errand') ? 2 : 1));
+    const ebs = P.cards.filter(c => c.t === 'eb').length;
+    const want = [
+      [!fam('mk'), 'mk'], [!fam('kt'), 'kt'], [ebs < Math.min(3, ebNeed), 'eb'], [!fam('rg'), 'rg'],
+      [nonMgr >= cap && mgr.length < G.ceoSlots - 1, 'mt'],
+      [!fam('tr') && (P.cash >= 10 || !G.ms.train.closed), 'tr'],
+      [!fam('eb') && (drinkWant || fam('mk') >= 2), 'eb'],
+      [fam('kt') < 3, 'kt'], [fam('mk') < 2, 'mk'], [!fam('wa'), 'wa'], [!fam('pm') && G.round > 4, 'pm'],
+      [fam('eb') < 2, 'eb'], [fam('kt') < 5, 'kt'], [fam('wa') < 3, 'wa'], [fam('mk') < 3, 'mk'], [true, 'wa'],
+    ].find(([ok, t]) => ok && G.supply[t] > 0);
+    if (want) return { k: 'recruit', t: want[1] };
+  }
+  if (u.tr < trainsOf(P) && !(lazy && G.round % 2)) {
+    // Salaries go on every round, so keep them well under what dinner brings in.
+    const budget = P.cash * 0.2 + dryIncome(G, p) * 0.5, freeMk = has(P, 'billboard');
+    const plan = [['kt', short('pizza') > short('burger') ? 'pc' : 'bc'], ['mk', 'cm'], ['mt', 'jvp'], ['eb', 'cart'],
+      ['cm', 'bm'], ['bc', 'bch'], ['pc', 'pch'], ['jvp', 'vp'], ['bm', 'bd'], ['cart', 'truck'], ['vp', 'svp']];
+    for (const [from, to] of plan) {
+      if (from === 'eb' && P.cards.filter(k => k.t === 'eb').length < 2) continue;
+      const c = P.cards.find(k => k.t === from && !k.busy && P.work.indexOf(k.id) < 0 && (u.tc[k.id] || 0) < trainCapPerCard(P));
+      if (!c || !(G.supply[to] > 0) || (EMP[to].uniq && P.cards.some(k => k.t === to))) continue;
+      const adds = EMP[c.t].sal || (MARKETER[to] && freeMk) ? 0 : 5;
+      const cost = salary(G, p) + adds - (!has(P, 'train') && !G.ms.train.closed ? 15 : 0);
+      if (cost <= budget) return { k: 'train', id: c.id, to };
+    }
+  }
+  return { k: 'end' };
+}
+function botFire(G, p) {
+  const P = G.players[p], ids = [], dem = botDemand(G, p);
+  const pool = P.cards.filter(c => EMP[c.t].sal && !c.busy).map(c => ({ c, v: botValue(G, p, c, dem, []) + (EMP[c.t].slots || 0) })).sort((a, b) => a.v - b.v);
+  const earned = G.last && G.last.earned ? G.last.earned[p] : 0;
+  while (pool.length && (salary(G, p, ids) > P.cash || (G.round > 5 && salary(G, p, ids) > Math.max(5, earned * 0.7)))) ids.push(pool.shift().c.id);
+  return ids;
+}
+function botAct(G, p) {
+  const P = G.players[p];
+  switch (G.phase) {
+    case 'reserve': return { k: 'reserve', v: P.bot ? [100, 200, 200, 300][Math.floor(Math.random() * 4)] : 200 };
+    case 'place': {
+      const L = legalRests(G, p, 'init'); let best = null, bs = -1;
+      Object.keys(L).forEach(key => {
+        const [x, y] = key.split(',').map(Number), e = L[key], d = roadDist(G, restStarts(G, { ex: e[0], ey: e[1] }));
+        let s = Math.random() * 0.2;
+        G.houses.forEach(h => { const k = houseDist(G, h, d); if (k < Infinity) s += 1 / (1 + k); });
+        G.drinks.forEach(k => { if (tileKey(k.x, k.y) === tileKey(e[0], e[1])) s += 0.4; });
+        if (s > bs) { bs = s; best = { k: 'rest', x, y }; }
+      });
+      return best;
+    }
+    case 'restructure': return { k: 'structure', ids: botStructure(G, p) };
+    case 'order': return { k: 'order', pos: G.newOrder.indexOf(-1) };
+    case 'work': return botWork(G, p);
+    case 'payday': return { k: 'fire', ids: botFire(G, p) };
+  }
+  return null;
+}
+// If a computer move is ever refused, this keeps the game going.
+function botFallback(G, p) {
+  if (G.phase === 'work') return { k: 'end' };
+  if (G.phase === 'restructure') return { k: 'structure', ids: [] };
+  if (G.phase === 'payday') return { k: 'fire', ids: G.players[p].cards.filter(c => EMP[c.t].sal && !c.busy).map(c => c.id) };
+  return null;
+}
+if (typeof module !== 'undefined') module.exports = { newGame, act, needs, botAct, botFallback, view, EMP, MS, salary, capacity };
+</script>
+<script>
+'use strict';
+// ============================================================================
+// The screen. Everything is drawn again from G after each move.
+// ============================================================================
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const PCOL = ['#c8372d', '#2f6fb0', '#3d8b4a', '#d98a1a', '#7d4e9e'];
+const PHASE = { reserve: 'Bank reserve', place: 'First restaurants', restructure: 'Restructuring', order: 'Order of business',
+  work: 'Working 9 to 5', payday: 'Payday', over: 'Game over' };
+const MODES = [
+  ['intro', 'First game', 'The rulebook\'s learning game. No salaries, no milestones, and it ends when the bank first runs dry.'],
+  ['introms', 'Second game', 'The same, with milestones: a lasting bonus for the first baron to do each thing.'],
+  ['full', 'Full game', 'Salaries of $5, secret bank reserve cards, and the bank must break twice.'],
+];
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+const UI = { screen: 'home', G: null, me: 0, mode: null, pick: [], pickRound: -1, fire: [], fireRound: -1, tab: 'me', seen: 0,
+  modal: null, lastModal: null, introAt: 0, introOn: false, dealt: {}, dealtNow: {}, dealN: 0, boxBack: false, help: 'guide', mk: {}, rivals: 1, name: store.get('barons-name') || '', overSeen: false, err: '',
+  open: false, view: 'box', fresh: false, gmode: store.get('barons-mode') || 'introms', easy: store.get('barons-level') !== 'sharp', tips: store.get('barons-tips') !== 'off', tip: null, tipKey: '' };
+const NET = { role: null, code: null, sig: null, me: Math.random().toString(36).slice(2, 10), seats: [], timer: null, gmode: 'intro' };
+const C = 32, M = 32; // one map square, and the margin where airplanes fly
+let botT = null, toastT = null;
+
+function toast(s) { const t = $('toast'); t.textContent = s; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
+function pname(G, p) { return '<b style="color:' + PCOL[p] + ';font-family:var(--display)">' + esc(G.players[p].name) + '</b>'; }
+function gi(g) { return '<svg class="gi" viewBox="0 0 24 24"><use href="#g-' + g + '"/></svg>'; }
+function stockHTML(st) { const s = GOODS.filter(g => st[g]).map(g => gi(g) + st[g]).join(' '); return s || 'no stock'; }
+function cleanName(s) { return String(s || '').replace(/[^\w \-]/g, '').trim().slice(0, 12); }
+(function () { // the starburst outline, shared by every burst on the page
+  const pts = [], n = 22;
+  for (let i = 0; i < n * 2; i++) { const a = Math.PI * i / n, r = i % 2 ? 43 : 50; pts.push((50 + r * Math.cos(a)).toFixed(1) + '% ' + (50 + r * Math.sin(a)).toFixed(1) + '%'); }
+  document.documentElement.style.setProperty('--burst', 'polygon(' + pts.join(',') + ')');
+})();
+
+// ---- moves -----------------------------------------------------------------
+function send(a) {
+  if (NET.role === 'guest') { NET.sig.send({ t: 'act', from: NET.me, a }); UI.mode = null; render(); return; }
+  const e = act(UI.G, UI.me, a);
+  if (e) { toast(e); return; }
+  UI.mode = null; changed();
+}
+function changed() { save(); broadcast(); render(); scheduleBots(); }
+function save() { if (!NET.role && UI.G) store.set('barons-save', JSON.stringify({ G: UI.G, me: UI.me })); }
+function scheduleBots() {
+  clearTimeout(botT);
+  const G = UI.G; if (NET.role === 'guest' || !G || G.phase === 'over') return;
+  const p = G.players.findIndex((P, i) => P.bot && needs(G, i)); if (p < 0) return;
+  botT = setTimeout(() => {
+    const a = botAct(G, p);
+    if (!a || act(G, p, a)) { const f = botFallback(G, p); if (!f || act(G, p, f)) return; }
+    changed();
+  }, Math.max(G.phase === 'work' || G.phase === 'place' ? 480 : 160, UI.introAt + 2500 - Date.now()));
+}
+
+// ---- pictures --------------------------------------------------------------
+// Each job has an ink drawing on white in barons-art/, named by its key in EMP. It is laid over the
+// card's department color with a multiply blend, so the white paper takes that color.
+function art(t) { return '<img src="barons-art/' + t + '.jpg" alt="" loading="lazy">'; }
+function picHTML(t) {
+  const e = EMP[t];
+  if (e.slots) return '<svg viewBox="0 0 120 92"><text x="60" y="68" font-size="64" text-anchor="middle" fill="#fcefd5" style="font-family:var(--text)">' + e.slots + '</text></svg>';
+  return art(t);
+}
+// A card you have not held before is dealt in. One that changed job is flipped over.
+function dealCls(c) {
+  if (!c) return '';
+  const was = UI.dealt[c.id]; UI.dealtNow[c.id] = c.t;
+  return was === undefined ? ' dealt" style="--i:' + (UI.dealN++) : was !== c.t ? ' flipped' : '';
+}
+function cardHTML(t, o) {
+  o = o || {}; const e = EMP[t], tag = o.click ? 'button' : 'div';
+  return '<' + tag + ' class="card d-' + e.d + (o.sel ? ' sel' : '') + (o.dim ? ' dim' : '') + dealCls(o.card) + '"' + (o.click ? ' onclick="' + o.click + '"' : '') + '>' +
+    '<div class="hd">' + e.n + '</div><div class="pic">' + picHTML(t) + (e.range ? '<span class="rng">' + (t === 'zep' ? 'air ' : 'range ') + e.range + '</span>' : '') + '</div><div class="bd">' + e.x + '</div><div class="ft">' +
+    (e.entry ? '<span class="ic" title="Can be hired">▶ hire</span>' : '') + (e.uniq ? '<span class="ic" title="One per baron">1×</span>' : '') +
+    (o.tag ? '<span class="tagc">' + o.tag + '</span>' : '') + (e.sal ? '<span class="ic sal" title="Salary each round">$5</span>' : '') + '</div></' + tag + '>';
+}
+function ceoHTML(G) {
+  return '<div class="card d-ceo' + (UI.introOn ? ' dealt' : '') + '"><div class="hd">CEO · you</div><div class="pic">' + art('ceo') + '</div><div class="bd">Manages ' + (G ? G.ceoSlots : 3) + ' people. Hires 1 person.</div><div class="ft"></div></div>';
+}
+function sortCards(cs) { const k = Object.keys(EMP); return cs.slice().sort((a, b) => k.indexOf(a.t) - k.indexOf(b.t)); }
+
+// ---- the board -------------------------------------------------------------
+function boardSVG(G) {
+  const W = G.W * C + 2 * M, H = G.H * C + 2 * M, X = x => M + x * C, s = [];
+  const tok = (g, x, y, z) => '<use href="#g-' + g + '" x="' + x + '" y="' + y + '" width="' + z + '" height="' + z + '"/>';
+  s.push('<svg id="bd" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">');
+  s.push('<defs><pattern id="aw" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="4" height="8" fill="#fff8ea"/></pattern></defs>');
+  for (let ty = 0; ty < G.H / TS; ty++) for (let tx = 0; tx < G.W / TS; tx++)
+    s.push('<rect x="' + X(tx * TS) + '" y="' + X(ty * TS) + '" width="' + TS * C + '" height="' + TS * C + '" fill="' + ((tx + ty) % 2 ? '#d9e4c1' : '#cfdcb5') + '" stroke="#fff8ea" stroke-width="2"/>');
+  for (let y = 0; y < G.H; y++) for (let x = 0; x < G.W; x++) if (isRoad(G, x, y)) s.push('<rect x="' + X(x) + '" y="' + X(y) + '" width="' + C + '" height="' + C + '" fill="#8d877c"/>');
+  for (let y = 0; y < G.H; y++) for (let x = 0; x < G.W; x++) if (isRoad(G, x, y)) {
+    const cx = X(x) + C / 2, cy = X(y) + C / 2;
+    N4.forEach(([dx, dy]) => { if (isRoad(G, x + dx, y + dy) || !inB(G, x + dx, y + dy)) s.push('<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + dx * C / 2) + '" y2="' + (cy + dy * C / 2) + '" stroke="#fcefd5" stroke-width="2" stroke-dasharray="5 4"/>'); });
+  }
+  G.camps.forEach(c => {
+    if (c.kind !== 'air') return;
+    const row = c.axis === 'row', col = PCOL[c.owner];
+    s.push('<rect x="' + (row ? M : X(c.start)) + '" y="' + (row ? X(c.start) : M) + '" width="' + (row ? G.W * C : c.size * C) + '" height="' + (row ? c.size * C : G.H * C) + '" fill="' + col + '" fill-opacity=".13" stroke="' + col + '" stroke-dasharray="6 5" stroke-width="2"/>');
+    const mx = row ? M / 2 : X(c.start) + c.size * C / 2, my = row ? X(c.start) + c.size * C / 2 : M / 2;
+    s.push('<circle cx="' + mx + '" cy="' + my + '" r="14" fill="#fff8ea" stroke="' + col + '" stroke-width="3"/>' + tok(c.good, mx - 9, my - 9, 18) +
+      '<text x="' + (mx + 13) + '" y="' + (my + 15) + '" font-size="9" font-weight="800" text-anchor="middle" fill="#1d1a17">✈' + (c.eternal ? '∞' : c.left) + '</text>');
+  });
+  G.houses.forEach(h => {
+    const x = X(h.x), y = X(h.y);
+    if (h.g && h.g.length) {
+      const x0 = Math.min(h.g[0][0], h.g[1][0]), y0 = Math.min(h.g[0][1], h.g[1][1]), w = h.g[0][0] === h.g[1][0] ? 1 : 2, hh = 3 - w;
+      s.push('<rect x="' + (X(x0) + 1) + '" y="' + (X(y0) + 1) + '" width="' + (w * C - 2) + '" height="' + (hh * C - 2) + '" rx="4" fill="#7fbf6a" stroke="#1d1a17" stroke-width="1.5"/>');
+      h.g.forEach(([gx, gy]) => s.push('<circle cx="' + (X(gx) + 11) + '" cy="' + (X(gy) + 12) + '" r="3.5" fill="#f7b6c2"/><circle cx="' + (X(gx) + 21) + '" cy="' + (X(gy) + 21) + '" r="3.5" fill="#ffe27a"/>'));
+    }
+    const own = h.g && !h.g.length; // a built house: the garden is part of it
+    s.push('<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (2 * C - 2) + '" height="' + (2 * C - 2) + '" rx="4" fill="' + (own ? '#7fbf6a' : '#f3dfb4') + '" stroke="#1d1a17" stroke-width="1.5"/>' +
+      (own ? '<rect x="' + (x + 9) + '" y="' + (y + 7) + '" width="' + (2 * C - 18) + '" height="' + (2 * C - 24) + '" rx="3" fill="#f3dfb4" stroke="#1d1a17" stroke-width="1.5"/><circle cx="' + (x + 6) + '" cy="' + (y + 2 * C - 7) + '" r="3" fill="#f7b6c2"/><circle cx="' + (x + 2 * C - 6) + '" cy="' + (y + 2 * C - 7) + '" r="3" fill="#ffe27a"/>'
+        : '<path d="M' + (x + 3) + ' ' + (y + 3) + 'L' + (x + 2 * C - 3) + ' ' + (y + 2 * C - 3) + 'M' + (x + 2 * C - 3) + ' ' + (y + 3) + 'L' + (x + 3) + ' ' + (y + 2 * C - 3) + '" stroke="#cfae75" stroke-width="1.5"/>') +
+      '<circle cx="' + (x + C) + '" cy="' + (y + C - 8) + '" r="11" fill="#a3403f" stroke="#1d1a17" stroke-width="1.5"/><text x="' + (x + C) + '" y="' + (y + C - 7) + '" font-size="12" font-weight="800" fill="#fff" text-anchor="middle" dominant-baseline="middle">' + h.num + '</text>');
+    if (h.demand.length) s.push('<rect x="' + (x + 2) + '" y="' + (y + 2 * C - 19) + '" width="' + (h.demand.length * 12 + 2) + '" height="16" rx="5" fill="#fff8ea" stroke="#1d1a17" stroke-width="1"/>');
+    h.demand.forEach((g, i) => s.push(tok(g, x + 3 + i * 12, y + 2 * C - 18, 13)));
+  });
+  G.drinks.forEach(d => s.push('<circle cx="' + (X(d.x) + C / 2) + '" cy="' + (X(d.y) + C / 2) + '" r="13" fill="#fff8ea" stroke="#1d1a17" stroke-width="1.5"/>' + tok(d.t, X(d.x) + 6, X(d.y) + 6, 20)));
+  G.players.forEach((P, p) => P.rests.forEach(r => {
+    const x = X(r.x), y = X(r.y);
+    s.push('<g' + (r.open ? '' : ' opacity=".6"') + '><rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="' + (2 * C - 4) + '" height="' + (2 * C - 4) + '" rx="7" fill="' + PCOL[p] + '" stroke="#1d1a17" stroke-width="2"' + (r.open ? '' : ' stroke-dasharray="5 3"') + '/>' +
+      '<rect x="' + (x + 3) + '" y="' + (y + 3) + '" width="' + (2 * C - 6) + '" height="9" fill="url(#aw)" opacity=".85"/>' +
+      '<text x="' + (x + C) + '" y="' + (y + C + 6) + '" font-size="' + (r.open ? 28 : 12) + '" font-weight="900" font-style="italic" fill="#fff" text-anchor="middle" dominant-baseline="middle" style="font-family:var(--chunk)">' + (r.open ? esc(P.name[0].toUpperCase()) : 'SOON') + '</text>' +
+      '<circle cx="' + (X(r.ex) + C / 2) + '" cy="' + (X(r.ey) + C / 2) + '" r="4" fill="#fff8ea" stroke="#1d1a17" stroke-width="1.5"/></g>');
+  }));
+  G.camps.forEach(c => {
+    if (c.kind === 'air') return;
+    const x = X(c.x), y = X(c.y), col = PCOL[c.owner];
+    s.push('<rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="' + (C - 4) + '" height="' + (C - 4) + '" rx="' + (c.kind === 'mail' ? 13 : c.kind === 'radio' ? 0 : 4) + '" fill="#fff8ea" stroke="' + col + '" stroke-width="3"/>' + tok(c.good, x + 7, y + 5, 17) +
+      '<text x="' + (x + C - 3) + '" y="' + (y + C - 3) + '" font-size="9" font-weight="800" text-anchor="end" fill="#1d1a17" stroke="#fff8ea" stroke-width="2.5" paint-order="stroke">' + { bill: 'B', mail: 'M', radio: 'R' }[c.kind] + (c.eternal ? '∞' : c.left) + '</text>');
+  });
+  const m = UI.mode, tip = UI.tips && !m ? UI.tip : null;
+  if (m) {
+    if (m.t === 'camp') Object.keys(m.legal).forEach(k => { const [x, y] = k.split(',').map(Number); s.push('<rect class="spot" x="' + (X(x) + 3) + '" y="' + (X(y) + 3) + '" width="' + (C - 6) + '" height="' + (C - 6) + '" rx="5"/>'); });
+    if (m.t === 'rest' || m.t === 'house') Object.keys(m.legal).forEach(k => { const [x, y] = k.split(',').map(Number); s.push('<circle class="dotspot" cx="' + X(x + 1) + '" cy="' + X(y + 1) + '" r="5"/>'); });
+    if (m.t === 'garden') m.opts.forEach(o => { const x0 = Math.min(o.sq[0][0], o.sq[1][0]), y0 = Math.min(o.sq[0][1], o.sq[1][1]), w = o.sq[0][0] === o.sq[1][0] ? 1 : 2; s.push('<rect class="spot" x="' + (X(x0) + 3) + '" y="' + (X(y0) + 3) + '" width="' + (w * C - 6) + '" height="' + ((3 - w) * C - 6) + '" rx="5"/>'); });
+  }
+  // The coach's suggested place, in gold.
+  const gold = (x, y, w, h) => s.push('<rect x="' + (X(x) + 1) + '" y="' + (X(y) + 1) + '" width="' + (w * C - 2) + '" height="' + (h * C - 2) + '" rx="6" fill="rgba(238,191,69,.35)" stroke="#eebf45" stroke-width="4" stroke-dasharray="7 4" pointer-events="none"/>');
+  const ta = m && m.init ? (UI.tips ? UI.tip : null) : tip;
+  if (ta && ta.k === 'rest' && ta.x != null) gold(ta.x, ta.y, 2, 2);
+  if (ta && ta.k === 'market') { if (ta.kind === 'air') { if (ta.axis === 'row') gold(0, ta.start, G.W, ta.size); else gold(ta.start, 0, ta.size, G.H); } else gold(ta.x, ta.y, 1, 1); }
+  s.push('<rect id="pv" visibility="hidden" pointer-events="none" rx="7" fill="rgba(63,143,140,.35)" stroke="#3f8f8c" stroke-width="3"/></svg>');
+  return s.join('');
+}
+function boardPoint(e) {
+  const svg = $('bd'), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+  return [(q.x - M) / C, (q.y - M) / C];
+}
+// Where the pointer means, for the thing being placed. Null when it is not a legal place.
+function boardTarget(fx, fy) {
+  const m = UI.mode, G = UI.G; if (!m) return null;
+  if (m.t === 'rest' || m.t === 'house') { const x = Math.round(fx) - 1, y = Math.round(fy) - 1; return m.legal[x + ',' + y] ? { x, y, w: 2, h: 2 } : null; }
+  const cx = Math.floor(fx), cy = Math.floor(fy);
+  if (m.t === 'camp') return m.legal[cx + ',' + cy] ? { x: cx, y: cy, w: 1, h: 1 } : null;
+  if (m.t === 'garden') { const o = m.opts.find(k => k.sq.some(([x, y]) => x === cx && y === cy)); return o ? { o, x: -9, y: -9, w: 0, h: 0 } : null; }
+  if (m.t === 'air') {
+    const row = m.a.axis === 'row', lim = row ? G.H : G.W, v = row ? cy : cx;
+    if (v < -1 || v > lim) return null;
+    const start = Math.max(0, Math.min(lim - m.a.size, v - Math.floor(m.a.size / 2)));
+    return row ? { start, x: 0, y: start, w: G.W, h: m.a.size } : { start, x: start, y: 0, w: m.a.size, h: G.H };
+  }
+  return null;
+}
+function bindBoard() {
+  const svg = $('bd'); if (!svg) return;
+  svg.onmousemove = e => {
+    const pv = $('pv'), [fx, fy] = boardPoint(e), t = boardTarget(fx, fy);
+    if (!t || !t.w) { pv.setAttribute('visibility', 'hidden'); return; }
+    pv.setAttribute('x', M + t.x * C); pv.setAttribute('y', M + t.y * C); pv.setAttribute('width', t.w * C); pv.setAttribute('height', t.h * C); pv.setAttribute('visibility', 'visible');
+  };
+  svg.onmouseleave = () => $('pv').setAttribute('visibility', 'hidden');
+  svg.onclick = e => {
+    const m = UI.mode; if (!m) return;
+    const [fx, fy] = boardPoint(e), t = boardTarget(fx, fy);
+    if (!t) { toast(m.t === 'rest' || m.t === 'house' ? 'Tap near a green dot.' : 'Tap a green place.'); return; }
+    if (m.t === 'rest') send(m.init ? { k: 'rest', x: t.x, y: t.y } : { k: 'rest', id: m.id, x: t.x, y: t.y, move: m.move });
+    else if (m.t === 'house') send({ k: 'house', id: m.id, x: t.x, y: t.y });
+    else if (m.t === 'garden') send({ k: 'garden', id: m.id, h: t.o.h, o: t.o.o });
+    else if (m.t === 'camp') send(Object.assign({}, m.a, { x: t.x, y: t.y }));
+    else if (m.t === 'air') send(Object.assign({}, m.a, { start: t.start }));
+  };
+}
+
+// ---- the coach -------------------------------------------------------------
+// With tips on, the coach explains the step you are on and suggests one move.
+// The suggestion is the move the computer baron would make in your seat.
+const WHY_HIRE = {
+  mk: 'Nobody eats out until someone advertises. A billboard beside a house makes it want food.',
+  kt: 'You need food to sell. A Kitchen Trainee makes 1 burger or pizza a round, and trains into a Cook who makes 3.',
+  rg: 'Your CEO hires only 1 person a round. A Recruiting Girl gives you one more hire in every round she works.',
+  mt: 'Your CEO holds only 3 people. A Management Trainee takes one of those slots and holds 2 people, so you gain a slot.',
+  tr: 'A Trainer promotes someone who is on the beach. Trained people do far more.',
+  eb: 'Houses near you want drinks. An Errand Boy fetches 1 drink a round.',
+  wa: 'A Waitress earns $3 in every round she works, and wins ties for customers.',
+  pm: 'A Pricing Manager drops your price by $1. Houses go to the lowest price plus distance.',
+};
+function tipAction(G, me) {
+  const key = G.v + G.phase + me;
+  if (UI.tipKey !== key) { UI.tipKey = key; UI.tip = null; try { if (needs(G, me)) UI.tip = botAct(G, me); } catch (e) {} }
+  return UI.tip;
+}
+// Plain facts about the town, so that you can judge the suggestion and not just follow it.
+function scout(G, me) {
+  const out = [], P = G.players[me], d = G.players.map((q, p) => distFor(G, p, true)), pr = G.players.map((q, p) => priceOf(G, p));
+  const mine = [], lost = [], can = {}, miss = {};
+  P.cards.forEach(c => (MAKES[c.t] || []).forEach(g => { can[g] = 1; }));
+  G.houses.slice().sort((a, b) => a.num - b.num).forEach(h => {
+    if (!h.demand.length) return;
+    const my = houseDist(G, h, d[me]); if (my === Infinity) return;
+    let best = -1, bt = Infinity;
+    G.players.forEach((q, p) => { if (p === me) return; const t = houseDist(G, h, d[p]) + pr[p]; if (t < bt) { bt = t; best = p; } });
+    if (best >= 0 && bt < my + pr[me]) lost.push('house ' + h.num + ' prefers ' + esc(G.players[best].name) + ' (' + bt + ' against your ' + (my + pr[me]) + ')');
+    else { mine.push(h.num); h.demand.forEach(g => { if (!can[g]) miss[g] = h.num; }); }
+  });
+  if (mine.length) out.push('You are the best deal for house ' + mine.join(', ') + '. Stock everything on those lists.');
+  Object.keys(miss).forEach(g => out.push('House ' + miss[g] + ' wants ' + GOODNAME[g] + ', and nobody in your company can supply it. Until someone can, that whole house buys nothing from you.'));
+  if (lost.length) out.push('On price plus distance, ' + lost.slice(0, 2).join(', and ') + '. You win those only if the rival runs out of stock, or if you cut your price.');
+  const free = P.cards.filter(c => !c.busy), mg = free.filter(c => EMP[c.t].slots), cap = G.ceoSlots - Math.min(mg.length, G.ceoSlots) + mg.reduce((n, c) => n + EMP[c.t].slots, 0);
+  if (free.length - mg.length > cap) out.push('You have ' + (free.length - mg.length) + ' staff and only ' + cap + ' slots. More managers would put more of them to work.');
+  if (G.mode !== 'intro') {
+    const open = ['billboard', 'train', 'hire3', 'waitress', 'errand', 'lower', 'mBurger', 'mPizza', 'mDrink', 'burgerMade', 'pizzaMade', 'cart'].filter(m => !G.ms[m].closed && !has(P, m)).slice(0, 3);
+    if (open.length) out.push('Milestones nobody has yet: ' + open.map(m => MS[m].n.toLowerCase()).join('; ') + '.');
+  }
+  return out.slice(0, 4);
+}
+function tipHTML(G, me) {
+  const a = tipAction(G, me); if (!UI.tips || !a || G.phase === 'over') return '';
+  const P = G.players[me], names = ids => ids.map(id => EMP[cardOf(P, id).t].n).join(', ');
+  let title = '', why = '', doIt = '', btn = '';
+  if (G.phase === 'place') { title = 'Where to open'; why = 'Open close to houses. A house on your own tile is 0 steps away. Every tile border a customer must cross counts like $1 on your price. A drink source nearby will help later.'; doIt = 'The gold square is a good spot.'; btn = 'Open there'; }
+  else if (G.phase === 'reserve') { title = 'How long a game?'; why = 'When the bank first runs dry, every reserve card is added to it. $100 makes a short game. $300 makes a long one. The value most barons pick also sets the CEO slots for the rest of the game: 2, 3 or 4.'; doIt = 'For a first full game, pick $200.'; btn = 'Pick $200'; }
+  else if (G.phase === 'restructure') {
+    title = 'Who should work?'; why = 'Send people who can do something useful right now. Cooks are wasted when no house wants their food. Leave on the beach anyone you want to train this round: a trainer can only train beach people.';
+    doIt = a.ids.length ? 'Suggested: ' + names(a.ids) + '.' : 'Suggested: nobody. Your CEO still hires one person.'; btn = 'Use this line-up';
+  } else if (G.phase === 'order') { title = 'Your place in line'; why = 'Barons act in this order. The earlier baron also wins a customer when price, distance and waitresses are all equal.'; doIt = 'Take place ' + (a.pos + 1) + '.'; btn = 'Take it'; }
+  else if (G.phase === 'payday') {
+    title = 'Payday'; why = 'Each trained person costs $5, at work or on the beach. Entry-level people are free.';
+    doIt = a.ids.length ? 'You cannot afford everyone. Let go: ' + names(a.ids) + '.' : 'You can pay everyone. Keep them all.'; btn = a.ids.length ? 'Mark them' : 'Pay';
+  } else {
+    title = 'What next?'; btn = 'Do it';
+    if (a.k === 'recruit') { doIt = 'Hire a ' + EMP[a.t].n + '.'; why = WHY_HIRE[a.t] || EMP[a.t].x; }
+    else if (a.k === 'train') { doIt = 'Train your ' + EMP[cardOf(P, a.id).t].n + ' into a ' + EMP[a.to].n + '.'; why = EMP[a.to].x + (G.mode === 'full' ? ' From now on this person costs $5 a round.' : ''); }
+    else if (a.k === 'make') { doIt = 'Have your ' + EMP[cardOf(P, a.id).t].n + ' stock a ' + GOODNAME[a.good] + '.'; why = 'Make what the houses near you want. A house comes only if you have everything on its list, and unsold food is thrown away tonight.'; }
+    else if (a.k === 'market') {
+      const nums = campReach(G, a).map(h => h.num).sort((x, y) => x - y);
+      doIt = 'Start a ' + KINDNAME[a.kind].toLowerCase() + ' for ' + GOODNAME[a.good] + ' at the gold mark' + (nums.length ? '. It reaches house ' + nums.join(' and ') + '.' : '.');
+      why = 'Advertise what you can make, to houses that are nearer to you than to your rivals. The demand arrives at the end of this round, so have the food ready next round.' + (a.kind === 'bill' && !G.ms.billboard.closed ? ' The first billboard also wins a strong milestone.' : '');
+    } else { doIt = 'End your turn.'; why = 'Nothing useful is left to do this turn.'; }
+  }
+  const facts = G.phase === 'work' || G.phase === 'restructure' ? scout(G, me) : [];
+  return '<div class="coach"><div class="face">' + art('co') + '</div><div><h4>Coach · ' + title + '</h4><p>' + why + '</p><p class="do">' + doIt + '</p>' +
+    '<button class="btn sm gold" onclick="U.tipDo()">' + btn + '</button> <button class="btn sm" onclick="U.tipsOff()">Hide tips</button>' +
+    (facts.length ? '<h4 style="margin-top:10px">Around town</h4><ul>' + facts.map(f => '<li>' + f + '</li>').join('') + '</ul>' : '') +
+    '<p class="fine" style="margin:6px 0 0">This is a safe move, not the best one. <a href="#" onclick="U.help(\'strategy\');U.modal(\'help\');return false">How real players win</a></p></div></div>';
+}
+
+// ---- the side panel --------------------------------------------------------
+function waitingFor(G) {
+  const w = G.players.map((P, i) => i).filter(i => needs(G, i));
+  return w.length ? 'Waiting for ' + w.map(i => pname(G, i)).join(', ') + '.' : '';
+}
+function mkOf(G, P, c) {
+  const M2 = MARKETER[c.t], kinds = M2.kinds.filter(k => freeNums(G, k).length), o = UI.mk[c.id] || (UI.mk[c.id] = {});
+  if (kinds.indexOf(o.kind) < 0) o.kind = kinds[kinds.length - 1];
+  if (!o.good) o.good = 'burger';
+  if (!(o.dur >= 1 && o.dur <= M2.dur)) o.dur = M2.dur;
+  if (o.axis !== 'col') o.axis = 'row';
+  const sizes = freeNums(G, 'air').map(n => AIRSIZE[n]); if (sizes.indexOf(o.size) < 0) o.size = sizes[sizes.length - 1];
+  return { M: M2, kinds, o, sizes };
+}
+function actionHTML(G, me) {
+  const P = G.players[me], mine = needs(G, me), h = [];
+  if (G.phase === 'over') return '<div class="box"><h3>Game over</h3><button class="btn red" onclick="U.modal(\'over\')">See the scores</button></div>';
+  if (!mine) return '<div class="hint"><span>' + (waitingFor(G) || 'One moment.') + '</span></div>';
+  h.push(tipHTML(G, me));
+  if (G.phase === 'reserve') {
+    h.push('<div class="box"><h3>Pick a bank reserve card</h3><p>Keep it secret. It sets how much money joins the bank when it first runs dry, and it is a vote on how many slots every CEO gets after that.</p><div class="row">' +
+      [100, 200, 300].map(v => '<button class="btn" onclick="U.act({k:\'reserve\',v:' + v + '})">$' + v + ' · ' + (v / 100 + 1) + ' slots</button>').join('') + '</div></div>');
+    return h.join('');
+  }
+  if (G.phase === 'place') { h.push('<div class="hint"><span>Open your first restaurant. Tap near a green dot on the map.</span></div>'); return h.join(''); }
+  if (G.phase === 'restructure') {
+    const free = sortCards(P.cards.filter(c => !c.busy)), cap = capacity(G, UI.pick.map(id => cardOf(P, id).t));
+    h.push('<div class="box"><h3>Who works this round? <span>Round ' + G.round + '</span></h3><p>Tap a card to send that person to work. A bright card works. A faded card stays on the beach.</p>');
+    h.push('<p><b>' + cap.m + ' of ' + G.ceoSlots + '</b> manager places used · <b>' + cap.n + ' of ' + Math.max(cap.cap, 0) + '</b> staff slots used' + (cap.ok ? '' : ' · <b style="color:var(--red)">too many: they will not fit</b>') + '</p>');
+    h.push('<div class="cards">' + (free.length ? free.map(c => cardHTML(c.t, { card: c, click: 'U.pick(' + c.id + ')', sel: UI.pick.indexOf(c.id) >= 0, dim: UI.pick.indexOf(c.id) < 0, tag: UI.pick.indexOf(c.id) >= 0 ? 'works' : 'beach' })).join('') : '<i>Only your CEO is free.</i>') + '</div>');
+    h.push('<div class="row" style="margin-top:12px"><button class="btn red"' + (cap.ok ? '' : ' disabled') + ' onclick="U.act({k:\'structure\',ids:UI.pick})">Lock it in</button><button class="btn sm" onclick="U.pickAll(1)">Everyone</button><button class="btn sm" onclick="U.pickAll(0)">Nobody</button></div></div>');
+    return h.join('');
+  }
+  if (G.phase === 'order') {
+    h.push('<div class="box"><h3>Pick your place in line</h3><p>The baron with the most empty slots picks first.</p><div class="row">' +
+      G.newOrder.map((q, i) => q === -1 ? '<button class="btn" onclick="U.act({k:\'order\',pos:' + i + '})">' + (i + 1) + '</button>' : '<button class="btn" disabled>' + (i + 1) + ' ' + esc(G.players[q].name) + '</button>').join('') + '</div></div>');
+    return h.join('');
+  }
+  if (G.phase === 'payday') {
+    const cost = salary(G, me, UI.fire), ok = cost <= P.cash, cs = sortCards(P.cards);
+    h.push('<div class="box"><h3>Payday</h3><p>Salaries due: <b>$' + cost + '</b>. You have <b>$' + P.cash + '</b>. Tap a card to let that person go.</p>');
+    h.push('<div class="cards">' + cs.map(c => c.busy ? cardHTML(c.t, { tag: 'away' }) : cardHTML(c.t, { click: 'U.fire(' + c.id + ')', dim: UI.fire.indexOf(c.id) >= 0, tag: UI.fire.indexOf(c.id) >= 0 ? 'let go' : '' })).join('') + '</div>');
+    h.push('<div class="row" style="margin-top:12px"><button class="btn red" onclick="U.act({k:\'fire\',ids:UI.fire})">' + (UI.fire.length ? 'Let ' + UI.fire.length + ' go and pay $' + Math.min(cost, P.cash) : 'Pay $' + cost) + '</button>' + (ok ? '' : '<span style="color:var(--red);font-weight:700">You cannot pay everyone.</span>') + '</div></div>');
+    return h.join('');
+  }
+  // Working 9 to 5.
+  const u = P.u, recLeft = recruitsOf(P) - u.rec, trLeft = trainsOf(P) - u.tr;
+  if (UI.mode) h.push('<div class="hint"><span>' + UI.mode.hint + '</span><button class="btn sm" onclick="U.cancel()">Cancel</button></div>');
+  h.push('<div class="box"><h3>Your turn <span>Do these in any order, then end your turn.</span></h3>');
+  h.push('<h3>Hire <span>' + recLeft + ' left this turn</span></h3>');
+  if (recLeft > 0) h.push('<div class="row">' + Object.keys(EMP).filter(t => EMP[t].entry).map(t => '<button class="btn sm" title="' + esc(EMP[t].x) + '"' + (G.supply[t] > 0 ? '' : ' disabled') + ' onclick="U.act({k:\'recruit\',t:\'' + t + '\'})">' + EMP[t].n + '</button>').join('') + '</div>');
+  if (trainsOf(P)) {
+    h.push('<h3>Train <span>' + trLeft + ' left · beach people only</span></h3>');
+    const beach = sortCards(P.cards.filter(c => !c.busy && P.work.indexOf(c.id) < 0 && EMP[c.t].to));
+    if (trLeft > 0) h.push(beach.length ? beach.map(c => '<div class="line"><b>' + EMP[c.t].n + '</b>' + EMP[c.t].to.map(t => {
+      const no = !(G.supply[t] > 0) || (EMP[t].uniq && P.cards.some(k => k.t === t)) || (u.tc[c.id] || 0) >= trainCapPerCard(P) || (t === 'cfo' && has(P, 'have100'));
+      return '<button class="btn sm" title="' + esc(EMP[t].x) + '"' + (no ? ' disabled' : '') + ' onclick="U.act({k:\'train\',id:' + c.id + ',to:\'' + t + '\'})">→ ' + EMP[t].n + '</button>';
+    }).join('') + '</div>').join('') : '<i>Nobody on the beach can train.</i>');
+  }
+  const todo = workCards(P).filter(c => !u.done[c.id] && !c.busy && (c.t === 'kt' || c.t === 'eb' || MARKETER[c.t] || c.t === 'nbd' || c.t === 'lm' || c.t === 'rm'));
+  if (todo.length) h.push('<h3>Your staff</h3>');
+  todo.forEach(c => {
+    let b = '';
+    if (c.t === 'kt') b = ['burger', 'pizza'].map(g => '<button class="btn sm" onclick="U.act({k:\'make\',id:' + c.id + ',good:\'' + g + '\'})">' + gi(g) + ' ' + GOODNAME[g] + '</button>').join('');
+    else if (c.t === 'eb') b = DRINKS.map(g => '<button class="btn sm" onclick="U.act({k:\'make\',id:' + c.id + ',good:\'' + g + '\'})">' + gi(g) + ' ' + GOODNAME[g] + '</button>').join('');
+    else if (c.t === 'nbd') b = '<button class="btn sm" onclick="U.place(\'house\',' + c.id + ')">Build a house</button><button class="btn sm" onclick="U.place(\'garden\',' + c.id + ')">Add a garden</button>';
+    else if (c.t === 'lm' || c.t === 'rm') {
+      if (P.rests.length < 3) b += '<button class="btn sm" onclick="U.place(\'rest\',' + c.id + ')">New restaurant</button>';
+      if (c.t === 'rm') P.rests.forEach((r, i) => { b += '<button class="btn sm" onclick="U.place(\'rest\',' + c.id + ',' + i + ')">Move no. ' + (i + 1) + '</button>'; });
+    } else {
+      const k = mkOf(G, P, c), o = k.o, sel = (f, opts) => '<select onchange="U.mk(' + c.id + ',\'' + f + '\',this.value)">' + opts.map(([v, n]) => '<option value="' + v + '"' + (String(o[f]) === String(v) ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>';
+      if (!k.kinds.length) b = '<i>No campaign tiles are left.</i>';
+      else {
+        b = sel('kind', k.kinds.map(v => [v, KINDNAME[v]])) + sel('good', GOODS.map(g => [g, 'for ' + GOODNAME[g]]));
+        if (!has(P, 'billboard')) b += sel('dur', Array.from({ length: k.M.dur }, (_, i) => [i + 1, (i + 1) + (i ? ' rounds' : ' round')]));
+        if (o.kind === 'air') b += sel('axis', [['row', 'Across'], ['col', 'Up and down']]) + sel('size', k.sizes.map(v => [v, v + ' wide']));
+        b += '<button class="btn sm teal" onclick="U.place(\'camp\',' + c.id + ')">Place it</button>';
+      }
+    }
+    h.push('<div class="line"><b>' + EMP[c.t].n + '</b>' + b + '</div>');
+  });
+  h.push('<div class="row" style="margin-top:14px"><button class="btn red" onclick="U.end()">End my turn</button><span class="fine">Your price $' + priceOf(G, me) + ' · ' + stockHTML(P.stock) + '</span></div></div>');
+  return h.join('');
+}
+function companyHTML(G, p, own) {
+  const P = G.players[p], h = [], work = sortCards(workCards(P)), beach = sortCards(P.cards.filter(c => !c.busy && P.work.indexOf(c.id) < 0)), busy = P.cards.filter(c => c.busy && P.work.indexOf(c.id) < 0);
+  const hidden = !own && G.phase === 'restructure';
+  h.push('<h3>' + (own ? 'At work' : esc(P.name) + ' · at work') + ' <span>$' + P.cash + ' · price $' + priceOf(G, p) + ' · ' + stockHTML(P.stock) + '</span></h3>');
+  h.push('<div class="cards">' + ceoHTML(G) + work.map(c => cardHTML(c.t, { card: own && c, tag: c.busy ? 'away' : '' })).join('') + '</div>');
+  h.push('<h3>' + (hidden ? 'Everyone else' : 'On the beach') + '</h3><div class="cards">' + (beach.length ? beach.map(c => cardHTML(c.t, { card: own && c })).join('') : '<i>Nobody.</i>') + '</div>');
+  if (busy.length) h.push('<h3>Away on a campaign</h3><div class="cards">' + busy.map(c => cardHTML(c.t, { tag: 'away' })).join('') + '</div>');
+  if (!own && P.ms.length) h.push('<p class="fine" style="margin-top:8px">★ ' + P.ms.map(m => MS[m].n).join(' · ') + '</p>');
+  if (!own && NET.role === 'host' && !P.bot && G.phase !== 'over') h.push('<p style="margin-top:8px"><button class="btn sm" onclick="U.takeover(' + p + ')">Let the computer play for ' + esc(P.name) + '</button></p>');
+  return h.join('');
+}
+function tabHTML(G, me) {
+  if (UI.tab === 'me') return '<div class="box">' + companyHTML(G, me, true) + '</div>';
+  if (UI.tab === 'rivals') return G.players.map((P, p) => p === me ? '' : '<div class="box" style="border-left:10px solid ' + PCOL[p] + '">' + companyHTML(G, p, false) + '</div>').join('');
+  if (UI.tab === 'ms') {
+    if (G.mode === 'intro') return '<div class="box"><h3>Milestones</h3><p>Milestones are switched off in a first game. Pick “Second game” or “Full game” on the menu to play with them.</p></div>';
+    const P = G.players[me], peek = G.players.some(q => q.reserve > 0) && (G.breaks > 0 || has(P, 'have20'));
+    return '<div class="box"><h3>Milestones <span>Be first. Barons who get there in the same round share it.</span></h3><div class="ms">' + Object.keys(MS).map(m => {
+      const s = G.ms[m];
+      return '<div class="' + (s.closed ? 'closed' : '') + (s.own.indexOf(me) >= 0 ? ' mine' : '') + '"><b>' + MS[m].n + '</b>' + MS[m].r + (s.own.length ? '<br>' + s.own.map(p => '<span class="dot" style="background:' + PCOL[p] + '" title="' + esc(G.players[p].name) + '"></span>').join(' ') : '') + '</div>';
+    }).join('') + '</div>' + (peek ? '<h3>Bank reserve cards</h3><p>' + G.players.map((q, p) => pname(G, p) + ' $' + q.reserve).join(' · ') + '</p>' : '') + '</div>';
+  }
+  return '<div class="box"><h3>What happened</h3><div class="log">' + G.log.slice().reverse().map(l => '<div>' + esc(l) + '</div>').join('') + '</div></div>';
+}
+function dinnerHTML(G) {
+  const L = G.last, h = ['<h2>Dinnertime</h2><p class="fine">Round ' + L.round + '. Each house goes to the chain with the lowest price plus distance, if that chain has everything it wants.</p><table><tr><th>House</th><th>Wants</th><th>Eats at</th><th class="r">Pays</th></tr>'];
+  if (!L.sales.length) h.push('<tr><td colspan="4"><i>No house wanted anything yet. A campaign makes a house hungry at the end of the round.</i></td></tr>');
+  L.sales.forEach(s => h.push('<tr><td>No. ' + s.num + (s.garden ? ' <span class="fine">garden ×2</span>' : '') + '</td><td>' + s.items.map(gi).join('') + '</td><td>' + (s.p < 0 ? '<i>Nobody had all of it</i>' : pname(G, s.p) + ' <span class="fine">$' + s.price + ' + ' + s.dist + ' away</span>') + '</td><td class="r">' + (s.p < 0 ? '' : '$' + s.amt) + '</td></tr>'));
+  L.tips.forEach(t => h.push('<tr><td colspan="3">' + pname(G, t.p) + ' · waitress tips</td><td class="r">$' + t.amt + '</td></tr>'));
+  L.bonus.forEach(t => h.push('<tr><td colspan="3">' + pname(G, t.p) + ' · CFO bonus, 50%</td><td class="r">$' + t.amt + '</td></tr>'));
+  h.push('</table><p>' + G.players.map((P, p) => pname(G, p) + ' +$' + (L.earned ? L.earned[p] : 0)).join(' · ') + '</p>');
+  h.push('<button class="btn red" onclick="U.closeDinner()">' + (G.phase === 'over' ? 'See the final scores' : 'Carry on') + '</button>');
+  return h.join('');
+}
+function overHTML(G) {
+  const rank = G.players.map((P, p) => p).sort((a, b) => G.players[b].cash - G.players[a].cash || G.order.indexOf(a) - G.order.indexOf(b));
+  return '<div class="winpic"><img src="barons-art/winner.jpg" alt=""></div><h2>' + esc(G.players[rank[0]].name) + ' wins!</h2><p class="fine">The bank ran dry after ' + G.round + ' rounds.</p><table>' +
+    rank.map((p, i) => '<tr><td>' + (i + 1) + '.</td><td>' + pname(G, p) + '</td><td class="r">$' + G.players[p].cash + '</td><td class="r fine">' + G.players[p].ms.length + ' milestones</td></tr>').join('') +
+    '</table><div class="row"><button class="btn red" onclick="U.home()">Back to the menu</button><button class="btn" onclick="U.modal(null)">Look at the town</button></div>';
+}
+
+// ---- help ------------------------------------------------------------------
+const pathHTML = ts => '<div class="path">' + ts.map(t => t === '>' ? '<i>→</i>' : cardHTML(t)).join('') + '</div>';
+const HELP = {
+  guide: () => '<p><b>The whole game in one line:</b> make a house hungry, have the food ready, and sell it before a rival does.</p>' +
+    '<h4>The loop</h4>' +
+    '<div class="step"><b>1</b><div><p><b>Advertise.</b> A campaign puts a demand token on a house: ' + gi('burger') + ' ' + gi('pizza') + ' ' + gi('soda') + ' ' + gi('beer') + ' or ' + gi('lemon') + '. The token arrives at the <i>end</i> of the round.</p></div></div>' +
+    '<div class="step"><b>2</b><div><p><b>Stock up.</b> In the next round, your kitchen staff make food and your buyers fetch drinks.</p></div></div>' +
+    '<div class="step"><b>3</b><div><p><b>Sell.</b> At dinnertime the house buys from one chain that has everything it wants. Each item pays $10.</p></div></div>' +
+    '<h4>A good opening, round by round</h4>' +
+    '<div class="step"><b>1</b><div><p>Only your CEO works. <b>Hire a Marketing Trainee.</b></p></div></div>' +
+    '<div class="step"><b>2</b><div><p>Send the Marketing Trainee to work. <b>Place a billboard</b> beside the house nearest your restaurant, for burgers. <b>Hire a Kitchen Trainee.</b> When the round ends, that house wants a burger.</p></div></div>' +
+    '<div class="step"><b>3</b><div><p>Send the Kitchen Trainee to work and <b>make a burger</b>. You sell it at dinner: your first $10. <b>Hire a Recruiting Girl</b>, so that you get two hires a round.</p></div></div>' +
+    '<div class="step"><b>4</b><div><p>Work the Kitchen Trainee and the Recruiting Girl. <b>Hire a Trainer and a Management Trainee.</b></p></div></div>' +
+    '<div class="step"><b>5</b><div><p>Now grow. The Management Trainee takes one CEO slot and gives you two. Use the Trainer to turn a Kitchen Trainee <i>on the beach</i> into a Burger Cook, who makes 3. Add a second campaign, an Errand Boy for drinks, and a Waitress.</p></div></div>' +
+    '<p class="eg">In a game with milestones, this opening wins three of them: the first billboard, the first burger advertised and the first burger made.</p>' +
+    '<h4>Six things that catch everyone</h4><ul>' +
+    '<li><b>All or nothing.</b> A house that wants a burger and a beer will not come for the burger alone.</li>' +
+    '<li><b>Food does not keep.</b> Unsold food and drink are thrown away each night. Make what is wanted, and no more.</li>' +
+    '<li><b>People at work cannot train.</b> To train someone, leave that person on the beach for the round.</li>' +
+    '<li><b>A marketer goes away.</b> While the campaign runs, the marketer is busy. A busy marketer takes no slot.</li>' +
+    '<li><b>Distance counts tile borders.</b> The map is made of big square tiles. A house on your tile is 0 away. Each border the road crosses adds 1.</li>' +
+    '<li><b>Trained people cost $5 a round</b> in the full game, at work or not. Do not train more people than your dinner income can pay.</li></ul>' +
+    '<h4>The Coach</h4><p>While tips are on, the Coach explains each step and suggests a safe move. Press the gold button to take it, or do something else. It also lists facts about the town, so that you can judge for yourself. When the steps feel easy, read the Strategy page: that is where the game starts. Turn tips on or off with the <b>Tips</b> button at the top right.</p>' +
+    '<h4>Reading the map</h4><ul>' +
+    '<li>A cream square with a red number is a <b>house</b>. Low numbers eat first. Tokens on it are what it wants.</li>' +
+    '<li>A colored square with a letter is a <b>restaurant</b>. The white dot is its door.</li>' +
+    '<li>A round white badge with a bottle or glass is a <b>drink source</b>.</li>' +
+    '<li>A small square with a colored edge is a <b>campaign</b>. B is a billboard, M a mailbox and R a radio. The number is the rounds left. ∞ means it never ends.</li></ul>',
+  rules: () => '<h4>Goal</h4><p>Have the most money when the bank runs out. All money you earn comes from the bank.</p>' +
+    '<h4>Your company</h4><ul>' +
+    '<li>Your people are cards. Each round you choose who is <b>at work</b>. Everyone else is <b>on the beach</b>.</li>' +
+    '<li>Your <b>CEO</b> always works and has 3 slots. Each person at work fills one slot.</li>' +
+    '<li>A <b>manager</b> (black card) fills one CEO slot and brings slots of his own. Managers report only to the CEO.</li>' +
+    '<li>You can only <b>hire</b> entry-level people, marked ▶. You get better people by <b>training</b>.</li>' +
+    '<li>A card marked <b>1×</b> is a top job. Each baron may own only one.</li></ul>' +
+    '<h4>A round has seven steps</h4>' +
+    '<div class="step"><b>1</b><div><p><b>Restructuring.</b> All barons choose in secret who works. Then everyone shows.</p></div></div>' +
+    '<div class="step"><b>2</b><div><p><b>Order of business.</b> The baron with the most empty slots picks a place in line first. Ties go to the baron who was earlier last round.</p></div></div>' +
+    '<div class="step"><b>3</b><div><p><b>Working 9 to 5.</b> In line order, each baron uses the people at work:</p><ul>' +
+      '<li><b>Hire.</b> The CEO hires 1 person. Recruiters hire more. New people go to the beach.</li>' +
+      '<li><b>Train.</b> Each training moves one beach person one step up. New hires can train at once.</li>' +
+      '<li><b>Advertise.</b> Each marketer may start one campaign. Choose the kind, the place, the product and how long.</li>' +
+      '<li><b>Stock up.</b> Kitchen staff make food. Buyers fetch drinks.</li>' +
+      '<li><b>Build.</b> A New Business Developer builds a house or a garden. A Local or Regional Manager opens a restaurant.</li></ul></div></div>' +
+    '<div class="step"><b>4</b><div><p><b>Dinnertime.</b> Houses eat in number order, lowest first. See below.</p></div></div>' +
+    '<div class="step"><b>5</b><div><p><b>Payday.</b> You may let people go. Then pay $5 for each card marked $5, at work or on the beach. The money goes back to the bank.</p></div></div>' +
+    '<div class="step"><b>6</b><div><p><b>Marketing.</b> Every campaign adds 1 demand token to each house it reaches. A house holds 3 tokens, or 5 with a garden. Then each campaign loses a round. At zero it ends and the marketer comes home.</p></div></div>' +
+    '<div class="step"><b>7</b><div><p><b>Clean up.</b> Unsold food and drink are thrown away. New restaurants open. Demand tokens and campaigns stay.</p></div></div>' +
+    '<h4>Dinnertime in detail</h4><ol>' +
+    '<li>A house with no tokens stays home.</li>' +
+    '<li>A chain can serve a house only if a road joins them and the chain has <b>every</b> item the house wants.</li>' +
+    '<li>If several chains can, the house adds each chain\'s <b>price</b> and <b>distance</b> and goes to the lowest total.</li>' +
+    '<li>A tie goes to the chain with more waitresses at work. A second tie goes to the baron earlier in line.</li>' +
+    '<li>The winner sells every item at its price. A house with a garden pays double.</li></ol>' +
+    '<p><b>Price</b> is $10. Each Pricing Manager at work takes off $1, each Discount Manager $3, and a Luxuries Manager adds $10.</p>' +
+    '<p><b>Distance</b> is the number of tile borders crossed by road from the house to your nearest open restaurant door.</p>' +
+    '<p class="eg"><b>Example.</b> A house wants a burger and a beer. Red is 1 tile away and charges $10: total 11. Blue is on the same tile but has a Luxuries Manager and charges $20: total 20. Red has both items, so the house goes to Red and pays $20. If Red had no beer, the house would go to Blue and pay $40.</p>' +
+    '<p>After the houses, each Waitress at work earns $3. Then a CFO adds 50% to all you earned this round.</p>' +
+    '<h4>The four campaigns</h4><table>' +
+    '<tr><th>Kind</th><th>Who can place it</th><th>Which houses it reaches</th></tr>' +
+    '<tr><td><b>Billboard</b></td><td>Any marketer</td><td>Houses that touch it, side to side.</td></tr>' +
+    '<tr><td><b>Mailbox</b></td><td>Campaign Manager and up</td><td>Every house in its block: all it can reach without crossing a road.</td></tr>' +
+    '<tr><td><b>Airplane</b></td><td>Brand Manager and up</td><td>Every house in the 1, 3 or 5 rows or columns it flies over.</td></tr>' +
+    '<tr><td><b>Radio</b></td><td>Brand Director</td><td>Every house on its tile and on the 8 tiles around it.</td></tr></table>' +
+    '<p>A billboard, mailbox or radio goes on an empty square beside a road. A Marketing Trainee must stay within 2 tiles of one of your restaurants by road, and a Campaign Manager within 3. Campaigns run in number order: radios, airplanes, mailboxes, then billboards.</p>' +
+    '<h4>Drinks</h4><p>An Errand Boy fetches 1 drink of any kind. A Cart Operator, Truck Driver or Zeppelin Pilot sets out from one of your restaurants and takes drinks from each source in range.</p>' +
+    '<h4>Building</h4><ul><li>A new <b>house</b> comes with a garden. A <b>garden</b> can also be added to a house that started on the map.</li>' +
+    '<li>A baron has at most 3 restaurants. One placed by a Local Manager opens at the end of the round.</li>' +
+    '<li>While a Local or Regional Manager is at work, your restaurants have a <b>drive-in</b>: every corner counts as a door.</li></ul>' +
+    '<h4>Milestones</h4><p>The first baron to do each of 18 things keeps a bonus for the whole game. Barons who do it in the same round all get it. After that round it is gone. See the Milestones tab during a game.</p>' +
+    '<h4>The bank, and the end</h4><ul>' +
+    '<li>The bank starts with $50 for each baron. Nobody starts with money.</li>' +
+    '<li>At the start, each baron secretly picks a reserve card: $100, $200 or $300.</li>' +
+    '<li><b>First time the bank runs dry:</b> the reserve cards are shown and their money is added. The value most barons picked sets the CEO slots from the next round: $100 means 2, $200 means 3, $300 means 4. A tie goes to the higher one.</li>' +
+    '<li><b>Second time:</b> dinnertime is finished, everyone is paid in full, and the game ends. The richest baron wins.</li></ul>' +
+    '<h4>The three kinds of game</h4><ul>' + MODES.map(m => '<li><b>' + m[1] + '.</b> ' + m[2] + '</li>').join('') + '</ul><p>The first two are the learning games from the rulebook. They start the bank at $75 a baron.</p>' +
+    '<h4>How this differs from the box</h4><ul>' +
+    '<li>The map tiles and the art are new.</li><li>Every billboard, mailbox and radio takes one square.</li>' +
+    '<li>A driver takes drinks from every source in range of one restaurant. You do not trace a route.</li>' +
+    '<li>You may do your actions in any order in your turn.</li><li>The game picks the door side of a restaurant, and nobody may pass on the first restaurant.</li></ul>',
+  strategy: () => '<p>The Coach plays safe: advertise, cook, sell, grow a little. It plays the same way the computer does, so following it gives you an even match and no more. Real players win by doing one thing harder and earlier than anyone else. These are the plans they use. They need milestones, so play a Second game or a Full game.</p>' +
+    '<h4>1 · Race for a milestone</h4><p>Milestones last all game and only the first round counts. Pick two or three and build your first rounds around them.</p><ul>' +
+    '<li><b>First billboard.</b> Your campaigns never end and your marketers are never paid. Hire a Marketing Trainee in round 1 and place it in round 2. Most games, everyone who can does this.</li>' +
+    '<li><b>First to hire 3 in one turn.</b> Two free Management Trainees. Hire a Recruiting Girl in round 1 and another in round 2. In round 3 both work, and with your CEO you hire 3. You now have far more slots than anyone.</li>' +
+    '<li><b>First to train.</b> $15 off salaries every round, which is three free trained people for the whole game. Hire a Trainer in round 1 and use it in round 2.</li>' +
+    '<li><b>First burger, pizza or drink advertised.</b> $5 more on every one you sell. On a $10 item that is half again.</li></ul>' +
+    '<p class="eg">You cannot have them all. The Recruiting Girl opening gives up the first billboard. The billboard opening gives up the free managers. Choosing is the game.</p>' +
+    '<h4>2 · Build an engine, then switch it on</h4><p>Money in the first rounds is small. Many winners earn almost nothing for six or seven rounds. They hire and train instead: Coaches or a Guru, a deep row of managers, a Burger Chef, a Brand Manager. Then they advertise widely and sell eight items a round while rivals sell two. The risk is the clock. If the bank empties before you switch on, you lose.</p>' +
+    '<h4>3 · Sell dear</h4><p>A <b>Luxuries Manager</b> doubles your price to $20. Houses that have no other choice still pay it. A <b>garden</b> doubles the price again. A <b>CFO</b> adds half on top. One house with a garden that wants three items, sold at $20, pays $120 and a CFO makes it $180. This works when you are the only chain that can serve a house: because of distance, or because you advertise a product nobody else makes.</p>' +
+    '<h4>4 · Sell cheap</h4><p>A house goes to the lowest price plus distance. One <b>Pricing Manager</b> beats a rival who is one tile closer. A <b>Discount Manager</b> beats one who is three tiles closer. You earn less on each item, and your rival earns nothing at all. Use it to take houses, or to answer a rival who sells dear. Waitresses win the ties.</p>' +
+    '<h4>5 · Starve a rival</h4><p>A house buys only if one chain has its whole list. So advertise a second product at a house a rival feeds. If they sell burgers there, put up a billboard for lemonade. Now the house wants both, and a rival with no lemonade sells nothing. Make sure you can serve it yourself.</p>' +
+    '<h4>6 · Own the map</h4><ul><li>A <b>second restaurant</b>, from a Local Manager, puts you 0 away from houses a rival thought were safe.</li>' +
+    '<li>A <b>New Business Developer</b> builds a house with a garden beside your own restaurant: a rich customer only you are close to.</li>' +
+    '<li>A <b>radio</b> or an <b>airplane</b> reaches many houses at once. It only pays if you can feed them all, so pair it with a Chef.</li></ul>' +
+    '<h4>7 · Watch the clock and the line</h4><ul><li>The game ends when the bank is empty. Add up what everyone earns each round and you can see the end coming. Stop training two rounds before it and sell everything you can.</li>' +
+    '<li>In a Full game, a $100 reserve card votes for a short game and a small company. A $300 card votes for a long one. Pick the card that suits your plan.</li>' +
+    '<li>Earlier in line wins ties and gets the scarce cards first. You go earlier by leaving slots empty. Sometimes that is worth one idle slot.</li></ul>' +
+    '<h4>Why you can follow every tip and lose</h4><p>The Coach suggests the move the computer would make. Against Sharp rivals that is a mirror match, and the map and the turn order decide it. On the menu, Relaxed rivals build more slowly, so the Coach\'s line usually wins. To beat Sharp rivals, pick one plan above and commit to it.</p>',
+  jobs: () => '<p>▶ means you can hire the person. Everyone else comes from training, one step for each arrow. $5 means a salary each round. 1× means one per baron.</p>' +
+    '<h4>Kitchen</h4>' + pathHTML(['kt', '>', 'bc', '>', 'bch']) + pathHTML(['kt', '>', 'pc', '>', 'pch']) +
+    '<h4>Buyers</h4>' + pathHTML(['eb', '>', 'cart', '>', 'truck', '>', 'zep']) +
+    '<h4>Marketing</h4>' + pathHTML(['mk', '>', 'cm', '>', 'bm', '>', 'bd']) +
+    '<h4>Managers</h4>' + pathHTML(['mt', '>', 'jvp', '>', 'vp', '>', 'svp', '>', 'evp']) +
+    '<h4>Hired as they are</h4><p>These four never train into anything.</p>' + pathHTML(['wa', 'pm', 'rg', 'tr']) +
+    '<h4>From a Management Trainee</h4>' + pathHTML(['nbd', 'lux']) +
+    '<h4>From a Junior Vice President</h4>' + pathHTML(['lm', 'dm', 'rmgr', 'co']) +
+    '<h4>From a Vice President</h4>' + pathHTML(['rm', 'gu']) +
+    '<h4>From a Senior Vice President</h4>' + pathHTML(['cfo', 'hr']),
+  ms: () => '<p>Be the first to do each thing and keep the bonus for the whole game. Barons who do it in the same round share it.</p><div class="ms">' +
+    Object.keys(MS).map(m => '<div><b>' + MS[m].n + '</b>' + MS[m].r + '</div>').join('') + '</div>',
+};
+function helpHTML() {
+  const tabs = [['guide', 'First game guide'], ['strategy', 'Strategy'], ['rules', 'Rules'], ['jobs', 'The jobs'], ['ms', 'Milestones']];
+  return '<div class="help"><div class="head"><div class="tabs" style="margin:0">' + tabs.map(([k, n]) => '<button class="btn sm' + (UI.help === k ? ' on' : '') + '" onclick="U.help(\'' + k + '\')">' + n + '</button>').join('') +
+    '</div><button class="btn sm red" onclick="U.modal(null)">Close</button></div><h2>' + tabs.find(t => t[0] === UI.help)[1] + '</h2>' + HELP[UI.help]() +
+    '<p class="fine" style="margin-top:18px">Fan-made, not affiliated with Splotter Spellen.</p></div>';
+}
+
+function gameHTML() {
+  const G = UI.G, me = UI.me, P = G.players[me];
+  if (G.phase === 'restructure' && UI.pickRound !== G.round) {
+    UI.pickRound = G.round; UI.mk = {};
+    const all = P.cards.filter(c => !c.busy); UI.pick = capacity(G, all.map(c => c.t)).ok ? all.map(c => c.id) : [];
+  }
+  if (G.phase === 'payday' && UI.fireRound !== G.round) { UI.fireRound = G.round; UI.fire = []; }
+  if (G.phase === 'place' && needs(G, me)) UI.mode = { t: 'rest', init: true, legal: legalRests(G, me, 'init') };
+  else if (UI.mode && (UI.mode.init || G.phase !== 'work' || !needs(G, me))) UI.mode = null;
+  tipAction(G, me);
+  // For the first moments of a new game the pieces are set out: board, chips, cards. --t is how far in we are,
+  // so a redraw part-way through carries on and does not start again.
+  const t = Date.now() - UI.introAt, intro = UI.introOn = t < 2300;
+  if (intro) { clearTimeout(UI.introT); UI.introT = setTimeout(() => { if (UI.screen === 'game') render(); }, 2320 - t); }
+  UI.dealtNow = {}; UI.dealN = 0;
+  const h = ['<div class="' + (intro ? 'intro' : '') + '" style="--t:' + t + 'ms"><div class="top"><img class="mascot" src="burger-barons-icon-180.png" alt=""><span class="name">Burger Barons</span>' + (G.round ? '<span class="pill">Round ' + G.round + '</span>' : '') + '<span class="pill">Bank $' + G.bank + (G.breaks === 1 ? ' · broke once' : '') + '</span>' +
+    (NET.code ? '<span class="pill">Game ' + NET.code + '</span>' : '') + '<span class="sp"></span><button class="btn sm' + (UI.tips ? ' gold' : '') + '" onclick="U.tipsToggle()">Tips: ' + (UI.tips ? 'on' : 'off') + '</button><button class="btn sm" onclick="U.modal(\'help\')">How to play</button><button class="btn sm" onclick="U.quit()">Quit game</button></div>'];
+  const stepNow = { restructure: 0, order: 1, work: 2, payday: 4 }[G.phase];
+  if (G.round) h.push('<div class="steps">' + ['1 Restructure', '2 Order', '3 Work 9 to 5', '4 Dinner', '5 Payday', '6 Marketing', '7 Clean up'].map((n, i) => '<span class="' + (i === stepNow ? 'now' : i < stepNow ? 'done' : '') + '">' + n + '</span>').join('') + '</div>');
+  else h.push('<div class="steps"><span class="now">Setting up · ' + PHASE[G.phase] + '</span></div>');
+  h.push('<div class="players">' + G.order.map((p, i) => {
+    const Q = G.players[p];
+    return '<div class="chip' + (needs(G, p) ? ' act' : '') + '" style="--i:' + i + ';border-left-color:' + PCOL[p] + '"><div class="n"><span>' + (i + 1) + '. ' + esc(Q.name) + (p === me ? ' (you)' : Q.bot ? ' · computer' : '') + '</span><span>$' + Q.cash + '</span></div><div class="s">' +
+      Q.cards.length + ' staff' + (G.mode === 'intro' ? '' : ' · ★' + Q.ms.length) + ' · ' + stockHTML(Q.stock) + '</div></div>';
+  }).join('') + '</div>');
+  const bsvg = boardSVG(G);
+  h.push('<div class="cols"><div class="board' + (intro ? ' unfold' : '') + '">' + (intro ? '<span class="half">' + bsvg + '</span><span class="half r">' + bsvg.replace('id="bd"', '').replace('id="pv"', '') + '</span><span class="spine"></span>' : bsvg) + '<div class="legend"><span>Red number: house</span><span>White dot: restaurant door</span><span>' + gi('burger') + gi('pizza') + ' food</span><span>' + gi('soda') + ' soft drink</span><span>' + gi('beer') + ' beer</span><span>' + gi('lemon') + ' lemonade</span></div></div><div class="panel">' + actionHTML(G, me) +
+    '<div class="tabs">' + [['me', 'My company'], ['rivals', 'Rivals'], ['ms', 'Milestones'], ['log', 'Log']].map(([k, n]) => '<button class="btn sm' + (UI.tab === k ? ' on' : '') + '" onclick="U.tab(\'' + k + '\')">' + n + '</button>').join('') + '</div>' + tabHTML(G, me) + '</div></div>');
+  let modal = UI.modal;
+  if (!modal && G.last && G.last.round > UI.seen) modal = 'dinner';
+  if (!modal && G.phase === 'over' && !UI.overSeen) modal = 'over';
+  const mcls = UI.lastModal === modal ? '' : ' in'; UI.lastModal = modal;
+  if (modal) h.push('<div class="modal ' + modal + mcls + '"><div>' + (modal === 'help' ? helpHTML() : modal === 'dinner' ? dinnerHTML(G) : overHTML(G)) + '</div></div>');
+  h.push('</div>');
+  Object.assign(UI.dealt, UI.dealtNow);
+  return h.join('');
+}
+
+// ---- menu and lobby --------------------------------------------------------
+function modeHTML(cur, fn) {
+  return MODES.map(m => '<button class="opt' + (cur === m[0] ? ' on' : '') + '" onclick="' + fn + '(\'' + m[0] + '\')"><span class="rad"></span><span><b>' + m[1] + '</b><small>' + m[2] + '</small></span></button>').join('');
+}
+function pawn(col) { return '<svg class="pawn" viewBox="0 0 24 32"><path d="M12 2a6 6 0 0 1 3.6 10.8Q20 16 20.5 30h-17Q4 16 8.4 12.8A6 6 0 0 1 12 2Z" fill="' + col + '" stroke="#1d1a17" stroke-width="1.6" stroke-linejoin="round"/></svg>'; }
+const TILEPIC = '<svg class="tile" viewBox="0 0 50 50"><rect width="50" height="50" fill="#cfdcb5"/><path d="M20 0H30V20H50V30H30V50H20V30H0V20H20Z" fill="#8d877c"/><path d="M25 0V50M0 25H50" stroke="#fcefd5" stroke-width="1.4" stroke-dasharray="4 3"/><rect x="2" y="2" width="16" height="16" rx="2" fill="#f3dfb4" stroke="#1d1a17" stroke-width="1.2"/><circle cx="10" cy="10" r="4.5" fill="#a3403f"/></svg>';
+const boxArt = '<img src="barons-art/box.jpg" alt="">';
+function pickHTML(on, click, title, pic, bg, text, i) {
+  return '<button class="pick' + (on ? ' on' : '') + '" style="--i:' + (i || 0) + '" onclick="' + click + '"><i>' + title + '</i><span class="im" style="background:' + bg + '">' + art(pic) + '</span><small>' + text + '</small></button>';
+}
+function nameTag() { return '<div class="nametag"><b>HELLO</b><small>my name is</small><input id="nm" maxlength="12" placeholder="Your name" value="' + esc(UI.name) + '" oninput="U.name(this.value)"></div>'; }
+// The front page is a game box on a table. The same box stays on screen: the lid lifts off and lies
+// beside it, and each well of the insert holds one thing to pick up.
+function lidHTML() {
+  return '<button class="lid" onclick="U.lid()" aria-label="The lid of the box"><span class="lid-top">' + boxArt +
+    '<span class="lt-b1">Feed the town!</span><span class="lt-title burstw"><span class="burst"><b>Burger<br>Barons</b></span></span>' +
+    '<span class="lt-b2">Hire · Advertise</span><span class="lt-seal"><b>2–5</b>barons</span></span><span class="lid-front">Burger Barons</span><span class="lid-side"></span></button>';
+}
+function homeHTML() {
+  const mcls = UI.lastModal === UI.modal ? '' : ' in'; UI.lastModal = UI.modal;
+  const help = UI.modal === 'help' ? '<div class="modal' + mcls + '"><div>' + helpHTML() + '</div></div>' : '';
+  const fresh = UI.fresh; UI.fresh = false;
+  const back = '<button class="backb" onclick="U.view(\'box\')">' + boxArt + '<span>Back to the box</span></button>';
+  if (UI.view === 'practice' || UI.view === 'real') {
+    const real = UI.view === 'real', h = ['<div class="table"><div class="mat' + (fresh ? ' deal' : '') + '" id="mat">' + back + '<h2 style="margin-top:46px">' + (real ? 'Set the table' : 'A practice game') + '</h2>'];
+    h.push('<p>' + (real ? 'You against the computer.' : 'The learning game from the rulebook. No salaries, no milestones, and the Coach suggests every move.') + '</p>' + nameTag());
+    h.push('<h3>Who sits at the table? Tap a pawn.</h3><div class="seats"><button disabled style="--i:0">' + pawn(PCOL[0]) + 'You</button>' +
+      [1, 2, 3, 4].map(n => '<button style="--i:' + n + '" class="' + (n <= UI.rivals ? '' : 'out') + '" onclick="U.rivals(' + n + ')">' + pawn(PCOL[n]) + (n <= UI.rivals ? 'Rival' : 'Empty') + '</button>').join('') + '</div>');
+    if (real) {
+      h.push('<h3>Which rules?</h3><div class="picks">' +
+        pickHTML(UI.gmode === 'introms', 'U.gmode(\'introms\')', 'Second game', 'tr', '#b9b0a8', 'Milestones, but no salaries. Ends when the bank first runs dry.', 0) +
+        pickHTML(UI.gmode === 'full', 'U.gmode(\'full\')', 'Full game', 'cfo', '#a58bb0', 'Salaries, secret reserve cards, and the bank must break twice.', 1) + '</div>');
+      h.push('<h3>How do your rivals play?</h3><div class="picks">' +
+        pickHTML(UI.easy, 'U.level(1)', 'Relaxed', 'kt', '#8aa063', 'They build slowly. Good while you learn.', 2) +
+        pickHTML(!UI.easy, 'U.level(0)', 'Sharp', 'bd', '#93bcbf', 'They play as well as the Coach does.', 3) + '</div>');
+    }
+    h.push('<button class="bell" onclick="' + (real ? 'U.solo()' : 'U.practice()') + '">Open for business<small>Deal the cards</small></button></div></div>');
+    return h.join('') + help;
+  }
+  if (UI.view === 'online') {
+    const join = new URLSearchParams(location.search).get('join') || '';
+    return '<div class="table"><div class="mat' + (fresh ? ' deal' : '') + '" id="mat">' + back + '<h2 style="margin-top:46px">Friends at the table</h2><p>Each friend plays on their own screen. Up to five barons.</p>' + nameTag() +
+      '<h3>Start a table</h3><p style="text-align:left">You get a four-letter code and a link to send. Your browser runs the game, so keep this page open.</p><button class="bell teal" onclick="U.host()">Host a table<small>Get a code</small></button>' +
+      '<h3>Or join one</h3><div class="ticket"><b>Guest check · table code</b><input id="jc" maxlength="4" placeholder="CODE" value="' + esc(join.toUpperCase()) + '"> <button class="btn" onclick="U.join()">Join</button></div>' +
+      '<p class="fine" id="err" style="color:var(--red);min-height:1.2em;margin-top:12px">' + esc(UI.err) + '</p></div></div>' + help;
+  }
+  const saved = store.get('barons-save'), backIn = UI.boxBack; UI.boxBack = false;
+  const well = (i, click, thing, cls, title, text) => '<button class="comp" style="--i:' + i + '" onclick="' + click + '"><span class="slot"><span class="thing' + cls + '">' + thing + '</span></span><span class="lab"><b>' + title + '</b><small>' + text + '</small></span></button>';
+  return '<div class="table"><div class="boxscene"><div class="gamebox' + (UI.open ? ' is-open settled' : '') + (backIn ? ' back' : '') + '" id="gbox"><span class="shadow"></span>' +
+    '<div class="base"><h1>What shall we play?<small>Pick something up.</small></h1><div class="wells">' +
+    well(0, 'U.modal(\'help\')', '<span class="booklet"><span class="burstw"><span class="burst sm"><b>Rules</b></span></span>' + art('ceo') + '</span>', '', 'Learn the rules', 'A first game guide, the rules, and every job.') +
+    well(1, 'U.view(\'practice\')', [['wa', '#a58bb0'], ['bc', '#8aa063'], ['co', '#b9b0a8']].map(([t, c]) => '<span class="mc" style="background:' + c + '"><i></i>' + art(t) + '</span>').join(''), ' fan', 'Practice game', 'The Coach walks you through a short, gentle game.') +
+    well(2, 'U.view(\'real\')', TILEPIC + TILEPIC + '<span class="note" style="left:70px;top:112px;transform:rotate(9deg)">$5</span><span class="note" style="left:58px;top:120px;transform:rotate(-4deg)">$10</span>' +
+      GOODS.map((g, i) => '<svg class="tok" viewBox="0 0 24 24" style="left:' + [0, 26, 104, 118, 4][i] + 'px;top:' + [104, 122, 66, 6, 66][i] + 'px;transform:rotate(' + [-12, 8, 14, -8, -20][i] + 'deg)"><use href="#g-' + g + '"/></svg>').join(''), ' bits', 'Real game', 'You against the computer, with money on the line.') +
+    well(3, 'U.view(\'online\')', '<span class="postcard"><img src="burger-barons-icon-180.png" alt=""></span>' + [0, 1, 2].map(i => '<span style="position:absolute;bottom:0;left:' + (22 + i * 36) + 'px">' + pawn(PCOL[i + 1]) + '</span>').join(''), '', 'Play friends online', 'Send a code. Everyone plays on their own screen.') +
+    '</div>' + (saved ? '<button class="savedrow" onclick="U.resume()"><span class="ribbon"></span><span class="lab"><b>Carry on</b><small>Your saved game against the computer.</small></span></button>' : '') +
+    '</div>' + lidHTML() + '</div></div><p class="fine">Fan-made, not affiliated with Splotter Spellen.</p></div>' + help;
+}
+function lobbyHTML() {
+  const host = NET.role === 'host', link = location.origin + location.pathname + '?join=' + NET.code;
+  return '<div class="table"><div class="home" style="padding-top:8px"><div class="sheet" style="text-align:center"><h2>Game code</h2><div class="code">' + NET.code + '</div>' +
+    '<p class="fine">Send friends this link, or the code.</p><div class="row" style="justify-content:center"><input readonly value="' + esc(link) + '" style="flex:1" onclick="this.select()"><button class="btn sm" onclick="U.copy(\'' + esc(link) + '\')">Copy</button></div></div>' +
+    '<div class="sheet"><h2>At the table · ' + NET.seats.length + ' of 5</h2>' + NET.seats.map((s, i) => '<div class="seat">' + pawn(PCOL[i]) + '<b style="flex:1">' + esc(s.name) + (s.bot ? ' · computer' : '') + (s.id === NET.me ? ' (you)' : '') + '</b>' +
+      (host && s.bot ? '<button class="btn sm" onclick="U.dropBot(' + i + ')">Remove</button>' : '') + '</div>').join('') +
+    (host ? '<div class="row" style="margin-top:12px"><button class="btn sm"' + (NET.seats.length >= 5 ? ' disabled' : '') + ' onclick="U.addBot()">Add a computer</button><span style="flex:1"></span><button class="btn red"' + (NET.seats.length < 2 ? ' disabled' : '') + ' onclick="U.startOnline()">Start the game</button></div>'
+      : '<p class="fine">Waiting for the host to start a ' + MODES.find(m => m[0] === NET.gmode)[1].toLowerCase() + '.</p>') + '</div>' +
+    (host ? '<div class="sheet"><h2>Which game?</h2>' + modeHTML(UI.gmode, 'U.gmode') + '</div>' : '') +
+    '<p><button class="btn" onclick="U.home()">Leave</button></p></div></div>';
+}
+function fitBox() { const b = $('gbox'); if (b) document.documentElement.style.setProperty('--k', (b.offsetWidth / 560).toFixed(3)); }
+function render() {
+  $('app').innerHTML = UI.screen === 'home' ? homeHTML() : UI.screen === 'lobby' ? lobbyHTML() : gameHTML();
+  bindBoard(); fitBox();
+}
+window.addEventListener('resize', fitBox);
+
+// ============================================================================
+// Online play. The host's browser runs the game. A guest sends each move to the
+// host, and the host sends back what that guest may see. Moves are rare, so
+// everything rides on a Supabase Realtime broadcast channel named after the
+// code: the same project and the same raw-WebSocket handshake Spartan Brawl uses.
+// ============================================================================
+const SIGNAL_URL = 'wss://tnaassoaraijvhswevvp.supabase.co/realtime/v1/websocket' +
+  '?apikey=sb_publishable_KSJZlg0qLmEOak6sP3WX0g_UDo8lz9Z&vsn=1.0.0';
+function makeCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)]; return c; }
+function openSignal(code, onMsg) {
+  return new Promise((resolve, reject) => {
+    let ws, ref = 1, hb, joined = false;
+    const topic = 'realtime:barons-' + code;
+    try { ws = new WebSocket(SIGNAL_URL); } catch (e) { reject(e); return; }
+    const sig = {
+      send(o) {
+        if (ws.readyState === 1) ws.send(JSON.stringify({ topic, event: 'broadcast', ref: String(++ref), join_ref: '1',
+          payload: { type: 'broadcast', event: 'sig', payload: o } }));
+      },
+      close() { clearInterval(hb); try { ws.close(); } catch (e) {} },
+    };
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ topic, event: 'phx_join', ref: '1', join_ref: '1',
+        payload: { config: { broadcast: { self: false, ack: false }, presence: { key: '' }, private: false } } }));
+      hb = setInterval(() => { if (ws.readyState === 1) ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) })); }, 25000);
+    };
+    ws.onmessage = e => {
+      let m;
+      try { m = JSON.parse(e.data); } catch (x) { return; }
+      if (m.event === 'phx_reply' && m.ref === '1') {
+        joined = true;
+        if (m.payload && m.payload.status === 'ok') resolve(sig); else reject(new Error('join refused'));
+      } else if (m.event === 'broadcast' && m.payload && m.payload.payload) {
+        const o = m.payload.payload;
+        if (!o.to || o.to === NET.me) onMsg(o);
+      }
+    };
+    ws.onerror = () => { if (!joined) reject(new Error('socket')); };
+    ws.onclose = () => { clearInterval(hb); if (!joined) reject(new Error('closed')); else if (NET.sig === sig) { toast('The connection dropped.'); } };
+    setTimeout(() => { if (!joined) { reject(new Error('timeout')); sig.close(); } }, 8000);
+  });
+}
+function resetNet() {
+  clearInterval(NET.timer); clearTimeout(botT);
+  if (NET.sig) { const s = NET.sig; NET.sig = null; s.send({ t: NET.role === 'host' ? 'bye' : 'leave', from: NET.me }); setTimeout(() => s.close(), 300); }
+  NET.role = null; NET.code = null; NET.seats = [];
+}
+function broadcast() {
+  if (NET.role !== 'host' || !NET.sig) return;
+  if (UI.screen === 'lobby') { NET.sig.send({ t: 'lobby', seats: NET.seats, gmode: UI.gmode }); return; }
+  NET.seats.forEach((s, i) => { if (s.id && s.id !== NET.me && !UI.G.players[i].bot) NET.sig.send({ t: 'state', to: s.id, me: i, G: view(UI.G, i) }); });
+}
+function hostMsg(o) {
+  const i = NET.seats.findIndex(s => s.id && s.id === o.from), G = UI.G, inGame = UI.screen === 'game';
+  if (o.t === 'join') {
+    if (i >= 0) { if (inGame) NET.sig.send({ t: 'state', to: o.from, me: i, G: view(G, i) }); else broadcast(); return; }
+    if (inGame || NET.seats.length >= 5) { NET.sig.send({ t: 'no', to: o.from, why: inGame ? 'That game has already started.' : 'That game is full.' }); return; }
+    NET.seats.push({ id: o.from, name: cleanName(o.name) || 'Guest' }); broadcast(); render();
+  } else if (o.t === 'leave' && i > 0) {
+    if (inGame) { G.players[i].bot = true; log(G, G.players[i].name + ' left. The computer takes over.'); changed(); }
+    else { NET.seats.splice(i, 1); broadcast(); render(); }
+  } else if (o.t === 'sync' && i > 0) {
+    if (!inGame) broadcast();
+    else if (o.v !== G.v) NET.sig.send({ t: 'state', to: o.from, me: i, G: view(G, i) });
+  } else if (o.t === 'act' && i > 0 && inGame && !G.players[i].bot) {
+    const e = act(G, i, o.a);
+    if (e) NET.sig.send({ t: 'err', to: o.from, msg: e }); else changed();
+  }
+}
+function guestMsg(o) {
+  if (o.t === 'lobby' && UI.screen !== 'game') { NET.seats = o.seats; NET.gmode = o.gmode || 'full'; UI.screen = 'lobby'; render(); }
+  else if (o.t === 'state') { if (UI.G && o.G.v < UI.G.v) return; UI.G = o.G; UI.me = o.me; UI.screen = 'game'; render(); }
+  else if (o.t === 'err') { toast(o.msg); }
+  else if (o.t === 'no') { resetNet(); UI.screen = 'home'; UI.open = true; UI.view = 'online'; UI.err = o.why; render(); }
+  else if (o.t === 'bye') { resetNet(); UI.G = null; UI.screen = 'home'; UI.open = true; UI.view = 'online'; UI.err = 'The host closed the game.'; render(); }
+}
+function freshGame() { UI.introAt = Date.now(); UI.dealt = {}; UI.lastModal = null; UI.seen = 0; UI.overSeen = false; UI.pickRound = -1; UI.fireRound = -1; UI.mode = null; UI.modal = null; UI.tab = 'me'; UI.mk = {}; UI.tipKey = ''; }
+
+// ---- buttons ---------------------------------------------------------------
+const BOTNAMES = ['Big Marge', 'Fry King', 'Mama Rossa', 'Sweet Lou', 'Dixie Belle', 'Uncle Sal', 'Patty Ann', 'The Colonel'];
+const U = {
+  act: send,
+  name(v) { UI.name = cleanName(v); store.set('barons-name', UI.name); },
+  // Lift the lid off, or put it back. The box stays where it is; only classes change, so nothing cuts.
+  lid() {
+    const b = $('gbox'); if (!b || b.classList.contains('opening') || b.classList.contains('closing')) return;
+    if (!UI.open) {
+      UI.open = true; b.classList.add('is-open', 'opening');
+      setTimeout(() => { b.classList.remove('opening'); b.classList.add('settled'); }, 1120);
+    } else {
+      UI.open = false; b.classList.remove('is-open', 'settled'); b.classList.add('closing');
+      setTimeout(() => b.classList.remove('closing'), 1080);
+    }
+  },
+  // Pick a thing up: the box slides away and a placemat is laid down. Going back does the reverse.
+  view(v) {
+    const go = () => { UI.view = v; UI.err = ''; UI.fresh = true; UI.boxBack = v === 'box'; if (v === 'real' && UI.gmode === 'intro') UI.gmode = 'introms'; render(); window.scrollTo(0, 0); };
+    const b = $('gbox'), m = $('mat');
+    if (v !== 'box' && b) { b.classList.add('away'); setTimeout(go, 400); }
+    else if (v === 'box' && m) { m.classList.remove('deal'); m.classList.add('leave'); setTimeout(go, 280); }
+    else go();
+  },
+  practice() { UI.tips = true; store.set('barons-tips', 'on'); U.solo('intro', true); },
+  rivals(n) { UI.rivals = n; render(); },
+  level(e) { UI.easy = !!e; store.set('barons-level', e ? 'relaxed' : 'sharp'); render(); },
+  gmode(m) { UI.gmode = m; store.set('barons-mode', m); if (NET.role === 'host') broadcast(); render(); },
+  tab(k) { UI.tab = k; render(); },
+  help(k) { UI.help = k; render(); const m = document.querySelector('.modal > div'); if (m) m.scrollTop = 0; },
+  modal(k) { if (k === null && UI.G && UI.G.phase === 'over') UI.overSeen = true; UI.modal = k; render(); },
+  closeDinner() { UI.seen = UI.G.last.round; UI.modal = null; render(); },
+  cancel() { UI.mode = null; render(); },
+  tipsToggle() { UI.tips = !UI.tips; store.set('barons-tips', UI.tips ? 'on' : 'off'); render(); },
+  tipsOff() { UI.tips = false; store.set('barons-tips', 'off'); toast('Tips are off. Turn them on again at the top right.'); render(); },
+  tipDo() {
+    const a = UI.tip, G = UI.G; if (!a) return;
+    if (G.phase === 'restructure') { UI.pick = a.ids.slice(); render(); toast('Line-up set. Press “Lock it in” when you are happy.'); }
+    else if (G.phase === 'payday' && a.ids.length) { UI.fire = a.ids.slice(); render(); }
+    else send(a);
+  },
+  pick(id) { const i = UI.pick.indexOf(id); if (i >= 0) UI.pick.splice(i, 1); else UI.pick.push(id); render(); },
+  pickAll(on) { UI.pick = on ? UI.G.players[UI.me].cards.filter(c => !c.busy).map(c => c.id) : []; render(); },
+  fire(id) { const i = UI.fire.indexOf(id); if (i >= 0) UI.fire.splice(i, 1); else UI.fire.push(id); render(); },
+  mk(id, f, v) { (UI.mk[id] || (UI.mk[id] = {}))[f] = f === 'dur' || f === 'size' ? Number(v) : v; UI.mode = null; render(); },
+  end() {
+    const G = UI.G, P = G.players[UI.me], left = [];
+    if (recruitsOf(P) > P.u.rec) left.push('a hire');
+    if (workCards(P).some(c => !P.u.done[c.id] && (c.t === 'kt' || c.t === 'eb'))) left.push('kitchen or errand staff');
+    if (left.length && U.endAsk !== G.v) { U.endAsk = G.v; toast('You still have ' + left.join(' and ') + ' to use. Press again to end anyway.'); return; }
+    send({ k: 'end' });
+  },
+  place(what, id, move) {
+    const G = UI.G, me = UI.me, P = G.players[me], c = cardOf(P, id);
+    if (what === 'house') UI.mode = { t: 'house', id, legal: legalHouses(G), hint: 'Tap near a green dot to build the house.' };
+    else if (what === 'garden') { UI.mode = { t: 'garden', id, opts: legalGardens(G), hint: 'Tap a green strip beside a house.' }; if (!UI.mode.opts.length) { UI.mode = null; toast('No house has room for a garden.'); } }
+    else if (what === 'rest') {
+      let legal;
+      if (move != null) { const old = P.rests.splice(move, 1)[0]; legal = legalRests(G, me, c.t); P.rests.splice(move, 0, old); } else legal = legalRests(G, me, c.t);
+      UI.mode = { t: 'rest', id, move, legal, hint: 'Tap near a green dot to place the restaurant.' };
+    } else {
+      const k = mkOf(G, P, c), o = k.o, a = { k: 'market', id, kind: o.kind, good: o.good, dur: has(P, 'billboard') ? 1 : o.dur };
+      if (o.kind === 'air') { a.axis = o.axis; a.size = o.size; UI.mode = { t: 'air', a, hint: 'Tap the map to pick where the airplane flies.' }; }
+      else UI.mode = { t: 'camp', a, legal: legalCampSpots(G, me, o.kind, k.M.range), hint: 'Tap a green square for the ' + KINDNAME[o.kind].toLowerCase() + '.' };
+    }
+    render();
+    if (window.innerWidth <= 900) { const b = document.querySelector('.board'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  },
+  solo(mode, easy) {
+    resetNet(); freshGame();
+    const names = BOTNAMES.slice().sort(() => Math.random() - 0.5);
+    const seats = [{ name: UI.name || 'You' }]; for (let i = 0; i < UI.rivals; i++) seats.push({ name: names[i], bot: true });
+    UI.G = newGame(seats, Math.floor(Math.random() * 2 ** 31), mode || UI.gmode, mode ? easy : UI.easy); UI.me = 0; UI.screen = 'game'; changed();
+  },
+  resume() {
+    try { const s = JSON.parse(store.get('barons-save')); if (!s.G.mode) throw 0; resetNet(); freshGame(); UI.G = s.G; UI.me = s.me; UI.seen = s.G.last ? s.G.last.round : 0; s.G.players[s.me].cards.forEach(c => { UI.dealt[c.id] = c.t; }); UI.screen = 'game'; render(); scheduleBots(); }
+    catch (e) { store.del('barons-save'); toast('That saved game is from an older version and cannot be opened.'); render(); }
+  },
+  home() { resetNet(); UI.screen = 'home'; UI.open = true; UI.view = 'box'; UI.modal = null; UI.err = ''; render(); },
+  quit() {
+    if (U.quitAsk !== 1) { U.quitAsk = 1; toast(NET.role === 'host' ? 'Quitting ends the game for everyone. Press again to quit.' : NET.role ? 'Press again to quit. The computer takes your seat.' : 'Press again to go to the menu. Your game is saved.'); setTimeout(() => { U.quitAsk = 0; }, 3500); return; }
+    U.quitAsk = 0; U.home();
+  },
+  async host() {
+    resetNet(); UI.err = 'Opening a table…'; render();
+    NET.code = makeCode(); NET.role = 'host';
+    try { NET.sig = await openSignal(NET.code, hostMsg); }
+    catch (e) { NET.role = null; UI.err = 'Could not reach the game server. Check your connection.'; render(); return; }
+    NET.seats = [{ id: NET.me, name: UI.name || 'Host' }]; UI.err = ''; UI.screen = 'lobby'; render();
+  },
+  async join() {
+    const code = ($('jc').value || '').toUpperCase().replace(/[^A-Z]/g, '');
+    if (code.length !== 4) { UI.err = 'A code has four letters.'; render(); return; }
+    resetNet(); UI.err = 'Looking for game ' + code + '…'; render();
+    NET.code = code; NET.role = 'guest';
+    try { NET.sig = await openSignal(code, guestMsg); }
+    catch (e) { NET.role = null; UI.err = 'Could not reach the game server. Check your connection.'; render(); return; }
+    freshGame(); UI.G = null;
+    const hello = () => NET.sig && NET.sig.send(UI.screen === 'home' ? { t: 'join', from: NET.me, name: UI.name || 'Guest' } : { t: 'sync', from: NET.me, v: UI.G ? UI.G.v : -1 });
+    hello(); NET.timer = setInterval(hello, 4000);
+    setTimeout(() => { if (NET.role === 'guest' && UI.screen === 'home') { resetNet(); UI.err = 'No game answered to ' + code + '.'; render(); } }, 9000);
+  },
+  addBot() { const used = NET.seats.map(s => s.name), n = BOTNAMES.find(b => used.indexOf(b) < 0); NET.seats.push({ id: null, name: n, bot: true }); broadcast(); render(); },
+  dropBot(i) { NET.seats.splice(i, 1); broadcast(); render(); },
+  startOnline() {
+    freshGame();
+    UI.G = newGame(NET.seats.map(s => ({ name: s.name, bot: s.bot })), Math.floor(Math.random() * 2 ** 31), UI.gmode, UI.easy); UI.me = 0; UI.screen = 'game'; changed();
+  },
+  takeover(p) { const G = UI.G; G.players[p].bot = true; log(G, 'The computer takes over for ' + G.players[p].name + '.'); changed(); },
+  copy(s) { if (navigator.clipboard) navigator.clipboard.writeText(s).then(() => toast('Link copied.'), () => toast('Copy it by hand.')); },
+};
+if (new URLSearchParams(location.search).get('join')) { UI.open = true; UI.view = 'online'; }
+window.addEventListener('beforeunload', () => { if (NET.sig) NET.sig.send({ t: NET.role === 'host' ? 'bye' : 'leave', from: NET.me }); });
+render();
+</script>
+</body>
+</html>

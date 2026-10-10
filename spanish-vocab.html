@@ -173,6 +173,7 @@
   .face .topic-tag { position: absolute; top: 14px; right: 16px; font-size: .72rem; color: var(--muted); max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .word { font-size: clamp(1.5rem, 5.4vw, 2.3rem); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
   .word.long { font-size: clamp(1.15rem, 4vw, 1.6rem); }
+  .card.tap-flips .word.es { text-decoration: none; }
   .word.es { cursor: pointer; text-decoration: underline dotted color-mix(in srgb, var(--accent) 60%, transparent); text-underline-offset: 6px; text-decoration-thickness: 2px; }
   .speak { margin-top: 14px; border: 1px solid var(--border); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; display: inline-flex; gap: 6px; align-items: center; font-size: .82rem; font-weight: 650; color: var(--ink-2); }
   .speak svg { width: 16px; height: 16px; }
@@ -1332,7 +1333,7 @@ function judge(given, expected, lang) {
    ===================================================================== */
 const STORE_KEY = 'spanish-vocab:v1';
 // count: cards per round; 0 means every word. 50 keeps a round short when many topics are on.
-const DEFAULT_PREFS = { v: 2, dir: 'mix', answer: 'type', count: 50, showAll: false, muted: false, speakTiles: false, off: [] };
+const DEFAULT_PREFS = { v: 3, dir: 'mix', answer: 'flip', count: 50, showAll: false, muted: false, speakTiles: false, off: [] };
 let S = load();
 function load() {
   let s = null;
@@ -1345,7 +1346,9 @@ function load() {
   const saved = s.prefs || {};
   s.prefs = Object.assign({}, DEFAULT_PREFS, saved);
   // settings saved before version 2 move to the new defaults: 50 cards a round, tiles read aloud off
-  if (!(saved.v >= 2)) Object.assign(s.prefs, { v: 2, count: 50, speakTiles: false });
+  if (!(saved.v >= 2)) Object.assign(s.prefs, { count: 50, speakTiles: false });
+  // before version 3 the default answer was typing; flip and self-check is the default now
+  if (!(saved.v >= 3)) Object.assign(s.prefs, { v: 3, answer: 'flip' });
   if (!Array.isArray(s.prefs.off)) s.prefs.off = [];
   s.shared = Array.isArray(s.shared) ? s.shared : [];
   if (!s.device) s.device = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -1678,6 +1681,7 @@ function pct(r, w) { return r + w ? Math.round(100 * r / (r + w)) : 0; }
 // Any [data-say] element reads its Spanish aloud.
 document.addEventListener('click', ev => {
   const s = ev.target.closest('[data-say]');
+  if (s && s.classList.contains('word') && s.closest('.card.tap-flips')) return;   // this tap flips the card
   if (s) { ev.stopPropagation(); const btn = s.classList.contains('speak'); speakEs(s.dataset.say, btn ? s : null, btn); }
 }, true);
 
@@ -1968,6 +1972,7 @@ function startFlash(custom) {
     <div class="answer-area" id="area"></div>
   </div>`;
   const card = $('#card'), area = $('#area');
+  card.classList.toggle('tap-flips', p.answer === 'flip');   // self-check: a tap anywhere on the card flips it
   $('#quit').onclick = () => session.items.length ? go('summary', session) : go('home');
 
   function wordHTML(text, lang) {
@@ -2002,9 +2007,9 @@ function startFlash(custom) {
     const langName = toLang === 'es' ? 'Spanish' : 'English';
     if (p.answer === 'flip') {
       area.innerHTML = `<div class="row-btns"><button class="btn primary" id="reveal">Show answer</button></div>
-        <p class="hint">Say it in your head, then flip. <span class="kbd-hint"><kbd>Space</kbd> flips</span></p>`;
+        <p class="hint">Say it in your head, then tap the card or the button. <span class="kbd-hint"><kbd>Space</kbd> flips</span></p>`;
       $('#reveal').onclick = () => reveal(null);
-      card.onclick = ev => { if (!ev.target.closest('[data-say]') && phase === 'ask') reveal(null); };
+      card.onclick = ev => { if (!ev.target.closest('.speak') && phase === 'ask') reveal(null); };
       return;
     }
     const speak = p.answer === 'speak' && SR;
@@ -2118,7 +2123,7 @@ function startFlash(custom) {
       $('#no').onclick = () => finish(false, 'wrong', '');
       $('#yes').onclick = () => finish(true, 'exact', '');
     }
-    card.onclick = ev => { if (!ev.target.closest('[data-say]')) { card.classList.toggle('flipped'); sfx('flip'); } };
+    card.onclick = ev => { if (!ev.target.closest(p.answer === 'flip' ? '.speak' : '[data-say]')) { card.classList.toggle('flipped'); sfx('flip'); } };
   }
 
   function finish(ok, kind, given) {

@@ -1,15 +1,16 @@
 # personal_projects
 
-Twelve pages. Each one is a single HTML file with no build step and no dependencies. Open any
-of them in a browser. Only four talk to the network: the Hügelland leaderboard, Spartan
-Brawl and Burger Barons when you play them online, and Practica con Zach reads and adds shared words.
+Thirteen pages. Each one is a single HTML file with no build step and no dependencies, apart
+from a small QR code script in Midnight Clocktower. Open any of them in a browser. Only five
+talk to the network: the Hügelland leaderboard, Spartan Brawl and Burger Barons when you play
+them online, Midnight Clocktower, and Practica con Zach, which reads and adds shared words.
 
 Every page lives at the root, with its icons and images beside it, so each one has a short
 address. For a while each project had its own folder; those folder addresses are now small
 redirect pages, so links shared in that time still land in the right place. A `source/` folder
 holds working files, such as class handouts, and is kept out of git.
 
-The index lists eight of the pages. Manor, Isabella y el Toro, Two Marker Studio and Metro City
+The index lists nine of the pages. Manor, Isabella y el Toro, Two Marker Studio and Metro City
 are still here and still work, but are not linked from it.
 
 ## fall.html
@@ -387,6 +388,97 @@ Tested with 150 computer-only games across the three kinds of game and 2 to 5 pl
 all ran to the end with no refused move, and with screenshots from headless Chrome. Nothing
 has been clicked in a live browser by the author, and online play has not been tested between
 two real machines yet.
+
+## clocktower.html
+
+**Midnight Clocktower** is a fan-made kit for playing *Blood on the Clocktower* in one room,
+for 5 to 20 people. Each person uses their phone in place of a token. The Storyteller's
+phone is the Grimoire. The game itself still happens out loud: people talk, lie, point and
+whisper in corners. The phones hold the secrets and do the bookkeeping.
+
+**Characters.** It has the three editions in the base game: Trouble Brewing (22 characters),
+Bad Moon Rising (25) and Sects & Violets (25), and their 15 Travellers. A fourth choice puts all
+three on one sheet. The ability text is in plain words of our own, checked one by one against
+the official characters, with jargon such as "night\*" and "registers as" spelled out. The night
+order comes from the official master order. The setup table runs from 5 to 15 players, and Travellers take a town
+up to 20.
+
+**Joining.** The Storyteller opens a town and gets a four-letter code. Everyone else goes to
+the page, types a name and the code, or scans the QR code on the Storyteller's screen. The QR
+code opens the page with the code filled in, and a tap shows it full screen for the room. It
+comes from the small qrcode-generator script on cdnjs; without it, the page shows the code
+only. Someone without a phone can be added by name, and the
+Storyteller tells them things in person. A big screen can join to watch: it shows the town
+square and the votes, and no secrets.
+
+**Setup.** The Storyteller puts names in seat order and chooses a story. They fill the bag by
+hand or press Random, which always makes a legal bag, Baron, Godfather, Fang Gu and
+Vigormortis included. Dealing gives the Drunk a Townsfolk to believe in, gives the Lunatic a
+Demon, picks three bluffs and a red herring. All of it can be changed before the first night.
+
+**The night** is a list of the characters that wake tonight, in order. Each step says what to
+do. *Wake on their phone* puts a question on that player's phone, such as "Choose a player to
+poison". Their answer comes back to the Grimoire. The Storyteller then picks players,
+characters, a number or yes/no and sends it. A blue box shows the true answer for the
+Empath, Chef, Washerwoman, Fortune Teller, Undertaker, Clockmaker, Oracle, Flowergirl, Town
+Crier and others, with a warning if the player is drunk or poisoned. Minion and Demon info go
+out with one button each. At dawn, every phone shows who died.
+
+**The day.** The Storyteller can start a talk timer. A player can nominate from their phone,
+or the Storyteller enters it. In a vote, a clock hand goes round the circle from the seat
+after the nominee. Each player raises a hand on their phone, and it locks when the hand
+passes. Dead players spend their ghost vote. The Storyteller can raise hands for people
+without phones and adjust the count for a Bureaucrat or a Thief. The page tracks the block,
+ties, and who voted and nominated, which the Flowergirl and the Town Crier need.
+
+**The first game guide** is on by default, and the Storyteller can turn it off in the lobby or
+the menu. It tells the Storyteller what to do now, step by step, at every stage: gathering,
+the bag, the deal, each night step, dawn, the talk, nominations, the vote and the end. It
+gives lines to read out loud, starting with a one-minute welcome that explains the game. It
+knows who has a phone, who is drunk or poisoned, and whether a step needs a choice, an answer
+or both. Players see help too: their team's goal with their character, what happens at night,
+what to do by day, and how the vote works. While they wait, the rules are open in front of them.
+
+**Players' phones** show the town square, their character (tap to see, so a neighbour can't),
+everything they have been told, a whisper box to the Storyteller, private notes and guesses,
+and the character sheet. At night the phone goes dark until the Storyteller wakes them.
+
+**Secrets stay secret.** Like Burger Barons, the Storyteller's browser hosts the game over the
+same Supabase Realtime broadcast channel, and needs no new backend. Every message crosses one
+open channel, so each phone makes an ECDH key pair and agrees an AES key with the host. A
+player's character, night info and answers are encrypted for that phone alone. Someone with
+the developer tools open sees only noise. Messages from a player are encrypted too, so nobody
+can vote or answer in another player's name.
+
+**Staying connected.** Phones drop their socket when the screen sleeps. The channel reconnects
+by itself, and a player asks for fresh state every four seconds and whenever the page comes
+back into view. The Storyteller's screen asks to stay awake. The whole game saves on the
+Storyteller's phone after every change, so a reload offers *Resume*. Players' phones rejoin
+on their own. `?who=name` in the address gives a tab its own identity, for testing several
+players on one computer.
+
+**Spooky.** Fog drifts, the edges flicker like candlelight, bats cross now and then, and a moon
+rises at night. The Storyteller's phone plays music made live with Web Audio, so there are no
+sound files: at night a low drone, wind, a slow music box in A minor and the odd owl; by day an
+organ drifting through minor chords and a crow. A bell tolls at dusk, at dawn and at each
+death. The clock hand ticks during a vote, a dissonant sting marks an execution, and the menu
+has a bell, thunder and a shriek for the Storyteller's own use.
+
+**The art** is emoji on parchment tokens, with a ring in the team's color. The tab icon is
+`clocktower-icon.svg`, drawn by hand, and `clocktower-icon-180.png` is that icon drawn in
+headless Chrome.
+
+Tested in Chrome with a Storyteller tab and three player tabs on the real channel: joining,
+encrypted deals, a Poisoner and a Fortune Teller answering from their phones, Minion and
+Demon info, a dawn death, a nomination from a phone, a clock vote with a ghost vote, an
+execution, the win and the reveal, and reloads on both sides. Every Storyteller screen and
+night step for all three editions draws without error. It has not been played with a real
+group, or on iPhones and Android phones yet.
+
+A second round tested the guide, the QR code and the new wording in the same way: the guide on
+every screen on both sides, turning it off, the QR code read back with the browser's own barcode
+reader, joining from the QR link, and every night step on nights 1 and 2 for all four choices at
+7 and 13 players with no errors.
 
 ## spartan-brawl.html
 

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Murder Dinner Party · Zachbox Games</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/zachbox.css">
+<link rel="stylesheet" href="/shared/host.css">
+<link rel="stylesheet" href="/games/murder-dinner-party/host/host.css">
+</head>
+<body>
+<div class="host">
+  <header class="topbar">
+    <div class="brand">Murder Dinner Party<small>Zachbox Games</small></div>
+    <div class="spacer"></div>
+    <div class="roomtag" id="roomtag"></div>
+    <div class="timer off" id="timer"><span></span></div>
+    <button class="iconbtn" id="mute" title="Sound on or off" aria-label="Sound on or off">🔊</button>
+  </header>
+  <main class="stage" id="stage">
+    <div class="overlay"><h2>Setting the table…</h2></div>
+  </main>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/shared/net.js"></script>
+<script src="/shared/sfx.js"></script>
+<script src="/shared/host-lobby.js"></script>
+<script src="/games/murder-dinner-party/host/scene.js"></script>
+<script src="/games/murder-dinner-party/host/host.js"></script>
+</body>
+</html>

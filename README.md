@@ -1008,3 +1008,11 @@ A native rebuild of `hugelland.html` in Swift, for the App Store. The rules live
 package, `FirstTownCore`, with tests that play 60 games against the web version's rules and
 require the same maps, decks, moves and scores. The app will add SpriteKit for the board,
 SwiftUI for the panels, and Game Center leaderboards with a daily map. See `ios-town/README.md`.
+
+## zachbox/
+
+Zachbox Games: Jackbox-style party games, one shared screen and everyone's phones. The first
+is Murder Dinner Party, a bluffing game for 4 to 8 about a murdered dinner host and a killer
+who saw nothing. This one is not a single HTML page: it is a small Node app (Express and
+Socket.IO) with its own `package.json`, and it needs a server to run. See
+[zachbox/README.md](zachbox/README.md).

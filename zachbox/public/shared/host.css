@@ -1,0 +1,87 @@
+/* Zachbox Games: host screen shell. Landscape, sized off the window height
+   so it reads the same on a laptop and in a 1080p screen share. */
+
+html { font-size: clamp(13px, 2.05vh, 30px); }
+body { overflow: hidden; font-size: 1.25rem; }
+
+.host { display: grid; grid-template-rows: auto 1fr; height: 100vh; height: 100dvh; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0.7rem 1.6rem;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0));
+}
+.topbar .brand { font-family: var(--serif); font-weight: 900; color: var(--gold-hi); font-size: 1.15rem; }
+.topbar .brand small { font-family: var(--body); font-weight: 500; color: var(--ink-2); font-size: 0.95rem; margin-left: 0.6rem; }
+.topbar .spacer { flex: 1; }
+.topbar .roomtag { font-family: var(--ui); font-size: 0.85rem; color: var(--ink-2); }
+.topbar .roomtag b { color: var(--gold-hi); letter-spacing: 0.18em; font-size: 1.1rem; }
+.iconbtn {
+  appearance: none; border: 1px solid var(--line-strong); background: transparent; color: var(--gold-hi);
+  border-radius: 999px; width: 2.4rem; height: 2.4rem; font-size: 1.1rem; cursor: pointer;
+}
+
+.timer {
+  --p: 1;
+  position: relative;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  background: conic-gradient(var(--gold) calc(var(--p) * 360deg), rgba(255, 255, 255, 0.08) 0);
+  display: grid;
+  place-items: center;
+  transition: opacity 0.3s;
+}
+.timer::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--night); }
+.timer span { position: relative; font: 800 1.15rem/1 var(--ui); color: var(--parchment); }
+.timer.low { background: conic-gradient(var(--blood-hi) calc(var(--p) * 360deg), rgba(255, 255, 255, 0.08) 0); }
+.timer.low span { color: var(--blood-hi); }
+.timer.off { opacity: 0; }
+
+.stage { position: relative; overflow: hidden; padding: 1.4rem 2rem 1.6rem; display: flex; flex-direction: column; }
+
+/* Lobby */
+.lobby { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr); gap: 2.4rem; height: 100%; align-items: start; }
+.lobby-left { display: flex; flex-direction: column; gap: 1rem; }
+.lobby-title { font-size: 3.6rem; font-weight: 900; line-height: 0.98; text-shadow: 0 0 40px rgba(212, 175, 55, 0.35); }
+.lobby-tag { color: var(--ink-2); font-size: 1.35rem; font-style: italic; }
+.lobby-join { display: flex; gap: 1.3rem; align-items: center; padding: 1.1rem; }
+.lobby-qr img { width: 11rem; height: 11rem; border-radius: 10px; display: block; image-rendering: pixelated; }
+.lobby-url { font: 600 1.25rem/1.2 var(--ui); color: var(--parchment); word-break: break-all; }
+.lobby-code { font: 900 4.2rem/1 var(--serif); letter-spacing: 0.12em; color: var(--gold-hi); text-shadow: 0 0 30px rgba(212, 175, 55, 0.4); }
+.lobby-rules { margin: 0.2rem 0 0; padding-left: 1.3rem; color: var(--ink-2); font-size: 1.15rem; display: grid; gap: 0.35rem; }
+.lobby-rules b { color: var(--parchment); }
+.lobby-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.8rem; }
+.lobby-head h2 { font-size: 1.7rem; color: var(--gold-hi); }
+.lobby-count { font: 800 1.3rem var(--ui); color: var(--ink-2); }
+.lobby-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.9rem; }
+.lobby-seat .pcard { font-size: 0.9rem; }
+.lobby-seat .pcard img.avatar { aspect-ratio: 1 / 1; }
+.lobby-seat.open .pcard { filter: grayscale(0.9) brightness(0.4); border-style: dashed; }
+.lobby-seat.taken .pcard { border-color: var(--line-strong); box-shadow: 0 0 24px rgba(212, 175, 55, 0.18); }
+.lobby-seat.just { animation: seat-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.seat-chips { position: absolute; top: 0.4rem; right: 0.4rem; display: flex; gap: 0.3rem; }
+.lobby-start { display: flex; align-items: center; gap: 1.2rem; margin-top: 1.2rem; }
+.lobby-start .btn { font-size: 1.3rem; }
+@keyframes seat-in { from { transform: scale(0.6) rotate(-6deg); opacity: 0; } }
+
+/* Overlays */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 5, 3, 0.86);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  z-index: 20;
+  text-align: center;
+  padding: 2rem;
+}
+.overlay h2 { font-size: 2.8rem; color: var(--gold-hi); }
+.overlay p { color: var(--ink-2); font-size: 1.3rem; max-width: 40rem; }

@@ -1,0 +1,106 @@
+[
+  {
+    "id": "dolores-vance",
+    "name": "Madame Dolores Vance",
+    "title": "Retired magician with a lisp",
+    "traits": [
+      "Enormous feathered hat",
+      "Pulls scarves from her sleeves when nervous",
+      "Was the victim's secret lover"
+    ],
+    "catchphrase": "Thith ith a mithunderthtanding.",
+    "avatar": "/games/murder-dinner-party/cards/dolores-vance.svg",
+    "silhouette": "/games/murder-dinner-party/cards/dolores-vance-sil.svg"
+  },
+  {
+    "id": "barnaby-mustardseed",
+    "name": "Colonel Barnaby Mustardseed",
+    "title": "Hero of a war nobody remembers",
+    "traits": [
+      "Handlebar mustache wider than his shoulders",
+      "Salutes the soup before eating it",
+      "Never actually served"
+    ],
+    "catchphrase": "In my day, we murdered with RESPECT.",
+    "avatar": "/games/murder-dinner-party/cards/barnaby-mustardseed.svg",
+    "silhouette": "/games/murder-dinner-party/cards/barnaby-mustardseed-sil.svg"
+  },
+  {
+    "id": "tiffany-sparkle",
+    "name": "Tiffany Sparkle-Pants",
+    "title": "Influencer, 40 followers",
+    "traits": [
+      "Beehive hairdo taller than a toddler",
+      "Hoop earrings you could juggle",
+      "Livestreamed the soup course"
+    ],
+    "catchphrase": "Don't forget to like and subscribe to my alibi.",
+    "avatar": "/games/murder-dinner-party/cards/tiffany-sparkle.svg",
+    "silhouette": "/games/murder-dinner-party/cards/tiffany-sparkle-sil.svg"
+  },
+  {
+    "id": "mortimer-gloom",
+    "name": "Reverend Mortimer Gloom",
+    "title": "Undertaker who brings his own coffin to parties",
+    "traits": [
+      "Absurdly tall top hat",
+      "Never without his silver-tipped cane",
+      "Measured everyone for a coffin on arrival"
+    ],
+    "catchphrase": "I simply had a feeling about tonight.",
+    "avatar": "/games/murder-dinner-party/cards/mortimer-gloom.svg",
+    "silhouette": "/games/murder-dinner-party/cards/mortimer-gloom-sil.svg"
+  },
+  {
+    "id": "pierre-crouton",
+    "name": "Chef Pierre Croûton",
+    "title": "Cooked the dinner, regrets nothing",
+    "traits": [
+      "Puffy chef hat like a cloud",
+      "Insults the guests in French",
+      "Was fired by the victim an hour ago"
+    ],
+    "catchphrase": "Ze soup was perfect. Ze man was not.",
+    "avatar": "/games/murder-dinner-party/cards/pierre-crouton.svg",
+    "silhouette": "/games/murder-dinner-party/cards/pierre-crouton-sil.svg"
+  },
+  {
+    "id": "gertrude-barnacle",
+    "name": "Captain Gertrude Barnacle",
+    "title": "Sea captain with a very opinionated parrot",
+    "traits": [
+      "Pirate hat and eyepatch",
+      "A parrot named Lawyer on her shoulder",
+      "The parrot knows everything"
+    ],
+    "catchphrase": "Lawyer says I'm innocent. SQUAWK.",
+    "avatar": "/games/murder-dinner-party/cards/gertrude-barnacle.svg",
+    "silhouette": "/games/murder-dinner-party/cards/gertrude-barnacle-sil.svg"
+  },
+  {
+    "id": "ignatius-quill",
+    "name": "Professor Ignatius Quill",
+    "title": "Scientist, expelled from 3 universities",
+    "traits": [
+      "Hair like he licked a socket",
+      "Enormous round spectacles",
+      "Has a formula for the perfect murder"
+    ],
+    "catchphrase": "Statistically, it was one of YOU.",
+    "avatar": "/games/murder-dinner-party/cards/ignatius-quill.svg",
+    "silhouette": "/games/murder-dinner-party/cards/ignatius-quill-sil.svg"
+  },
+  {
+    "id": "valentina-vex",
+    "name": "Countess Valentina Vex",
+    "title": "Aristocrat, widowed seven times",
+    "traits": [
+      "Gigantic frilled collar",
+      "Tiara she claims is \"only borrowed\"",
+      "Every husband died at dinner"
+    ],
+    "catchphrase": "Darling, I was merely holding the knife.",
+    "avatar": "/games/murder-dinner-party/cards/valentina-vex.svg",
+    "silhouette": "/games/murder-dinner-party/cards/valentina-vex-sil.svg"
+  }
+]

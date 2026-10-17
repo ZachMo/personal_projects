@@ -1,0 +1,21 @@
+{
+  "r1": {
+    "template": "What is a normal thing you'd {verb} in {location}?",
+    "verbs": ["do", "find", "decorate", "wear", "eat", "hide", "bring", "forget"],
+    "killerLocation": "the crime scene"
+  },
+  "r2": {
+    "template": "Draw the murder weapon: {weapon}.",
+    "killerWeapon": "???"
+  },
+  "r3": {
+    "template": "Describe the figure you saw in ONE word."
+  },
+  "intro": [
+    "{victim}, {bio}, is dead.",
+    "He was found face-down in the soup at his own dinner party.",
+    "Everyone at this table saw the murder happen. Everyone saw something.",
+    "One of you did it.",
+    "Detective: you will see only answers, never names. Find the liar."
+  ]
+}

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0907">
+<title>Join · Zachbox Games</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/zachbox.css">
+<style>
+  body { overscroll-behavior: none; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px max(40px, env(safe-area-inset-bottom)); }
+  .brand { text-align: center; margin: 6px 0 22px; }
+  .brand h1 { font-size: 2rem; }
+  #codeForm { padding: 20px; display: grid; gap: 14px; }
+  #codeForm input { text-transform: uppercase; letter-spacing: 0.4em; text-align: center; font-weight: 800; font-size: 2.2rem; padding: 0.5em; }
+  .picker h2 { font-size: 1.6rem; text-align: center; }
+  .picker p.lead { text-align: center; color: var(--ink-2); margin: 6px 0 16px; }
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .cards button { all: unset; cursor: pointer; display: block; border-radius: 12px; transition: transform 0.1s; }
+  .cards button:active { transform: scale(0.98); }
+  .cards button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+  .cards .pcard { height: 100%; }
+  .cards .taken .pcard { filter: grayscale(1) brightness(0.45); }
+  .cards .taken { cursor: not-allowed; }
+  .cards .mine .pcard { border-color: var(--gold-hi); box-shadow: 0 0 0 2px var(--gold), 0 0 30px rgba(212, 175, 55, 0.35); }
+  .tag { position: absolute; top: 8px; right: 8px; }
+  .err { color: var(--blood-hi); text-align: center; font-family: var(--ui); font-size: 0.95rem; min-height: 1.3em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="eyebrow">Zachbox Games</div>
+    <h1 id="gameName">Join a game</h1>
+  </div>
+
+  <form id="codeForm" class="panel" autocomplete="off">
+    <label class="eyebrow center" for="code">Room code from the big screen</label>
+    <input type="text" id="code" maxlength="4" placeholder="ABCD" autocapitalize="characters" spellcheck="false">
+    <button class="btn block" type="submit">Join</button>
+    <div class="err" id="err"></div>
+  </form>
+
+  <section class="picker hidden" id="picker">
+    <h2>Who are you tonight?</h2>
+    <p class="lead">Pick your character card. First come, first served.</p>
+    <div class="cards" id="cards"></div>
+  </section>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/shared/net.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const codeInput = ZB.$('#code');
+  const err = ZB.$('#err');
+  let code = (params.get('code') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  let myCard = null;
+  let taken = [];
+  let joined = false;
+  const wantPicker = params.get('pick') === '1';
+
+  codeInput.value = code;
+  codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z]/g, ''); err.textContent = ''; });
+
+  ZB.$('#codeForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    code = codeInput.value;
+    if (code.length !== 4) { err.textContent = 'Room codes are 4 letters.'; return; }
+    history.replaceState(null, '', '/join?code=' + code);
+    join();
+  });
+
+  async function join() {
+    err.textContent = '';
+    const res = await ZB.emit('room:join', { code, token: ZB.getToken(code) });
+    if (!res.ok) {
+      joined = false;
+      err.textContent = res.error || 'Could not join.';
+      ZB.$('#codeForm').classList.remove('hidden');
+      ZB.$('#picker').classList.add('hidden');
+      return;
+    }
+    joined = true;
+    ZB.setToken(res.code, res.token);
+    ZB.setCards(res.cards);
+    myCard = res.cardId;
+    taken = res.lobby.taken;
+    if (res.inGame || (myCard && !wantPicker)) return go();
+    ZB.$('#codeForm').classList.add('hidden');
+    ZB.$('#picker').classList.remove('hidden');
+    renderCards();
+  }
+
+  function go() { location.replace('/play/' + code); }
+
+  function renderCards() {
+    ZB.$('#cards').innerHTML = ZB.cardList().map((c) => {
+      const mine = c.id === myCard;
+      const isTaken = !mine && taken.includes(c.id);
+      const tag = mine ? '<span class="chip tag">You</span>' : isTaken ? '<span class="chip red tag">Taken</span>' : '';
+      return `<button type="button" data-id="${ZB.esc(c.id)}" class="${mine ? 'mine' : ''} ${isTaken ? 'taken' : ''}" ${isTaken ? 'aria-disabled="true"' : ''}>
+        ${ZB.cardHtml(c.id, { html: tag })}</button>`;
+    }).join('');
+  }
+
+  ZB.$('#cards').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-id]');
+    if (!b || b.classList.contains('taken')) return;
+    const res = await ZB.emit('card:pick', { cardId: b.dataset.id });
+    if (res.ok) { myCard = res.cardId; return go(); }
+    ZB.toast(res.taken ? 'Taken! Someone beat you to it.' : res.error || 'Could not pick that card.');
+  });
+
+  ZB.socket.on('lobby:update', (info) => { taken = info.taken; if (joined) renderCards(); });
+  ZB.socket.on('room:kicked', (m) => { joined = false; err.textContent = m.reason; ZB.$('#codeForm').classList.remove('hidden'); ZB.$('#picker').classList.add('hidden'); });
+  ZB.socket.on('connect', () => { if (code.length === 4 && (joined || params.get('code'))) join(); });
+</script>
+</body>
+</html>
